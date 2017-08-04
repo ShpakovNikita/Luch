@@ -3,6 +3,7 @@
 #include <array>
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace Husky
@@ -22,6 +23,7 @@ using float32 = float;
 using float64 = double;
 
 using String = std::string;
+using StringView = std::string_view;
 
 template<typename T, int N>
 using Array = std::array<T, N>;
