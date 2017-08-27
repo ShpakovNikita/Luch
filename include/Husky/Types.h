@@ -25,6 +25,8 @@ using float64 = double;
 using String = std::string;
 using StringView = std::string_view;
 
+using char8 = char;
+
 template<typename T, int N>
 using Array = std::array<T, N>;
 

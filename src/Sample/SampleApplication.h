@@ -1,33 +1,43 @@
 #pragma once
 
-#include <Husky/Application.h>
+#include <Husky/BaseApplication.h>
+#include <Husky/Vulkan.h>
 
-class SampleApplication : public Husky::BaseApplication
+class SampleApplication 
+    : public Husky::BaseApplication
+    , private Husky::VulkanDebugDelegate
 {
 public:
-    void Initialize(const Vector<String>& args) override;
+    SampleApplication() = default;
+    void Initialize(const Husky::Vector<Husky::String>& args) override;
     void Deinitialize() override;
     void Run() override;
 protected:
-    const String& GetApplicationName()
+    const Husky::String& GetApplicationName()
     {
-        static String applicationName = "Sample";
+        static Husky::String applicationName = "Sample";
         return applicationName;
     }
 
-    const Version& GetApplicationVersion()
+    const Husky::Version& GetApplicationVersion()
     {
-        static Version applicationVersion{0, 1, 0};
+        static Husky::Version applicationVersion{0, 1, 0};
         return applicationVersion;
     }
 private:
-    Vector<String> GetRequiredExtensionNames();
-    Vector<String> GetValidationLayerNames();
+    vk::ResultValue<vk::Instance> CreateVulkanInstance();
+    vk::PhysicalDevice ChoosePhysicalDevice(const Husky::Vector<vk::PhysicalDevice>& devices);
+    vk::ResultValue<vk::Device> CreateDevice(vk::PhysicalDevice& physicalDevice);
 
-    VulkanInstance instance;
-    VkUniquePtr<VkDebugReportCallbackEXT> debugCallback;
+    Husky::Vector<const Husky::char8*> GetRequiredInstanceExtensionNames() const;
+    Husky::Vector<const Husky::char8*> GetRequiredDeviceExtensionNames() const;
+    Husky::Vector<const Husky::char8*> GetValidationLayerNames() const;
 
-    VkBool32 DebugCallback(
+    vk::Instance instance;
+    vk::PhysicalDevice physicalDevice;
+    vk::Device device;
+
+    vk::Bool32 DebugCallback(
         VkDebugReportFlagsEXT flags,
         VkDebugReportObjectTypeEXT objectType,
         uint64_t object,

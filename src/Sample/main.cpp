@@ -1,4 +1,3 @@
-#include <Husky/Application.h>
 #include "SampleApplication.h"
 
 int main(int argc, char** argv)

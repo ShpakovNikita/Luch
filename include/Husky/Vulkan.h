@@ -1,13 +1,13 @@
 #pragma once
 
+#define VULKAN_HPP_NO_EXCEPTIONS
 #include <vulkan/vulkan.hpp>
 
 #include <Husky/Assert.h>
 #include <Husky/Types.h>
 
-#include <Husky/Vulkan/VkUniquePtr.h>
-#include <Husky/Vulkan/VkArrayParam.h>
-#include <Husky/Vulkan/VkResult.h>
+namespace Husky
+{
 
 class VulkanDebugDelegate
 {
@@ -22,3 +22,5 @@ public:
         const char* pMessage
     ) = 0;
 };
+
+}
