@@ -5,6 +5,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <optional>
 
 namespace Husky
 {
@@ -35,5 +36,8 @@ using Vector = std::vector<T>;
 
 template<typename T>
 using Limits = std::numeric_limits<T>;
+
+template<typename T>
+using Optional = std::optional<T>;
 
 }
