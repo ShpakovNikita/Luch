@@ -13,9 +13,13 @@ public:
     virtual void Initialize(const Vector<String>& args) = 0;
     virtual void Deinitialize() = 0;
     virtual void Run() = 0;
+
+    virtual const String& GetApplicationName() const = 0;
+    virtual const String& GetMainWindowTitle() const = 0;
+    virtual const Version& GetApplicationVersion() const = 0;
+
+
 protected:
-    virtual const String& GetApplicationName() = 0;
-    virtual const Version& GetApplicationVersion() = 0;
 
     BaseApplication() = default;
 };

@@ -2,46 +2,95 @@
 
 #include <Husky/BaseApplication.h>
 #include <Husky/Vulkan.h>
+#include "VulkanAllocator.h"
 
-class SampleApplication 
+#ifdef _WIN32
+#include <Husky/Platform/Win32/WndProcDelegate.h>
+#endif
+
+class SampleApplication
     : public Husky::BaseApplication
-    , private Husky::VulkanDebugDelegate
+    , private Husky::Vulkan::VulkanDebugDelegate
+#ifdef _WIN32
+    , private Husky::Platform::Win32::WndProcDelegate
+#endif
 {
 public:
     SampleApplication() = default;
     void Initialize(const Husky::Vector<Husky::String>& args) override;
     void Deinitialize() override;
     void Run() override;
-protected:
-    const Husky::String& GetApplicationName()
+
+    const Husky::String& GetApplicationName() const
     {
         static Husky::String applicationName = "Sample";
         return applicationName;
     }
 
-    const Husky::Version& GetApplicationVersion()
+    const Husky::Version& GetApplicationVersion() const
     {
         static Husky::Version applicationVersion{0, 1, 0};
         return applicationVersion;
     }
+
+    const Husky::String& GetMainWindowTitle() const
+    {
+        static Husky::String windowTitle = "Sample";
+        return windowTitle;
+    }
 private:
+    // TODO init with uint32_max
+    struct QueueIndices
+    {
+        Husky::uint32 computeQueueFamilyIndex;
+        Husky::uint32 graphicsQueueFamilyIndex;
+        Husky::uint32 presentQueueFamilyIndex;
+    };
+
     struct QueueInfo
     {
-        vk::Queue queue;
-        uint32 queueFamilyIndex;
+        vk::Queue computeQueue;
+        vk::Queue graphicsQueue;
+        vk::Queue presentQueue;
+
+        QueueIndices indices;
+    };
+
+    struct CommandPoolCreateResult
+    {
+        vk::ResultValue<vk::CommandPool> graphicsCommandPool;
+        vk::ResultValue<vk::CommandPool> presentCommandPool;
+        vk::ResultValue<vk::CommandPool> computeCommandPool;
     };
 
     vk::ResultValue<vk::Instance> CreateVulkanInstance(vk::AllocationCallbacks& allocationCallbacks);
     vk::ResultValue<vk::DebugReportCallbackEXT> CreateDebugCallback(vk::Instance& instance, vk::AllocationCallbacks& allocationCallbacks);
     vk::PhysicalDevice ChoosePhysicalDevice(const Husky::Vector<vk::PhysicalDevice>& devices);
-    Husky::Optional<vk::DeviceQueueCreateInfo> ChooseDeviceQueue(vk::PhysicalDevice& physicalDevice);
+
+#ifdef _WIN32
+    LRESULT WndProc(
+        HWND   hwnd,
+        UINT   uMsg,
+        WPARAM wParam,
+        LPARAM lParam
+    ) override;
+
+    std::tuple<HINSTANCE, HWND> CreateMainWindow(const Husky::String& title, Husky::int32 width, Husky::int32 height);
+    vk::ResultValue<vk::SurfaceKHR> CreateSurface(
+        vk::Instance& instance,
+        HINSTANCE hInstance,
+        HWND hWnd,
+        vk::AllocationCallbacks& allocationCallbacks);
+#endif
+
+    QueueIndices ChooseDeviceQueues(vk::PhysicalDevice& physicalDevice, vk::SurfaceKHR& surface);
 
     vk::ResultValue<vk::Device> CreateDevice(
         vk::PhysicalDevice& physicalDevice,
-        vk::DeviceQueueCreateInfo& queueCreateInfo,
+        const QueueIndices& queueIndices,
         vk::AllocationCallbacks& allocationCallbacks);
 
-    vk::ResultValue<vk::CommandPool> CreateCommandPool(
+    CommandPoolCreateResult CreateCommandPools(
         vk::Device& device,
         const QueueInfo& info,
         vk::AllocationCallbacks& allocationCallbacks);
@@ -49,14 +98,6 @@ private:
     Husky::Vector<const Husky::char8*> GetRequiredInstanceExtensionNames() const;
     Husky::Vector<const Husky::char8*> GetRequiredDeviceExtensionNames() const;
     Husky::Vector<const Husky::char8*> GetValidationLayerNames() const;
-
-    vk::AllocationCallbacks allocationCallbacks;
-    vk::Instance instance;
-    vk::DebugReportCallbackEXT debugCallback;
-    vk::PhysicalDevice physicalDevice;
-    vk::Device device;
-    QueueInfo queueInfo;
-    vk::CommandPool commandPool;
 
     vk::Bool32 DebugCallback(
         VkDebugReportFlagsEXT flags,
@@ -66,4 +107,25 @@ private:
         int32_t messageCode,
         const char * pLayerPrefix,
         const char * pMessage) override;
+
+    VulkanAllocator allocator;
+
+    vk::AllocationCallbacks allocationCallbacks;
+    vk::Instance instance;
+    vk::DebugReportCallbackEXT debugCallback;
+    vk::PhysicalDevice physicalDevice;
+    vk::Device device;
+    vk::SurfaceKHR surface;
+    QueueInfo queueInfo;
+    vk::CommandPool graphicsCommandPool;
+    vk::CommandPool presentCommandPool;
+    vk::CommandPool computeCommandPool;
+    
+#if _WIN32
+    HWND hWnd;
+    HINSTANCE hInstance;
+#endif
+
+    Husky::int32 width;
+    Husky::int32 height;
 };

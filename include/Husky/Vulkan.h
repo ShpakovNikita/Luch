@@ -1,12 +1,13 @@
 #pragma once
 
+#define NOMINMAX
 #define VULKAN_HPP_NO_EXCEPTIONS
 #include <vulkan/vulkan.hpp>
 
 #include <Husky/Assert.h>
 #include <Husky/Types.h>
 
-namespace Husky
+namespace Husky::Vulkan
 {
 
 class VulkanDebugDelegate

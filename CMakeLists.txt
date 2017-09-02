@@ -13,13 +13,7 @@ if(MSVC)
     endif()
 endif()
 
-set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-
 find_package(Vulkan REQUIRED)
-
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/glfw)
 
 add_definitions(-DVK_USE_PLATFORM_WIN32_KHR)
 
@@ -39,6 +33,4 @@ add_library(HuskyEngine ${ENGINE_CPP_FILES} ${ENGINE_HEADER_FILES})
 add_executable(HuskyEngineSample ${SAMPLE_CPP_FILES} ${SAMPLE_HEADER_FILES})
 
 target_link_libraries(HuskyEngine ${Vulkan_LIBRARIES})
-target_link_libraries(HuskyEngine glfw)
 target_link_libraries(HuskyEngineSample HuskyEngine)
-target_link_libraries(HuskyEngineSample glfw)
