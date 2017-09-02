@@ -160,7 +160,7 @@ vk::ResultValue<vk::DebugReportCallbackEXT> SampleApplication::CreateDebugCallba
     ci.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
     ci.pNext = nullptr;
     ci.pfnCallback = StaticDebugCallback;
-    ci.pUserData = this;
+    ci.pUserData = static_cast<VulkanDebugDelegate*>(this);
 
     const VkAllocationCallbacks& callbacks = allocationCallbacks;
 
@@ -229,13 +229,13 @@ std::tuple<HINSTANCE, HWND> SampleApplication::CreateMainWindow(const Husky::Str
         nullptr,
         nullptr,
         hInstance,
-        this);
+        nullptr);
 
     if (window)
     {
         ShowWindow(window, SW_NORMAL);
-        static_assert(sizeof(LONG_PTR) >= sizeof(this));
-        SetWindowLongPtr(window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+        static_assert(sizeof(LONG_PTR) >= sizeof(VulkanDebugDelegate*));
+        SetWindowLongPtr(window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(static_cast<VulkanDebugDelegate*>(this)));
     }
 
     return { hInstance, window };
