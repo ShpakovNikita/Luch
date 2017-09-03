@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
+#include <Husky/Vulkan.h>
 #include <Husky/Types.h>
 
 namespace Husky

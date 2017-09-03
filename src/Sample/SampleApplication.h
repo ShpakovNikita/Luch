@@ -114,6 +114,10 @@ private:
         const QueueInfo& info,
         const vk::AllocationCallbacks& allocationCallbacks);
 
+    vk::ResultValue<SampleApplication::SwapchainCreateInfo> ChooseSwapchainCreateInfo(
+        vk::PhysicalDevice& physicalDevice,
+        vk::SurfaceKHR& surface);
+
     vk::ResultValue<vk::SwapchainKHR> CreateSwapchain(
         vk::Device& device,
         vk::SurfaceKHR& surface,
@@ -150,10 +154,10 @@ private:
     vk::SwapchainKHR swapchain;
     
 #if _WIN32
-    HWND hWnd;
-    HINSTANCE hInstance;
+    HWND hWnd = nullptr;
+    HINSTANCE hInstance = nullptr;
 #endif
 
-    Husky::int32 width;
-    Husky::int32 height;
+    Husky::int32 width = 800;
+    Husky::int32 height = 600;
 };

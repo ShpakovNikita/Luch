@@ -1,6 +1,7 @@
 #include "SampleApplication.h"
 
 #include <Husky/Vulkan.h>
+#include <Husky/Math/Math.h>
 
 #include <iostream>
 
@@ -125,13 +126,13 @@ void SampleApplication::Initialize(const Vector<String>& args)
     computeCommandPool = createCommandPoolResult.computeCommandPool.value;
     uniqueCommandPools = move(createCommandPoolResult.uniqueCommandPools);
 
-    SwapchainCreateInfo swapchainCreateInfo;
-    swapchainCreateInfo.format = vk::Format::eR8G8B8A8Unorm;
-    swapchainCreateInfo.width = width;
-    swapchainCreateInfo.height = height;
-    swapchainCreateInfo.presentMode = vk::PresentModeKHR::eFifo;
-    swapchainCreateInfo.imageCount = 3;
-    swapchainCreateInfo.colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
+
+    auto [swapchainChooseCreateInfoResult, swapchainCreateInfo] = ChooseSwapchainCreateInfo(physicalDevice, surface);
+    if (swapchainChooseCreateInfoResult != vk::Result::eSuccess)
+    {
+        // TODO
+        return;
+    }
 
     auto [createSwapchainResult, createdSwapchain] = CreateSwapchain(device, surface, queueInfo.indices, swapchainCreateInfo, allocationCallbacks);
     if (createSwapchainResult != vk::Result::eSuccess)
@@ -279,9 +280,11 @@ std::tuple<HINSTANCE, HWND> SampleApplication::CreateMainWindow(const Husky::Str
 
     if (window)
     {
+        using namespace Husky::Platform::Win32;
+        static_assert(sizeof(LONG_PTR) >= sizeof(WndProcDelegate*));
+        SetWindowLongPtr(window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(static_cast<WndProcDelegate*>(this)));
+
         ShowWindow(window, SW_NORMAL);
-        static_assert(sizeof(LONG_PTR) >= sizeof(VulkanDebugDelegate*));
-        SetWindowLongPtr(window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(static_cast<VulkanDebugDelegate*>(this)));
     }
 
     return { hInstance, window };
@@ -513,6 +516,52 @@ SampleApplication::CommandPoolCreateResult SampleApplication::CreateCommandPools
     }
 }
 
+vk::ResultValue<SampleApplication::SwapchainCreateInfo> SampleApplication::ChooseSwapchainCreateInfo(vk::PhysicalDevice & physicalDevice, vk::SurfaceKHR & surface)
+{
+    using namespace Husky::Math;
+
+    SwapchainCreateInfo swapchainCreateInfo;
+
+    auto[getSurfaceCapabilitiesResult, surfaceCapabilities] = physicalDevice.getSurfaceCapabilitiesKHR(surface);
+    if (getSurfaceCapabilitiesResult != vk::Result::eSuccess)
+    {
+        return { getSurfaceCapabilitiesResult, swapchainCreateInfo };
+    }
+
+    auto[getSurfaceFormatsResult, surfaceFormats] = physicalDevice.getSurfaceFormatsKHR(surface);
+    if (getSurfaceCapabilitiesResult != vk::Result::eSuccess)
+    {
+        return { getSurfaceFormatsResult, swapchainCreateInfo };
+    }
+
+    if (surfaceFormats.size() == 1 && surfaceFormats[0].format == vk::Format::eUndefined)
+    {
+        swapchainCreateInfo.format = vk::Format::eR8G8B8A8Unorm;
+        swapchainCreateInfo.colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
+    }
+    else
+    {
+        swapchainCreateInfo.format = surfaceFormats[0].format;
+        swapchainCreateInfo.colorSpace = surfaceFormats[0].colorSpace;
+    }
+
+    if (surfaceCapabilities.currentExtent.width == Limits<uint32>::max())
+    {
+        swapchainCreateInfo.width = Clamp(static_cast<uint32>(width), surfaceCapabilities.minImageExtent.width, surfaceCapabilities.maxImageExtent.width);
+        swapchainCreateInfo.height = Clamp(static_cast<uint32>(height), surfaceCapabilities.minImageExtent.height, surfaceCapabilities.maxImageExtent.height);
+    }
+    else
+    {
+        swapchainCreateInfo.width = surfaceCapabilities.currentExtent.width;
+        swapchainCreateInfo.height = surfaceCapabilities.currentExtent.height;
+    }
+
+    swapchainCreateInfo.presentMode = vk::PresentModeKHR::eFifo;
+    swapchainCreateInfo.imageCount = std::min(3u, surfaceCapabilities.maxImageCount);
+
+    return { vk::Result::eSuccess, swapchainCreateInfo };
+}
+
 vk::ResultValue<vk::SwapchainKHR> SampleApplication::CreateSwapchain(
     vk::Device& device,
     vk::SurfaceKHR& surface,
@@ -528,6 +577,7 @@ vk::ResultValue<vk::SwapchainKHR> SampleApplication::CreateSwapchain(
     ci.setImageArrayLayers(1);
     ci.setImageExtent({ static_cast<uint32>(swapchainCreateInfo.width), static_cast<uint32>(swapchainCreateInfo.height) });
     ci.setSurface(surface);
+    ci.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc);
 
     if (queueIndices.presentQueueFamilyIndex == queueIndices.graphicsQueueFamilyIndex)
     {
@@ -556,7 +606,6 @@ Vector<const char8*> SampleApplication::GetRequiredInstanceExtensionNames() cons
 #if _WIN32
     requiredExtensionNames.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 #endif
-    requiredExtensionNames.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
     return requiredExtensionNames;
 }
@@ -564,6 +613,9 @@ Vector<const char8*> SampleApplication::GetRequiredInstanceExtensionNames() cons
 Husky::Vector<const Husky::char8*> SampleApplication::GetRequiredDeviceExtensionNames() const
 {
     Vector<const char8*> requiredExtensionNames;
+
+    requiredExtensionNames.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
     return requiredExtensionNames;
 }
 
