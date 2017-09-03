@@ -94,6 +94,8 @@ void SampleApplication::Initialize(const Vector<String>& args)
         // TODO
         return;
     }
+
+    surface = createdSurface;
 #endif
 
     auto queueIndices = ChooseDeviceQueues(physicalDevice, surface);
@@ -106,22 +108,54 @@ void SampleApplication::Initialize(const Vector<String>& args)
     }
 
     device = createdDevice;
-    queueInfo.graphicsQueue = device.getQueue(queueIndices.graphicsQueueFamilyIndex, 0);
-    queueInfo.presentQueue = device.getQueue(queueIndices.presentQueueFamilyIndex, 0);
-    queueInfo.computeQueue = device.getQueue(queueIndices.computeQueueFamilyIndex, 0);
-    queueInfo.indices = queueIndices;
+
+    queueInfo = CreateQueueInfo(device, std::move(queueIndices));
 
     auto createCommandPoolResult = CreateCommandPools(device, queueInfo, allocationCallbacks);
+    if (createCommandPoolResult.graphicsCommandPool.result != vk::Result::eSuccess
+     || createCommandPoolResult.presentCommandPool.result != vk::Result::eSuccess
+     || createCommandPoolResult.computeCommandPool.result != vk::Result::eSuccess)
+    {
+        // TODO
+        return;
+    }
 
+    graphicsCommandPool = createCommandPoolResult.graphicsCommandPool.value;
+    presentCommandPool = createCommandPoolResult.presentCommandPool.value;
+    computeCommandPool = createCommandPoolResult.computeCommandPool.value;
+    uniqueCommandPools = move(createCommandPoolResult.uniqueCommandPools);
+
+    SwapchainCreateInfo swapchainCreateInfo;
+    swapchainCreateInfo.format = vk::Format::eR8G8B8A8Unorm;
+    swapchainCreateInfo.width = width;
+    swapchainCreateInfo.height = height;
+    swapchainCreateInfo.presentMode = vk::PresentModeKHR::eFifo;
+    swapchainCreateInfo.imageCount = 3;
+    swapchainCreateInfo.colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
+
+    auto [createSwapchainResult, createdSwapchain] = CreateSwapchain(device, surface, queueInfo.indices, swapchainCreateInfo, allocationCallbacks);
+    if (createSwapchainResult != vk::Result::eSuccess)
+    {
+        // TODO
+        return;
+    }
+
+    swapchain = createdSwapchain;
 }
 
 void SampleApplication::Deinitialize()
 {
     device.waitIdle();
-    device.destroyCommandPool(graphicsCommandPool, allocationCallbacks);
-    device.destroyCommandPool(presentCommandPool, allocationCallbacks);
-    device.destroyCommandPool(computeCommandPool, allocationCallbacks);
+
+    device.destroySwapchainKHR(swapchain, allocationCallbacks);
+
+    for (auto& queue : uniqueCommandPools)
+    {
+        device.destroyCommandPool(queue, allocationCallbacks);
+    }
+
     device.destroy(allocationCallbacks);
+    DestroyDebugCallback(instance, debugCallback, allocationCallbacks);
     instance.destroy(allocationCallbacks);
 }
 
@@ -130,7 +164,7 @@ void SampleApplication::Run()
 
 }
 
-vk::ResultValue<vk::Instance> SampleApplication::CreateVulkanInstance(vk::AllocationCallbacks& allocationCallbacks)
+vk::ResultValue<vk::Instance> SampleApplication::CreateVulkanInstance(const vk::AllocationCallbacks& allocationCallbacks)
 {
     auto requiredExtensions = GetRequiredInstanceExtensionNames();
     auto validationLayers = GetValidationLayerNames();
@@ -154,7 +188,9 @@ vk::ResultValue<vk::Instance> SampleApplication::CreateVulkanInstance(vk::Alloca
     return vk::createInstance(ci, allocationCallbacks);
 }
 
-vk::ResultValue<vk::DebugReportCallbackEXT> SampleApplication::CreateDebugCallback(vk::Instance& instance, vk::AllocationCallbacks& allocationCallbacks)
+vk::ResultValue<vk::DebugReportCallbackEXT> SampleApplication::CreateDebugCallback(
+    vk::Instance& instance,
+    const vk::AllocationCallbacks& allocationCallbacks)
 {
     VkDebugReportCallbackCreateInfoEXT ci;
     ci.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
@@ -170,6 +206,16 @@ vk::ResultValue<vk::DebugReportCallbackEXT> SampleApplication::CreateDebugCallba
 
     vk::DebugReportCallbackEXT debugReportCallback{ callback };
     return { result, debugReportCallback };
+}
+
+void SampleApplication::DestroyDebugCallback(
+    vk::Instance& instance,
+    vk::DebugReportCallbackEXT& callback,
+    const vk::AllocationCallbacks& allocationCallbacks)
+{
+    const VkAllocationCallbacks& callbacks = allocationCallbacks;
+    PFN_vkDestroyDebugReportCallbackEXT procAddr = reinterpret_cast<PFN_vkDestroyDebugReportCallbackEXT>(instance.getProcAddr("vkDestroyDebugReportCallbackEXT"));
+    procAddr(instance, callback, &callbacks);
 }
 
 vk::PhysicalDevice SampleApplication::ChoosePhysicalDevice(const Husky::Vector<vk::PhysicalDevice>& devices)
@@ -245,7 +291,7 @@ vk::ResultValue<vk::SurfaceKHR> SampleApplication::CreateSurface(
     vk::Instance& instance,
     HINSTANCE hInstance,
     HWND hWnd,
-    vk::AllocationCallbacks& allocationCallbacks)
+    const vk::AllocationCallbacks& allocationCallbacks)
 {
     vk::Win32SurfaceCreateInfoKHR ci;
     ci.setHinstance(hInstance);
@@ -269,6 +315,7 @@ SampleApplication::QueueIndices SampleApplication::ChooseDeviceQueues(vk::Physic
     }
 
     QueueIndices indices;
+    UnorderedSet<int32> uniqueIndices;
 
     // Find compute queue
     for (uint32 i = 0; i < queueProperties.size(); i++)
@@ -278,6 +325,7 @@ SampleApplication::QueueIndices SampleApplication::ChooseDeviceQueues(vk::Physic
         if ((properties.queueFlags & vk::QueueFlagBits::eCompute) == vk::QueueFlagBits::eCompute)
         {
             indices.computeQueueFamilyIndex = i;
+            uniqueIndices.insert(i);
         }
     }
 
@@ -291,6 +339,7 @@ SampleApplication::QueueIndices SampleApplication::ChooseDeviceQueues(vk::Physic
         {
             indices.graphicsQueueFamilyIndex = i;
             indices.presentQueueFamilyIndex = i;
+            uniqueIndices.insert(i);
 
             foundGraphicsAndPresent = true;
             break;
@@ -307,14 +356,18 @@ SampleApplication::QueueIndices SampleApplication::ChooseDeviceQueues(vk::Physic
             if (supportsPresent[i])
             {
                 indices.presentQueueFamilyIndex = i;
+                uniqueIndices.insert(i);
             }
 
             if ((properties.queueFlags & vk::QueueFlagBits::eGraphics) == vk::QueueFlagBits::eGraphics)
             {
                 indices.graphicsQueueFamilyIndex = i;
+                uniqueIndices.insert(i);
             }
         }
     }
+
+    std::copy(uniqueIndices.begin(), uniqueIndices.end(), std::back_inserter(indices.uniqueIndices));
 
     return indices;
 }
@@ -322,7 +375,7 @@ SampleApplication::QueueIndices SampleApplication::ChooseDeviceQueues(vk::Physic
 vk::ResultValue<vk::Device> SampleApplication::CreateDevice(
     vk::PhysicalDevice & physicalDevice,
     const QueueIndices& queueIndices,
-    vk::AllocationCallbacks& allocationCallbacks)
+    const vk::AllocationCallbacks& allocationCallbacks)
 {
     static float32 queuePriorities[] = { 1.0 };
     auto requiredDeviceExtensionNames = GetRequiredDeviceExtensionNames();
@@ -382,10 +435,29 @@ vk::ResultValue<vk::Device> SampleApplication::CreateDevice(
     return physicalDevice.createDevice(ci, allocationCallbacks);
 }
 
+SampleApplication::QueueInfo SampleApplication::CreateQueueInfo(vk::Device & device, QueueIndices&& indices)
+{
+    QueueInfo queueInfo;
+
+    queueInfo.graphicsQueue = device.getQueue(indices.graphicsQueueFamilyIndex, 0);
+    queueInfo.presentQueue = device.getQueue(indices.presentQueueFamilyIndex, 0);
+    queueInfo.computeQueue = device.getQueue(indices.computeQueueFamilyIndex, 0);
+    queueInfo.indices = indices;
+
+    Set<vk::Queue> uniqueQueues;
+    uniqueQueues.insert(queueInfo.graphicsQueue);
+    uniqueQueues.insert(queueInfo.presentQueue);
+    uniqueQueues.insert(queueInfo.computeQueue);
+
+    std::copy(uniqueQueues.begin(), uniqueQueues.end(), std::back_inserter(queueInfo.uniqueQueues));
+    
+    return queueInfo;
+}
+
 SampleApplication::CommandPoolCreateResult SampleApplication::CreateCommandPools(
     vk::Device & device,
     const QueueInfo & info,
-    vk::AllocationCallbacks& allocationCallbacks)
+    const vk::AllocationCallbacks& allocationCallbacks)
 {
     auto& queueIndices = info.indices;
 
@@ -402,7 +474,7 @@ SampleApplication::CommandPoolCreateResult SampleApplication::CreateCommandPools
         && queueIndices.graphicsQueueFamilyIndex == queueIndices.presentQueueFamilyIndex)
     {
         auto result = device.createCommandPool(graphicsCi, allocationCallbacks);
-        return { result, result, result };
+        return { result, result, result, { result.value } };
     }
     else
     {
@@ -410,33 +482,81 @@ SampleApplication::CommandPoolCreateResult SampleApplication::CreateCommandPools
         {
             auto graphicsAndPresentPoolResult = device.createCommandPool(graphicsCi, allocationCallbacks);
             auto computePoolResult = device.createCommandPool(computeCi, allocationCallbacks);
-            return { graphicsAndPresentPoolResult, graphicsAndPresentPoolResult, computePoolResult };
+            return
+            {
+                graphicsAndPresentPoolResult, graphicsAndPresentPoolResult, computePoolResult,
+                { graphicsAndPresentPoolResult.value, computePoolResult.value }
+            };
         }
         else if (queueIndices.graphicsQueueFamilyIndex == queueIndices.computeQueueFamilyIndex)
         {
             auto graphicsAndComputePoolResult = device.createCommandPool(graphicsCi, allocationCallbacks);
             auto presentPoolResult = device.createCommandPool(computeCi, allocationCallbacks);
-            return { graphicsAndComputePoolResult, graphicsAndComputePoolResult, presentPoolResult };
+            return
+            {
+                graphicsAndComputePoolResult, graphicsAndComputePoolResult, presentPoolResult,
+                { graphicsAndComputePoolResult.value, presentPoolResult.value }
+            };
         }
         else
         {
             auto graphicstPoolResult = device.createCommandPool(graphicsCi, allocationCallbacks);
             auto presentPoolResult = device.createCommandPool(presentCi, allocationCallbacks);
             auto computePoolResult = device.createCommandPool(computeCi, allocationCallbacks);
-            return { graphicstPoolResult, presentPoolResult, computePoolResult };
+
+            return
+            {
+                graphicstPoolResult, presentPoolResult, computePoolResult,
+                { graphicstPoolResult.value, presentPoolResult.value, computePoolResult.value }
+            };
         }
     }
+}
+
+vk::ResultValue<vk::SwapchainKHR> SampleApplication::CreateSwapchain(
+    vk::Device& device,
+    vk::SurfaceKHR& surface,
+    const QueueIndices& queueIndices,
+    const SwapchainCreateInfo& swapchainCreateInfo,
+    const vk::AllocationCallbacks& callbacks)
+{
+    vk::SwapchainCreateInfoKHR ci;
+    ci.setImageColorSpace(swapchainCreateInfo.colorSpace);
+    ci.setImageFormat(swapchainCreateInfo.format);
+    ci.setMinImageCount(swapchainCreateInfo.imageCount);
+    ci.setPresentMode(swapchainCreateInfo.presentMode);
+    ci.setImageArrayLayers(1);
+    ci.setImageExtent({ static_cast<uint32>(swapchainCreateInfo.width), static_cast<uint32>(swapchainCreateInfo.height) });
+    ci.setSurface(surface);
+
+    if (queueIndices.presentQueueFamilyIndex == queueIndices.graphicsQueueFamilyIndex)
+    {
+        uint32 indices[] = { queueIndices.presentQueueFamilyIndex };
+        ci.setQueueFamilyIndexCount(1);
+        ci.setPQueueFamilyIndices(indices);
+        ci.setImageSharingMode(vk::SharingMode::eExclusive);
+    }
+    else
+    {
+        uint32 indices[] = { queueIndices.graphicsQueueFamilyIndex, queueIndices.presentQueueFamilyIndex };
+        ci.setQueueFamilyIndexCount(2);
+        ci.setPQueueFamilyIndices(indices);
+        ci.setImageSharingMode(vk::SharingMode::eConcurrent);
+    }
+
+    return device.createSwapchainKHR(ci, callbacks);
 }
 
 Vector<const char8*> SampleApplication::GetRequiredInstanceExtensionNames() const
 {
     Vector<const char8*> requiredExtensionNames;
 
+    requiredExtensionNames.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+    requiredExtensionNames.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
 #if _WIN32
     requiredExtensionNames.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 #endif
-
-    requiredExtensionNames.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+    requiredExtensionNames.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
     return requiredExtensionNames;
 }

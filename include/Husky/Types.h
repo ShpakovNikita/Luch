@@ -6,6 +6,8 @@
 #include <string_view>
 #include <vector>
 #include <optional>
+#include <set>
+#include <unordered_set>
 
 namespace Husky
 {
@@ -33,6 +35,12 @@ using Array = std::array<T, N>;
 
 template<typename T>
 using Vector = std::vector<T>;
+
+template<typename T>
+using Set = std::set<T>;
+
+template<typename T>
+using UnorderedSet = std::unordered_set<T>;
 
 template<typename T>
 using Limits = std::numeric_limits<T>;
