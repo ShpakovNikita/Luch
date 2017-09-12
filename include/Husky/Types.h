@@ -8,6 +8,7 @@
 #include <optional>
 #include <set>
 #include <unordered_set>
+#include <tuple>
 
 namespace Husky
 {
@@ -30,8 +31,8 @@ using StringView = std::string_view;
 
 using char8 = char;
 
-template<typename T, int N>
-using Array = std::array<T, N>;
+template<typename T, int32 Size>
+using Array = std::array<T, Size>;
 
 template<typename T>
 using Vector = std::vector<T>;
@@ -47,5 +48,8 @@ using Limits = std::numeric_limits<T>;
 
 template<typename T>
 using Optional = std::optional<T>;
+
+template<typename ... Args>
+using Tuple = std::tuple<Args...>;
 
 }

@@ -6,9 +6,13 @@
 
 #include <Husky/Assert.h>
 #include <Husky/Types.h>
+#include <Husky/ResultValue.h>
 
 namespace Husky::Vulkan
 {
+
+template<typename Value>
+using VulkanResultValue = ResultValue<vk::Result, Value>;
 
 class VulkanDebugDelegate
 {

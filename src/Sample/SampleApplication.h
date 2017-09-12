@@ -2,6 +2,9 @@
 
 #include <Husky/BaseApplication.h>
 #include <Husky/Vulkan.h>
+#include <Husky/Vulkan/PhysicalDevice.h>
+#include <Husky/Vulkan/Surface.h>
+#include <Husky/Vulkan/Device.h>
 #include "VulkanAllocator.h"
 
 #ifdef _WIN32
@@ -39,35 +42,6 @@ public:
         return windowTitle;
     }
 private:
-    // TODO init with uint32_max
-    struct QueueIndices
-    {
-        Husky::uint32 computeQueueFamilyIndex;
-        Husky::uint32 graphicsQueueFamilyIndex;
-        Husky::uint32 presentQueueFamilyIndex;
-
-        Husky::Vector<Husky::uint32> uniqueIndices;
-    };
-
-    struct QueueInfo
-    {
-        vk::Queue computeQueue;
-        vk::Queue graphicsQueue;
-        vk::Queue presentQueue;
-
-        QueueIndices indices;
-        Husky::Vector<vk::Queue> uniqueQueues;
-    };
-
-    struct SwapchainCreateInfo
-    {
-        Husky::int32 imageCount;
-        Husky::int32 width;
-        Husky::int32 height;
-        vk::Format format;
-        vk::ColorSpaceKHR colorSpace;
-        vk::PresentModeKHR presentMode;
-    };
 
     struct CommandPoolCreateResult
     {
@@ -93,21 +67,7 @@ private:
     ) override;
 
     std::tuple<HINSTANCE, HWND> CreateMainWindow(const Husky::String& title, Husky::int32 width, Husky::int32 height);
-    vk::ResultValue<vk::SurfaceKHR> CreateSurface(
-        vk::Instance& instance,
-        HINSTANCE hInstance,
-        HWND hWnd,
-        const vk::AllocationCallbacks& allocationCallbacks);
 #endif
-
-    QueueIndices ChooseDeviceQueues(vk::PhysicalDevice& physicalDevice, vk::SurfaceKHR& surface);
-
-    vk::ResultValue<vk::Device> CreateDevice(
-        vk::PhysicalDevice& physicalDevice,
-        const QueueIndices& queueIndices,
-        const vk::AllocationCallbacks& allocationCallbacks);
-
-    QueueInfo CreateQueueInfo(vk::Device& device, QueueIndices&& indices);
 
     CommandPoolCreateResult CreateCommandPools(
         vk::Device& device,
@@ -118,12 +78,26 @@ private:
         vk::PhysicalDevice& physicalDevice,
         vk::SurfaceKHR& surface);
 
-    vk::ResultValue<vk::SwapchainKHR> CreateSwapchain(
+    vk::ResultValue<vk::Image> CreateDepthStencilBufferForSwapchain(
         vk::Device& device,
-        vk::SurfaceKHR& surface,
-        const QueueIndices& queueIndices,
+        vk::Format format,
+        Husky::uint32 graphicsQueueFamilyIndex,
+        const vk::PhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties,
         const SwapchainCreateInfo& swapchainCreateInfo,
-        const vk::AllocationCallbacks& callbacks);
+        const vk::AllocationCallbacks& allocationCallbacks
+    );
+
+    vk::ResultValue<vk::ImageView> CreateDepthStencilBufferViewForSwapchain(
+        vk::Device& device,
+        vk::Format format,
+        vk::Image& depthStencilBuffer,
+        const vk::AllocationCallbacks& allocationCallbacks
+    );
+
+    Husky::int32 ChooseMemoryType(
+        const vk::PhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties,
+        Husky::uint32 memoryTypeBits,
+        vk::MemoryPropertyFlags memoryProperties);
 
     Husky::Vector<const Husky::char8*> GetRequiredInstanceExtensionNames() const;
     Husky::Vector<const Husky::char8*> GetRequiredDeviceExtensionNames() const;
@@ -143,16 +117,11 @@ private:
     vk::AllocationCallbacks allocationCallbacks;
     vk::Instance instance;
     vk::DebugReportCallbackEXT debugCallback;
-    vk::PhysicalDevice physicalDevice;
-    vk::Device device;
-    vk::SurfaceKHR surface;
-    QueueInfo queueInfo;
-    vk::CommandPool graphicsCommandPool;
-    vk::CommandPool presentCommandPool;
-    vk::CommandPool computeCommandPool;
-    Husky::Vector<vk::CommandPool> uniqueCommandPools;
-    vk::SwapchainKHR swapchain;
-    
+    Husky::Vulkan::PhysicalDevice physicalDevice;
+    Husky::Vulkan::Surface surface;
+    Husky::Vulkan::Device device;
+
+
 #if _WIN32
     HWND hWnd = nullptr;
     HINSTANCE hInstance = nullptr;

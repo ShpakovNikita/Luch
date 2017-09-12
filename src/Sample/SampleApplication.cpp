@@ -78,7 +78,7 @@ void SampleApplication::Initialize(const Vector<String>& args)
         return;
     }
 
-    physicalDevice = ChoosePhysicalDevice(physicalDevices);
+    physicalDevice = { ChoosePhysicalDevice(physicalDevices), allocationCallbacks };
 
 #if _WIN32
     std::tie(hInstance, hWnd) = CreateMainWindow(GetMainWindowTitle(), width, height);
@@ -89,28 +89,31 @@ void SampleApplication::Initialize(const Vector<String>& args)
         return;
     }
 
-    auto [createSurfaceResult, createdSurface] = CreateSurface(instance, hInstance, hWnd, allocationCallbacks);
+    auto [createSurfaceResult, createdSurface] = Surface::CreateWin32Surface(instance, hInstance, hWnd, allocationCallbacks);
     if (createSurfaceResult != vk::Result::eSuccess)
     {
         // TODO
         return;
     }
 
-    surface = createdSurface;
+    surface = std::move(createdSurface);
 #endif
 
-    auto queueIndices = ChooseDeviceQueues(physicalDevice, surface);
+    auto [chooseQueuesResult, queueIndices] = physicalDevice.ChooseDeviceQueues(&surface);
+    if (chooseQueuesResult != vk::Result::eSuccess)
+    {
+        // TODO
+        return;
+    }
 
-    auto [createDeviceResult, createdDevice] = CreateDevice(physicalDevice, queueIndices, allocationCallbacks);
+    auto [createDeviceResult, createdDevice] = physicalDevice.CreateDevice(std::move(queueIndices), GetRequiredDeviceExtensionNames());
     if (createDeviceResult != vk::Result::eSuccess)
     {
         // TODO
         return;
     }
 
-    device = createdDevice;
-
-    queueInfo = CreateQueueInfo(device, std::move(queueIndices));
+    device = std::move(createdDevice);
 
     auto createCommandPoolResult = CreateCommandPools(device, queueInfo, allocationCallbacks);
     if (createCommandPoolResult.graphicsCommandPool.result != vk::Result::eSuccess
@@ -124,31 +127,63 @@ void SampleApplication::Initialize(const Vector<String>& args)
     graphicsCommandPool = createCommandPoolResult.graphicsCommandPool.value;
     presentCommandPool = createCommandPoolResult.presentCommandPool.value;
     computeCommandPool = createCommandPoolResult.computeCommandPool.value;
-    uniqueCommandPools = move(createCommandPoolResult.uniqueCommandPools);
+    uniqueCommandPools = move(createCommandPoolResult.uniqueCommandPools)
 
-
-    auto [swapchainChooseCreateInfoResult, swapchainCreateInfo] = ChooseSwapchainCreateInfo(physicalDevice, surface);
+    auto [swapchainChooseCreateInfoResult, swapchainCreateInfo] = Swapchain::ChooseSwapchainCreateInfo(width, height, &physicalDevice, &surface);
     if (swapchainChooseCreateInfoResult != vk::Result::eSuccess)
     {
         // TODO
         return;
     }
 
-    auto [createSwapchainResult, createdSwapchain] = CreateSwapchain(device, surface, queueInfo.indices, swapchainCreateInfo, allocationCallbacks);
+    auto [createSwapchainResult, createdSwapchain] = device.CreateSwapchain(swapchainCreateInfo, &surface);
     if (createSwapchainResult != vk::Result::eSuccess)
     {
         // TODO
         return;
     }
 
-    swapchain = createdSwapchain;
+    depthStencilInfo.format = vk::Format::eD24UnormS8Uint;
+
+    auto [createDepthStencilBufferResult, createdDepthStencilBuffer] = CreateDepthStencilBufferForSwapchain(
+        device,
+        depthStencilInfo.format,
+        queueInfo.indices.graphicsQueueFamilyIndex,
+        physicalDeviceMemoryProperties,
+        swapchainInfo.createInfo,
+        allocationCallbacks);
+
+    if (createDepthStencilBufferResult != vk::Result::eSuccess)
+    {
+        device.destroyImage(createdDepthStencilBuffer, allocationCallbacks);
+        return;
+    }
+
+    depthStencilInfo.image = createdDepthStencilBuffer;
+
+    auto[createDepthStencilBufferViewResult, createdDepthStencilBufferView] = CreateDepthStencilBufferViewForSwapchain(
+        device,
+        depthStencilInfo.format,
+        createdDepthStencilBuffer,
+        allocationCallbacks
+    );
+
+    if (createDepthStencilBufferViewResult != vk::Result::eSuccess)
+    {
+        return;
+    }
+
+    depthStencilInfo.imageView = createdDepthStencilBufferView;
 }
 
 void SampleApplication::Deinitialize()
 {
-    device.waitIdle();
+    for (auto& imageView : swapchainInfo.imageViews)
+    {
+        device.destroyImageView(imageView, allocationCallbacks);
+    }
 
-    device.destroySwapchainKHR(swapchain, allocationCallbacks);
+    device.destroySwapchainKHR(swapchainInfo.swapchain, allocationCallbacks);
 
     for (auto& queue : uniqueCommandPools)
     {
@@ -290,172 +325,7 @@ std::tuple<HINSTANCE, HWND> SampleApplication::CreateMainWindow(const Husky::Str
     return { hInstance, window };
 }
 
-vk::ResultValue<vk::SurfaceKHR> SampleApplication::CreateSurface(
-    vk::Instance& instance,
-    HINSTANCE hInstance,
-    HWND hWnd,
-    const vk::AllocationCallbacks& allocationCallbacks)
-{
-    vk::Win32SurfaceCreateInfoKHR ci;
-    ci.setHinstance(hInstance);
-    ci.setHwnd(hWnd);
-    return instance.createWin32SurfaceKHR(ci, allocationCallbacks);
-}
-
 #endif
-
-SampleApplication::QueueIndices SampleApplication::ChooseDeviceQueues(vk::PhysicalDevice& physicalDevice, vk::SurfaceKHR& surface)
-{
-    static float32 priorities[] = { 1.0f };
-    auto queueProperties = physicalDevice.getQueueFamilyProperties();
-    Vector<VkBool32> supportsPresent;
-    supportsPresent.resize(queueProperties.size());
-
-    for (uint32 i = 0; i < queueProperties.size(); i++)
-    {
-        auto& properties = queueProperties[i];
-        vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &supportsPresent[i]);
-    }
-
-    QueueIndices indices;
-    UnorderedSet<int32> uniqueIndices;
-
-    // Find compute queue
-    for (uint32 i = 0; i < queueProperties.size(); i++)
-    {
-        auto& properties = queueProperties[i];
-
-        if ((properties.queueFlags & vk::QueueFlagBits::eCompute) == vk::QueueFlagBits::eCompute)
-        {
-            indices.computeQueueFamilyIndex = i;
-            uniqueIndices.insert(i);
-        }
-    }
-
-    // Try to find queue that support both graphics and present operation
-    bool foundGraphicsAndPresent = false;
-    for (uint32 i = 0; i < queueProperties.size(); i++)
-    {
-        auto& properties = queueProperties[i];
-
-        if(supportsPresent[i] && (properties.queueFlags & vk::QueueFlagBits::eGraphics) == vk::QueueFlagBits::eGraphics)
-        {
-            indices.graphicsQueueFamilyIndex = i;
-            indices.presentQueueFamilyIndex = i;
-            uniqueIndices.insert(i);
-
-            foundGraphicsAndPresent = true;
-            break;
-        }
-    }
-
-    // Find separate queues that support graphics and present operation
-    if (!foundGraphicsAndPresent)
-    {
-        for (uint32 i = 0; i < queueProperties.size(); i++)
-        {
-            auto& properties = queueProperties[i];
-            
-            if (supportsPresent[i])
-            {
-                indices.presentQueueFamilyIndex = i;
-                uniqueIndices.insert(i);
-            }
-
-            if ((properties.queueFlags & vk::QueueFlagBits::eGraphics) == vk::QueueFlagBits::eGraphics)
-            {
-                indices.graphicsQueueFamilyIndex = i;
-                uniqueIndices.insert(i);
-            }
-        }
-    }
-
-    std::copy(uniqueIndices.begin(), uniqueIndices.end(), std::back_inserter(indices.uniqueIndices));
-
-    return indices;
-}
-
-vk::ResultValue<vk::Device> SampleApplication::CreateDevice(
-    vk::PhysicalDevice & physicalDevice,
-    const QueueIndices& queueIndices,
-    const vk::AllocationCallbacks& allocationCallbacks)
-{
-    static float32 queuePriorities[] = { 1.0 };
-    auto requiredDeviceExtensionNames = GetRequiredDeviceExtensionNames();
-
-    vk::DeviceQueueCreateInfo graphicsCi;
-    graphicsCi.setQueueCount(1);
-    graphicsCi.setQueueFamilyIndex(queueIndices.graphicsQueueFamilyIndex);
-    graphicsCi.setPQueuePriorities(queuePriorities);
-
-    vk::DeviceQueueCreateInfo presentCi;
-    presentCi.setQueueCount(1);
-    presentCi.setQueueFamilyIndex(queueIndices.presentQueueFamilyIndex);
-    presentCi.setPQueuePriorities(queuePriorities);
-
-    vk::DeviceQueueCreateInfo computeCi;
-    computeCi.setQueueCount(1);
-    computeCi.setQueueFamilyIndex(queueIndices.computeQueueFamilyIndex);
-    computeCi.setPQueuePriorities(queuePriorities);
-
-    Vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
-    if (queueIndices.computeQueueFamilyIndex == queueIndices.graphicsQueueFamilyIndex
-     && queueIndices.graphicsQueueFamilyIndex == queueIndices.presentQueueFamilyIndex)
-    {
-        queueCreateInfos.reserve(1);
-        queueCreateInfos.push_back(graphicsCi);
-    }
-    else
-    {
-        if (queueIndices.graphicsQueueFamilyIndex == queueIndices.presentQueueFamilyIndex)
-        {
-            queueCreateInfos.reserve(2);
-            queueCreateInfos.push_back(graphicsCi);
-            queueCreateInfos.push_back(computeCi);
-        }
-        else if(queueIndices.graphicsQueueFamilyIndex == queueIndices.computeQueueFamilyIndex)
-        {
-            queueCreateInfos.reserve(2);
-            queueCreateInfos.push_back(graphicsCi);
-            queueCreateInfos.push_back(presentCi);
-        }
-        else
-        {
-            queueCreateInfos.reserve(3);
-            queueCreateInfos.push_back(graphicsCi);
-            queueCreateInfos.push_back(presentCi);
-            queueCreateInfos.push_back(computeCi);
-        }
-    }
-
-    vk::DeviceCreateInfo ci;
-    ci.setEnabledExtensionCount(requiredDeviceExtensionNames.size());
-    ci.setPpEnabledExtensionNames(requiredDeviceExtensionNames.data());
-    ci.setPpEnabledLayerNames(0); // device layers are deprecated
-    ci.setQueueCreateInfoCount(queueCreateInfos.size());
-    ci.setPQueueCreateInfos(queueCreateInfos.data());
-
-    return physicalDevice.createDevice(ci, allocationCallbacks);
-}
-
-SampleApplication::QueueInfo SampleApplication::CreateQueueInfo(vk::Device & device, QueueIndices&& indices)
-{
-    QueueInfo queueInfo;
-
-    queueInfo.graphicsQueue = device.getQueue(indices.graphicsQueueFamilyIndex, 0);
-    queueInfo.presentQueue = device.getQueue(indices.presentQueueFamilyIndex, 0);
-    queueInfo.computeQueue = device.getQueue(indices.computeQueueFamilyIndex, 0);
-    queueInfo.indices = indices;
-
-    Set<vk::Queue> uniqueQueues;
-    uniqueQueues.insert(queueInfo.graphicsQueue);
-    uniqueQueues.insert(queueInfo.presentQueue);
-    uniqueQueues.insert(queueInfo.computeQueue);
-
-    std::copy(uniqueQueues.begin(), uniqueQueues.end(), std::back_inserter(queueInfo.uniqueQueues));
-    
-    return queueInfo;
-}
 
 SampleApplication::CommandPoolCreateResult SampleApplication::CreateCommandPools(
     vk::Device & device,
@@ -516,7 +386,9 @@ SampleApplication::CommandPoolCreateResult SampleApplication::CreateCommandPools
     }
 }
 
-vk::ResultValue<SampleApplication::SwapchainCreateInfo> SampleApplication::ChooseSwapchainCreateInfo(vk::PhysicalDevice & physicalDevice, vk::SurfaceKHR & surface)
+vk::ResultValue<SampleApplication::SwapchainCreateInfo> SampleApplication::ChooseSwapchainCreateInfo(
+    vk::PhysicalDevice & physicalDevice,
+    vk::SurfaceKHR & surface)
 {
     using namespace Husky::Math;
 
@@ -562,39 +434,89 @@ vk::ResultValue<SampleApplication::SwapchainCreateInfo> SampleApplication::Choos
     return { vk::Result::eSuccess, swapchainCreateInfo };
 }
 
-vk::ResultValue<vk::SwapchainKHR> SampleApplication::CreateSwapchain(
+vk::ResultValue<vk::Image> SampleApplication::CreateDepthStencilBufferForSwapchain(
     vk::Device& device,
-    vk::SurfaceKHR& surface,
-    const QueueIndices& queueIndices,
+    vk::Format format,
+    uint32 graphicsQueueFamilyIndex,
+    const vk::PhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties,
     const SwapchainCreateInfo& swapchainCreateInfo,
-    const vk::AllocationCallbacks& callbacks)
+    const vk::AllocationCallbacks& allocationCallbacks)
 {
-    vk::SwapchainCreateInfoKHR ci;
-    ci.setImageColorSpace(swapchainCreateInfo.colorSpace);
-    ci.setImageFormat(swapchainCreateInfo.format);
-    ci.setMinImageCount(swapchainCreateInfo.imageCount);
-    ci.setPresentMode(swapchainCreateInfo.presentMode);
-    ci.setImageArrayLayers(1);
-    ci.setImageExtent({ static_cast<uint32>(swapchainCreateInfo.width), static_cast<uint32>(swapchainCreateInfo.height) });
-    ci.setSurface(surface);
-    ci.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc);
+    vk::ImageCreateInfo ci;
+    ci.setFormat(format);
+    ci.setArrayLayers(1);
+    ci.setImageType(vk::ImageType::e2D);
+    ci.setExtent({ swapchainCreateInfo.width, swapchainCreateInfo.height, 1 });
+    ci.setInitialLayout(vk::ImageLayout::eUndefined);
+    ci.setMipLevels(1);
+    ci.setQueueFamilyIndexCount(1);
+    ci.setPQueueFamilyIndices(&graphicsQueueFamilyIndex);
+    ci.setSamples(vk::SampleCountFlagBits::e1);
+    ci.setSharingMode(vk::SharingMode::eExclusive);
+    ci.setTiling(vk::ImageTiling::eOptimal);
+    ci.setUsage(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransferSrc);
 
-    if (queueIndices.presentQueueFamilyIndex == queueIndices.graphicsQueueFamilyIndex)
+    auto [createImageResult, createdImage] = device.createImage(ci, allocationCallbacks);
+    if (createImageResult != vk::Result::eSuccess)
     {
-        uint32 indices[] = { queueIndices.presentQueueFamilyIndex };
-        ci.setQueueFamilyIndexCount(1);
-        ci.setPQueueFamilyIndices(indices);
-        ci.setImageSharingMode(vk::SharingMode::eExclusive);
-    }
-    else
-    {
-        uint32 indices[] = { queueIndices.graphicsQueueFamilyIndex, queueIndices.presentQueueFamilyIndex };
-        ci.setQueueFamilyIndexCount(2);
-        ci.setPQueueFamilyIndices(indices);
-        ci.setImageSharingMode(vk::SharingMode::eConcurrent);
+        return { createImageResult, createdImage };
     }
 
-    return device.createSwapchainKHR(ci, callbacks);
+    auto memoryRequirements = device.getImageMemoryRequirements(createdImage);
+    auto memoryType = ChooseMemoryType(physicalDeviceMemoryProperties, memoryRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal);
+
+    vk::MemoryAllocateInfo memoryAllocInfo;
+    memoryAllocInfo.setAllocationSize(memoryRequirements.size);
+    memoryAllocInfo.setMemoryTypeIndex(memoryType);
+
+    auto [allocateResult, allocatedMemory] = device.allocateMemory(memoryAllocInfo);
+    if (allocateResult != vk::Result::eSuccess)
+    {
+        return { allocateResult, createdImage };
+    }
+
+    auto bindResult = device.bindImageMemory(createdImage, allocatedMemory, 0);
+    if (bindResult != vk::Result::eSuccess)
+    {
+        return { bindResult, createdImage };
+    }
+
+    return { vk::Result::eSuccess, createdImage };
+}
+
+vk::ResultValue<vk::ImageView> SampleApplication::CreateDepthStencilBufferViewForSwapchain(
+    vk::Device& device,
+    vk::Format format,
+    vk::Image& depthStencilBuffer,
+    const vk::AllocationCallbacks& allocationCallbacks)
+{
+    vk::ImageSubresourceRange subresourceRange;
+    subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eDepth);
+    subresourceRange.setLayerCount(1);
+    subresourceRange.setLevelCount(1);
+
+    vk::ImageViewCreateInfo ci;
+    ci.setImage(depthStencilBuffer);
+    ci.setFormat(format);
+    ci.setViewType(vk::ImageViewType::e2D);
+    ci.setSubresourceRange(subresourceRange);
+
+    return device.createImageView(ci, allocationCallbacks);
+}
+
+Husky::int32 SampleApplication::ChooseMemoryType(
+    const vk::PhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties,
+    uint32 memoryTypeBits,
+    vk::MemoryPropertyFlags memoryProperties)
+{
+    for (int32 i = 0; i < physicalDeviceMemoryProperties.memoryTypeCount; i++)
+    {
+        if ((memoryTypeBits & (1 << i)) &&
+            ((physicalDeviceMemoryProperties.memoryTypes[i].propertyFlags & memoryProperties) == memoryProperties))
+            return i;
+    }
+
+    return -1;
 }
 
 Vector<const char8*> SampleApplication::GetRequiredInstanceExtensionNames() const
