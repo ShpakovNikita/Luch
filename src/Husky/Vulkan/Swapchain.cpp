@@ -1,5 +1,6 @@
 #include <Husky/Vulkan/Swapchain.h>
 #include <Husky/Math/Math.h>
+#include <Husky/Vulkan/Device.h>
 #include <Husky/Vulkan/PhysicalDevice.h>
 #include <Husky/Vulkan/Surface.h>
 
@@ -9,7 +10,7 @@ namespace Husky::Vulkan
     {
         if (device)
         {
-            device->GetDevice().destroySwapchainKHR(swapchain, device->GetAllocationCallbacks());
+            device->DestroySwapchain(this);
         }
     }
 

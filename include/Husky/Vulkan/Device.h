@@ -3,6 +3,7 @@
 #include <Husky/Vulkan.h>
 #include <Husky/Vulkan/QueueInfo.h>
 #include <Husky/Vulkan/Swapchain.h>
+#include <Husky/Vulkan/CommandPool.h>
 
 namespace Husky::Vulkan
 {
@@ -11,7 +12,9 @@ namespace Husky::Vulkan
 
     class Device
     {
-        friend PhysicalDevice;
+        friend class PhysicalDevice;
+        friend class Swapchain;
+        friend class CommandPool;
     public:
         Device() = default;
 
@@ -33,12 +36,21 @@ namespace Husky::Vulkan
         VulkanResultValue<Swapchain> CreateSwapchain(
             const SwapchainCreateInfo& swapchainCreateInfo,
             Surface* surface);
+
+        VulkanResultValue<CommandPool> CreateCommandPool(QueueIndex queueIndex, bool transient = false, bool canReset = false);
     private:
-        Device(PhysicalDevice* aPhysicalDevice, vk::Device aDevice, QueueInfo&& queueInfo, vk::AllocationCallbacks aAllocationCallbacks);
+        void DestroySwapchain(Swapchain* swapchain);
+        void DestroyCommandPool(CommandPool* commandPool);
+
+        Device(
+            PhysicalDevice* physicalDevice,
+            vk::Device device,
+            QueueInfo&& queueInfo,
+            vk::AllocationCallbacks allocationCallbacks);
 
         vk::AllocationCallbacks allocationCallbacks;
         QueueInfo queueInfo;
-        PhysicalDevice* physicalDevice;
+        PhysicalDevice* physicalDevice = nullptr;
         vk::Device device;
     };
 

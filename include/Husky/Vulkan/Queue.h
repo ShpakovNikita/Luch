@@ -6,7 +6,7 @@ namespace Husky::Vulkan
 {
     class Device;
     class PhysicalDevice;
-    class QueueInfo;
+    struct QueueInfo;
 
     class Queue
     {

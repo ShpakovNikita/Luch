@@ -3,7 +3,7 @@
 
 namespace Husky::Vulkan
 {
-    inline PhysicalDevice::PhysicalDevice(vk::PhysicalDevice aPhysicalDevice, vk::AllocationCallbacks aAllocationCallbacks)
+    PhysicalDevice::PhysicalDevice(vk::PhysicalDevice aPhysicalDevice, vk::AllocationCallbacks aAllocationCallbacks)
         : physicalDevice(aPhysicalDevice)
         , allocationCallbacks(aAllocationCallbacks)
         , physicalDeviceMemoryProperties(aPhysicalDevice.getMemoryProperties())
@@ -32,7 +32,7 @@ namespace Husky::Vulkan
         }
 
         QueueIndices indices;
-        UnorderedSet<int32> uniqueIndices;
+        UnorderedSet<QueueIndex> uniqueIndices;
 
         // Find compute queue
         for (uint32 i = 0; i < queueProperties.size(); i++)

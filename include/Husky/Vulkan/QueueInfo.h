@@ -8,13 +8,15 @@ namespace Husky::Vulkan
 {
     class Surface;
 
+    using QueueIndex = Husky::uint32;
+
     struct QueueIndices
     {
-        Husky::uint32 computeQueueFamilyIndex = Husky::Limits<Husky::uint32>::max();
-        Husky::uint32 graphicsQueueFamilyIndex = Husky::Limits<Husky::uint32>::max();
-        Husky::uint32 presentQueueFamilyIndex = Husky::Limits<Husky::uint32>::max();
+        QueueIndex computeQueueFamilyIndex = Husky::Limits<QueueIndex>::max();
+        QueueIndex graphicsQueueFamilyIndex = Husky::Limits<QueueIndex>::max();
+        QueueIndex presentQueueFamilyIndex = Husky::Limits<QueueIndex>::max();
 
-        Husky::Vector<Husky::uint32> uniqueIndices;
+        Husky::Vector<QueueIndex> uniqueIndices;
     };
 
     struct QueueInfo

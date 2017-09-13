@@ -3,7 +3,15 @@
 
 namespace Husky::Vulkan
 {
-    inline Device::Device(Device && other)
+    Device::Device(PhysicalDevice* aPhysicalDevice, vk::Device aDevice, QueueInfo&& aQueueInfo, vk::AllocationCallbacks aAllocationCallbacks)
+        : allocationCallbacks(aAllocationCallbacks)
+        , queueInfo(std::move(aQueueInfo))
+        , physicalDevice(aPhysicalDevice)
+        , device(aDevice)
+    {
+    }
+
+    Device::Device(Device && other)
         : physicalDevice(other.physicalDevice)
         , device(other.device)
         , allocationCallbacks(other.allocationCallbacks)
@@ -106,8 +114,7 @@ namespace Husky::Vulkan
                 swapchainImages[i] = { image, imageView };
             }
             
-            auto swapchain = Swapchain{this, vulkanSwapchain, swapchainCreateInfo, swapchainImageCount, swapchainImages };
-            return { result, std::move(swapchain) };
+            return { result, Swapchain{ this, vulkanSwapchain, swapchainCreateInfo, swapchainImageCount, swapchainImages } };
         }
         else
         {
@@ -116,11 +123,42 @@ namespace Husky::Vulkan
         }
     }
 
-    Device::Device(PhysicalDevice* aPhysicalDevice, vk::Device aDevice, QueueInfo&& aQueueInfo, vk::AllocationCallbacks aAllocationCallbacks)
-        : allocationCallbacks(aAllocationCallbacks)
-        , queueInfo(std::move(aQueueInfo))
-        , physicalDevice(aPhysicalDevice)
-        , device(aDevice)
+    VulkanResultValue<CommandPool> Device::CreateCommandPool(QueueIndex queueIndex, bool transient, bool canReset)
     {
+        vk::CommandPoolCreateInfo ci;
+
+        if (transient)
+        {
+            ci.flags |= vk::CommandPoolCreateFlagBits::eTransient;
+        }
+
+        if (canReset)
+        {
+            ci.flags |= vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
+        }
+
+        ci.setQueueFamilyIndex(queueIndex);
+        
+        auto [result, vulkanCommandPool] = device.createCommandPool(ci, allocationCallbacks);
+
+        if (result != vk::Result::eSuccess)
+        {
+            device.destroyCommandPool(vulkanCommandPool, allocationCallbacks);
+            return { result };
+        }
+        else
+        {
+            return { result, CommandPool{ this, vulkanCommandPool } };
+        }
+    }
+
+    void Device::DestroySwapchain(Swapchain * swapchain)
+    {
+        device.destroySwapchainKHR(swapchain->swapchain, allocationCallbacks);
+    }
+
+    void Device::DestroyCommandPool(CommandPool * commandPool)
+    {
+        device.destroyCommandPool(commandPool->commandPool, allocationCallbacks);
     }
 }

@@ -2,9 +2,11 @@
 
 #include <Husky/BaseApplication.h>
 #include <Husky/Vulkan.h>
+#include <Husky/Vulkan/CommandPool.h>
+#include <Husky/Vulkan/Device.h>
+#include <Husky/Vulkan/Swapchain.h>
 #include <Husky/Vulkan/PhysicalDevice.h>
 #include <Husky/Vulkan/Surface.h>
-#include <Husky/Vulkan/Device.h>
 #include "VulkanAllocator.h"
 
 #ifdef _WIN32
@@ -69,21 +71,12 @@ private:
     std::tuple<HINSTANCE, HWND> CreateMainWindow(const Husky::String& title, Husky::int32 width, Husky::int32 height);
 #endif
 
-    CommandPoolCreateResult CreateCommandPools(
-        vk::Device& device,
-        const QueueInfo& info,
-        const vk::AllocationCallbacks& allocationCallbacks);
-
-    vk::ResultValue<SampleApplication::SwapchainCreateInfo> ChooseSwapchainCreateInfo(
-        vk::PhysicalDevice& physicalDevice,
-        vk::SurfaceKHR& surface);
-
     vk::ResultValue<vk::Image> CreateDepthStencilBufferForSwapchain(
         vk::Device& device,
         vk::Format format,
         Husky::uint32 graphicsQueueFamilyIndex,
         const vk::PhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties,
-        const SwapchainCreateInfo& swapchainCreateInfo,
+        const Husky::Vulkan::SwapchainCreateInfo& swapchainCreateInfo,
         const vk::AllocationCallbacks& allocationCallbacks
     );
 
@@ -120,6 +113,10 @@ private:
     Husky::Vulkan::PhysicalDevice physicalDevice;
     Husky::Vulkan::Surface surface;
     Husky::Vulkan::Device device;
+    Husky::Vulkan::Swapchain swapchain;
+    Husky::Vulkan::CommandPool graphicsCommandPool;
+    Husky::Vulkan::CommandPool presentCommandPool;
+    Husky::Vulkan::CommandPool computeCommandPool;
 
 
 #if _WIN32

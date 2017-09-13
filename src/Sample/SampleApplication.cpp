@@ -115,19 +115,32 @@ void SampleApplication::Initialize(const Vector<String>& args)
 
     device = std::move(createdDevice);
 
-    auto createCommandPoolResult = CreateCommandPools(device, queueInfo, allocationCallbacks);
-    if (createCommandPoolResult.graphicsCommandPool.result != vk::Result::eSuccess
-     || createCommandPoolResult.presentCommandPool.result != vk::Result::eSuccess
-     || createCommandPoolResult.computeCommandPool.result != vk::Result::eSuccess)
+    auto& indices = device.GetQueueIndices();
+
+    auto [createdGraphicsCommandPoolResult, createdGraphicsCommandPool] = device.CreateCommandPool(indices.graphicsQueueFamilyIndex, false, false);
+    if (createdGraphicsCommandPoolResult != vk::Result::eSuccess)
     {
         // TODO
         return;
     }
 
-    graphicsCommandPool = createCommandPoolResult.graphicsCommandPool.value;
-    presentCommandPool = createCommandPoolResult.presentCommandPool.value;
-    computeCommandPool = createCommandPoolResult.computeCommandPool.value;
-    uniqueCommandPools = move(createCommandPoolResult.uniqueCommandPools)
+    auto[createdPresentCommandPoolResult, createdPresentCommandPool] = device.CreateCommandPool(indices.presentQueueFamilyIndex, true, false);
+    if (createdPresentCommandPoolResult != vk::Result::eSuccess)
+    {
+        // TODO
+        return;
+    }
+
+    auto[createdComputeCommandPoolResult, createdComputeCommandPool] = device.CreateCommandPool(indices.computeQueueFamilyIndex, false, true);
+    if (createdComputeCommandPoolResult != vk::Result::eSuccess)
+    {
+        // TODO
+        return;
+    }
+
+    graphicsCommandPool = std::move(createdGraphicsCommandPool);
+    presentCommandPool = std::move(createdPresentCommandPool);
+    computeCommandPool = std::move(createdComputeCommandPool);
 
     auto [swapchainChooseCreateInfoResult, swapchainCreateInfo] = Swapchain::ChooseSwapchainCreateInfo(width, height, &physicalDevice, &surface);
     if (swapchainChooseCreateInfoResult != vk::Result::eSuccess)
@@ -142,55 +155,10 @@ void SampleApplication::Initialize(const Vector<String>& args)
         // TODO
         return;
     }
-
-    depthStencilInfo.format = vk::Format::eD24UnormS8Uint;
-
-    auto [createDepthStencilBufferResult, createdDepthStencilBuffer] = CreateDepthStencilBufferForSwapchain(
-        device,
-        depthStencilInfo.format,
-        queueInfo.indices.graphicsQueueFamilyIndex,
-        physicalDeviceMemoryProperties,
-        swapchainInfo.createInfo,
-        allocationCallbacks);
-
-    if (createDepthStencilBufferResult != vk::Result::eSuccess)
-    {
-        device.destroyImage(createdDepthStencilBuffer, allocationCallbacks);
-        return;
-    }
-
-    depthStencilInfo.image = createdDepthStencilBuffer;
-
-    auto[createDepthStencilBufferViewResult, createdDepthStencilBufferView] = CreateDepthStencilBufferViewForSwapchain(
-        device,
-        depthStencilInfo.format,
-        createdDepthStencilBuffer,
-        allocationCallbacks
-    );
-
-    if (createDepthStencilBufferViewResult != vk::Result::eSuccess)
-    {
-        return;
-    }
-
-    depthStencilInfo.imageView = createdDepthStencilBufferView;
 }
 
 void SampleApplication::Deinitialize()
 {
-    for (auto& imageView : swapchainInfo.imageViews)
-    {
-        device.destroyImageView(imageView, allocationCallbacks);
-    }
-
-    device.destroySwapchainKHR(swapchainInfo.swapchain, allocationCallbacks);
-
-    for (auto& queue : uniqueCommandPools)
-    {
-        device.destroyCommandPool(queue, allocationCallbacks);
-    }
-
-    device.destroy(allocationCallbacks);
     DestroyDebugCallback(instance, debugCallback, allocationCallbacks);
     instance.destroy(allocationCallbacks);
 }
@@ -327,162 +295,55 @@ std::tuple<HINSTANCE, HWND> SampleApplication::CreateMainWindow(const Husky::Str
 
 #endif
 
-SampleApplication::CommandPoolCreateResult SampleApplication::CreateCommandPools(
-    vk::Device & device,
-    const QueueInfo & info,
-    const vk::AllocationCallbacks& allocationCallbacks)
-{
-    auto& queueIndices = info.indices;
-
-    vk::CommandPoolCreateInfo graphicsCi;
-    graphicsCi.setQueueFamilyIndex(queueIndices.graphicsQueueFamilyIndex);
-
-    vk::CommandPoolCreateInfo presentCi;
-    presentCi.setQueueFamilyIndex(queueIndices.presentQueueFamilyIndex);
-
-    vk::CommandPoolCreateInfo computeCi;
-    computeCi.setQueueFamilyIndex(queueIndices.computeQueueFamilyIndex);
-
-    if (queueIndices.computeQueueFamilyIndex == queueIndices.graphicsQueueFamilyIndex
-        && queueIndices.graphicsQueueFamilyIndex == queueIndices.presentQueueFamilyIndex)
-    {
-        auto result = device.createCommandPool(graphicsCi, allocationCallbacks);
-        return { result, result, result, { result.value } };
-    }
-    else
-    {
-        if (queueIndices.graphicsQueueFamilyIndex == queueIndices.presentQueueFamilyIndex)
-        {
-            auto graphicsAndPresentPoolResult = device.createCommandPool(graphicsCi, allocationCallbacks);
-            auto computePoolResult = device.createCommandPool(computeCi, allocationCallbacks);
-            return
-            {
-                graphicsAndPresentPoolResult, graphicsAndPresentPoolResult, computePoolResult,
-                { graphicsAndPresentPoolResult.value, computePoolResult.value }
-            };
-        }
-        else if (queueIndices.graphicsQueueFamilyIndex == queueIndices.computeQueueFamilyIndex)
-        {
-            auto graphicsAndComputePoolResult = device.createCommandPool(graphicsCi, allocationCallbacks);
-            auto presentPoolResult = device.createCommandPool(computeCi, allocationCallbacks);
-            return
-            {
-                graphicsAndComputePoolResult, graphicsAndComputePoolResult, presentPoolResult,
-                { graphicsAndComputePoolResult.value, presentPoolResult.value }
-            };
-        }
-        else
-        {
-            auto graphicstPoolResult = device.createCommandPool(graphicsCi, allocationCallbacks);
-            auto presentPoolResult = device.createCommandPool(presentCi, allocationCallbacks);
-            auto computePoolResult = device.createCommandPool(computeCi, allocationCallbacks);
-
-            return
-            {
-                graphicstPoolResult, presentPoolResult, computePoolResult,
-                { graphicstPoolResult.value, presentPoolResult.value, computePoolResult.value }
-            };
-        }
-    }
-}
-
-vk::ResultValue<SampleApplication::SwapchainCreateInfo> SampleApplication::ChooseSwapchainCreateInfo(
-    vk::PhysicalDevice & physicalDevice,
-    vk::SurfaceKHR & surface)
-{
-    using namespace Husky::Math;
-
-    SwapchainCreateInfo swapchainCreateInfo;
-
-    auto[getSurfaceCapabilitiesResult, surfaceCapabilities] = physicalDevice.getSurfaceCapabilitiesKHR(surface);
-    if (getSurfaceCapabilitiesResult != vk::Result::eSuccess)
-    {
-        return { getSurfaceCapabilitiesResult, swapchainCreateInfo };
-    }
-
-    auto[getSurfaceFormatsResult, surfaceFormats] = physicalDevice.getSurfaceFormatsKHR(surface);
-    if (getSurfaceCapabilitiesResult != vk::Result::eSuccess)
-    {
-        return { getSurfaceFormatsResult, swapchainCreateInfo };
-    }
-
-    if (surfaceFormats.size() == 1 && surfaceFormats[0].format == vk::Format::eUndefined)
-    {
-        swapchainCreateInfo.format = vk::Format::eR8G8B8A8Unorm;
-        swapchainCreateInfo.colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
-    }
-    else
-    {
-        swapchainCreateInfo.format = surfaceFormats[0].format;
-        swapchainCreateInfo.colorSpace = surfaceFormats[0].colorSpace;
-    }
-
-    if (surfaceCapabilities.currentExtent.width == Limits<uint32>::max())
-    {
-        swapchainCreateInfo.width = Clamp(static_cast<uint32>(width), surfaceCapabilities.minImageExtent.width, surfaceCapabilities.maxImageExtent.width);
-        swapchainCreateInfo.height = Clamp(static_cast<uint32>(height), surfaceCapabilities.minImageExtent.height, surfaceCapabilities.maxImageExtent.height);
-    }
-    else
-    {
-        swapchainCreateInfo.width = surfaceCapabilities.currentExtent.width;
-        swapchainCreateInfo.height = surfaceCapabilities.currentExtent.height;
-    }
-
-    swapchainCreateInfo.presentMode = vk::PresentModeKHR::eFifo;
-    swapchainCreateInfo.imageCount = std::min(3u, surfaceCapabilities.maxImageCount);
-
-    return { vk::Result::eSuccess, swapchainCreateInfo };
-}
-
-vk::ResultValue<vk::Image> SampleApplication::CreateDepthStencilBufferForSwapchain(
-    vk::Device& device,
-    vk::Format format,
-    uint32 graphicsQueueFamilyIndex,
-    const vk::PhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties,
-    const SwapchainCreateInfo& swapchainCreateInfo,
-    const vk::AllocationCallbacks& allocationCallbacks)
-{
-    vk::ImageCreateInfo ci;
-    ci.setFormat(format);
-    ci.setArrayLayers(1);
-    ci.setImageType(vk::ImageType::e2D);
-    ci.setExtent({ swapchainCreateInfo.width, swapchainCreateInfo.height, 1 });
-    ci.setInitialLayout(vk::ImageLayout::eUndefined);
-    ci.setMipLevels(1);
-    ci.setQueueFamilyIndexCount(1);
-    ci.setPQueueFamilyIndices(&graphicsQueueFamilyIndex);
-    ci.setSamples(vk::SampleCountFlagBits::e1);
-    ci.setSharingMode(vk::SharingMode::eExclusive);
-    ci.setTiling(vk::ImageTiling::eOptimal);
-    ci.setUsage(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransferSrc);
-
-    auto [createImageResult, createdImage] = device.createImage(ci, allocationCallbacks);
-    if (createImageResult != vk::Result::eSuccess)
-    {
-        return { createImageResult, createdImage };
-    }
-
-    auto memoryRequirements = device.getImageMemoryRequirements(createdImage);
-    auto memoryType = ChooseMemoryType(physicalDeviceMemoryProperties, memoryRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal);
-
-    vk::MemoryAllocateInfo memoryAllocInfo;
-    memoryAllocInfo.setAllocationSize(memoryRequirements.size);
-    memoryAllocInfo.setMemoryTypeIndex(memoryType);
-
-    auto [allocateResult, allocatedMemory] = device.allocateMemory(memoryAllocInfo);
-    if (allocateResult != vk::Result::eSuccess)
-    {
-        return { allocateResult, createdImage };
-    }
-
-    auto bindResult = device.bindImageMemory(createdImage, allocatedMemory, 0);
-    if (bindResult != vk::Result::eSuccess)
-    {
-        return { bindResult, createdImage };
-    }
-
-    return { vk::Result::eSuccess, createdImage };
-}
+//vk::ResultValue<vk::Image> SampleApplication::CreateDepthStencilBufferForSwapchain(
+//    vk::Device& device,
+//    vk::Format format,
+//    uint32 graphicsQueueFamilyIndex,
+//    const vk::PhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties,
+//    const SwapchainCreateInfo& swapchainCreateInfo,
+//    const vk::AllocationCallbacks& allocationCallbacks)
+//{
+//    vk::ImageCreateInfo ci;
+//    ci.setFormat(format);
+//    ci.setArrayLayers(1);
+//    ci.setImageType(vk::ImageType::e2D);
+//    ci.setExtent({ swapchainCreateInfo.width, swapchainCreateInfo.height, 1 });
+//    ci.setInitialLayout(vk::ImageLayout::eUndefined);
+//    ci.setMipLevels(1);
+//    ci.setQueueFamilyIndexCount(1);
+//    ci.setPQueueFamilyIndices(&graphicsQueueFamilyIndex);
+//    ci.setSamples(vk::SampleCountFlagBits::e1);
+//    ci.setSharingMode(vk::SharingMode::eExclusive);
+//    ci.setTiling(vk::ImageTiling::eOptimal);
+//    ci.setUsage(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransferSrc);
+//
+//    auto [createImageResult, createdImage] = device.createImage(ci, allocationCallbacks);
+//    if (createImageResult != vk::Result::eSuccess)
+//    {
+//        return { createImageResult, createdImage };
+//    }
+//
+//    auto memoryRequirements = device.getImageMemoryRequirements(createdImage);
+//    auto memoryType = ChooseMemoryType(physicalDeviceMemoryProperties, memoryRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal);
+//
+//    vk::MemoryAllocateInfo memoryAllocInfo;
+//    memoryAllocInfo.setAllocationSize(memoryRequirements.size);
+//    memoryAllocInfo.setMemoryTypeIndex(memoryType);
+//
+//    auto [allocateResult, allocatedMemory] = device.allocateMemory(memoryAllocInfo);
+//    if (allocateResult != vk::Result::eSuccess)
+//    {
+//        return { allocateResult, createdImage };
+//    }
+//
+//    auto bindResult = device.bindImageMemory(createdImage, allocatedMemory, 0);
+//    if (bindResult != vk::Result::eSuccess)
+//    {
+//        return { bindResult, createdImage };
+//    }
+//
+//    return { vk::Result::eSuccess, createdImage };
+//}
 
 vk::ResultValue<vk::ImageView> SampleApplication::CreateDepthStencilBufferViewForSwapchain(
     vk::Device& device,
@@ -509,7 +370,7 @@ Husky::int32 SampleApplication::ChooseMemoryType(
     uint32 memoryTypeBits,
     vk::MemoryPropertyFlags memoryProperties)
 {
-    for (int32 i = 0; i < physicalDeviceMemoryProperties.memoryTypeCount; i++)
+    for (int32 i = 0; i < (int32)physicalDeviceMemoryProperties.memoryTypeCount; i++)
     {
         if ((memoryTypeBits & (1 << i)) &&
             ((physicalDeviceMemoryProperties.memoryTypes[i].propertyFlags & memoryProperties) == memoryProperties))
