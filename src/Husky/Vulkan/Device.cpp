@@ -1,4 +1,5 @@
 #include <Husky/Vulkan/Device.h>
+#include <Husky/Vulkan/PhysicalDevice.h>
 #include <Husky/Vulkan/Surface.h>
 
 namespace Husky::Vulkan
@@ -46,6 +47,21 @@ namespace Husky::Vulkan
     vk::Result Device::WaitIdle()
     {
         return device.waitIdle();
+    }
+
+    int32 Device::ChooseMemoryType(Husky::uint32 memoryTypeBits, vk::MemoryPropertyFlags memoryProperties)
+    {
+        auto& physicalDeviceMemoryProperties = physicalDevice->GetPhysicalDeviceMemoryProperties();
+
+        for (int32 i = 0; i < (int32)physicalDeviceMemoryProperties.memoryTypeCount; i++)
+        {
+            if ((memoryTypeBits & (1 << i)) && ((physicalDeviceMemoryProperties.memoryTypes[i].propertyFlags & memoryProperties) == memoryProperties))
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     VulkanResultValue<Swapchain> Device::CreateSwapchain(const SwapchainCreateInfo & swapchainCreateInfo, Surface * surface)
@@ -123,6 +139,34 @@ namespace Husky::Vulkan
         }
     }
 
+    VulkanResultValue<vk::DeviceMemory> Device::AllocateMemory(
+        int64 size,
+        vk::MemoryRequirements memoryRequirements,
+        vk::MemoryPropertyFlags memoryPropertyFlags)
+    {
+        auto memoryTypeIndex = ChooseMemoryType(memoryRequirements.memoryTypeBits, memoryPropertyFlags);
+        if (memoryTypeIndex < 0)
+        {
+            // TODO figure out better error for this or just make an assert
+            return { vk::Result::eErrorOutOfDeviceMemory };
+        }
+
+        vk::MemoryAllocateInfo allocateInfo;
+        allocateInfo.setAllocationSize(size);
+        allocateInfo.setMemoryTypeIndex(memoryTypeIndex);
+
+        auto [result, vulkanMemory] = device.allocateMemory(allocateInfo, allocationCallbacks);
+        if (result != vk::Result::eSuccess)
+        {
+            return { result, vulkanMemory };
+        }
+        else
+        {
+            device.freeMemory(vulkanMemory, allocationCallbacks);
+            return { result };
+        }
+    }
+
     VulkanResultValue<CommandPool> Device::CreateCommandPool(QueueIndex queueIndex, bool transient, bool canReset)
     {
         vk::CommandPoolCreateInfo ci;
@@ -150,6 +194,41 @@ namespace Husky::Vulkan
         {
             return { result, CommandPool{ this, vulkanCommandPool } };
         }
+    }
+
+    VulkanResultValue<Buffer> Device::CreateBuffer(int64 size, QueueIndex queueIndex, vk::BufferUsageFlags usage)
+    {
+        vk::BufferCreateInfo ci;
+        ci.setPQueueFamilyIndices(&queueIndex);
+        ci.setQueueFamilyIndexCount(1);
+        ci.setSharingMode(vk::SharingMode::eExclusive);
+        ci.setSize(size);
+        ci.setUsage(usage);
+
+        auto [createBufferResult, vulkanBuffer] = device.createBuffer(ci, allocationCallbacks);
+        if (createBufferResult != vk::Result::eSuccess)
+        {
+            device.destroyBuffer(vulkanBuffer, allocationCallbacks);
+            return { createBufferResult };
+        }
+        
+        auto memoryRequirements = device.getBufferMemoryRequirements(vulkanBuffer);
+
+        auto [allocateMemoryResult, vulkanMemory] = AllocateMemory(size, memoryRequirements, vk::MemoryPropertyFlagBits::eHostVisible);
+        if (allocateMemoryResult != vk::Result::eSuccess)
+        {
+            device.destroyBuffer(vulkanBuffer, allocationCallbacks);
+            return { allocateMemoryResult };
+        }
+
+        auto bindResult = device.bindBufferMemory(vulkanBuffer, vulkanMemory, 0);
+        if (bindResult != vk::Result::eSuccess)
+        {
+            device.destroyBuffer(vulkanBuffer, allocationCallbacks);
+            return { bindResult };
+        }
+
+        return { createBufferResult, Buffer{this, vulkanBuffer, ci} };
     }
 
     void Device::DestroySwapchain(Swapchain * swapchain)

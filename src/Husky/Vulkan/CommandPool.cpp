@@ -3,16 +3,15 @@
 
 namespace Husky::Vulkan
 {
-    Husky::Vulkan::CommandPool::~CommandPool()
+    CommandPool::~CommandPool()
     {
         if (device)
         {
-            // TODO I don't like this approach. Device created command pool and it should be delegated destroying it.
-            device->GetDevice().destroyCommandPool(commandPool, device->GetAllocationCallbacks());
+            device->DestroyCommandPool(this);
         }
     }
 
-    Husky::Vulkan::CommandPool::CommandPool(CommandPool && other)
+    CommandPool::CommandPool(CommandPool && other)
         : device(other.device)
         , commandPool(other.commandPool)
     {

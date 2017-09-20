@@ -155,6 +155,8 @@ void SampleApplication::Initialize(const Vector<String>& args)
         // TODO
         return;
     }
+
+
 }
 
 void SampleApplication::Deinitialize()
@@ -363,21 +365,6 @@ vk::ResultValue<vk::ImageView> SampleApplication::CreateDepthStencilBufferViewFo
     ci.setSubresourceRange(subresourceRange);
 
     return device.createImageView(ci, allocationCallbacks);
-}
-
-Husky::int32 SampleApplication::ChooseMemoryType(
-    const vk::PhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties,
-    uint32 memoryTypeBits,
-    vk::MemoryPropertyFlags memoryProperties)
-{
-    for (int32 i = 0; i < (int32)physicalDeviceMemoryProperties.memoryTypeCount; i++)
-    {
-        if ((memoryTypeBits & (1 << i)) &&
-            ((physicalDeviceMemoryProperties.memoryTypes[i].propertyFlags & memoryProperties) == memoryProperties))
-            return i;
-    }
-
-    return -1;
 }
 
 Vector<const char8*> SampleApplication::GetRequiredInstanceExtensionNames() const

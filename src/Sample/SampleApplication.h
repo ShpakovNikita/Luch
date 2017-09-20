@@ -87,11 +87,6 @@ private:
         const vk::AllocationCallbacks& allocationCallbacks
     );
 
-    Husky::int32 ChooseMemoryType(
-        const vk::PhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties,
-        Husky::uint32 memoryTypeBits,
-        vk::MemoryPropertyFlags memoryProperties);
-
     Husky::Vector<const Husky::char8*> GetRequiredInstanceExtensionNames() const;
     Husky::Vector<const Husky::char8*> GetRequiredDeviceExtensionNames() const;
     Husky::Vector<const Husky::char8*> GetValidationLayerNames() const;
