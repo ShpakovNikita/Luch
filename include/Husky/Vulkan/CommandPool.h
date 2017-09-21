@@ -4,11 +4,11 @@
 
 namespace Husky::Vulkan
 {
-    class Device;
+    class GraphicsDevice;
 
     class CommandPool
     {
-        friend class Device;
+        friend class GraphicsDevice;
     public:
         CommandPool() = default;
 
@@ -21,9 +21,9 @@ namespace Husky::Vulkan
 
         vk::Result Reset(bool releaseResources);
     private:
-        CommandPool(Device* device, vk::CommandPool commandPool);
+        CommandPool(GraphicsDevice* device, vk::CommandPool commandPool);
 
-        Device* device = nullptr;
+        GraphicsDevice* device = nullptr;
         vk::CommandPool commandPool;
     };
 }

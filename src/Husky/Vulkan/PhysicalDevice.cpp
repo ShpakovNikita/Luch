@@ -89,7 +89,7 @@ namespace Husky::Vulkan
         return { vk::Result::eSuccess, indices };
     }
 
-    VulkanResultValue<Device> PhysicalDevice::CreateDevice(
+    VulkanResultValue<GraphicsDevice> PhysicalDevice::CreateDevice(
         QueueIndices&& queueIndices,
         const Husky::Vector<const char8*>& requiredDeviceExtensionNames)
     {
@@ -141,10 +141,10 @@ namespace Husky::Vulkan
         }
 
         vk::DeviceCreateInfo ci;
-        ci.setEnabledExtensionCount(requiredDeviceExtensionNames.size());
+        ci.setEnabledExtensionCount((int32)requiredDeviceExtensionNames.size());
         ci.setPpEnabledExtensionNames(requiredDeviceExtensionNames.data());
         ci.setPpEnabledLayerNames(0); // device layers are deprecated
-        ci.setQueueCreateInfoCount(queueCreateInfos.size());
+        ci.setQueueCreateInfoCount((int32)queueCreateInfos.size());
         ci.setPQueueCreateInfos(queueCreateInfos.data());
 
         auto [result, vulkanDevice] = physicalDevice.createDevice(ci, allocationCallbacks);
@@ -152,7 +152,7 @@ namespace Husky::Vulkan
         if (result == vk::Result::eSuccess)
         {
             auto queueInfo = ObtainQueueInfo(vulkanDevice, std::move(queueIndices));
-            auto device = Device{ this, vulkanDevice, std::move(queueInfo), allocationCallbacks };
+            auto device = GraphicsDevice{ this, vulkanDevice, std::move(queueInfo), allocationCallbacks };
             return { result, std::move(device) };
         }
         else

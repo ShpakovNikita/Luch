@@ -1,5 +1,5 @@
 #include <Husky/Vulkan/CommandPool.h>
-#include <Husky/Vulkan/Device.h>
+#include <Husky/Vulkan/GraphicsDevice.h>
 
 namespace Husky::Vulkan
 {
@@ -41,7 +41,7 @@ namespace Husky::Vulkan
         return device->GetDevice().resetCommandPool(commandPool, flags);
     }
 
-    CommandPool::CommandPool(Device * aDevice, vk::CommandPool aCommandPool)
+    CommandPool::CommandPool(GraphicsDevice * aDevice, vk::CommandPool aCommandPool)
         : device(aDevice)
         , commandPool(aCommandPool)
     {

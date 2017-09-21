@@ -1,47 +1,46 @@
 #pragma once
 
 #include <Husky/Vulkan.h>
+#include <Husky/Flags.h>
 
 namespace Husky::Vulkan
 {
+    class GraphicsDevice;
+
+    enum class ImageAspects
+    {
+        None = 0,
+        Color = 1 << 0,
+        Depth = 1 << 1,
+        Stencil = 1 << 2,
+        DepthStencil = Depth | Stencil
+    };
+
+    DEFINE_OPERATORS_FOR_FLAGS_ENUM(ImageAspects);
+
+    ImageAspects GetAspects(vk::Format format);
+
     class Image
     {
+        friend class GraphicsDevice;
     public:
-        Image()
-        {
-        }
+        Image() = default;
 
-        Image(const Image& other) = delete;
+        Image(Image&& other);
+        Image& operator=(Image&& other);
 
-        Image(Image&& other)
-            : allocationCallbacks(other.allocationCallbacks)
-            , createInfo(other.createInfo)
-            , device(other.device)
-            , image(other.image)
-            , imageView(other.imageView)
-            , deviceMemory(other.deviceMemory)
-        {
-            other.device = nullptr;
-            other.image = nullptr;
-            other.imageView = nullptr;
-            other.deviceMemory = nullptr;
-        }
+        ~Image();
 
-        ~Image()
-        {
-            if (device)
-            {
-                device.destroyImageView(imageView, allocationCallbacks);
-                device.destroyImage(image, allocationCallbacks);
-                device.freeMemory(deviceMemory, allocationCallbacks);
-            }
-        }
+        inline vk::Image GetImage() { return image; }
+        inline vk::DeviceMemory GetDeviceMemory() { return memory; }
+        inline ImageAspects GetImageAspects() const { return aspects; }
     private:
-        vk::AllocationCallbacks allocationCallbacks;
-        vk::ImageCreateInfo createInfo;
-        vk::Device device;
+        Image(GraphicsDevice* device, vk::Image image, vk::DeviceMemory memory, vk::ImageCreateInfo createInfo);
+
+        GraphicsDevice* device = nullptr;
         vk::Image image;
-        vk::ImageView imageView;
-        vk::DeviceMemory deviceMemory;
+        vk::DeviceMemory memory;
+        vk::ImageCreateInfo createInfo;
+        ImageAspects aspects = ImageAspects::None;
     };
 }

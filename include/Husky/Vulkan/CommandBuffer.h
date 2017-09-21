@@ -4,11 +4,11 @@
 
 namespace Husky::Vulkan
 {
-    class Device;
+    class GraphicsDevice;
 
     class CommandBuffer
     {
-        friend class Device;
+        friend class GraphicsDevice;
     public:
         CommandBuffer() = default;
         ~CommandBuffer();
@@ -18,9 +18,9 @@ namespace Husky::Vulkan
 
         inline vk::CommandBuffer GetCommandBuffer() { return commandBuffer; }
     private:
-        CommandBuffer(Device* device, vk::CommandBuffer commandBuffer);
+        CommandBuffer(GraphicsDevice* device, vk::CommandBuffer commandBuffer);
 
-        Device* device = nullptr;
+        GraphicsDevice* device = nullptr;
         vk::CommandBuffer commandBuffer;
     };
 }

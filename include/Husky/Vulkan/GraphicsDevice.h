@@ -5,26 +5,34 @@
 #include <Husky/Vulkan/Swapchain.h>
 #include <Husky/Vulkan/CommandPool.h>
 #include <Husky/Vulkan/Buffer.h>
+#include <Husky/Vulkan/Image.h>
+#include <Husky/Vulkan/ImageView.h>
 
 namespace Husky::Vulkan
 {
     class PhysicalDevice;
     class Surface;
     class CommandBuffer;
+    class Buffer;
+    class Image;
+    class ImageView;
 
-    class Device
+    class GraphicsDevice
     {
         friend class PhysicalDevice;
         friend class Swapchain;
         friend class CommandPool;
         friend class CommandBuffer;
+        friend class Buffer;
+        friend class Image;
+        friend class ImageView;
     public:
-        Device() = default;
+        GraphicsDevice() = default;
 
-        Device(Device&& other);
-        Device& operator=(Device&& other);
+        GraphicsDevice(GraphicsDevice&& other);
+        GraphicsDevice& operator=(GraphicsDevice&& other);
 
-        ~Device();
+        ~GraphicsDevice();
 
         inline PhysicalDevice* GetPhysicalDevice() const { return physicalDevice; }
         inline vk::Device GetDevice() { return device; }
@@ -43,18 +51,22 @@ namespace Husky::Vulkan
             Surface* surface);
 
         VulkanResultValue<CommandPool> CreateCommandPool(QueueIndex queueIndex, bool transient = false, bool canReset = false);
-
         VulkanResultValue<Buffer> CreateBuffer(int64 size, QueueIndex queueIndex, vk::BufferUsageFlags usage);
+        VulkanResultValue<Image> CreateImage(const vk::ImageCreateInfo& imageCreateInfo);
+        VulkanResultValue<ImageView> CreateImageView(Image* image, vk::ImageViewCreateInfo& imageViewCreateInfo);
+        VulkanResultValue<ImageView> CreateImageView(Image* image);
     private:
         VulkanResultValue<vk::DeviceMemory> AllocateMemory(
-            int64 size,
             vk::MemoryRequirements memoryRequirements,
             vk::MemoryPropertyFlags memoryPropertyFlags);
 
         void DestroySwapchain(Swapchain* swapchain);
         void DestroyCommandPool(CommandPool* commandPool);
+        void DestroyBuffer(Buffer* buffer);
+        void DestroyImage(Image* image);
+        void DestroyImageView(ImageView* imageView);
 
-        Device(
+        GraphicsDevice(
             PhysicalDevice* physicalDevice,
             vk::Device device,
             QueueInfo&& queueInfo,

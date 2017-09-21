@@ -1,6 +1,6 @@
 #include <Husky/Vulkan/Swapchain.h>
 #include <Husky/Math/Math.h>
-#include <Husky/Vulkan/Device.h>
+#include <Husky/Vulkan/GraphicsDevice.h>
 #include <Husky/Vulkan/PhysicalDevice.h>
 #include <Husky/Vulkan/Surface.h>
 
@@ -75,7 +75,7 @@ namespace Husky::Vulkan
     }
 
     Swapchain::Swapchain(
-        Device* aDevice,
+        GraphicsDevice* aDevice,
         vk::SwapchainKHR aSwapchain,
         SwapchainCreateInfo aCreateInfo,
         int32 aSwapchainImageCount,

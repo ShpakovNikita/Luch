@@ -4,22 +4,34 @@
 
 namespace Husky::Vulkan
 {
-    class Device;
+    class GraphicsDevice;
 
     class Buffer
     {
-        friend class Device;
+        friend class GraphicsDevice;
     public:
-        Buffer();
+        Buffer() = default;
 
         Buffer(Buffer&& other);
         Buffer& operator=(Buffer&& other);
 
+        ~Buffer();
+
+        VulkanResultValue<void*> MapMemory(int64 size, int64 offset);
+        void UnmapMemory();
+
+        // TODO more control
+        vk::Result FlushMemory();
+        vk::Result InvalidateMemory();
+
         inline vk::Buffer GetBuffer() { return buffer; }
+        inline vk::DeviceMemory GetDeviceMemory() { return memory; }
     private:
-        Buffer(Device* device, vk::Buffer buffer, vk::BufferCreateInfo bufferCreateInfo);
-        Device* device = nullptr;
+        Buffer(GraphicsDevice* device, vk::Buffer buffer, vk::DeviceMemory memory, vk::BufferCreateInfo bufferCreateInfo);
+
+        GraphicsDevice* device = nullptr;
         vk::Buffer buffer;
+        vk::DeviceMemory memory;
         vk::BufferCreateInfo bufferCreateInfo;
     };
 }

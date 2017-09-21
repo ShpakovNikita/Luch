@@ -6,7 +6,7 @@
 namespace Husky::Vulkan
 {
     class PhysicalDevice;
-    class Device;
+    class GraphicsDevice;
     class Surface;
 
     struct SwapchainCreateInfo
@@ -21,7 +21,7 @@ namespace Husky::Vulkan
 
     class Swapchain
     {
-        friend class Device;
+        friend class GraphicsDevice;
     public:
         static constexpr int MaxSwapchainLength = 3;
 
@@ -41,7 +41,7 @@ namespace Husky::Vulkan
         };
 
         Swapchain(
-            Device* device,
+            GraphicsDevice* device,
             vk::SwapchainKHR swapchain,
             SwapchainCreateInfo createInfo,
             int32 swapchainImageCount,
@@ -50,7 +50,7 @@ namespace Husky::Vulkan
         SwapchainCreateInfo createInfo;
         Husky::Array<SwapchainImage, MaxSwapchainLength> swapchainImages;
         int32 swapchainImageCount;
-        Device* device = nullptr;
+        GraphicsDevice* device = nullptr;
         vk::SwapchainKHR swapchain;
     };
 }

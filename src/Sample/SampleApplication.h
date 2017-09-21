@@ -3,7 +3,7 @@
 #include <Husky/BaseApplication.h>
 #include <Husky/Vulkan.h>
 #include <Husky/Vulkan/CommandPool.h>
-#include <Husky/Vulkan/Device.h>
+#include <Husky/Vulkan/GraphicsDevice.h>
 #include <Husky/Vulkan/Swapchain.h>
 #include <Husky/Vulkan/PhysicalDevice.h>
 #include <Husky/Vulkan/Surface.h>
@@ -107,12 +107,13 @@ private:
     vk::DebugReportCallbackEXT debugCallback;
     Husky::Vulkan::PhysicalDevice physicalDevice;
     Husky::Vulkan::Surface surface;
-    Husky::Vulkan::Device device;
+    Husky::Vulkan::GraphicsDevice device;
     Husky::Vulkan::Swapchain swapchain;
     Husky::Vulkan::CommandPool graphicsCommandPool;
     Husky::Vulkan::CommandPool presentCommandPool;
     Husky::Vulkan::CommandPool computeCommandPool;
-
+    Husky::Vulkan::Image depthStencilBuffer;
+    Husky::Vulkan::ImageView depthStencilBufferView;
 
 #if _WIN32
     HWND hWnd = nullptr;

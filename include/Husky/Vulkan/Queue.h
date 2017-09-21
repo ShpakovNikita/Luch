@@ -4,13 +4,13 @@
 
 namespace Husky::Vulkan
 {
-    class Device;
+    class GraphicsDevice;
     class PhysicalDevice;
     struct QueueInfo;
 
     class Queue
     {
-        friend Device;
+        friend GraphicsDevice;
         friend PhysicalDevice;
         friend QueueInfo;
     public:

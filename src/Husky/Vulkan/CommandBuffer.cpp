@@ -20,6 +20,8 @@ namespace Husky::Vulkan
         commandBuffer = other.commandBuffer;
         other.device = nullptr;
         other.commandBuffer = nullptr;
+
+        return *this;
     }
     
 }

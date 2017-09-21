@@ -156,7 +156,37 @@ void SampleApplication::Initialize(const Vector<String>& args)
         return;
     }
 
+    vk::ImageCreateInfo depthBufferCreateInfo;
+    depthBufferCreateInfo.setFormat(vk::Format::eD24UnormS8Uint);
+    depthBufferCreateInfo.setArrayLayers(1);
+    depthBufferCreateInfo.setImageType(vk::ImageType::e2D);
+    depthBufferCreateInfo.setExtent({ (uint32)swapchainCreateInfo.width, (uint32)swapchainCreateInfo.height, 1 });
+    depthBufferCreateInfo.setInitialLayout(vk::ImageLayout::eUndefined);
+    depthBufferCreateInfo.setMipLevels(1);
+    depthBufferCreateInfo.setQueueFamilyIndexCount(1);
+    depthBufferCreateInfo.setPQueueFamilyIndices(&indices.graphicsQueueFamilyIndex);
+    depthBufferCreateInfo.setSamples(vk::SampleCountFlagBits::e1);
+    depthBufferCreateInfo.setSharingMode(vk::SharingMode::eExclusive);
+    depthBufferCreateInfo.setTiling(vk::ImageTiling::eOptimal);
+    depthBufferCreateInfo.setUsage(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransferSrc);
 
+    auto [createDepthStencilBufferResult, createdDepthStencilBuffer] = device.CreateImage(depthBufferCreateInfo);
+    if (createDepthStencilBufferResult != vk::Result::eSuccess)
+    {
+        // TODO
+        return;
+    }
+
+    depthStencilBuffer = std::move(createdDepthStencilBuffer);
+
+    auto [createDepthStencilBufferViewResult, createdDepthStencilBufferView] = device.CreateImageView(&depthStencilBuffer);
+    if (createDepthStencilBufferViewResult != vk::Result::eSuccess)
+    {
+        // TODO
+        return;
+    }
+
+    depthStencilBufferView = std::move(createdDepthStencilBufferView);
 }
 
 void SampleApplication::Deinitialize()
