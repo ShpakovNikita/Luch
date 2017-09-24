@@ -4,17 +4,22 @@
 
 namespace Husky::Vulkan
 {
-    GraphicsDevice::GraphicsDevice(PhysicalDevice* aPhysicalDevice, vk::Device aDevice, QueueInfo&& aQueueInfo, vk::AllocationCallbacks aAllocationCallbacks)
-        : allocationCallbacks(aAllocationCallbacks)
-        , queueInfo(std::move(aQueueInfo))
-        , physicalDevice(aPhysicalDevice)
+    GraphicsDevice::GraphicsDevice(
+        PhysicalDevice* aPhysicalDevice,
+        vk::Device aDevice,
+        QueueInfo&& aQueueInfo,
+        vk::AllocationCallbacks aAllocationCallbacks)
+        : physicalDevice(aPhysicalDevice)
         , device(aDevice)
+        , queueInfo(std::move(aQueueInfo))
+        , allocationCallbacks(aAllocationCallbacks)
     {
     }
 
-    GraphicsDevice::GraphicsDevice(GraphicsDevice && other)
+    GraphicsDevice::GraphicsDevice(GraphicsDevice&& other)
         : physicalDevice(other.physicalDevice)
         , device(other.device)
+        , queueInfo(std::move(other.queueInfo))
         , allocationCallbacks(other.allocationCallbacks)
     {
         other.physicalDevice = nullptr;
@@ -25,6 +30,7 @@ namespace Husky::Vulkan
     {
         physicalDevice = other.physicalDevice;
         device = other.device;
+        queueInfo = std::move(other.queueInfo);
         allocationCallbacks = other.allocationCallbacks;
 
         other.physicalDevice = nullptr;
@@ -346,7 +352,7 @@ namespace Husky::Vulkan
         allocateInfo.setMemoryTypeIndex(memoryTypeIndex);
 
         auto[result, vulkanMemory] = device.allocateMemory(allocateInfo, allocationCallbacks);
-        if (result != vk::Result::eSuccess)
+        if (result == vk::Result::eSuccess)
         {
             return { result, vulkanMemory };
         }

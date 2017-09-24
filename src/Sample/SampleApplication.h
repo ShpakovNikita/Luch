@@ -7,11 +7,26 @@
 #include <Husky/Vulkan/Swapchain.h>
 #include <Husky/Vulkan/PhysicalDevice.h>
 #include <Husky/Vulkan/Surface.h>
+#include <Husky/Vulkan/Buffer.h>
 #include "VulkanAllocator.h"
 
 #ifdef _WIN32
 #include <Husky/Platform/Win32/WndProcDelegate.h>
 #endif
+
+struct GraphicsContext
+{
+    Husky::Vulkan::PhysicalDevice physicalDevice;
+    Husky::Vulkan::Surface surface;
+    Husky::Vulkan::GraphicsDevice device;
+    Husky::Vulkan::Swapchain swapchain;
+    Husky::Vulkan::CommandPool graphicsCommandPool;
+    Husky::Vulkan::CommandPool presentCommandPool;
+    Husky::Vulkan::CommandPool computeCommandPool;
+    Husky::Vulkan::Image depthStencilBuffer;
+    Husky::Vulkan::ImageView depthStencilBufferView;
+    Husky::Vulkan::Buffer buffer;
+};
 
 class SampleApplication
     : public Husky::BaseApplication
@@ -105,15 +120,8 @@ private:
     vk::AllocationCallbacks allocationCallbacks;
     vk::Instance instance;
     vk::DebugReportCallbackEXT debugCallback;
-    Husky::Vulkan::PhysicalDevice physicalDevice;
-    Husky::Vulkan::Surface surface;
-    Husky::Vulkan::GraphicsDevice device;
-    Husky::Vulkan::Swapchain swapchain;
-    Husky::Vulkan::CommandPool graphicsCommandPool;
-    Husky::Vulkan::CommandPool presentCommandPool;
-    Husky::Vulkan::CommandPool computeCommandPool;
-    Husky::Vulkan::Image depthStencilBuffer;
-    Husky::Vulkan::ImageView depthStencilBufferView;
+
+    std::unique_ptr<GraphicsContext> graphicsContext;
 
 #if _WIN32
     HWND hWnd = nullptr;

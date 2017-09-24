@@ -50,6 +50,8 @@ static LRESULT CALLBACK StaticWindowProc(
 
 void SampleApplication::Initialize(const Vector<String>& args)
 {
+    graphicsContext = std::make_unique<GraphicsContext>();
+
     allocationCallbacks = allocator.GetAllocationCallbacks();
 
     auto [createInstanceResult, createdInstance] = CreateVulkanInstance(allocationCallbacks);
@@ -78,7 +80,7 @@ void SampleApplication::Initialize(const Vector<String>& args)
         return;
     }
 
-    physicalDevice = { ChoosePhysicalDevice(physicalDevices), allocationCallbacks };
+    graphicsContext->physicalDevice = { ChoosePhysicalDevice(physicalDevices), allocationCallbacks };
 
 #if _WIN32
     std::tie(hInstance, hWnd) = CreateMainWindow(GetMainWindowTitle(), width, height);
@@ -96,26 +98,27 @@ void SampleApplication::Initialize(const Vector<String>& args)
         return;
     }
 
-    surface = std::move(createdSurface);
+    graphicsContext->surface = std::move(createdSurface);
 #endif
 
-    auto [chooseQueuesResult, queueIndices] = physicalDevice.ChooseDeviceQueues(&surface);
+    auto [chooseQueuesResult, queueIndices] = graphicsContext->physicalDevice.ChooseDeviceQueues(&graphicsContext->surface);
     if (chooseQueuesResult != vk::Result::eSuccess)
     {
         // TODO
         return;
     }
 
-    auto [createDeviceResult, createdDevice] = physicalDevice.CreateDevice(std::move(queueIndices), GetRequiredDeviceExtensionNames());
+    auto [createDeviceResult, createdDevice] = graphicsContext->physicalDevice.CreateDevice(std::move(queueIndices), GetRequiredDeviceExtensionNames());
     if (createDeviceResult != vk::Result::eSuccess)
     {
         // TODO
         return;
     }
 
-    device = std::move(createdDevice);
+    graphicsContext->device = std::move(createdDevice);
+    auto& device = graphicsContext->device;
 
-    auto& indices = device.GetQueueIndices();
+    auto& indices = graphicsContext->device.GetQueueIndices();
 
     auto [createdGraphicsCommandPoolResult, createdGraphicsCommandPool] = device.CreateCommandPool(indices.graphicsQueueFamilyIndex, false, false);
     if (createdGraphicsCommandPoolResult != vk::Result::eSuccess)
@@ -138,18 +141,18 @@ void SampleApplication::Initialize(const Vector<String>& args)
         return;
     }
 
-    graphicsCommandPool = std::move(createdGraphicsCommandPool);
-    presentCommandPool = std::move(createdPresentCommandPool);
-    computeCommandPool = std::move(createdComputeCommandPool);
+    graphicsContext->graphicsCommandPool = std::move(createdGraphicsCommandPool);
+    graphicsContext->presentCommandPool = std::move(createdPresentCommandPool);
+    graphicsContext->computeCommandPool = std::move(createdComputeCommandPool);
 
-    auto [swapchainChooseCreateInfoResult, swapchainCreateInfo] = Swapchain::ChooseSwapchainCreateInfo(width, height, &physicalDevice, &surface);
+    auto [swapchainChooseCreateInfoResult, swapchainCreateInfo] = Swapchain::ChooseSwapchainCreateInfo(width, height, &graphicsContext->physicalDevice, &graphicsContext->surface);
     if (swapchainChooseCreateInfoResult != vk::Result::eSuccess)
     {
         // TODO
         return;
     }
 
-    auto [createSwapchainResult, createdSwapchain] = device.CreateSwapchain(swapchainCreateInfo, &surface);
+    auto [createSwapchainResult, createdSwapchain] = device.CreateSwapchain(swapchainCreateInfo, &graphicsContext->surface);
     if (createSwapchainResult != vk::Result::eSuccess)
     {
         // TODO
@@ -177,27 +180,29 @@ void SampleApplication::Initialize(const Vector<String>& args)
         return;
     }
 
-    depthStencilBuffer = std::move(createdDepthStencilBuffer);
+    graphicsContext->depthStencilBuffer = std::move(createdDepthStencilBuffer);
 
-    auto [createDepthStencilBufferViewResult, createdDepthStencilBufferView] = device.CreateImageView(&depthStencilBuffer);
+    auto [createDepthStencilBufferViewResult, createdDepthStencilBufferView] = device.CreateImageView(&graphicsContext->depthStencilBuffer);
     if (createDepthStencilBufferViewResult != vk::Result::eSuccess)
     {
         // TODO
         return;
     }
 
-    depthStencilBufferView = std::move(createdDepthStencilBufferView);
+    graphicsContext->depthStencilBufferView = std::move(createdDepthStencilBufferView);
+
+    //auto[createBufferResult, createdBuffer] = device.CreateBuffer();
 }
 
 void SampleApplication::Deinitialize()
 {
+    graphicsContext.release();
     DestroyDebugCallback(instance, debugCallback, allocationCallbacks);
     instance.destroy(allocationCallbacks);
 }
 
 void SampleApplication::Run()
 {
-
 }
 
 vk::ResultValue<vk::Instance> SampleApplication::CreateVulkanInstance(const vk::AllocationCallbacks& allocationCallbacks)

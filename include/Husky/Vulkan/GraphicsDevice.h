@@ -72,10 +72,10 @@ namespace Husky::Vulkan
             QueueInfo&& queueInfo,
             vk::AllocationCallbacks allocationCallbacks);
 
-        vk::AllocationCallbacks allocationCallbacks;
-        QueueInfo queueInfo;
         PhysicalDevice* physicalDevice = nullptr;
         vk::Device device;
+        QueueInfo queueInfo;
+        vk::AllocationCallbacks allocationCallbacks;
     };
 
 }
