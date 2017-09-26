@@ -37,8 +37,8 @@ class SampleApplication
 {
 public:
     SampleApplication() = default;
-    void Initialize(const Husky::Vector<Husky::String>& args) override;
-    void Deinitialize() override;
+    bool Initialize(const Husky::Vector<Husky::String>& args) override;
+    bool Deinitialize() override;
     void Run() override;
 
     const Husky::String& GetApplicationName() const

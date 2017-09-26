@@ -3,6 +3,8 @@
 #include <Husky/Vulkan.h>
 #include <Husky/Math/Math.h>
 
+#include <glm/mat4x4.hpp>
+
 #include <iostream>
 
 using namespace Husky;
@@ -48,7 +50,7 @@ static LRESULT CALLBACK StaticWindowProc(
 }
 #endif
 
-void SampleApplication::Initialize(const Vector<String>& args)
+bool SampleApplication::Initialize(const Vector<String>& args)
 {
     graphicsContext = std::make_unique<GraphicsContext>();
 
@@ -58,7 +60,7 @@ void SampleApplication::Initialize(const Vector<String>& args)
     if (createInstanceResult != vk::Result::eSuccess)
     {
         // TODO
-        return;
+        return false;
     }
 
     instance = createdInstance;
@@ -77,7 +79,7 @@ void SampleApplication::Initialize(const Vector<String>& args)
     if (enumeratePhysicalDevicesResult != vk::Result::eSuccess || physicalDevices.empty())
     {
         // TODO
-        return;
+        return false;
     }
 
     graphicsContext->physicalDevice = { ChoosePhysicalDevice(physicalDevices), allocationCallbacks };
@@ -88,7 +90,7 @@ void SampleApplication::Initialize(const Vector<String>& args)
     if (hWnd == nullptr)
     {
         // TODO
-        return;
+        return false;
     }
 
     auto [createSurfaceResult, createdSurface] = Surface::CreateWin32Surface(instance, hInstance, hWnd, allocationCallbacks);
@@ -105,14 +107,14 @@ void SampleApplication::Initialize(const Vector<String>& args)
     if (chooseQueuesResult != vk::Result::eSuccess)
     {
         // TODO
-        return;
+        return false;
     }
 
     auto [createDeviceResult, createdDevice] = graphicsContext->physicalDevice.CreateDevice(std::move(queueIndices), GetRequiredDeviceExtensionNames());
     if (createDeviceResult != vk::Result::eSuccess)
     {
         // TODO
-        return;
+        return false;
     }
 
     graphicsContext->device = std::move(createdDevice);
@@ -124,21 +126,21 @@ void SampleApplication::Initialize(const Vector<String>& args)
     if (createdGraphicsCommandPoolResult != vk::Result::eSuccess)
     {
         // TODO
-        return;
+        return false;
     }
 
     auto[createdPresentCommandPoolResult, createdPresentCommandPool] = device.CreateCommandPool(indices.presentQueueFamilyIndex, true, false);
     if (createdPresentCommandPoolResult != vk::Result::eSuccess)
     {
         // TODO
-        return;
+        return false;
     }
 
     auto[createdComputeCommandPoolResult, createdComputeCommandPool] = device.CreateCommandPool(indices.computeQueueFamilyIndex, false, true);
     if (createdComputeCommandPoolResult != vk::Result::eSuccess)
     {
         // TODO
-        return;
+        return false;
     }
 
     graphicsContext->graphicsCommandPool = std::move(createdGraphicsCommandPool);
@@ -149,14 +151,14 @@ void SampleApplication::Initialize(const Vector<String>& args)
     if (swapchainChooseCreateInfoResult != vk::Result::eSuccess)
     {
         // TODO
-        return;
+        return false;
     }
 
     auto [createSwapchainResult, createdSwapchain] = device.CreateSwapchain(swapchainCreateInfo, &graphicsContext->surface);
     if (createSwapchainResult != vk::Result::eSuccess)
     {
         // TODO
-        return;
+        return false;
     }
 
     vk::ImageCreateInfo depthBufferCreateInfo;
@@ -177,7 +179,7 @@ void SampleApplication::Initialize(const Vector<String>& args)
     if (createDepthStencilBufferResult != vk::Result::eSuccess)
     {
         // TODO
-        return;
+        return false;
     }
 
     graphicsContext->depthStencilBuffer = std::move(createdDepthStencilBuffer);
@@ -186,12 +188,22 @@ void SampleApplication::Initialize(const Vector<String>& args)
     if (createDepthStencilBufferViewResult != vk::Result::eSuccess)
     {
         // TODO
-        return;
+        return false;
     }
 
     graphicsContext->depthStencilBufferView = std::move(createdDepthStencilBufferView);
 
-    //auto[createBufferResult, createdBuffer] = device.CreateBuffer();
+    constexpr auto bufferSize = sizeof(glm::mat4x4);
+    auto[createBufferResult, createdBuffer] = device.CreateBuffer(bufferSize, indices.graphicsQueueFamilyIndex, vk::BufferUsageFlagBits::eUniformBuffer);
+    if (createBufferResult != vk::Result::eSuccess)
+    {
+        // TODO
+        return false;
+    }
+
+    graphicsContext->buffer = std::move(createdBuffer);
+
+    return true;
 }
 
 void SampleApplication::Deinitialize()

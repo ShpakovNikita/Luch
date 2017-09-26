@@ -1,6 +1,7 @@
 #include <Husky/Vulkan/GraphicsDevice.h>
 #include <Husky/Vulkan/PhysicalDevice.h>
 #include <Husky/Vulkan/Surface.h>
+#include <Husky/Vulkan/ShaderCompiler.h>
 
 namespace Husky::Vulkan
 {
@@ -336,6 +337,46 @@ namespace Husky::Vulkan
         return CreateImageView(image, ci);
     }
 
+    VulkanResultValue<ShaderModule> GraphicsDevice::CompileShaderModule(ShaderCompiler* compiler, char8* sourceCode, int64 sourceCodeSize)
+    {
+        return VulkanResultValue<ShaderModule>();
+    }
+
+    VulkanResultValue<PipelineCache> GraphicsDevice::CreatePipelineCache()
+    {
+        vk::PipelineCacheCreateInfo ci;
+        auto [createResult, vulkanPipelineCache] = device.createPipelineCache(ci, allocationCallbacks);
+        if (createResult != vk::Result::eSuccess)
+        {
+            device.destroyPipelineCache(vulkanPipelineCache, allocationCallbacks);
+            return { createResult };
+        }
+        else
+        {
+            return { createResult, PipelineCache{this, vulkanPipelineCache} };
+        }
+    }
+
+    VulkanResultValue<Pipeline> GraphicsDevice::CreateGraphicsPipeline(
+        const GraphicsPipelineCreateInfo & graphicsPipelineCreateInfo,
+        PipelineCache* pipelineCache)
+    {
+        vk::GraphicsPipelineCreateInfo ci;
+
+        vk::PipelineCache cache = pipelineCache ? pipelineCache->pipelineCache : nullptr;
+
+        auto[createResult, vulkanPipeline] = device.createGraphicsPipeline(cache, ci, allocationCallbacks);
+        if (createResult != vk::Result::eSuccess)
+        {
+            device.destroyPipeline(vulkanPipeline, allocationCallbacks);
+            return { createResult };
+        }
+        else
+        {
+            return { createResult, Pipeline{this, vulkanPipeline} };
+        }
+    }
+
     VulkanResultValue<vk::DeviceMemory> GraphicsDevice::AllocateMemory(
         vk::MemoryRequirements memoryRequirements,
         vk::MemoryPropertyFlags memoryPropertyFlags)
@@ -374,18 +415,33 @@ namespace Husky::Vulkan
     }
     void GraphicsDevice::DestroyBuffer(Buffer* buffer)
     {
-        device.freeMemory(buffer->GetDeviceMemory(), allocationCallbacks);
+        device.freeMemory(buffer->memory, allocationCallbacks);
         device.destroyBuffer(buffer->buffer, allocationCallbacks);
     }
 
     void GraphicsDevice::DestroyImage(Image* image)
     {
-        device.freeMemory(image->GetDeviceMemory(), allocationCallbacks);
+        device.freeMemory(image->memory, allocationCallbacks);
         device.destroyImage(image->image, allocationCallbacks);
     }
 
     void GraphicsDevice::DestroyImageView(ImageView * imageView)
     {
         device.destroyImageView(imageView->imageView, allocationCallbacks);
+    }
+
+    void GraphicsDevice::DestroyPipeline(Pipeline * pipeline)
+    {
+        device.destroyPipeline(pipeline->pipeline, allocationCallbacks);
+    }
+
+    void GraphicsDevice::DestroyPipelineCache(PipelineCache * pipelineCache)
+    {
+        device.destroyPipelineCache(pipelineCache->pipelineCache, allocationCallbacks);
+    }
+
+    void GraphicsDevice::DestroyShaderModule(ShaderModule * module)
+    {
+        device.destroyShaderModule(module->module, allocationCallbacks);
     }
 }

@@ -19,7 +19,7 @@ add_definitions(-DVK_USE_PLATFORM_WIN32_KHR)
 
 include_directories(AFTER
     ${Vulkan_INCLUDE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/lib/glfw/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/glm/
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
