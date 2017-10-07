@@ -22,6 +22,7 @@ namespace Husky::Vulkan
         vk::Result Reset(bool releaseResources);
     private:
         CommandPool(GraphicsDevice* device, vk::CommandPool commandPool);
+        void Destroy();
 
         GraphicsDevice* device = nullptr;
         vk::CommandPool commandPool;

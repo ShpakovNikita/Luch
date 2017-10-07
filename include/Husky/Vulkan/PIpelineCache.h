@@ -10,13 +10,17 @@ namespace Husky::Vulkan
         friend class GraphicsDevice;
     public:
         PipelineCache() = default;
+
         PipelineCache(PipelineCache&& other);
         PipelineCache& operator=(PipelineCache&& other);
+
         ~PipelineCache();
 
         vk::PipelineCache GetPipelineCache() { return pipelineCache; }
     private:
         PipelineCache(GraphicsDevice* device, vk::PipelineCache pipelineCache);
+        void Destroy();
+
         GraphicsDevice* device;
         vk::PipelineCache pipelineCache;
     };

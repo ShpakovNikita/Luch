@@ -19,6 +19,8 @@ namespace Husky::Vulkan
 
     PipelineCache & PipelineCache::operator=(PipelineCache&& other)
     {
+        Destroy();
+
         device = other.device;
         pipelineCache = other.pipelineCache;
 
@@ -29,6 +31,11 @@ namespace Husky::Vulkan
     }
 
     PipelineCache::~PipelineCache()
+    {
+        Destroy();
+    }
+
+    void PipelineCache::Destroy()
     {
         if (device)
         {

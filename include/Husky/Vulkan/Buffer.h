@@ -28,6 +28,7 @@ namespace Husky::Vulkan
         inline vk::DeviceMemory GetDeviceMemory() { return memory; }
     private:
         Buffer(GraphicsDevice* device, vk::Buffer buffer, vk::DeviceMemory memory, vk::BufferCreateInfo bufferCreateInfo);
+        void Destroy();
 
         GraphicsDevice* device = nullptr;
         vk::Buffer buffer;

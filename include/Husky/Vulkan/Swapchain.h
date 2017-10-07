@@ -2,6 +2,7 @@
 
 #include <Husky/Types.h>
 #include <Husky/Vulkan.h>
+#include <Husky/Format.h>
 
 namespace Husky::Vulkan
 {
@@ -11,10 +12,10 @@ namespace Husky::Vulkan
 
     struct SwapchainCreateInfo
     {
-        Husky::int32 imageCount = 0;
-        Husky::int32 width = 0;
-        Husky::int32 height = 0;
-        vk::Format format = vk::Format::eUndefined;
+        int32 imageCount = 0;
+        int32 width = 0;
+        int32 height = 0;
+        Format format = Format::Undefined;
         vk::ColorSpaceKHR colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
         vk::PresentModeKHR presentMode = vk::PresentModeKHR::eFifo;
     };
@@ -26,6 +27,10 @@ namespace Husky::Vulkan
         static constexpr int MaxSwapchainLength = 3;
 
         Swapchain() = default;
+
+        Swapchain(Swapchain&& other);
+        Swapchain& operator=(Swapchain&& other);
+
         ~Swapchain();
 
         static VulkanResultValue<SwapchainCreateInfo> ChooseSwapchainCreateInfo(
@@ -47,8 +52,10 @@ namespace Husky::Vulkan
             int32 swapchainImageCount,
             const Vector<SwapchainImage>& swapchainImages);
 
+        void Destroy();
+
         SwapchainCreateInfo createInfo;
-        Husky::Array<SwapchainImage, MaxSwapchainLength> swapchainImages;
+        Array<SwapchainImage, MaxSwapchainLength> swapchainImages;
         int32 swapchainImageCount;
         GraphicsDevice* device = nullptr;
         vk::SwapchainKHR swapchain;

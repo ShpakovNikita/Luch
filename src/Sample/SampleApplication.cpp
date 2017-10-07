@@ -3,7 +3,7 @@
 #include <Husky/Vulkan.h>
 #include <Husky/Math/Math.h>
 
-#include <glm/mat4x4.hpp>
+#include <Husky/VectorTypes.h>
 
 #include <iostream>
 
@@ -97,7 +97,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     if (createSurfaceResult != vk::Result::eSuccess)
     {
         // TODO
-        return;
+        return false;
     }
 
     graphicsContext->surface = std::move(createdSurface);
@@ -193,24 +193,27 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     graphicsContext->depthStencilBufferView = std::move(createdDepthStencilBufferView);
 
-    constexpr auto bufferSize = sizeof(glm::mat4x4);
-    auto[createBufferResult, createdBuffer] = device.CreateBuffer(bufferSize, indices.graphicsQueueFamilyIndex, vk::BufferUsageFlagBits::eUniformBuffer);
+    constexpr auto bufferSize = sizeof(Mat4x4);
+    auto[createBufferResult, createdBuffer] = device.CreateBuffer(bufferSize, indices.graphicsQueueFamilyIndex, vk::BufferUsageFlagBits::eUniformBuffer, true);
     if (createBufferResult != vk::Result::eSuccess)
     {
         // TODO
         return false;
     }
 
-    graphicsContext->buffer = std::move(createdBuffer);
+    graphicsContext->uniformBuffer = std::move(createdBuffer);
+
+
 
     return true;
 }
 
-void SampleApplication::Deinitialize()
+bool SampleApplication::Deinitialize()
 {
     graphicsContext.release();
     DestroyDebugCallback(instance, debugCallback, allocationCallbacks);
     instance.destroy(allocationCallbacks);
+    return true;
 }
 
 void SampleApplication::Run()

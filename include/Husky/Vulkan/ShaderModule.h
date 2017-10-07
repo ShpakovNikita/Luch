@@ -9,7 +9,7 @@ namespace Husky::Vulkan
     class ShaderModule
     {
         friend class GraphicsDevice;
-
+    public:
         ShaderModule() = default;
 
         ShaderModule(ShaderModule&& other);
@@ -20,8 +20,9 @@ namespace Husky::Vulkan
         inline vk::ShaderModule GetModule() { return module; }
     private:
         ShaderModule(GraphicsDevice* device, vk::ShaderModule module);
+        void Destroy();
 
-        GraphicsDevice* device;
+        GraphicsDevice* device = nullptr;
         vk::ShaderModule module;
     };
 }

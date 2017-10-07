@@ -17,16 +17,10 @@ namespace Husky::Vulkan
         other.pipeline = nullptr;
     }
 
-    Pipeline::~Pipeline()
-    {
-        if (device)
-        {
-            device->DestroyPipeline(this);
-        }
-    }
-
     Pipeline& Pipeline::operator=(Pipeline && other)
     {
+        Destroy();
+
         device = other.device;
         pipeline = other.pipeline;
 
@@ -34,5 +28,18 @@ namespace Husky::Vulkan
         other.pipeline = nullptr;
 
         return *this;
+    }
+
+    Pipeline::~Pipeline()
+    {
+        Destroy();
+    }
+
+    void Pipeline::Destroy()
+    {
+        if (device)
+        {
+            device->DestroyPipeline(this);
+        }
     }
 }

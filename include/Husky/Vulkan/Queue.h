@@ -15,16 +15,16 @@ namespace Husky::Vulkan
         friend QueueInfo;
     public:
         Queue() = default;
-        explicit Queue(vk::Queue queue);
+
+        Queue(Queue&& other) = default;
+        Queue& operator=(Queue&& other) = default;
+
         ~Queue() = default; // Queues are owned by device, so we don't destroy them in destructor
-        Queue(const Queue& other) = delete;
-        Queue& operator=(const Queue& other) = delete;
 
         vk::Result WaitIdle();
         // Submit
     private:
-        Queue(Queue&& other) = default;
-        Queue& operator=(Queue&& other) = default;
+        explicit Queue(vk::Queue queue);
 
         vk::Queue queue;
     };

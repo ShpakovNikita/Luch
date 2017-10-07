@@ -30,12 +30,15 @@ using String = std::string;
 using StringView = std::string_view;
 
 using char8 = char;
+using byte = char8;
 
 template<typename T, int32 Size>
 using Array = std::array<T, Size>;
 
 template<typename T>
 using Vector = std::vector<T>;
+
+using ByteArray = std::vector<char8>;
 
 template<typename T>
 using Set = std::set<T>;

@@ -3,15 +3,13 @@
 
 namespace Husky::Vulkan
 {
-    CommandPool::~CommandPool()
+    CommandPool::CommandPool(GraphicsDevice * aDevice, vk::CommandPool aCommandPool)
+        : device(aDevice)
+        , commandPool(aCommandPool)
     {
-        if (device)
-        {
-            device->DestroyCommandPool(this);
-        }
     }
 
-    CommandPool::CommandPool(CommandPool && other)
+    CommandPool::CommandPool(CommandPool&& other)
         : device(other.device)
         , commandPool(other.commandPool)
     {
@@ -21,6 +19,8 @@ namespace Husky::Vulkan
 
     CommandPool& CommandPool::operator=(CommandPool&& other)
     {
+        Destroy();
+
         device = other.device;
         commandPool = other.commandPool;
 
@@ -28,6 +28,11 @@ namespace Husky::Vulkan
         other.commandPool = nullptr;
 
         return *this;
+    }
+
+    CommandPool::~CommandPool()
+    {
+        Destroy();
     }
 
     vk::Result CommandPool::Reset(bool releaseResources)
@@ -41,9 +46,11 @@ namespace Husky::Vulkan
         return device->GetDevice().resetCommandPool(commandPool, flags);
     }
 
-    CommandPool::CommandPool(GraphicsDevice * aDevice, vk::CommandPool aCommandPool)
-        : device(aDevice)
-        , commandPool(aCommandPool)
+    void CommandPool::Destroy()
     {
+        if (device)
+        {
+            device->DestroyCommandPool(this);
+        }
     }
 }

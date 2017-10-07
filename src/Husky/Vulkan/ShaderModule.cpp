@@ -30,6 +30,11 @@ namespace Husky::Vulkan
 
     ShaderModule::~ShaderModule()
     {
+        Destroy();
+    }
+
+    void ShaderModule::Destroy()
+    {
         if (device)
         {
             device->DestroyShaderModule(this);

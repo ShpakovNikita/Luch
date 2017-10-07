@@ -25,7 +25,11 @@ struct GraphicsContext
     Husky::Vulkan::CommandPool computeCommandPool;
     Husky::Vulkan::Image depthStencilBuffer;
     Husky::Vulkan::ImageView depthStencilBufferView;
-    Husky::Vulkan::Buffer buffer;
+    Husky::Vulkan::Buffer uniformBuffer;
+    Husky::Vulkan::Buffer vertexBuffer;
+    Husky::Vulkan::Buffer indexBuffer;
+    Husky::Vulkan::DescriptorSetLayout descriptorSetLayout;
+    Husky::Vulkan::RenderPass renderPass;
 };
 
 class SampleApplication

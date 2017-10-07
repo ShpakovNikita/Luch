@@ -1,18 +1,13 @@
 #include <Husky/Vulkan/Swapchain.h>
 #include <Husky/Math/Math.h>
 #include <Husky/Vulkan/GraphicsDevice.h>
+#include <Husky/Vulkan/Format.h>
 #include <Husky/Vulkan/PhysicalDevice.h>
 #include <Husky/Vulkan/Surface.h>
 
 namespace Husky::Vulkan
 {
-    Swapchain::~Swapchain()
-    {
-        if (device)
-        {
-            device->DestroySwapchain(this);
-        }
-    }
+    // TODO use static vector
 
     VulkanResultValue<SwapchainCreateInfo> Swapchain::ChooseSwapchainCreateInfo(
         int32 width,
@@ -41,12 +36,12 @@ namespace Husky::Vulkan
 
         if (surfaceFormats.size() == 1 && surfaceFormats[0].format == vk::Format::eUndefined)
         {
-            swapchainCreateInfo.format = vk::Format::eR8G8B8A8Unorm;
+            swapchainCreateInfo.format = Format::R8G8B8A8Unorm;
             swapchainCreateInfo.colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
         }
         else
         {
-            swapchainCreateInfo.format = surfaceFormats[0].format;
+            swapchainCreateInfo.format = FromVulkanFormat(surfaceFormats[0].format);
             swapchainCreateInfo.colorSpace = surfaceFormats[0].colorSpace;
         }
 
@@ -89,4 +84,43 @@ namespace Husky::Vulkan
         std::copy(aSwapchainImages.begin(), aSwapchainImages.end(), swapchainImages.begin());
     }
 
+    void Swapchain::Destroy()
+    {
+        if (device)
+        {
+            device->DestroySwapchain(this);
+        }
+    }
+
+    Swapchain::Swapchain(Swapchain&& other)
+        : device(other.device)
+        , swapchain(other.swapchain)
+        , createInfo(other.createInfo)
+        , swapchainImageCount(other.swapchainImageCount)
+        , swapchainImages(std::move(other.swapchainImages))
+    {
+        other.device = nullptr;
+        other.swapchain = nullptr;
+    }
+
+    Swapchain & Swapchain::operator=(Swapchain && other)
+    {
+        Destroy();
+
+        device = other.device;
+        swapchain = other.swapchain;
+        createInfo = other.createInfo;
+        swapchainImageCount = other.swapchainImageCount;
+        swapchainImages = std::move(other.swapchainImages);
+
+        other.device = nullptr;
+        other.swapchain = nullptr;
+
+        return *this;
+    }
+
+    Swapchain::~Swapchain()
+    {
+        Destroy();
+    }
 }

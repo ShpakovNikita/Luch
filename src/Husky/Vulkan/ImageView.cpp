@@ -15,8 +15,10 @@ namespace Husky::Vulkan
     {
     }
 
-    ImageView & ImageView::operator=(ImageView&& other)
+    ImageView& ImageView::operator=(ImageView&& other)
     {
+        Destroy();
+
         device = other.device;
         imageView = other.imageView;
 
@@ -27,6 +29,11 @@ namespace Husky::Vulkan
     }
 
     ImageView::~ImageView()
+    {
+        Destroy();
+    }
+
+    void ImageView::Destroy()
     {
         if (device)
         {

@@ -25,6 +25,15 @@ namespace Husky
         {
         }
 
+        ResultValue(ResultValue&& other)
+            : result(std::move(other.result))
+            , value(std::move(other.value))
+        {
+
+        }
+
+        ~ResultValue() = default;
+
         Result result;
         Value value;
     };

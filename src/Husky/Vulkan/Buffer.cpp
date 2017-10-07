@@ -25,6 +25,8 @@ namespace Husky::Vulkan
 
     Buffer& Buffer::operator=(Buffer&& other)
     {
+        Destroy();
+
         device = other.device;
         buffer = other.buffer;
         other.device = nullptr;
@@ -34,10 +36,7 @@ namespace Husky::Vulkan
 
     Buffer::~Buffer()
     {
-        if (device)
-        {
-            device->DestroyBuffer(this);
-        }
+        Destroy();
     }
 
     VulkanResultValue<void*> Buffer::MapMemory(int64 size, int64 offset)
@@ -67,5 +66,13 @@ namespace Husky::Vulkan
         memoryRange.setMemory(memory);
         memoryRange.setSize(VK_WHOLE_SIZE);
         return device->GetDevice().invalidateMappedMemoryRanges({ memoryRange });
+    }
+
+    void Buffer::Destroy()
+    {
+        if (device)
+        {
+            device->DestroyBuffer(this);
+        }
     }
 }

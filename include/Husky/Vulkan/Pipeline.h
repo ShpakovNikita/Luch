@@ -17,9 +17,10 @@ namespace Husky::Vulkan
 
         ~Pipeline();
 
-        vk::Pipeline GetPipeline() { return pipeline }
+        vk::Pipeline GetPipeline() { return pipeline; }
     private:
         Pipeline(GraphicsDevice* device, vk::Pipeline pipeline);
+        void Destroy();
 
         GraphicsDevice* device = nullptr;
         vk::Pipeline pipeline;

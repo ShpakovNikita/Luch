@@ -9,5 +9,5 @@ namespace Husky::Vulkan
     {
     public:
         virtual ~ShaderCompiler() {}
-    }
+    };
 }

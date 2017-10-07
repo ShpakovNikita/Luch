@@ -50,6 +50,8 @@ namespace Husky::Vulkan
 
     Image& Image::operator=(Image&& other)
     {
+        Destroy();
+
         device = other.device;
         image = other.image;
         memory = other.memory;
@@ -64,6 +66,11 @@ namespace Husky::Vulkan
     }
 
     Image::~Image()
+    {
+        Destroy();
+    }
+
+    void Image::Destroy()
     {
         if (device)
         {

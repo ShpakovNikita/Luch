@@ -5,5 +5,5 @@ namespace Husky::Vulkan
     class GlslShaderCompiler
     {
         
-    }
+    };
 }

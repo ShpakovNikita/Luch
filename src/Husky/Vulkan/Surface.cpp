@@ -32,6 +32,11 @@ namespace Husky::Vulkan
 
     Surface::~Surface()
     {
+        Destroy();
+    }
+
+    void Surface::Destroy()
+    {
         if (instance)
         {
             instance.destroySurfaceKHR(surface, allocationCallbacks);

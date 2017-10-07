@@ -23,5 +23,4 @@ namespace Husky::Vulkan
 
         return *this;
     }
-    
 }

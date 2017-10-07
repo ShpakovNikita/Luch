@@ -1,7 +1,8 @@
 #include <Husky/Vulkan/GraphicsDevice.h>
+#include <Husky/Vulkan/Format.h>
 #include <Husky/Vulkan/PhysicalDevice.h>
-#include <Husky/Vulkan/Surface.h>
 #include <Husky/Vulkan/ShaderCompiler.h>
+#include <Husky/Vulkan/Surface.h>
 
 namespace Husky::Vulkan
 {
@@ -29,6 +30,8 @@ namespace Husky::Vulkan
 
     GraphicsDevice& GraphicsDevice::operator=(GraphicsDevice&& other)
     {
+        Destroy();
+
         physicalDevice = other.physicalDevice;
         device = other.device;
         queueInfo = std::move(other.queueInfo);
@@ -42,13 +45,7 @@ namespace Husky::Vulkan
 
     GraphicsDevice::~GraphicsDevice()
     {
-        if (device)
-        {
-            device.waitIdle();
-
-            device.destroy(allocationCallbacks);
-            device = nullptr;
-        }
+        Destroy();
     }
 
     vk::Result GraphicsDevice::WaitIdle()
@@ -71,11 +68,11 @@ namespace Husky::Vulkan
         return -1;
     }
 
-    VulkanResultValue<Swapchain> GraphicsDevice::CreateSwapchain(const SwapchainCreateInfo & swapchainCreateInfo, Surface * surface)
+    VulkanResultValue<Swapchain> GraphicsDevice::CreateSwapchain(const SwapchainCreateInfo& swapchainCreateInfo, Surface * surface)
     {
         vk::SwapchainCreateInfoKHR ci;
         ci.setImageColorSpace(swapchainCreateInfo.colorSpace);
-        ci.setImageFormat(swapchainCreateInfo.format);
+        ci.setImageFormat(ToVulkanFormat(swapchainCreateInfo.format));
         ci.setMinImageCount(swapchainCreateInfo.imageCount);
         ci.setPresentMode(swapchainCreateInfo.presentMode);
         ci.setImageArrayLayers(1);
@@ -125,7 +122,7 @@ namespace Husky::Vulkan
                 vk::ImageViewCreateInfo ci;
                 ci.setImage(image);
                 ci.setViewType(vk::ImageViewType::e2D);
-                ci.setFormat(swapchainCreateInfo.format);
+                ci.setFormat(ToVulkanFormat(swapchainCreateInfo.format));
                 ci.setSubresourceRange(subresourceRange);
                 auto [imageViewCreateResult, imageView] = device.createImageView(ci, allocationCallbacks);
                 if (imageViewCreateResult != vk::Result::eSuccess)
@@ -175,7 +172,7 @@ namespace Husky::Vulkan
         }
     }
 
-    VulkanResultValue<Buffer> GraphicsDevice::CreateBuffer(int64 size, QueueIndex queueIndex, vk::BufferUsageFlags usage)
+    VulkanResultValue<Buffer> GraphicsDevice::CreateBuffer(int64 size, QueueIndex queueIndex, vk::BufferUsageFlags usage, bool mappable)
     {
         vk::BufferCreateInfo ci;
         ci.setPQueueFamilyIndices(&queueIndex);
@@ -193,7 +190,9 @@ namespace Husky::Vulkan
         
         auto memoryRequirements = device.getBufferMemoryRequirements(vulkanBuffer);
 
-        auto [allocateMemoryResult, vulkanMemory] = AllocateMemory(memoryRequirements, vk::MemoryPropertyFlagBits::eHostVisible);
+        vk::MemoryPropertyFlags memoryProperties = mappable ? vk::MemoryPropertyFlagBits::eHostVisible : vk::MemoryPropertyFlagBits::eDeviceLocal;
+
+        auto [allocateMemoryResult, vulkanMemory] = AllocateMemory(memoryRequirements, memoryProperties);
         if (allocateMemoryResult != vk::Result::eSuccess)
         {
             device.destroyBuffer(vulkanBuffer, allocationCallbacks);
@@ -337,9 +336,21 @@ namespace Husky::Vulkan
         return CreateImageView(image, ci);
     }
 
-    VulkanResultValue<ShaderModule> GraphicsDevice::CompileShaderModule(ShaderCompiler* compiler, char8* sourceCode, int64 sourceCodeSize)
+    VulkanResultValue<ShaderModule> GraphicsDevice::CreateShaderModule(char8 * bytecode, int64 bytecodeSize)
     {
-        return VulkanResultValue<ShaderModule>();
+        vk::ShaderModuleCreateInfo ci;
+        ci.setPCode((uint32*)bytecode);
+        ci.setCodeSize(bytecodeSize);
+        auto [createResult, vulkanShaderModule] = device.createShaderModule(ci, allocationCallbacks);
+        if (createResult != vk::Result::eSuccess)
+        {
+            device.destroyShaderModule(vulkanShaderModule, allocationCallbacks);
+            return { createResult };
+        }
+        else
+        {
+            return { createResult, ShaderModule{this, vulkanShaderModule} };
+        }
     }
 
     VulkanResultValue<PipelineCache> GraphicsDevice::CreatePipelineCache()
@@ -377,6 +388,50 @@ namespace Husky::Vulkan
         }
     }
 
+    VulkanResultValue<RenderPass> GraphicsDevice::CreateRenderPass(const vk::RenderPassCreateInfo & ci)
+    {
+        auto [createResult, vulkanRenderPass] = device.createRenderPass(ci, allocationCallbacks);
+        if (createResult != vk::Result::eSuccess)
+        {
+            device.destroyRenderPass(vulkanRenderPass, allocationCallbacks);
+            return { createResult };
+        }
+        else
+        {
+            return { createResult, RenderPass{this, vulkanRenderPass} };
+        }
+    }
+
+    VulkanResultValue<DescriptorSetLayout> GraphicsDevice::CreateDescriptorSetLayout(const DescriptorSetLayoutCreateInfo& ci)
+    {
+        auto vkci = DescriptorSetLayoutCreateInfo::ToVkCreateInfo(ci);
+        auto [createResult, vulkanDescriptorSetLayout] = device.createDescriptorSetLayout(vkci, allocationCallbacks);
+        if (createResult != vk::Result::eSuccess)
+        {
+            device.destroyDescriptorSetLayout(vulkanDescriptorSetLayout, allocationCallbacks);
+            return { createResult };
+        }
+        else
+        {
+            return { createResult, DescriptorSetLayout{this, vulkanDescriptorSetLayout } };
+        }
+    }
+
+    VulkanResultValue<Framebuffer> GraphicsDevice::CreateFramebuffer(const FramebufferCreateInfo & createInfo)
+    {
+        auto vkci = FramebufferCreateInfo::ToVulkanCreateInfo(createInfo);
+        auto [createResult, vulkanFramebuffer] = device.createFramebuffer(vkci, allocationCallbacks);
+        if (createResult != vk::Result::eSuccess)
+        {
+            device.destroyFramebuffer(vulkanFramebuffer, allocationCallbacks);
+            return { createResult };
+        }
+        else
+        {
+            return { createResult, Framebuffer{this, vulkanFramebuffer} };
+        }
+    }
+
     VulkanResultValue<vk::DeviceMemory> GraphicsDevice::AllocateMemory(
         vk::MemoryRequirements memoryRequirements,
         vk::MemoryPropertyFlags memoryPropertyFlags)
@@ -404,6 +459,17 @@ namespace Husky::Vulkan
         }
     }
 
+    void GraphicsDevice::Destroy()
+    {
+        if (device)
+        {
+            device.waitIdle();
+
+            device.destroy(allocationCallbacks);
+            device = nullptr;
+        }
+    }
+
     void GraphicsDevice::DestroySwapchain(Swapchain* swapchain)
     {
         device.destroySwapchainKHR(swapchain->swapchain, allocationCallbacks);
@@ -425,23 +491,42 @@ namespace Husky::Vulkan
         device.destroyImage(image->image, allocationCallbacks);
     }
 
-    void GraphicsDevice::DestroyImageView(ImageView * imageView)
+    void GraphicsDevice::DestroyImageView(ImageView* imageView)
     {
         device.destroyImageView(imageView->imageView, allocationCallbacks);
     }
 
-    void GraphicsDevice::DestroyPipeline(Pipeline * pipeline)
+    void GraphicsDevice::DestroyPipeline(Pipeline* pipeline)
     {
         device.destroyPipeline(pipeline->pipeline, allocationCallbacks);
     }
 
-    void GraphicsDevice::DestroyPipelineCache(PipelineCache * pipelineCache)
+    void GraphicsDevice::DestroyPipelineLayout(PipelineLayout * pipelineLayout)
+    {
+        device.destroyPipelineLayout(pipelineLayout->pipelineLayout, allocationCallbacks);
+    }
+
+    void GraphicsDevice::DestroyPipelineCache(PipelineCache* pipelineCache)
     {
         device.destroyPipelineCache(pipelineCache->pipelineCache, allocationCallbacks);
     }
 
-    void GraphicsDevice::DestroyShaderModule(ShaderModule * module)
+    void GraphicsDevice::DestroyShaderModule(ShaderModule* module)
     {
         device.destroyShaderModule(module->module, allocationCallbacks);
+    }
+
+    void GraphicsDevice::DestroyRenderPass(RenderPass* renderPass)
+    {
+        device.destroyRenderPass(renderPass->renderPass, allocationCallbacks);
+    }
+    void GraphicsDevice::DestroyDescriptorSetLayout(DescriptorSetLayout* descriptorSetLayout)
+    {
+        device.destroyDescriptorSetLayout(descriptorSetLayout->descriptorSetLayout, allocationCallbacks);
+    }
+
+    void GraphicsDevice::DestroyFramebuffer(Framebuffer* framebuffer)
+    {
+        device.destroyFramebuffer(framebuffer->framebuffer);
     }
 }
