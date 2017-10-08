@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Husky/BaseApplication.h>
+#include <Husky/GeometryGenerator.h>
 #include <Husky/Vulkan.h>
 #include <Husky/Vulkan/CommandPool.h>
 #include <Husky/Vulkan/GraphicsDevice.h>
@@ -30,6 +31,8 @@ struct GraphicsContext
     Husky::Vulkan::Buffer indexBuffer;
     Husky::Vulkan::DescriptorSetLayout descriptorSetLayout;
     Husky::Vulkan::RenderPass renderPass;
+    Husky::GeometryGenerator geometryGenerator;
+    Husky::MeshData boxData;
 };
 
 class SampleApplication

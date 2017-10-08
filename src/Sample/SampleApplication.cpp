@@ -193,8 +193,8 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     graphicsContext->depthStencilBufferView = std::move(createdDepthStencilBufferView);
 
-    constexpr auto bufferSize = sizeof(Mat4x4);
-    auto[createBufferResult, createdBuffer] = device.CreateBuffer(bufferSize, indices.graphicsQueueFamilyIndex, vk::BufferUsageFlagBits::eUniformBuffer, true);
+    constexpr auto uniformBufferSize = sizeof(Mat4x4);
+    auto[createBufferResult, createdBuffer] = device.CreateBuffer(uniformBufferSize, indices.graphicsQueueFamilyIndex, vk::BufferUsageFlagBits::eUniformBuffer, true);
     if (createBufferResult != vk::Result::eSuccess)
     {
         // TODO
@@ -203,6 +203,15 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     graphicsContext->uniformBuffer = std::move(createdBuffer);
 
+    graphicsContext->boxData = graphicsContext->geometryGenerator.CreateBox("box01", { 0, 0, 0 }, 1, 1, 1, 0);
+    
+    auto indexBufferSize = graphicsContext->boxData.indices16.size() * sizeof(uint16);
+    auto[createIndexBufferResult, createdIndexBuffer] = device.CreateIndexBuffer(uniformBufferSize, indices.graphicsQueueFamilyIndex, vk::BufferUsageFlagBits::eUniformBuffer, true);
+    if (createBufferResult != vk::Result::eSuccess)
+    {
+        // TODO
+        return false;
+    }
 
 
     return true;

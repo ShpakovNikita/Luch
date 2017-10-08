@@ -209,6 +209,20 @@ namespace Husky::Vulkan
         return { createBufferResult, Buffer{this, vulkanBuffer, vulkanMemory, ci} };
     }
 
+    VulkanResultValue<IndexBuffer> GraphicsDevice::CreateIndexBuffer(int32 indexCount, IndexType indexType, QueueIndex queueIndex, bool mappable)
+    {
+        auto size = indexCount*IndexSize(indexType);
+        auto [createResult, buffer] = CreateBuffer(size, queueIndex, vk::BufferUsageFlagBits::eIndexBuffer, mappable);
+        if (createResult != vk::Result::eSuccess)
+        {
+            return { createResult };
+        }
+        else
+        {
+            return { createResult, IndexBuffer{std::move(buffer), indexCount, indexType} };
+        }
+    }
+
     VulkanResultValue<Image> GraphicsDevice::CreateImage(const vk::ImageCreateInfo& imageCreateInfo)
     {
         auto [createImageResult, vulkanImage] = device.createImage(imageCreateInfo, allocationCallbacks);

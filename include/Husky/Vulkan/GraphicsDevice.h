@@ -67,7 +67,7 @@ namespace Husky::Vulkan
 
         VulkanResultValue<CommandPool> CreateCommandPool(QueueIndex queueIndex, bool transient = false, bool canReset = false);
         VulkanResultValue<Buffer> CreateBuffer(int64 size, QueueIndex queueIndex, vk::BufferUsageFlags usage, bool mappable);
-        //VulkanResultValue<IndexBuffer> CreateIndexBuffer(IndexType indexType, QueueIndex queueIndex);
+        VulkanResultValue<IndexBuffer> CreateIndexBuffer(int32 indexCount, IndexType indexType, QueueIndex queueIndex, bool mappable);
         //VulkanResultValue<VertexBuffer> CreateVertexBuffer(int64 size, QueueIndex queueIndex, vk::BufferUsageFlags usage);
         VulkanResultValue<Image> CreateImage(const vk::ImageCreateInfo& imageCreateInfo);
         VulkanResultValue<ImageView> CreateImageView(Image* image, vk::ImageViewCreateInfo& imageViewCreateInfo);

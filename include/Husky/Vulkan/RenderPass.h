@@ -13,6 +13,8 @@ namespace Husky::Vulkan
     {
         friend class RenderPassCreateInfo;
     public:
+        inline int32 GetIndex() const { return index; }
+
         inline SubpassDescription& WithNInputAttachments(int32 inputAttachmentCount)
         {
             inputAttachments.reserve(inputAttachmentCount);
@@ -90,24 +92,36 @@ namespace Husky::Vulkan
         SubpassAttachmentReference depthStencilAttachment;
     };
 
+    struct SubpassDependency
+    {
+        SubpassDescription* srcSubpass;
+        SubpassDescription* dstSubpass;
+        vk::PipelineStageFlags srcStageMask;
+        vk::PipelineStageFlags dstStageMask;
+        vk::AccessFlags srcAccessMask;
+        vk::AccessFlags dstAccessMask;
+        bool byRegion;
+    };
+
     class RenderPassCreateInfo
     {
     public:
-        struct SubpassDependency
+        struct VulkanSubpassDescription
         {
-            SubpassDescription* srcSubpass;
-            SubpassDescription* dstSubpass;
-            vk::PipelineStageFlags srcStageMask;
-            vk::PipelineStageFlags dstStageMask;
-            vk::AccessFlags srcAccessMask;
-            vk::AccessFlags dstAccessMask;
-            bool byRegion;
+            vk::SubpassDescription subpass;
+            Vector<vk::AttachmentReference> inputAttachments;
+            Vector<vk::AttachmentReference> colorAttachments;
+            Vector<vk::AttachmentReference> resolveAttachments;
+            Vector<uint32> preserveAttachments;
         };
 
         struct VulkanRenderPassCreateInfo
         {
             vk::RenderPassCreateInfo createInfo;
-
+            Vector<vk::AttachmentDescription> attachments;
+            Vector<VulkanSubpassDescription> subpassesInfo;
+            Vector<vk::SubpassDescription> subpasses;
+            Vector<vk::SubpassDependency> subpassDependencies;
         };
 
         static VulkanRenderPassCreateInfo ToVulkanCreateInfo(const RenderPassCreateInfo& createInfo);
@@ -130,13 +144,13 @@ namespace Husky::Vulkan
             attachments[attachment->index] = attachment;
         }
 
-        inline RenderPassCreateInfo& AddSubpass(SubpassDescription* subpassDescription)
+        inline RenderPassCreateInfo& AddSubpass(SubpassDescription&& subpassDescription)
         {
-            HUSKY_ASSERT(subpassDescription->index < 0, "Can't use subpass description multiple times");
-            subpassDescription->index = nextSubpassIndex;
+            HUSKY_ASSERT(subpassDescription.index < 0, "Can't use subpass description multiple times");
+            subpassDescription.index = nextSubpassIndex;
             nextSubpassIndex++;
 
-            subpasses.push_back(subpassDescription);
+            subpasses.emplace_back(subpassDescription);
 
             return *this;
         }
@@ -147,10 +161,14 @@ namespace Husky::Vulkan
             return *this;
         }
     private:
+        static vk::AttachmentDescription ToVulkanAttachmentDescription(const Attachment* attachment);
+        static VulkanSubpassDescription ToVulkanSubpassDescription(const SubpassDescription& subpassDescription);
+        static vk::SubpassDependency ToVulkanSubpassDependency(const SubpassDependency& subpassDependency);
+
         int32 nextAttachmentIndex = 0;
         int32 nextSubpassIndex = 0;
         Vector<Attachment*> attachments;
-        Vector<SubpassDescription*> subpasses;
+        Vector<SubpassDescription> subpasses;
         Vector<SubpassDependency> subpassDependencies;
     };
 
