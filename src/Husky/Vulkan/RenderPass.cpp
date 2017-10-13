@@ -150,7 +150,7 @@ namespace Husky::Vulkan
         {
             auto subpassInfo = ToVulkanSubpassDescription(subpass);
             result.subpasses.push_back(subpassInfo.subpass);
-            result.subpasses.emplace_back(std::move(subpassInfo));
+            result.subpassesInfo.emplace_back(std::move(subpassInfo));
         }
 
         result.subpassDependencies.reserve(createInfo.subpassDependencies.size());

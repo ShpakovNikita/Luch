@@ -14,6 +14,8 @@ namespace Husky::Vulkan
             return vk::Format::eUndefined;
         case Format::R8G8B8A8Unorm:
             return vk::Format::eR8G8B8A8Unorm;
+        case Format::B8G8R8A8Unorm:
+            return vk::Format::eB8G8R8A8Unorm;
         case Format::D16Unorm:
             return vk::Format::eD16Unorm;
         case Format::D32Sfloat:
@@ -39,6 +41,8 @@ namespace Husky::Vulkan
             return Format::Undefined;
         case vk::Format::eR8G8B8A8Unorm:
             return Format::R8G8B8A8Unorm;
+        case vk::Format::eB8G8R8A8Unorm:
+            return Format::B8G8R8A8Unorm;
         case vk::Format::eD16Unorm:
             return Format::D16Unorm;
         case vk::Format::eD32Sfloat:

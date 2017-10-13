@@ -97,6 +97,8 @@ namespace Husky
             22, 23, 20,
         };
 
+        boxMeshData.vertices = vertices;
+
         return boxMeshData;
     }
 

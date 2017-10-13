@@ -18,9 +18,12 @@ namespace Husky::Vulkan
     Buffer::Buffer(Buffer&& other)
         : device(other.device)
         , buffer(other.buffer)
+        , memory(other.memory)
+        , bufferCreateInfo(other.bufferCreateInfo)
     {
         other.device = nullptr;
         other.buffer = nullptr;
+        other.memory = nullptr;
     }
 
     Buffer& Buffer::operator=(Buffer&& other)
@@ -29,8 +32,13 @@ namespace Husky::Vulkan
 
         device = other.device;
         buffer = other.buffer;
+        memory = other.memory;
+        bufferCreateInfo = other.bufferCreateInfo;
+
         other.device = nullptr;
         other.buffer = nullptr;
+        other.memory = nullptr;
+
         return *this;
     }
 

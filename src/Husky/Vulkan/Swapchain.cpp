@@ -7,6 +7,60 @@
 
 namespace Husky::Vulkan
 {
+    Swapchain::Swapchain(
+        GraphicsDevice* aDevice,
+        vk::SwapchainKHR aSwapchain,
+        SwapchainCreateInfo aCreateInfo,
+        int32 aSwapchainImageCount,
+        Vector<SwapchainImage>&& aSwapchainImages)
+        : device(aDevice)
+        , swapchain(aSwapchain)
+        , createInfo(aCreateInfo)
+        , swapchainImageCount(aSwapchainImageCount)
+        , swapchainImages(std::forward<Vector<SwapchainImage>>(aSwapchainImages))
+    {
+    }
+
+    Swapchain::Swapchain(Swapchain&& other)
+        : device(other.device)
+        , swapchain(other.swapchain)
+        , createInfo(other.createInfo)
+        , swapchainImageCount(other.swapchainImageCount)
+        , swapchainImages(std::move(other.swapchainImages))
+    {
+        other.device = nullptr;
+        other.swapchain = nullptr;
+    }
+
+    Swapchain & Swapchain::operator=(Swapchain && other)
+    {
+        Destroy();
+
+        device = other.device;
+        swapchain = other.swapchain;
+        createInfo = other.createInfo;
+        swapchainImageCount = other.swapchainImageCount;
+        swapchainImages = std::move(other.swapchainImages);
+
+        other.device = nullptr;
+        other.swapchain = nullptr;
+
+        return *this;
+    }
+
+    Swapchain::~Swapchain()
+    {
+        Destroy();
+    }
+
+    void Swapchain::Destroy()
+    {
+        if (device)
+        {
+            device->DestroySwapchain(this);
+        }
+    }
+
     // TODO use static vector
 
     VulkanResultValue<SwapchainCreateInfo> Swapchain::ChooseSwapchainCreateInfo(
@@ -67,60 +121,5 @@ namespace Husky::Vulkan
         swapchainCreateInfo.imageCount = std::min(3u, surfaceCapabilities.maxImageCount);
 
         return { vk::Result::eSuccess, swapchainCreateInfo };
-    }
-
-    Swapchain::Swapchain(
-        GraphicsDevice* aDevice,
-        vk::SwapchainKHR aSwapchain,
-        SwapchainCreateInfo aCreateInfo,
-        int32 aSwapchainImageCount,
-        const Vector<SwapchainImage>& aSwapchainImages)
-        : device(aDevice)
-        , swapchain(aSwapchain)
-        , createInfo(aCreateInfo)
-        , swapchainImageCount(aSwapchainImageCount)
-    {
-        // TODO ASSERT(aSwapchainImages.size() <= swapchainImages.size())
-        std::copy(aSwapchainImages.begin(), aSwapchainImages.end(), swapchainImages.begin());
-    }
-
-    void Swapchain::Destroy()
-    {
-        if (device)
-        {
-            device->DestroySwapchain(this);
-        }
-    }
-
-    Swapchain::Swapchain(Swapchain&& other)
-        : device(other.device)
-        , swapchain(other.swapchain)
-        , createInfo(other.createInfo)
-        , swapchainImageCount(other.swapchainImageCount)
-        , swapchainImages(std::move(other.swapchainImages))
-    {
-        other.device = nullptr;
-        other.swapchain = nullptr;
-    }
-
-    Swapchain & Swapchain::operator=(Swapchain && other)
-    {
-        Destroy();
-
-        device = other.device;
-        swapchain = other.swapchain;
-        createInfo = other.createInfo;
-        swapchainImageCount = other.swapchainImageCount;
-        swapchainImages = std::move(other.swapchainImages);
-
-        other.device = nullptr;
-        other.swapchain = nullptr;
-
-        return *this;
-    }
-
-    Swapchain::~Swapchain()
-    {
-        Destroy();
     }
 }

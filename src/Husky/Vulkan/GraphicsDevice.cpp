@@ -68,14 +68,14 @@ namespace Husky::Vulkan
         return -1;
     }
 
-    VulkanResultValue<Swapchain> GraphicsDevice::CreateSwapchain(const SwapchainCreateInfo& swapchainCreateInfo, Surface * surface)
+    VulkanResultValue<Swapchain> GraphicsDevice::CreateSwapchain(const SwapchainCreateInfo& swapchainCreateInfo, Surface* surface)
     {
         vk::SwapchainCreateInfoKHR ci;
         ci.setImageColorSpace(swapchainCreateInfo.colorSpace);
         ci.setImageFormat(ToVulkanFormat(swapchainCreateInfo.format));
         ci.setMinImageCount(swapchainCreateInfo.imageCount);
         ci.setPresentMode(swapchainCreateInfo.presentMode);
-        ci.setImageArrayLayers(1);
+        ci.setImageArrayLayers(swapchainCreateInfo.arrayLayers);
         ci.setImageExtent({ static_cast<uint32>(swapchainCreateInfo.width), static_cast<uint32>(swapchainCreateInfo.height) });
         ci.setSurface(surface->GetSurface());
         ci.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc);
@@ -112,29 +112,30 @@ namespace Husky::Vulkan
 
             for (int32 i = 0; i < swapchainCreateInfo.imageCount; i++)
             {
-                auto image = images[i];
+                auto vulkanImage = images[i];
+                auto image = Image{ this, vulkanImage, nullptr, {}, false };
 
                 vk::ImageSubresourceRange subresourceRange;
                 subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eColor);
-                subresourceRange.setLayerCount(1);
+                subresourceRange.setLayerCount(swapchainCreateInfo.arrayLayers);
                 subresourceRange.setLevelCount(1);
 
-                vk::ImageViewCreateInfo ci;
-                ci.setImage(image);
-                ci.setViewType(vk::ImageViewType::e2D);
-                ci.setFormat(ToVulkanFormat(swapchainCreateInfo.format));
-                ci.setSubresourceRange(subresourceRange);
-                auto [imageViewCreateResult, imageView] = device.createImageView(ci, allocationCallbacks);
+                vk::ImageViewCreateInfo imageViewCi;
+                imageViewCi.setImage(vulkanImage);
+                imageViewCi.setViewType(vk::ImageViewType::e2D);
+                imageViewCi.setFormat(ToVulkanFormat(swapchainCreateInfo.format));
+                imageViewCi.setSubresourceRange(subresourceRange);
+                auto [imageViewCreateResult, imageView] = CreateImageView(&image, imageViewCi);
                 if (imageViewCreateResult != vk::Result::eSuccess)
                 {
                     // TODO
                     return { imageViewCreateResult };
                 }
 
-                swapchainImages[i] = { image, imageView };
+                swapchainImages[i] = { std::move(image), std::move(imageView) };
             }
             
-            return { result, Swapchain{ this, vulkanSwapchain, swapchainCreateInfo, swapchainImageCount, swapchainImages } };
+            return { result, Swapchain{ this, vulkanSwapchain, swapchainCreateInfo, swapchainImageCount, std::move(swapchainImages) } };
         }
         else
         {
@@ -209,9 +210,9 @@ namespace Husky::Vulkan
         return { createBufferResult, Buffer{this, vulkanBuffer, vulkanMemory, ci} };
     }
 
-    VulkanResultValue<IndexBuffer> GraphicsDevice::CreateIndexBuffer(int32 indexCount, IndexType indexType, QueueIndex queueIndex, bool mappable)
+    VulkanResultValue<IndexBuffer> GraphicsDevice::CreateIndexBuffer(IndexType indexType, int32 indexCount, QueueIndex queueIndex, bool mappable)
     {
-        auto size = indexCount*IndexSize(indexType);
+        auto size = indexCount * (int64)IndexSize(indexType);
         auto [createResult, buffer] = CreateBuffer(size, queueIndex, vk::BufferUsageFlagBits::eIndexBuffer, mappable);
         if (createResult != vk::Result::eSuccess)
         {
@@ -219,7 +220,21 @@ namespace Husky::Vulkan
         }
         else
         {
-            return { createResult, IndexBuffer{std::move(buffer), indexCount, indexType} };
+            return { createResult, IndexBuffer{std::move(buffer), indexType, indexCount } };
+        }
+    }
+
+    VulkanResultValue<VertexBuffer> GraphicsDevice::CreateVertexBuffer(int32 vertexSize, int32 vertexCount, QueueIndex queueIndex, bool mappable)
+    {
+        auto size = vertexSize * (int64)vertexCount;
+        auto [createResult, buffer] = CreateBuffer(size, queueIndex, vk::BufferUsageFlagBits::eVertexBuffer, mappable);
+        if (createResult != vk::Result::eSuccess)
+        {
+            return { createResult };
+        }
+        else
+        {
+            return { createResult, VertexBuffer{ std::move(buffer), vertexSize, vertexCount } };
         }
     }
 
@@ -402,9 +417,10 @@ namespace Husky::Vulkan
         }
     }
 
-    VulkanResultValue<RenderPass> GraphicsDevice::CreateRenderPass(const vk::RenderPassCreateInfo & ci)
+    VulkanResultValue<RenderPass> GraphicsDevice::CreateRenderPass(const RenderPassCreateInfo & ci)
     {
-        auto [createResult, vulkanRenderPass] = device.createRenderPass(ci, allocationCallbacks);
+        auto vkci = RenderPassCreateInfo::ToVulkanCreateInfo(ci);
+        auto [createResult, vulkanRenderPass] = device.createRenderPass(vkci.createInfo, allocationCallbacks);
         if (createResult != vk::Result::eSuccess)
         {
             device.destroyRenderPass(vulkanRenderPass, allocationCallbacks);

@@ -3,6 +3,8 @@
 #include <Husky/Types.h>
 #include <Husky/Vulkan.h>
 #include <Husky/Format.h>
+#include <Husky/Vulkan/Image.h>
+#include <Husky/Vulkan/ImageView.h>
 
 namespace Husky::Vulkan
 {
@@ -15,6 +17,7 @@ namespace Husky::Vulkan
         int32 imageCount = 0;
         int32 width = 0;
         int32 height = 0;
+        int32 arrayLayers = 1;
         Format format = Format::Undefined;
         vk::ColorSpaceKHR colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
         vk::PresentModeKHR presentMode = vk::PresentModeKHR::eFifo;
@@ -38,11 +41,14 @@ namespace Husky::Vulkan
             int32 height,
             PhysicalDevice* physicalDevice,
             Surface* surface);
+
+        inline Format GetFormat() const { return createInfo.format; }
+        inline ImageView* GetImageView(int index) { return &swapchainImages[index].imageView; }
     private:
         struct SwapchainImage
         {
-            vk::Image image;
-            vk::ImageView imageView;
+            Image image;
+            ImageView imageView;
         };
 
         Swapchain(
@@ -50,12 +56,13 @@ namespace Husky::Vulkan
             vk::SwapchainKHR swapchain,
             SwapchainCreateInfo createInfo,
             int32 swapchainImageCount,
-            const Vector<SwapchainImage>& swapchainImages);
+            Vector<SwapchainImage>&& swapchainImages);
 
         void Destroy();
 
         SwapchainCreateInfo createInfo;
-        Array<SwapchainImage, MaxSwapchainLength> swapchainImages;
+        // TODO use static vector
+        Vector<SwapchainImage> swapchainImages;
         int32 swapchainImageCount;
         GraphicsDevice* device = nullptr;
         vk::SwapchainKHR swapchain;

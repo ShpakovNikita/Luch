@@ -8,6 +8,7 @@ namespace Husky
 
         // Color
         R8G8B8A8Unorm,
+        B8G8R8A8Unorm,
 
         // Depth
         D16Unorm,

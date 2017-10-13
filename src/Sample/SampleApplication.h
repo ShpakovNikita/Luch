@@ -8,7 +8,9 @@
 #include <Husky/Vulkan/Swapchain.h>
 #include <Husky/Vulkan/PhysicalDevice.h>
 #include <Husky/Vulkan/Surface.h>
-#include <Husky/Vulkan/Buffer.h>
+#include <Husky/Vulkan/VertexBuffer.h>
+#include <Husky/Vulkan/IndexBuffer.h>
+#include <Husky/Vulkan/Framebuffer.h>
 #include "VulkanAllocator.h"
 
 #ifdef _WIN32
@@ -27,12 +29,14 @@ struct GraphicsContext
     Husky::Vulkan::Image depthStencilBuffer;
     Husky::Vulkan::ImageView depthStencilBufferView;
     Husky::Vulkan::Buffer uniformBuffer;
-    Husky::Vulkan::Buffer vertexBuffer;
-    Husky::Vulkan::Buffer indexBuffer;
     Husky::Vulkan::DescriptorSetLayout descriptorSetLayout;
     Husky::Vulkan::RenderPass renderPass;
+    Husky::Vulkan::Pipeline pipeline;
     Husky::GeometryGenerator geometryGenerator;
     Husky::MeshData boxData;
+    Husky::Vulkan::IndexBuffer indexBuffer;
+    Husky::Vulkan::VertexBuffer vertexBuffer;
+    Husky::Vector<Husky::Vulkan::Framebuffer> framebuffers;
 };
 
 class SampleApplication

@@ -27,12 +27,14 @@ namespace Husky::Vulkan
         GraphicsDevice* aDevice,
         vk::Image aImage,
         vk::DeviceMemory aMemory,
-        vk::ImageCreateInfo aCreateInfo)
+        vk::ImageCreateInfo aCreateInfo,
+        bool aOwning)
         : device(aDevice)
         , image(aImage)
         , memory(aMemory)
         , createInfo(aCreateInfo)
         , aspects(GetAspects(aCreateInfo.format))
+        , owning(aOwning)
     {
     }
 
@@ -42,6 +44,7 @@ namespace Husky::Vulkan
         , memory(other.memory)
         , createInfo(other.createInfo)
         , aspects(other.aspects)
+        , owning(other.owning)
     {
         other.device = nullptr;
         other.image = nullptr;
@@ -57,6 +60,7 @@ namespace Husky::Vulkan
         memory = other.memory;
         createInfo = other.createInfo;
         aspects = other.aspects;
+        owning = other.owning;
 
         other.device = nullptr;
         other.image = nullptr;
@@ -72,7 +76,7 @@ namespace Husky::Vulkan
 
     void Image::Destroy()
     {
-        if (device)
+        if (owning && device)
         {
             device->DestroyImage(this);
         }

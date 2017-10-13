@@ -45,6 +45,8 @@ namespace Husky::Vulkan
             SubpassAttachmentReference resolveAttachment = { nullptr, vk::ImageLayout::eUndefined };
 
             colorAttachments.push_back({ colorAttachment, resolveAttachment });
+
+            return *this;
         }
 
         inline SubpassDescription& AddColorAttachmentWithResolve(
@@ -142,6 +144,8 @@ namespace Husky::Vulkan
             HUSKY_ASSERT(attachments[attachment->index] == nullptr, "Two attachments are using same index");
 
             attachments[attachment->index] = attachment;
+
+            return *this;
         }
 
         inline RenderPassCreateInfo& AddSubpass(SubpassDescription&& subpassDescription)

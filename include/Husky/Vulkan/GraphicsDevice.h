@@ -67,8 +67,8 @@ namespace Husky::Vulkan
 
         VulkanResultValue<CommandPool> CreateCommandPool(QueueIndex queueIndex, bool transient = false, bool canReset = false);
         VulkanResultValue<Buffer> CreateBuffer(int64 size, QueueIndex queueIndex, vk::BufferUsageFlags usage, bool mappable);
-        VulkanResultValue<IndexBuffer> CreateIndexBuffer(int32 indexCount, IndexType indexType, QueueIndex queueIndex, bool mappable);
-        //VulkanResultValue<VertexBuffer> CreateVertexBuffer(int64 size, QueueIndex queueIndex, vk::BufferUsageFlags usage);
+        VulkanResultValue<IndexBuffer> CreateIndexBuffer(IndexType indexType, int32 indexCount, QueueIndex queueIndex, bool mappable);
+        VulkanResultValue<VertexBuffer> CreateVertexBuffer(int32 vertexSize, int32 vertexCount, QueueIndex queueIndex, bool mappable);
         VulkanResultValue<Image> CreateImage(const vk::ImageCreateInfo& imageCreateInfo);
         VulkanResultValue<ImageView> CreateImageView(Image* image, vk::ImageViewCreateInfo& imageViewCreateInfo);
         VulkanResultValue<ImageView> CreateImageView(Image* image);
@@ -79,7 +79,7 @@ namespace Husky::Vulkan
             const GraphicsPipelineCreateInfo& graphicsPipelineCreateInfo,
             PipelineCache* pipelineCache);
 
-        VulkanResultValue<RenderPass> CreateRenderPass(const vk::RenderPassCreateInfo& createInfo);
+        VulkanResultValue<RenderPass> CreateRenderPass(const RenderPassCreateInfo& createInfo);
         VulkanResultValue<DescriptorSetLayout> CreateDescriptorSetLayout(const DescriptorSetLayoutCreateInfo& createInfo);
         VulkanResultValue<Framebuffer> CreateFramebuffer(const FramebufferCreateInfo& createInfo);
     private:

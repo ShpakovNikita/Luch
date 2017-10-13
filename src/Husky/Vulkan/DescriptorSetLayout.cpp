@@ -38,8 +38,8 @@ namespace Husky::Vulkan
     vk::DescriptorSetLayoutCreateInfo DescriptorSetLayoutCreateInfo::ToVkCreateInfo(const DescriptorSetLayoutCreateInfo& ci)
     {
         vk::DescriptorSetLayoutCreateInfo vkci;
-        vkci.setBindingCount((uint32)ci.bindings.size());
-        vkci.setPBindings(ci.bindings.data());
+        //vkci.setBindingCount((uint32)ci.bindings.size());
+        //vkci.setPBindings(ci.bindings.data());
         return vkci;
     }
 

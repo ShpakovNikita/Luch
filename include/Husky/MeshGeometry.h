@@ -13,7 +13,7 @@ namespace Husky
         String name;
         Vector<int16> indices16;
         Vector<int32> indices32;
-        std::shared_ptr<Vector<Vertex>> vertices;
+        Vector<Vertex> vertices;
     };
 
     struct MeshGeometry

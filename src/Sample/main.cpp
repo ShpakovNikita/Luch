@@ -13,9 +13,13 @@ int32 main(int32 argc, char8** argv)
         args.push_back(argv[i]);
     }
 
-    application.Initialize(args);
+    bool initialized = application.Initialize(args);
+    HUSKY_ASSERT(initialized, "Application failed to initialize");
+
     application.Run();
-    application.Deinitialize();
+
+    bool deinitialized = application.Deinitialize();
+    HUSKY_ASSERT(deinitialized, "Application failed to deinitialize");
 
     return 0;
 }

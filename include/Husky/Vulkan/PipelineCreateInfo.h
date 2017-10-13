@@ -111,7 +111,7 @@ namespace Husky::Vulkan
         vk::BlendFactor srcAlphaBlendFactor = vk::BlendFactor::eOne;
         vk::BlendFactor dstAlphaBlendFactor = vk::BlendFactor::eZero;
         vk::BlendOp alphaBlendOp = vk::BlendOp::eAdd;
-        vk::ColorComponentFlags colorWriteMask = 
+        vk::ColorComponentFlags colorWriteMask =
             vk::ColorComponentFlagBits::eR
           | vk::ColorComponentFlagBits::eG
           | vk::ColorComponentFlagBits::eB

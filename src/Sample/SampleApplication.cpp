@@ -161,6 +161,8 @@ bool SampleApplication::Initialize(const Vector<String>& args)
         return false;
     }
 
+    graphicsContext->swapchain = std::move(createdSwapchain);
+
     vk::ImageCreateInfo depthBufferCreateInfo;
     depthBufferCreateInfo.setFormat(vk::Format::eD24UnormS8Uint);
     depthBufferCreateInfo.setArrayLayers(1);
@@ -205,14 +207,96 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     graphicsContext->boxData = graphicsContext->geometryGenerator.CreateBox("box01", { 0, 0, 0 }, 1, 1, 1, 0);
     
-    auto indexBufferSize = graphicsContext->boxData.indices16.size() * sizeof(uint16);
-    auto[createIndexBufferResult, createdIndexBuffer] = device.CreateIndexBuffer(uniformBufferSize, indices.graphicsQueueFamilyIndex, vk::BufferUsageFlagBits::eUniformBuffer, true);
-    if (createBufferResult != vk::Result::eSuccess)
+    auto indicesCount = graphicsContext->boxData.indices16.size();
+    auto indexBufferSize = indicesCount * sizeof(uint16);
+    auto [createIndexBufferResult, createdIndexBuffer] = device.CreateIndexBuffer(IndexType::UInt16, indicesCount, indices.graphicsQueueFamilyIndex, true);
+    if (createIndexBufferResult != vk::Result::eSuccess)
     {
         // TODO
         return false;
     }
 
+    {
+        auto[mapIndicesResult, indicesMemory] = createdIndexBuffer.GetUnderlyingBuffer().MapMemory(indexBufferSize, 0);
+        if (mapIndicesResult != vk::Result::eSuccess)
+        {
+            return false;
+        }
+        memcpy(indicesMemory, graphicsContext->boxData.indices16.data(), indexBufferSize);
+
+        createdIndexBuffer.GetUnderlyingBuffer().UnmapMemory();
+    }
+
+    graphicsContext->indexBuffer = std::move(createdIndexBuffer);
+
+    auto verticesCount = graphicsContext->boxData.vertices.size();
+    auto vertexSize = sizeof(Vertex);
+    auto [createVertexBufferResult, createdVertexBuffer] = device.CreateVertexBuffer(vertexSize, verticesCount, indices.graphicsQueueFamilyIndex, true);
+    if (createVertexBufferResult != vk::Result::eSuccess)
+    {
+        return false;
+    }
+
+    {
+        auto[mapVerticesResult, verticesMemory] = createdVertexBuffer.GetUnderlyingBuffer().MapMemory(indexBufferSize, 0);
+        if (mapVerticesResult != vk::Result::eSuccess)
+        {
+            return false;
+        }
+
+        memcpy(verticesMemory, graphicsContext->boxData.vertices.data(), vertexSize * verticesCount);
+
+        createdVertexBuffer.GetUnderlyingBuffer().UnmapMemory();
+    }
+
+    graphicsContext->vertexBuffer = std::move(createdVertexBuffer);
+
+    Attachment colorAttachment;
+    colorAttachment
+        .SetFormat(graphicsContext->swapchain.GetFormat())
+        .SetInitialLayout(vk::ImageLayout::eGeneral)
+        .SetLoadOp(vk::AttachmentLoadOp::eClear)
+        .SetStoreOp(vk::AttachmentStoreOp::eStore)
+        .SetSampleCount(SampleCount::e1)
+        .SetFinalLayout(vk::ImageLayout::eGeneral);
+
+    Attachment depthAttachment;
+    depthAttachment
+        .SetFormat(graphicsContext->depthStencilBuffer.GetFormat())
+        .SetInitialLayout(vk::ImageLayout::eGeneral)
+        .SetLoadOp(vk::AttachmentLoadOp::eClear)
+        .SetStoreOp(vk::AttachmentStoreOp::eStore)
+        .SetStencilLoadOp(vk::AttachmentLoadOp::eClear)
+        .SetStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+        .SetSampleCount(SampleCount::e1)
+        .SetFinalLayout(vk::ImageLayout::eGeneral);
+
+    SubpassDescription subpass;
+    subpass
+        .AddColorAttachment(&colorAttachment, vk::ImageLayout::eColorAttachmentOptimal)
+        .WithDepthStencilAttachment(&depthAttachment, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+
+    RenderPassCreateInfo renderPassCreateInfo;
+    renderPassCreateInfo
+        .AddAttachment(&colorAttachment)
+        .AddAttachment(&depthAttachment)
+        .AddSubpass(std::move(subpass));
+
+    auto [createRenderPassResult, createdRenderPass] = device.CreateRenderPass(renderPassCreateInfo);
+    if (createRenderPassResult != vk::Result::eSuccess)
+    {
+        return false;
+    }
+
+    graphicsContext->renderPass = std::move(createdRenderPass);
+
+    graphicsContext->framebuffers.reserve(swapchainCreateInfo.imageCount);
+
+    for (int32 i = 0; i < swapchainCreateInfo.imageCount; i++)
+    {
+        FramebufferCreateInfo framebufferCreateInfo(graphicsContext->renderPass, swapchainCreateInfo.width, swapchainCreateInfo.height);
+        framebufferCreateInfo.AddAtachment(graphicsContext->swapchain.)
+    }
 
     return true;
 }

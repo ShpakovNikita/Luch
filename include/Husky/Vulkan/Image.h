@@ -3,6 +3,7 @@
 #include <Husky/Vulkan.h>
 #include <Husky/Format.h>
 #include <Husky/ImageAspects.h>
+#include <Husky/Vulkan/Format.h>
 
 namespace Husky::Vulkan
 {
@@ -22,8 +23,9 @@ namespace Husky::Vulkan
         inline vk::Image GetImage() { return image; }
         inline vk::DeviceMemory GetDeviceMemory() { return memory; }
         inline ImageAspects GetImageAspects() const { return aspects; }
+        inline Format GetFormat() const { return FromVulkanFormat(createInfo.format); }
     private:
-        Image(GraphicsDevice* device, vk::Image image, vk::DeviceMemory memory, vk::ImageCreateInfo createInfo);
+        Image(GraphicsDevice* device, vk::Image image, vk::DeviceMemory memory, vk::ImageCreateInfo createInfo, bool owning = true);
         void Destroy();
 
         GraphicsDevice* device = nullptr;
@@ -31,5 +33,6 @@ namespace Husky::Vulkan
         vk::DeviceMemory memory;
         vk::ImageCreateInfo createInfo;
         ImageAspects aspects = ImageAspects::None;
+        bool owning = true;
     };
 }
