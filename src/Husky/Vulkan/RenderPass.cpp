@@ -5,24 +5,30 @@
 
 namespace Husky::Vulkan
 {
-    RenderPass::RenderPass(GraphicsDevice* aDevice, vk::RenderPass aRenderPass)
+
+RenderPass::RenderPass(GraphicsDevice* aDevice, vk::RenderPass aRenderPass, int32 aAttachmentCount)
         : device(aDevice)
         , renderPass(aRenderPass)
+        , attachmentCount(aAttachmentCount)
     {
     }
 
     RenderPass::RenderPass(RenderPass && other)
         : device(other.device)
         , renderPass(other.renderPass)
+        , attachmentCount(other.attachmentCount)
     {
         other.device = nullptr;
         other.renderPass = nullptr;
     }
 
-    RenderPass & RenderPass::operator=(RenderPass && other)
+    RenderPass& RenderPass::operator=(RenderPass && other)
     {
+        Destroy();
+
         device = other.device;
         renderPass = other.renderPass;
+        attachmentCount = other.attachmentCount;
 
         other.device = nullptr;
         other.renderPass = nullptr;
@@ -31,6 +37,11 @@ namespace Husky::Vulkan
     }
 
     RenderPass::~RenderPass()
+    {
+        Destroy();
+    }
+
+    void RenderPass::Destroy()
     {
         if (device)
         {

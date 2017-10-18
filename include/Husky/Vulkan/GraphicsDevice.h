@@ -77,10 +77,11 @@ namespace Husky::Vulkan
 
         VulkanResultValue<Pipeline> CreateGraphicsPipeline(
             const GraphicsPipelineCreateInfo& graphicsPipelineCreateInfo,
-            PipelineCache* pipelineCache);
+            PipelineCache* pipelineCache = nullptr);
 
         VulkanResultValue<RenderPass> CreateRenderPass(const RenderPassCreateInfo& createInfo);
         VulkanResultValue<DescriptorSetLayout> CreateDescriptorSetLayout(const DescriptorSetLayoutCreateInfo& createInfo);
+        VulkanResultValue<PipelineLayout> CreatePipelineLayout(const PipelineLayoutCreateInfo& createInfo);
         VulkanResultValue<Framebuffer> CreateFramebuffer(const FramebufferCreateInfo& createInfo);
     private:
         GraphicsDevice(

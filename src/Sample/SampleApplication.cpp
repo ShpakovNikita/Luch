@@ -101,6 +101,8 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     }
 
     graphicsContext->surface = std::move(createdSurface);
+
+    ShowWindow(hWnd, SW_SHOW);
 #endif
 
     auto [chooseQueuesResult, queueIndices] = graphicsContext->physicalDevice.ChooseDeviceQueues(&graphicsContext->surface);
@@ -119,15 +121,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     graphicsContext->device = std::move(createdDevice);
     auto& device = graphicsContext->device;
-
     auto& indices = graphicsContext->device.GetQueueIndices();
-
-    auto [createdGraphicsCommandPoolResult, createdGraphicsCommandPool] = device.CreateCommandPool(indices.graphicsQueueFamilyIndex, false, false);
-    if (createdGraphicsCommandPoolResult != vk::Result::eSuccess)
-    {
-        // TODO
-        return false;
-    }
 
     auto[createdPresentCommandPoolResult, createdPresentCommandPool] = device.CreateCommandPool(indices.presentQueueFamilyIndex, true, false);
     if (createdPresentCommandPoolResult != vk::Result::eSuccess)
@@ -136,16 +130,8 @@ bool SampleApplication::Initialize(const Vector<String>& args)
         return false;
     }
 
-    auto[createdComputeCommandPoolResult, createdComputeCommandPool] = device.CreateCommandPool(indices.computeQueueFamilyIndex, false, true);
-    if (createdComputeCommandPoolResult != vk::Result::eSuccess)
-    {
-        // TODO
-        return false;
-    }
-
-    graphicsContext->graphicsCommandPool = std::move(createdGraphicsCommandPool);
     graphicsContext->presentCommandPool = std::move(createdPresentCommandPool);
-    graphicsContext->computeCommandPool = std::move(createdComputeCommandPool);
+
 
     auto [swapchainChooseCreateInfoResult, swapchainCreateInfo] = Swapchain::ChooseSwapchainCreateInfo(width, height, &graphicsContext->physicalDevice, &graphicsContext->surface);
     if (swapchainChooseCreateInfoResult != vk::Result::eSuccess)
@@ -163,8 +149,10 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     graphicsContext->swapchain = std::move(createdSwapchain);
 
+    auto depthStencilFormat = vk::Format::eD24UnormS8Uint;
+
     vk::ImageCreateInfo depthBufferCreateInfo;
-    depthBufferCreateInfo.setFormat(vk::Format::eD24UnormS8Uint);
+    depthBufferCreateInfo.setFormat(depthStencilFormat);
     depthBufferCreateInfo.setArrayLayers(1);
     depthBufferCreateInfo.setImageType(vk::ImageType::e2D);
     depthBufferCreateInfo.setExtent({ (uint32)swapchainCreateInfo.width, (uint32)swapchainCreateInfo.height, 1 });
@@ -177,79 +165,15 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     depthBufferCreateInfo.setTiling(vk::ImageTiling::eOptimal);
     depthBufferCreateInfo.setUsage(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransferSrc);
 
-    auto [createDepthStencilBufferResult, createdDepthStencilBuffer] = device.CreateImage(depthBufferCreateInfo);
-    if (createDepthStencilBufferResult != vk::Result::eSuccess)
-    {
-        // TODO
-        return false;
-    }
-
-    graphicsContext->depthStencilBuffer = std::move(createdDepthStencilBuffer);
-
-    auto [createDepthStencilBufferViewResult, createdDepthStencilBufferView] = device.CreateImageView(&graphicsContext->depthStencilBuffer);
-    if (createDepthStencilBufferViewResult != vk::Result::eSuccess)
-    {
-        // TODO
-        return false;
-    }
-
-    graphicsContext->depthStencilBufferView = std::move(createdDepthStencilBufferView);
-
     constexpr auto uniformBufferSize = sizeof(Mat4x4);
-    auto[createBufferResult, createdBuffer] = device.CreateBuffer(uniformBufferSize, indices.graphicsQueueFamilyIndex, vk::BufferUsageFlagBits::eUniformBuffer, true);
-    if (createBufferResult != vk::Result::eSuccess)
-    {
-        // TODO
-        return false;
-    }
-
-    graphicsContext->uniformBuffer = std::move(createdBuffer);
 
     graphicsContext->boxData = graphicsContext->geometryGenerator.CreateBox("box01", { 0, 0, 0 }, 1, 1, 1, 0);
     
     auto indicesCount = graphicsContext->boxData.indices16.size();
     auto indexBufferSize = indicesCount * sizeof(uint16);
-    auto [createIndexBufferResult, createdIndexBuffer] = device.CreateIndexBuffer(IndexType::UInt16, indicesCount, indices.graphicsQueueFamilyIndex, true);
-    if (createIndexBufferResult != vk::Result::eSuccess)
-    {
-        // TODO
-        return false;
-    }
-
-    {
-        auto[mapIndicesResult, indicesMemory] = createdIndexBuffer.GetUnderlyingBuffer().MapMemory(indexBufferSize, 0);
-        if (mapIndicesResult != vk::Result::eSuccess)
-        {
-            return false;
-        }
-        memcpy(indicesMemory, graphicsContext->boxData.indices16.data(), indexBufferSize);
-
-        createdIndexBuffer.GetUnderlyingBuffer().UnmapMemory();
-    }
-
-    graphicsContext->indexBuffer = std::move(createdIndexBuffer);
 
     auto verticesCount = graphicsContext->boxData.vertices.size();
     auto vertexSize = sizeof(Vertex);
-    auto [createVertexBufferResult, createdVertexBuffer] = device.CreateVertexBuffer(vertexSize, verticesCount, indices.graphicsQueueFamilyIndex, true);
-    if (createVertexBufferResult != vk::Result::eSuccess)
-    {
-        return false;
-    }
-
-    {
-        auto[mapVerticesResult, verticesMemory] = createdVertexBuffer.GetUnderlyingBuffer().MapMemory(indexBufferSize, 0);
-        if (mapVerticesResult != vk::Result::eSuccess)
-        {
-            return false;
-        }
-
-        memcpy(verticesMemory, graphicsContext->boxData.vertices.data(), vertexSize * verticesCount);
-
-        createdVertexBuffer.GetUnderlyingBuffer().UnmapMemory();
-    }
-
-    graphicsContext->vertexBuffer = std::move(createdVertexBuffer);
 
     Attachment colorAttachment;
     colorAttachment
@@ -262,7 +186,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     Attachment depthAttachment;
     depthAttachment
-        .SetFormat(graphicsContext->depthStencilBuffer.GetFormat())
+        .SetFormat(FromVulkanFormat(depthStencilFormat))
         .SetInitialLayout(vk::ImageLayout::eGeneral)
         .SetLoadOp(vk::AttachmentLoadOp::eClear)
         .SetStoreOp(vk::AttachmentStoreOp::eStore)
@@ -282,20 +206,162 @@ bool SampleApplication::Initialize(const Vector<String>& args)
         .AddAttachment(&depthAttachment)
         .AddSubpass(std::move(subpass));
 
-    auto [createRenderPassResult, createdRenderPass] = device.CreateRenderPass(renderPassCreateInfo);
-    if (createRenderPassResult != vk::Result::eSuccess)
+    PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
+    //pipelineLayoutCreateInfo
+    //    .WithNSetLayouts(1)
+    //    .AddSetLayout(&graphicsContext->descriptorSetLayout);
+
+    graphicsContext->frameResources.reserve(swapchainCreateInfo.imageCount);
+
+    PipelineVertexInputStateCreateInfo vertexInputState;
+    vertexInputState.bindingDescriptions =
     {
-        return false;
-    }
+        {0, sizeof(Vertex), vk::VertexInputRate::eVertex}
+    };
+    vertexInputState.attributeDescriptions = 
+    {
+        {
+            0, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, position)
+        },
+        {
+            1, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, normal)
+        },
+        {
+            2, 0, vk::Format::eR32G32Sfloat, offsetof(Vertex, texCoord)
+        }
+    };
 
-    graphicsContext->renderPass = std::move(createdRenderPass);
+    GraphicsPipelineCreateInfo pipelineState;
 
-    graphicsContext->framebuffers.reserve(swapchainCreateInfo.imageCount);
+    pipelineState.inputAssemblyState.topology = graphicsContext->boxData.primitiveTopology;
+    
+    pipelineState.viewportState.viewports = { {0.0f, 0.0f, (float32)width, (float32)height, 0.0f, 1.0f} };
+    pipelineState.viewportState.scissors = { {{0, 0}, {(uint32)width, (uint32)height}} };
+
+    pipelineState.rasterizationState.cullMode = vk::CullModeFlagBits::eBack;
+
+    pipelineState.depthStencilState.depthTestEnable = true;
+    pipelineState.depthStencilState.depthWriteEnable = true;
+    pipelineState.depthStencilState.depthCompareOp = vk::CompareOp::eLess;
 
     for (int32 i = 0; i < swapchainCreateInfo.imageCount; i++)
     {
-        FramebufferCreateInfo framebufferCreateInfo(graphicsContext->renderPass, swapchainCreateInfo.width, swapchainCreateInfo.height);
-        framebufferCreateInfo.AddAtachment(graphicsContext->swapchain.)
+        auto& frameResources = graphicsContext->frameResources.emplace_back();
+
+        auto[createdGraphicsCommandPoolResult, createdGraphicsCommandPool] = device.CreateCommandPool(indices.graphicsQueueFamilyIndex, false, false);
+        if (createdGraphicsCommandPoolResult != vk::Result::eSuccess)
+        {
+            // TODO
+            return false;
+        }
+
+        frameResources.graphicsCommandPool = std::move(createdGraphicsCommandPool);
+
+        auto[createBufferResult, createdBuffer] = device.CreateBuffer(uniformBufferSize, indices.graphicsQueueFamilyIndex, vk::BufferUsageFlagBits::eUniformBuffer, true);
+        if (createBufferResult != vk::Result::eSuccess)
+        {
+            // TODO
+            return false;
+        }
+
+        frameResources.uniformBuffer = std::move(createdBuffer);
+
+        auto[createVertexBufferResult, createdVertexBuffer] = device.CreateVertexBuffer(vertexSize, verticesCount, indices.graphicsQueueFamilyIndex, true);
+        if (createVertexBufferResult != vk::Result::eSuccess)
+        {
+            return false;
+        }
+
+        {
+            auto[mapVerticesResult, verticesMemory] = createdVertexBuffer.GetUnderlyingBuffer().MapMemory(indexBufferSize, 0);
+            if (mapVerticesResult != vk::Result::eSuccess)
+            {
+                return false;
+            }
+
+            memcpy(verticesMemory, graphicsContext->boxData.vertices.data(), vertexSize * verticesCount);
+
+            createdVertexBuffer.GetUnderlyingBuffer().UnmapMemory();
+        }
+
+        frameResources.vertexBuffer = std::move(createdVertexBuffer);
+
+        auto[createIndexBufferResult, createdIndexBuffer] = device.CreateIndexBuffer(IndexType::UInt16, indicesCount, indices.graphicsQueueFamilyIndex, true);
+        if (createIndexBufferResult != vk::Result::eSuccess)
+        {
+            // TODO
+            return false;
+        }
+
+        {
+            auto[mapIndicesResult, indicesMemory] = createdIndexBuffer.GetUnderlyingBuffer().MapMemory(indexBufferSize, 0);
+            if (mapIndicesResult != vk::Result::eSuccess)
+            {
+                return false;
+            }
+            memcpy(indicesMemory, graphicsContext->boxData.indices16.data(), indexBufferSize);
+
+            createdIndexBuffer.GetUnderlyingBuffer().UnmapMemory();
+        }
+
+        frameResources.indexBuffer = std::move(createdIndexBuffer);
+
+        auto[createDepthStencilBufferResult, createdDepthStencilBuffer] = device.CreateImage(depthBufferCreateInfo);
+        if (createDepthStencilBufferResult != vk::Result::eSuccess)
+        {
+            return false;
+        }
+
+        frameResources.depthStencilBuffer = std::move(createdDepthStencilBuffer);
+
+        auto[createDepthStencilBufferViewResult, createdDepthStencilBufferView] = device.CreateImageView(&frameResources.depthStencilBuffer);
+        if (createDepthStencilBufferViewResult != vk::Result::eSuccess)
+        {
+            return false;
+        }
+
+        frameResources.depthStencilBufferView = std::move(createdDepthStencilBufferView);
+
+        auto[createRenderPassResult, createdRenderPass] = device.CreateRenderPass(renderPassCreateInfo);
+        if (createRenderPassResult != vk::Result::eSuccess)
+        {
+            return false;
+        }
+
+        frameResources.renderPass = std::move(createdRenderPass);
+
+        FramebufferCreateInfo framebufferCreateInfo(&frameResources.renderPass, swapchainCreateInfo.width, swapchainCreateInfo.height, 1);
+        framebufferCreateInfo
+            .AddAtachment(&colorAttachment, graphicsContext->swapchain.GetImageView(i))
+            .AddAtachment(&depthAttachment, &frameResources.depthStencilBufferView);
+
+        auto [createFramebufferResult, createdFramebuffer] = device.CreateFramebuffer(framebufferCreateInfo);
+        if (createFramebufferResult != vk::Result::eSuccess)
+        {
+            return false;
+        }
+
+        frameResources.framebuffer = std::move(createdFramebuffer);
+
+        auto [createPipelineLayoutResult, createdPipelineLayout] = device.CreatePipelineLayout(pipelineLayoutCreateInfo);
+        if (createPipelineLayoutResult != vk::Result::eSuccess)
+        {
+            return false;
+        }
+
+        frameResources.pipelineLayout = std::move(createdPipelineLayout);
+
+        GraphicsPipelineCreateInfo pipelineStateCopy{ pipelineState };
+        pipelineStateCopy.renderPass = &frameResources.renderPass;
+        pipelineStateCopy.layout = &frameResources.pipelineLayout;
+
+        auto[createPipelineResult, createdPipeline] = device.CreateGraphicsPipeline(pipelineStateCopy);
+        if (createPipelineResult != vk::Result::eSuccess)
+        {
+            return false;
+        }
+
+        frameResources.pipeline = std::move(createdPipeline);
     }
 
     return true;
@@ -311,6 +377,10 @@ bool SampleApplication::Deinitialize()
 
 void SampleApplication::Run()
 {
+    int32 frameResourceIndex = frameIndex % graphicsContext->frameResources.size();
+    auto &frameResources = graphicsContext->frameResources[frameResourceIndex];
+
+    while (true) {} 
 }
 
 vk::ResultValue<vk::Instance> SampleApplication::CreateVulkanInstance(const vk::AllocationCallbacks& allocationCallbacks)

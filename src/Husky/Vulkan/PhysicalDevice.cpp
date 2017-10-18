@@ -86,7 +86,7 @@ namespace Husky::Vulkan
 
         std::copy(uniqueIndices.begin(), uniqueIndices.end(), std::back_inserter(indices.uniqueIndices));
 
-        return { vk::Result::eSuccess, indices };
+        return { vk::Result::eSuccess, std::move(indices) };
     }
 
     VulkanResultValue<GraphicsDevice> PhysicalDevice::CreateDevice(

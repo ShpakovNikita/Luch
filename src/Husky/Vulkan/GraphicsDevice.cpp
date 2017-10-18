@@ -428,14 +428,14 @@ namespace Husky::Vulkan
         }
         else
         {
-            return { createResult, RenderPass{this, vulkanRenderPass} };
+            return { createResult, RenderPass{this, vulkanRenderPass, (int32)vkci.attachments.size()} };
         }
     }
 
     VulkanResultValue<DescriptorSetLayout> GraphicsDevice::CreateDescriptorSetLayout(const DescriptorSetLayoutCreateInfo& ci)
     {
         auto vkci = DescriptorSetLayoutCreateInfo::ToVkCreateInfo(ci);
-        auto [createResult, vulkanDescriptorSetLayout] = device.createDescriptorSetLayout(vkci, allocationCallbacks);
+        auto [createResult, vulkanDescriptorSetLayout] = device.createDescriptorSetLayout(vkci.createInfo, allocationCallbacks);
         if (createResult != vk::Result::eSuccess)
         {
             device.destroyDescriptorSetLayout(vulkanDescriptorSetLayout, allocationCallbacks);
@@ -444,6 +444,21 @@ namespace Husky::Vulkan
         else
         {
             return { createResult, DescriptorSetLayout{this, vulkanDescriptorSetLayout } };
+        }
+    }
+
+    VulkanResultValue<PipelineLayout> GraphicsDevice::CreatePipelineLayout(const PipelineLayoutCreateInfo& createInfo)
+    {
+        auto vkci = PipelineLayoutCreateInfo::ToVkCreateInfo(createInfo);
+        auto [createResult, vulkanPipelineLayout] = device.createPipelineLayout(vkci.createInfo, allocationCallbacks);
+        if (createResult != vk::Result::eSuccess)
+        {
+            device.destroyPipelineLayout(vulkanPipelineLayout, allocationCallbacks);
+            return { createResult };
+        }
+        else
+        {
+            return { createResult, PipelineLayout{this, vulkanPipelineLayout} };
         }
     }
 

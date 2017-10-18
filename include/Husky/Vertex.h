@@ -11,17 +11,17 @@ constexpr int32 InvalidMaterialIndex = -1;
 #pragma pack(push, 1)
 struct Vertex
 {
-    Vec3 Position;
-    Vec3 Normal;
-    Vec2 TexCoord;
-    int32 MaterialIndex;
+    Vec3 position;
+    Vec3 normal;
+    Vec2 texCoord;
+    int32 materialIndex;
     
     friend bool operator==(const Vertex& lhs, const Vertex& rhs)
     {
-        return lhs.Position == rhs.Position
-            && lhs.Normal == rhs.Normal
-            && lhs.TexCoord == rhs.TexCoord
-            && lhs.MaterialIndex == rhs.MaterialIndex;
+        return lhs.position == rhs.position
+            && lhs.normal == rhs.normal
+            && lhs.texCoord == rhs.texCoord
+            && lhs.materialIndex == rhs.materialIndex;
     }
 
     friend bool operator!=(const Vertex& lhs, const Vertex& rhs)

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Husky/Vulkan.h>
-#include <Husky/Flags.h>
+#include <Husky/ShaderStage.h>
 
 namespace Husky::Vulkan
 {
@@ -9,16 +9,6 @@ namespace Husky::Vulkan
     class Pipeline;
     class PipelineLayout;
     class RenderPass;
-
-    enum class ShaderStage
-    {
-        Fragment = 1 << 0,
-        Geometry = 1 << 1,
-        TesselationControl = 1 << 2,
-        TesselationEvaluation = 1 << 3,
-        Vertex = 1 << 4,
-        Compute = 1 << 5,
-    };
 
     enum DynamicState
     {
@@ -41,12 +31,14 @@ namespace Husky::Vulkan
         // TODO specialization
     };
 
+    // TODO move to husky types
     struct PipelineVertexInputStateCreateInfo
     {
         Vector<vk::VertexInputBindingDescription> bindingDescriptions;
         Vector<vk::VertexInputAttributeDescription> attributeDescriptions;
     };
 
+    // TODO move to husky types
     struct PipelineInputAssemblyStateCreateInfo
     {
         vk::PrimitiveTopology topology = vk::PrimitiveTopology::eTriangleList;
@@ -55,6 +47,7 @@ namespace Husky::Vulkan
 
     // TODO tesselation
 
+    // TODO move to husky types
     struct PipelineViewportStateCreateInfo
     {
         Vector<vk::Viewport> viewports;
@@ -68,6 +61,7 @@ namespace Husky::Vulkan
         float32 slopeFactor = 0.0f;
     };
 
+    // TODO move to husky types
     struct PipelineRasterizationStateCreateInfo
     {
         bool depthClampEnable = false;
@@ -131,8 +125,37 @@ namespace Husky::Vulkan
         Vector<DynamicState> dynamicStates;
     };
 
+    struct VulkanGraphicsPipelineCreateInfo
+    {
+        vk::GraphicsPipelineCreateInfo createInfo;
+        vk::PipelineShaderStageCreateInfo stages;
+        vk::PipelineVertexInputStateCreateInfo vertexInputState;
+        vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState;
+        //vk::PipelineTessellationStateCreateInfo tessellationState;
+        vk::PipelineViewportStateCreateInfo viewportState;
+        vk::PipelineRasterizationStateCreateInfo rasterizationState;
+        vk::PipelineMultisampleStateCreateInfo multisampleState;
+        vk::PipelineDepthStencilStateCreateInfo depthStencilState;
+        vk::PipelineColorBlendStateCreateInfo colorBlendState;
+        vk::PipelineDynamicStateCreateInfo dynamicState;
+
+        Vector<vk::PipelineShaderStageCreateInfo> shaderStages;
+        Vector<vk::VertexInputBindingDescription> bindingDescriptions;
+        Vector<vk::VertexInputAttributeDescription> attributeDescriptions;
+    };
+
     struct GraphicsPipelineCreateInfo
     {
+        static VulkanGraphicsPipelineCreateInfo ToVkCreateInfo(const GraphicsPipelineCreateInfo& ci);
+
+        GraphicsPipelineCreateInfo() = default;
+
+        GraphicsPipelineCreateInfo(const GraphicsPipelineCreateInfo& other) = delete;
+        GraphicsPipelineCreateInfo& operator=(const GraphicsPipelineCreateInfo& other) = delete;
+
+        GraphicsPipelineCreateInfo(GraphicsPipelineCreateInfo&& other) = default;
+        GraphicsPipelineCreateInfo& operator=(GraphicsPipelineCreateInfo&& other) = default;
+
         Vector<PipelineShaderStageCreateInfo> shaderStages;
         PipelineVertexInputStateCreateInfo vertexInputState;
         PipelineInputAssemblyStateCreateInfo inputAssemblyState;
@@ -146,6 +169,4 @@ namespace Husky::Vulkan
         PipelineLayout* layout = nullptr;
         RenderPass* renderPass = nullptr;
     };
-
-    vk::GraphicsPipelineCreateInfo ToVulkanGraphicsPipelineCreateInfo(const GraphicsPipelineCreateInfo& ci);
 }

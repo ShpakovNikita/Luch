@@ -17,26 +17,34 @@
 #include <Husky/Platform/Win32/WndProcDelegate.h>
 #endif
 
+struct FrameResources
+{
+    Husky::Vulkan::Framebuffer framebuffer;
+    //Husky::Vulkan::DescriptorPool descriptorPool;
+    Husky::Vulkan::CommandPool graphicsCommandPool;
+    
+    Husky::Vulkan::CommandBuffer commandBuffer;
+    Husky::Vulkan::Image depthStencilBuffer;
+    Husky::Vulkan::ImageView depthStencilBufferView;
+    Husky::Vulkan::Buffer uniformBuffer;
+    Husky::Vulkan::RenderPass renderPass;
+    Husky::Vulkan::Pipeline pipeline;
+    Husky::Vulkan::PipelineLayout pipelineLayout;
+    Husky::Vulkan::IndexBuffer indexBuffer;
+    Husky::Vulkan::VertexBuffer vertexBuffer;
+};
+
 struct GraphicsContext
 {
     Husky::Vulkan::PhysicalDevice physicalDevice;
     Husky::Vulkan::Surface surface;
     Husky::Vulkan::GraphicsDevice device;
     Husky::Vulkan::Swapchain swapchain;
-    Husky::Vulkan::CommandPool graphicsCommandPool;
     Husky::Vulkan::CommandPool presentCommandPool;
-    Husky::Vulkan::CommandPool computeCommandPool;
-    Husky::Vulkan::Image depthStencilBuffer;
-    Husky::Vulkan::ImageView depthStencilBufferView;
-    Husky::Vulkan::Buffer uniformBuffer;
     Husky::Vulkan::DescriptorSetLayout descriptorSetLayout;
-    Husky::Vulkan::RenderPass renderPass;
-    Husky::Vulkan::Pipeline pipeline;
     Husky::GeometryGenerator geometryGenerator;
     Husky::MeshData boxData;
-    Husky::Vulkan::IndexBuffer indexBuffer;
-    Husky::Vulkan::VertexBuffer vertexBuffer;
-    Husky::Vector<Husky::Vulkan::Framebuffer> framebuffers;
+    Husky::Vector<FrameResources> frameResources;
 };
 
 class SampleApplication
@@ -141,4 +149,5 @@ private:
 
     Husky::int32 width = 800;
     Husky::int32 height = 600;
+    Husky::int32 frameIndex = 0;
 };

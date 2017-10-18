@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Husky/Vulkan.h>
+#include <Husky/Vulkan/Attachment.h>
 #include <Husky/Vulkan/ImageView.h>
 
 namespace Husky::Vulkan
@@ -15,15 +16,9 @@ namespace Husky::Vulkan
 
         FramebufferCreateInfo(RenderPass* aRenderPass, int32 aWidth, int32 aHeight, int32 aLayers);
 
-        inline FramebufferCreateInfo& WithNAttachments(int32 attachmentCount)
+        inline FramebufferCreateInfo& AddAtachment(Attachment* attachment, ImageView* imageView)
         {
-            attachments.reserve(attachmentCount);
-            return *this;
-        }
-
-        inline FramebufferCreateInfo& AddAtachment(ImageView* attachment)
-        {
-            attachments.push_back(attachment->GetImageView());
+            attachments[attachment->GetIndex()] = imageView->GetImageView();
             return *this;
         }
     private:

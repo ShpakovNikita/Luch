@@ -40,4 +40,19 @@ namespace Husky::Vulkan
             device->DestroyPipelineLayout(this);
         }
     }
+
+    PipelineLayoutCreateInfo::VulkanPipelineLayoutCreateInfo PipelineLayoutCreateInfo::ToVkCreateInfo(const PipelineLayoutCreateInfo& ci)
+    {
+        VulkanPipelineLayoutCreateInfo createInfo;
+        createInfo.setLayouts.reserve(ci.setLayouts.size());
+        for(auto setLayout : ci.setLayouts)
+        {
+            createInfo.setLayouts.push_back(setLayout->GetDescriptorSetLayout());
+        }
+
+        createInfo.createInfo.setPSetLayouts(createInfo.setLayouts.data());
+        createInfo.createInfo.setSetLayoutCount((int32)createInfo.setLayouts.size());
+
+        return createInfo;
+    }
 }

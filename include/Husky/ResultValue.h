@@ -29,7 +29,6 @@ namespace Husky
             : result(std::move(other.result))
             , value(std::move(other.value))
         {
-
         }
 
         ~ResultValue() = default;

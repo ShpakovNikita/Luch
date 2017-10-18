@@ -9,6 +9,7 @@ namespace Husky::Vulkan
         , height(aHeight)
         , layers(aLayers)
     {
+        attachments.resize(renderPass->GetAttachmentCount());
     }
 
     Framebuffer::Framebuffer(GraphicsDevice* aDevice, vk::Framebuffer aFramebuffer)

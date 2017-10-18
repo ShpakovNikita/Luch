@@ -110,6 +110,14 @@ namespace Husky::Vulkan
     public:
         struct VulkanSubpassDescription
         {
+            VulkanSubpassDescription() = default;
+
+            VulkanSubpassDescription(const VulkanSubpassDescription& other) = delete;
+            VulkanSubpassDescription& operator=(const VulkanSubpassDescription& other) = delete;
+
+            VulkanSubpassDescription(VulkanSubpassDescription&& other) = default;
+            VulkanSubpassDescription& operator=(VulkanSubpassDescription&& other) = default;
+
             vk::SubpassDescription subpass;
             Vector<vk::AttachmentReference> inputAttachments;
             Vector<vk::AttachmentReference> colorAttachments;
@@ -119,6 +127,14 @@ namespace Husky::Vulkan
 
         struct VulkanRenderPassCreateInfo
         {
+            VulkanRenderPassCreateInfo() = default;
+
+            VulkanRenderPassCreateInfo(const VulkanRenderPassCreateInfo& other) = delete;
+            VulkanRenderPassCreateInfo& operator=(const VulkanRenderPassCreateInfo& other) = delete;
+
+            VulkanRenderPassCreateInfo(VulkanRenderPassCreateInfo&& other) = default;
+            VulkanRenderPassCreateInfo& operator=(VulkanRenderPassCreateInfo&& other) = default;
+
             vk::RenderPassCreateInfo createInfo;
             Vector<vk::AttachmentDescription> attachments;
             Vector<VulkanSubpassDescription> subpassesInfo;
@@ -128,6 +144,8 @@ namespace Husky::Vulkan
 
         static VulkanRenderPassCreateInfo ToVulkanCreateInfo(const RenderPassCreateInfo& createInfo);
 
+        // attachment must be in a valid state
+        // changing the attachment after calling this function can lead to undefined behavior
         inline RenderPassCreateInfo& AddAttachment(Attachment* attachment)
         {
             if (attachment->index < 0)
@@ -184,10 +202,14 @@ namespace Husky::Vulkan
         RenderPass(RenderPass&& other);
         RenderPass& operator=(RenderPass&& other);
         ~RenderPass();
-        vk::RenderPass GetRenderPass() { return renderPass; }
+        inline vk::RenderPass GetRenderPass() { return renderPass; }
+        inline int32 GetAttachmentCount() const { return attachmentCount; }
     private:
-        RenderPass(GraphicsDevice* device, vk::RenderPass renderPass);
+        void Destroy();
+
+        RenderPass(GraphicsDevice* device, vk::RenderPass renderPass, int32 attachmentCount);
         GraphicsDevice* device = nullptr;
         vk::RenderPass renderPass;
+        int32 attachmentCount = 0;
     };
 }
