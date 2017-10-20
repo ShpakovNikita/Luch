@@ -35,7 +35,7 @@ namespace Husky::Vulkan
         Destroy();
     }
 
-    DescriptorSetLayoutCreateInfo::VulkanDescriptorSetLayoutCreateInfo DescriptorSetLayoutCreateInfo::ToVkCreateInfo(const DescriptorSetLayoutCreateInfo& ci)
+    DescriptorSetLayoutCreateInfo::VulkanDescriptorSetLayoutCreateInfo DescriptorSetLayoutCreateInfo::ToVulkanCreateInfo(const DescriptorSetLayoutCreateInfo& ci)
     {
         VulkanDescriptorSetLayoutCreateInfo description;
         description.bindings.resize(ci.bindings.size());

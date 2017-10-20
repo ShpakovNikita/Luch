@@ -41,7 +41,7 @@ namespace Husky::Vulkan
         }
     }
 
-    PipelineLayoutCreateInfo::VulkanPipelineLayoutCreateInfo PipelineLayoutCreateInfo::ToVkCreateInfo(const PipelineLayoutCreateInfo& ci)
+    PipelineLayoutCreateInfo::VulkanPipelineLayoutCreateInfo PipelineLayoutCreateInfo::ToVulkanCreateInfo(const PipelineLayoutCreateInfo& ci)
     {
         VulkanPipelineLayoutCreateInfo createInfo;
         createInfo.setLayouts.reserve(ci.setLayouts.size());

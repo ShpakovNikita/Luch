@@ -60,7 +60,7 @@ namespace Husky::Vulkan
             Vector<Vector<vk::Sampler>> samplers;
         };
 
-        static VulkanDescriptorSetLayoutCreateInfo ToVkCreateInfo(const DescriptorSetLayoutCreateInfo& ci);
+        static VulkanDescriptorSetLayoutCreateInfo ToVulkanCreateInfo(const DescriptorSetLayoutCreateInfo& ci);
 
         // descriptor set binding must be in a valid state
         // changing the binding after calling this function can lead to undefined behavior

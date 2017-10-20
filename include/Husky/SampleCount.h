@@ -4,12 +4,12 @@ namespace Husky
 {
     enum class SampleCount
     {
-        e1,
-        e2,
-        e4,
-        e8,
-        e16,
-        e32,
-        e64
+        e1 = 1,
+        e2 = 2,
+        e4 = 4,
+        e8 = 8,
+        e16 = 16,
+        e32 = 32,
+        e64 = 64
     };
 }

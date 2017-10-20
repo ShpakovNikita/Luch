@@ -2,6 +2,8 @@
 
 #include <Husky/Vulkan.h>
 #include <Husky/ShaderStage.h>
+#include <Husky/UniquePtr.h>
+#include <Husky/SampleCount.h>
 
 namespace Husky::Vulkan
 {
@@ -10,7 +12,7 @@ namespace Husky::Vulkan
     class PipelineLayout;
     class RenderPass;
 
-    enum DynamicState
+    /*enum DynamicState
     {
         Viewport,
         Scissor,
@@ -21,7 +23,7 @@ namespace Husky::Vulkan
         StencilCompareMask,
         StencilWriteMask,
         StencilReference,
-    };
+    };*/
 
     struct PipelineShaderStageCreateInfo
     {
@@ -54,28 +56,24 @@ namespace Husky::Vulkan
         Vector<vk::Rect2D> scissors;
     };
 
-    struct RasterizationDepthBias
-    {
-        float32 constantFactor = 0.0f;
-        float32 clamp = 0.0f;
-        float32 slopeFactor = 0.0f;
-    };
-
     // TODO move to husky types
     struct PipelineRasterizationStateCreateInfo
     {
-        bool depthClampEnable = false;
-        bool rasterizerDiscardEnable = false;
         vk::PolygonMode polygonMode = vk::PolygonMode::eFill;
         vk::CullModeFlags cullMode = vk::CullModeFlagBits::eNone;
         vk::FrontFace frontFace = vk::FrontFace::eClockwise;
-        Optional<RasterizationDepthBias> depthBias;
+        float32 depthBiasConstantFactor = 0.0f;
+        float32 depthBiasClamp = 0.0f;
+        float32 depthBiasSlopeFactor = 0.0f;
         float32 lineWidth = 1.0f;
+        bool depthClampEnable = false;
+        bool depthBiasEnable = false;
+        bool rasterizerDiscardEnable = false;
     };
 
     struct PipelineMultisampleStateCreateInfo
     {
-        int32 rasterizationSamples = 1;
+        SampleCount rasterizationSamples = SampleCount::e1;
         bool sampleShadingEnable = false;
         float32  minSampleShading = 0;
         // TODO samplemask
@@ -122,11 +120,19 @@ namespace Husky::Vulkan
 
     struct PipelieDynamicStateCreateInfo
     {
-        Vector<DynamicState> dynamicStates;
+        Vector<vk::DynamicState> dynamicStates;
     };
 
     struct VulkanGraphicsPipelineCreateInfo
     {
+        VulkanGraphicsPipelineCreateInfo() = default;
+
+        VulkanGraphicsPipelineCreateInfo(const VulkanGraphicsPipelineCreateInfo& other) = delete;
+        VulkanGraphicsPipelineCreateInfo& operator=(const VulkanGraphicsPipelineCreateInfo& other) = delete;
+
+        VulkanGraphicsPipelineCreateInfo(VulkanGraphicsPipelineCreateInfo&& other) = default;
+        VulkanGraphicsPipelineCreateInfo& operator=(VulkanGraphicsPipelineCreateInfo&& other) = default;
+
         vk::GraphicsPipelineCreateInfo createInfo;
         vk::PipelineShaderStageCreateInfo stages;
         vk::PipelineVertexInputStateCreateInfo vertexInputState;
@@ -142,19 +148,15 @@ namespace Husky::Vulkan
         Vector<vk::PipelineShaderStageCreateInfo> shaderStages;
         Vector<vk::VertexInputBindingDescription> bindingDescriptions;
         Vector<vk::VertexInputAttributeDescription> attributeDescriptions;
+        Vector<vk::Viewport> viewports;
+        Vector<vk::Rect2D> scissors;
+        Vector<vk::PipelineColorBlendAttachmentState> attachments;
+        Vector<vk::DynamicState> dynamicStates;
     };
 
     struct GraphicsPipelineCreateInfo
     {
-        static VulkanGraphicsPipelineCreateInfo ToVkCreateInfo(const GraphicsPipelineCreateInfo& ci);
-
-        GraphicsPipelineCreateInfo() = default;
-
-        GraphicsPipelineCreateInfo(const GraphicsPipelineCreateInfo& other) = delete;
-        GraphicsPipelineCreateInfo& operator=(const GraphicsPipelineCreateInfo& other) = delete;
-
-        GraphicsPipelineCreateInfo(GraphicsPipelineCreateInfo&& other) = default;
-        GraphicsPipelineCreateInfo& operator=(GraphicsPipelineCreateInfo&& other) = default;
+        static UniquePtr<VulkanGraphicsPipelineCreateInfo> ToVulkanCreateInfo(const GraphicsPipelineCreateInfo& ci);
 
         Vector<PipelineShaderStageCreateInfo> shaderStages;
         PipelineVertexInputStateCreateInfo vertexInputState;

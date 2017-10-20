@@ -11,6 +11,7 @@
 #include <Husky/Vulkan/VertexBuffer.h>
 #include <Husky/Vulkan/IndexBuffer.h>
 #include <Husky/Vulkan/Framebuffer.h>
+#include <Husky/Vulkan/GlslShaderCompiler.h>
 #include "VulkanAllocator.h"
 
 #ifdef _WIN32
@@ -42,6 +43,9 @@ struct GraphicsContext
     Husky::Vulkan::Swapchain swapchain;
     Husky::Vulkan::CommandPool presentCommandPool;
     Husky::Vulkan::DescriptorSetLayout descriptorSetLayout;
+    Husky::Vulkan::GlslShaderCompiler shaderCompiler;
+    Husky::Vulkan::ShaderModule vertexShaderModule;
+    Husky::Vulkan::ShaderModule fragmentShaderModule;
     Husky::GeometryGenerator geometryGenerator;
     Husky::MeshData boxData;
     Husky::Vector<FrameResources> frameResources;

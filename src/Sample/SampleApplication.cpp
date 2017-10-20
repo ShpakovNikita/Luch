@@ -23,6 +23,29 @@ static VkBool32 StaticDebugCallback(
     return static_cast<VulkanDebugDelegate*>(userData)->DebugCallback(flags, objectType, object, location, messageCode, pLayerPrefix, pMessage);
 }
 
+static const char8* vertexShaderSource =
+"layout (binding = 0) uniform buffer\n"
+"{\n"
+"    mat4 mvp;\n"
+"};\n"
+"layout (location = 0) in vec3 position;\n"
+"layout (location = 1) in vec3 normal;\n"
+"layout (location = 2) in vec2 inTexCoord;\n"
+"layout (location = 0) out vec2 outTexCoord;\n"
+"void main()\n"
+"{\n"
+"   outTexCoord = inTexCoord;\n"
+"   gl_Position = buffer.mvp * position;\n"
+"}\n";
+
+static const char8* fragmentShaderSource =
+"layout (location = 0) in vec2 texCoord;\n"
+"layout (location = 0) out vec4 outColor;\n"
+"void main()\n"
+"{\n"
+"   outColor = (texCoord.x, texCoord.y, 0.0f, 0.0f);\n"
+"}\n";
+
 #ifdef _WIN32
 
 static LRESULT CALLBACK StaticWindowProc(
@@ -105,6 +128,15 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     ShowWindow(hWnd, SW_SHOW);
 #endif
 
+    GlslShaderCompiler::Bytecode vertexShaderBytecode;
+
+    bool vertexShaderCompiled = graphicsContext->shaderCompiler.TryCompileShader(ShaderStage::Vertex, vertexShaderSource, vertexShaderBytecode);
+    HUSKY_ASSERT(vertexShaderCompiled, "Vertex shader failed to compile");
+
+    GlslShaderCompiler::Bytecode fragmentShaderBytecode;
+    bool fragmentShaderCompiled = graphicsContext->shaderCompiler.TryCompileShader(ShaderStage::Fragment, fragmentShaderSource, fragmentShaderBytecode);
+    HUSKY_ASSERT(fragmentShaderCompiled, "Fragment shader failed to compile");
+
     auto [chooseQueuesResult, queueIndices] = graphicsContext->physicalDevice.ChooseDeviceQueues(&graphicsContext->surface);
     if (chooseQueuesResult != vk::Result::eSuccess)
     {
@@ -131,7 +163,6 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     }
 
     graphicsContext->presentCommandPool = std::move(createdPresentCommandPool);
-
 
     auto [swapchainChooseCreateInfoResult, swapchainCreateInfo] = Swapchain::ChooseSwapchainCreateInfo(width, height, &graphicsContext->physicalDevice, &graphicsContext->surface);
     if (swapchainChooseCreateInfoResult != vk::Result::eSuccess)
@@ -169,10 +200,10 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     graphicsContext->boxData = graphicsContext->geometryGenerator.CreateBox("box01", { 0, 0, 0 }, 1, 1, 1, 0);
     
-    auto indicesCount = graphicsContext->boxData.indices16.size();
+    auto indicesCount = (int32)graphicsContext->boxData.indices16.size();
     auto indexBufferSize = indicesCount * sizeof(uint16);
 
-    auto verticesCount = graphicsContext->boxData.vertices.size();
+    auto verticesCount = (int32)graphicsContext->boxData.vertices.size();
     auto vertexSize = sizeof(Vertex);
 
     Attachment colorAttachment;
@@ -399,9 +430,9 @@ vk::ResultValue<vk::Instance> SampleApplication::CreateVulkanInstance(const vk::
 
     vk::InstanceCreateInfo ci;
     ci.setPApplicationInfo(&applicationInfo);
-    ci.setEnabledLayerCount(validationLayers.size());
+    ci.setEnabledLayerCount((int32)validationLayers.size());
     ci.setPpEnabledLayerNames(validationLayers.data());
-    ci.setEnabledExtensionCount(requiredExtensions.size());
+    ci.setEnabledExtensionCount((int32)requiredExtensions.size());
     ci.setPpEnabledExtensionNames(requiredExtensions.data());
 
     return vk::createInstance(ci, allocationCallbacks);

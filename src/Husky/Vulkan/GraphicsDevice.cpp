@@ -365,11 +365,11 @@ namespace Husky::Vulkan
         return CreateImageView(image, ci);
     }
 
-    VulkanResultValue<ShaderModule> GraphicsDevice::CreateShaderModule(char8 * bytecode, int64 bytecodeSize)
+    VulkanResultValue<ShaderModule> GraphicsDevice::CreateShaderModule(char8* bytecode, int64 bytecodeSizeInBytes)
     {
         vk::ShaderModuleCreateInfo ci;
         ci.setPCode((uint32*)bytecode);
-        ci.setCodeSize(bytecodeSize);
+        ci.setCodeSize(bytecodeSizeInBytes);
         auto [createResult, vulkanShaderModule] = device.createShaderModule(ci, allocationCallbacks);
         if (createResult != vk::Result::eSuccess)
         {
@@ -401,11 +401,11 @@ namespace Husky::Vulkan
         const GraphicsPipelineCreateInfo & graphicsPipelineCreateInfo,
         PipelineCache* pipelineCache)
     {
-        vk::GraphicsPipelineCreateInfo ci;
+        auto vkci = GraphicsPipelineCreateInfo::ToVulkanCreateInfo(graphicsPipelineCreateInfo);
 
         vk::PipelineCache cache = pipelineCache ? pipelineCache->pipelineCache : nullptr;
 
-        auto[createResult, vulkanPipeline] = device.createGraphicsPipeline(cache, ci, allocationCallbacks);
+        auto[createResult, vulkanPipeline] = device.createGraphicsPipeline(cache, vkci->createInfo, allocationCallbacks);
         if (createResult != vk::Result::eSuccess)
         {
             device.destroyPipeline(vulkanPipeline, allocationCallbacks);
@@ -434,7 +434,7 @@ namespace Husky::Vulkan
 
     VulkanResultValue<DescriptorSetLayout> GraphicsDevice::CreateDescriptorSetLayout(const DescriptorSetLayoutCreateInfo& ci)
     {
-        auto vkci = DescriptorSetLayoutCreateInfo::ToVkCreateInfo(ci);
+        auto vkci = DescriptorSetLayoutCreateInfo::ToVulkanCreateInfo(ci);
         auto [createResult, vulkanDescriptorSetLayout] = device.createDescriptorSetLayout(vkci.createInfo, allocationCallbacks);
         if (createResult != vk::Result::eSuccess)
         {
@@ -449,7 +449,7 @@ namespace Husky::Vulkan
 
     VulkanResultValue<PipelineLayout> GraphicsDevice::CreatePipelineLayout(const PipelineLayoutCreateInfo& createInfo)
     {
-        auto vkci = PipelineLayoutCreateInfo::ToVkCreateInfo(createInfo);
+        auto vkci = PipelineLayoutCreateInfo::ToVulkanCreateInfo(createInfo);
         auto [createResult, vulkanPipelineLayout] = device.createPipelineLayout(vkci.createInfo, allocationCallbacks);
         if (createResult != vk::Result::eSuccess)
         {

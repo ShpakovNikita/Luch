@@ -9,6 +9,7 @@
 #include <set>
 #include <unordered_set>
 #include <tuple>
+#include <memory>
 
 namespace Husky
 {

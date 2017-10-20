@@ -24,7 +24,7 @@ namespace Husky::Vulkan
             Vector<vk::DescriptorSetLayout> setLayouts;
         };
 
-        static VulkanPipelineLayoutCreateInfo ToVkCreateInfo(const PipelineLayoutCreateInfo& ci);
+        static VulkanPipelineLayoutCreateInfo ToVulkanCreateInfo(const PipelineLayoutCreateInfo& ci);
 
         inline PipelineLayoutCreateInfo& WithNSetLayouts(int32 count)
         {
