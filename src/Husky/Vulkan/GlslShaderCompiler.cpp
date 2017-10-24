@@ -126,6 +126,16 @@ EShLanguage ToLanguage(ShaderStage shaderStage)
 
 static TBuiltInResource defaultResources = CreateDefaultResources();
 
+void GlslShaderCompiler::Initialize()
+{
+    glslang::InitializeProcess();
+}
+
+void GlslShaderCompiler::Deinitialize()
+{
+    glslang::FinalizeProcess();
+}
+
 bool GlslShaderCompiler::TryCompileShader(ShaderStage shaderStage, const char8* glslSource, Bytecode& spirvBytecode)
 {
     // TODO logging

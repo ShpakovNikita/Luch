@@ -24,10 +24,13 @@ static VkBool32 StaticDebugCallback(
 }
 
 static const char8* vertexShaderSource =
-"layout (binding = 0) uniform buffer\n"
+"#version 400\n"
+"#extension GL_ARB_shading_language_420pack : enable\n"
+"#extension GL_ARB_separate_shader_objects : enable\n"
+"layout (std140, binding = 0) uniform uniformBuffer\n"
 "{\n"
 "    mat4 mvp;\n"
-"};\n"
+"} mybuffer;\n"
 "layout (location = 0) in vec3 position;\n"
 "layout (location = 1) in vec3 normal;\n"
 "layout (location = 2) in vec2 inTexCoord;\n"
@@ -35,15 +38,18 @@ static const char8* vertexShaderSource =
 "void main()\n"
 "{\n"
 "   outTexCoord = inTexCoord;\n"
-"   gl_Position = buffer.mvp * position;\n"
+"   gl_Position = mybuffer.mvp * vec4(position, 0.0);\n"
 "}\n";
 
 static const char8* fragmentShaderSource =
+"#version 400\n"
+"#extension GL_ARB_shading_language_420pack : enable\n"
+"#extension GL_ARB_separate_shader_objects : enable\n"
 "layout (location = 0) in vec2 texCoord;\n"
 "layout (location = 0) out vec4 outColor;\n"
 "void main()\n"
 "{\n"
-"   outColor = (texCoord.x, texCoord.y, 0.0f, 0.0f);\n"
+"   outColor = vec4(texCoord, 0.0, 0.0);\n"
 "}\n";
 
 #ifdef _WIN32
@@ -75,6 +81,7 @@ static LRESULT CALLBACK StaticWindowProc(
 
 bool SampleApplication::Initialize(const Vector<String>& args)
 {
+    GlslShaderCompiler::Initialize();
     graphicsContext = std::make_unique<GraphicsContext>();
 
     allocationCallbacks = allocator.GetAllocationCallbacks();
@@ -127,15 +134,6 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     ShowWindow(hWnd, SW_SHOW);
 #endif
-
-    GlslShaderCompiler::Bytecode vertexShaderBytecode;
-
-    bool vertexShaderCompiled = graphicsContext->shaderCompiler.TryCompileShader(ShaderStage::Vertex, vertexShaderSource, vertexShaderBytecode);
-    HUSKY_ASSERT(vertexShaderCompiled, "Vertex shader failed to compile");
-
-    GlslShaderCompiler::Bytecode fragmentShaderBytecode;
-    bool fragmentShaderCompiled = graphicsContext->shaderCompiler.TryCompileShader(ShaderStage::Fragment, fragmentShaderSource, fragmentShaderBytecode);
-    HUSKY_ASSERT(fragmentShaderCompiled, "Fragment shader failed to compile");
 
     auto [chooseQueuesResult, queueIndices] = graphicsContext->physicalDevice.ChooseDeviceQueues(&graphicsContext->surface);
     if (chooseQueuesResult != vk::Result::eSuccess)
@@ -199,12 +197,33 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     constexpr auto uniformBufferSize = sizeof(Mat4x4);
 
     graphicsContext->boxData = graphicsContext->geometryGenerator.CreateBox("box01", { 0, 0, 0 }, 1, 1, 1, 0);
-    
+
+    auto vertexShaderCompiled = graphicsContext->shaderCompiler.TryCompileShader(ShaderStage::Vertex, vertexShaderSource, graphicsContext->vertexShaderBytecode);
+    auto fragmentShaderCompiled = graphicsContext->shaderCompiler.TryCompileShader(ShaderStage::Fragment, fragmentShaderSource, graphicsContext->fragmentShaderBytecode);
+    HUSKY_ASSERT(vertexShaderCompiled, "Vertex shader failed to compile");
+    HUSKY_ASSERT(fragmentShaderCompiled, "Fragment shader failed to compile");
+
+    auto[createVertexShaderModuleResult, createdVertexShaderModule] = device.CreateShaderModule(graphicsContext->vertexShaderBytecode.data(), graphicsContext->vertexShaderBytecode.size() * sizeof(uint32));
+    if (createVertexShaderModuleResult != vk::Result::eSuccess)
+    {
+        return false;
+    }
+
+    graphicsContext->vertexShaderModule = std::move(createdVertexShaderModule);
+
+    auto[createFragmentShaderModuleResult, createdFragmentShaderModule] = device.CreateShaderModule(graphicsContext->fragmentShaderBytecode.data(), graphicsContext->fragmentShaderBytecode.size() * sizeof(uint32));
+    if (createFragmentShaderModuleResult != vk::Result::eSuccess)
+    {
+        return false;
+    }
+
+    graphicsContext->fragmentShaderModule = std::move(createdFragmentShaderModule);
+
     auto indicesCount = (int32)graphicsContext->boxData.indices16.size();
     auto indexBufferSize = indicesCount * sizeof(uint16);
 
     auto verticesCount = (int32)graphicsContext->boxData.vertices.size();
-    auto vertexSize = sizeof(Vertex);
+    int32 vertexSize = sizeof(Vertex);
 
     Attachment colorAttachment;
     colorAttachment
@@ -263,6 +282,16 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     };
 
     GraphicsPipelineCreateInfo pipelineState;
+
+    auto& vertexShaderStage = pipelineState.shaderStages.emplace_back();
+    vertexShaderStage.name = "main";
+    vertexShaderStage.shaderModule = &graphicsContext->vertexShaderModule;
+    vertexShaderStage.stage = ShaderStage::Vertex;
+
+    auto& fragmentShaderStage = pipelineState.shaderStages.emplace_back();
+    fragmentShaderStage.name = "main";
+    fragmentShaderStage.shaderModule = &graphicsContext->fragmentShaderModule;
+    fragmentShaderStage.stage = ShaderStage::Fragment;
 
     pipelineState.inputAssemblyState.topology = graphicsContext->boxData.primitiveTopology;
     
@@ -403,6 +432,7 @@ bool SampleApplication::Deinitialize()
     graphicsContext.release();
     DestroyDebugCallback(instance, debugCallback, allocationCallbacks);
     instance.destroy(allocationCallbacks);
+    GlslShaderCompiler::Deinitialize();
     return true;
 }
 

@@ -365,10 +365,10 @@ namespace Husky::Vulkan
         return CreateImageView(image, ci);
     }
 
-    VulkanResultValue<ShaderModule> GraphicsDevice::CreateShaderModule(char8* bytecode, int64 bytecodeSizeInBytes)
+    VulkanResultValue<ShaderModule> GraphicsDevice::CreateShaderModule(uint32* bytecode, int64 bytecodeSizeInBytes)
     {
         vk::ShaderModuleCreateInfo ci;
-        ci.setPCode((uint32*)bytecode);
+        ci.setPCode(bytecode);
         ci.setCodeSize(bytecodeSizeInBytes);
         auto [createResult, vulkanShaderModule] = device.createShaderModule(ci, allocationCallbacks);
         if (createResult != vk::Result::eSuccess)

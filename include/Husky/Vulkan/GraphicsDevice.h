@@ -72,7 +72,7 @@ namespace Husky::Vulkan
         VulkanResultValue<Image> CreateImage(const vk::ImageCreateInfo& imageCreateInfo);
         VulkanResultValue<ImageView> CreateImageView(Image* image, vk::ImageViewCreateInfo& imageViewCreateInfo);
         VulkanResultValue<ImageView> CreateImageView(Image* image);
-        VulkanResultValue<ShaderModule> CreateShaderModule(char8* bytecode, int64 bytecodeSizeInBytes);
+        VulkanResultValue<ShaderModule> CreateShaderModule(uint32* bytecode, int64 bytecodeSizeInBytes);
         VulkanResultValue<PipelineCache> CreatePipelineCache();
 
         VulkanResultValue<Pipeline> CreateGraphicsPipeline(

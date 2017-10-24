@@ -8,6 +8,7 @@
 #include <Husky/Vulkan/Swapchain.h>
 #include <Husky/Vulkan/PhysicalDevice.h>
 #include <Husky/Vulkan/Surface.h>
+#include <Husky/Vulkan/GlslShaderCompiler.h>
 #include <Husky/Vulkan/VertexBuffer.h>
 #include <Husky/Vulkan/IndexBuffer.h>
 #include <Husky/Vulkan/Framebuffer.h>
@@ -44,6 +45,8 @@ struct GraphicsContext
     Husky::Vulkan::CommandPool presentCommandPool;
     Husky::Vulkan::DescriptorSetLayout descriptorSetLayout;
     Husky::Vulkan::GlslShaderCompiler shaderCompiler;
+    Husky::Vulkan::GlslShaderCompiler::Bytecode vertexShaderBytecode;
+    Husky::Vulkan::GlslShaderCompiler::Bytecode fragmentShaderBytecode;
     Husky::Vulkan::ShaderModule vertexShaderModule;
     Husky::Vulkan::ShaderModule fragmentShaderModule;
     Husky::GeometryGenerator geometryGenerator;
