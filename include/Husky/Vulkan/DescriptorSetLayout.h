@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Husky/Vulkan.h>
+#include <Husky/ShaderStage.h>
 
 namespace Husky::Vulkan
 {
@@ -23,7 +24,7 @@ namespace Husky::Vulkan
             return *this;
         }
 
-        inline DescriptorSetBinding& AtStages(vk::ShaderStageFlags aStages)
+        inline DescriptorSetBinding& AtStages(ShaderStage aStages)
         {
             stages = aStages;
             return *this;
@@ -38,7 +39,7 @@ namespace Husky::Vulkan
         vk::DescriptorType type;
         int32 count = 0;
         int32 index = -1;
-        vk::ShaderStageFlags stages;
+        ShaderStage stages;
         Vector<vk::Sampler> immutableSamplers;
     };
 
@@ -69,6 +70,7 @@ namespace Husky::Vulkan
             binding->index = currentBindingIndex;
             currentBindingIndex += binding->count;
             bindings.push_back(binding);
+            return *this;
         }
     private:
         Vector<DescriptorSetBinding*> bindings;

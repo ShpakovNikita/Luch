@@ -24,13 +24,13 @@ static VkBool32 StaticDebugCallback(
 }
 
 static const char8* vertexShaderSource =
-"#version 400\n"
+"#version 450\n"
 "#extension GL_ARB_shading_language_420pack : enable\n"
 "#extension GL_ARB_separate_shader_objects : enable\n"
-"layout (std140, binding = 0) uniform uniformBuffer\n"
+"layout (binding = 0) uniform UniformBufferObject\n"
 "{\n"
 "    mat4 mvp;\n"
-"} mybuffer;\n"
+"} ub;\n"
 "layout (location = 0) in vec3 position;\n"
 "layout (location = 1) in vec3 normal;\n"
 "layout (location = 2) in vec2 inTexCoord;\n"
@@ -38,11 +38,12 @@ static const char8* vertexShaderSource =
 "void main()\n"
 "{\n"
 "   outTexCoord = inTexCoord;\n"
-"   gl_Position = mybuffer.mvp * vec4(position, 0.0);\n"
+"   //gl_Position = mybuffer.mvp * vec4(position, 0.0);\n"
+"   gl_Position = vec4(position, 0.0);\n"
 "}\n";
 
 static const char8* fragmentShaderSource =
-"#version 400\n"
+"#version 450\n"
 "#extension GL_ARB_shading_language_420pack : enable\n"
 "#extension GL_ARB_separate_shader_objects : enable\n"
 "layout (location = 0) in vec2 texCoord;\n"
@@ -256,19 +257,48 @@ bool SampleApplication::Initialize(const Vector<String>& args)
         .AddAttachment(&depthAttachment)
         .AddSubpass(std::move(subpass));
 
+    graphicsContext->uniformBufferBinding
+        .OfType(vk::DescriptorType::eUniformBuffer)
+        .AtStages(ShaderStage::Vertex);
+
+    DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo;
+    descriptorSetLayoutCreateInfo
+        .AddBinding(&graphicsContext->uniformBufferBinding);
+
+    auto [createDescriptorSetLayoutResult, createdDescriptorSetLayout] = device.CreateDescriptorSetLayout(descriptorSetLayoutCreateInfo);
+    if (createDescriptorSetLayoutResult != vk::Result::eSuccess)
+    {
+        return false;
+    }
+
+    graphicsContext->descriptorSetLayout = std::move(createdDescriptorSetLayout);
+
     PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
-    //pipelineLayoutCreateInfo
-    //    .WithNSetLayouts(1)
-    //    .AddSetLayout(&graphicsContext->descriptorSetLayout);
+    pipelineLayoutCreateInfo
+        .WithNSetLayouts(1)
+        .AddSetLayout(&graphicsContext->descriptorSetLayout);
 
     graphicsContext->frameResources.reserve(swapchainCreateInfo.imageCount);
 
-    PipelineVertexInputStateCreateInfo vertexInputState;
-    vertexInputState.bindingDescriptions =
+    GraphicsPipelineCreateInfo pipelineState;
+
+
+    auto& vertexShaderStage = pipelineState.shaderStages.emplace_back();
+    vertexShaderStage.name = "main";
+    vertexShaderStage.shaderModule = &graphicsContext->vertexShaderModule;
+    vertexShaderStage.stage = ShaderStage::Vertex;
+
+    auto& fragmentShaderStage = pipelineState.shaderStages.emplace_back();
+    fragmentShaderStage.name = "main";
+    fragmentShaderStage.shaderModule = &graphicsContext->fragmentShaderModule;
+    fragmentShaderStage.stage = ShaderStage::Fragment;
+
+    pipelineState.vertexInputState.bindingDescriptions =
     {
-        {0, sizeof(Vertex), vk::VertexInputRate::eVertex}
+        { 0, sizeof(Vertex), vk::VertexInputRate::eVertex }
     };
-    vertexInputState.attributeDescriptions = 
+
+    pipelineState.vertexInputState.attributeDescriptions =
     {
         {
             0, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, position)
@@ -281,18 +311,6 @@ bool SampleApplication::Initialize(const Vector<String>& args)
         }
     };
 
-    GraphicsPipelineCreateInfo pipelineState;
-
-    auto& vertexShaderStage = pipelineState.shaderStages.emplace_back();
-    vertexShaderStage.name = "main";
-    vertexShaderStage.shaderModule = &graphicsContext->vertexShaderModule;
-    vertexShaderStage.stage = ShaderStage::Vertex;
-
-    auto& fragmentShaderStage = pipelineState.shaderStages.emplace_back();
-    fragmentShaderStage.name = "main";
-    fragmentShaderStage.shaderModule = &graphicsContext->fragmentShaderModule;
-    fragmentShaderStage.stage = ShaderStage::Fragment;
-
     pipelineState.inputAssemblyState.topology = graphicsContext->boxData.primitiveTopology;
     
     pipelineState.viewportState.viewports = { {0.0f, 0.0f, (float32)width, (float32)height, 0.0f, 1.0f} };
@@ -303,6 +321,10 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     pipelineState.depthStencilState.depthTestEnable = true;
     pipelineState.depthStencilState.depthWriteEnable = true;
     pipelineState.depthStencilState.depthCompareOp = vk::CompareOp::eLess;
+
+    auto &attachment = pipelineState.colorBlendState.attachments.emplace_back();
+    attachment.blendEnable = false;
+
 
     for (int32 i = 0; i < swapchainCreateInfo.imageCount; i++)
     {
@@ -422,6 +444,14 @@ bool SampleApplication::Initialize(const Vector<String>& args)
         }
 
         frameResources.pipeline = std::move(createdPipeline);
+
+        auto[createFenceResult, createdFence] = device.CreateFence();
+        if (createFenceResult != vk::Result::eSuccess)
+        {
+            return false;
+        }
+
+        frameResources.fence = std::move(createdFence);
     }
 
     return true;
@@ -441,7 +471,24 @@ void SampleApplication::Run()
     int32 frameResourceIndex = frameIndex % graphicsContext->frameResources.size();
     auto &frameResources = graphicsContext->frameResources[frameResourceIndex];
 
-    while (true) {} 
+    MSG msg;
+    while (GetMessage(&msg, NULL, 0, 0) != 0)
+    {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+}
+
+void SampleApplication::Draw()
+{
+    /*int32 frameResourceIndex = frameIndex % (int32)graphicsContext->frameResources.size();
+
+    auto& frameResource = graphicsContext->frameResources[frameResourceIndex];
+
+    auto[acquireResult, index] = graphicsContext->swapchain.AcquireNextImage(&frameResource.fence);
+    HUSKY_ASSERT(acquireResult == vk::Result::eSuccess);
+
+    frameResource.framebuffer*/
 }
 
 vk::ResultValue<vk::Instance> SampleApplication::CreateVulkanInstance(const vk::AllocationCallbacks& allocationCallbacks)
@@ -518,8 +565,10 @@ LRESULT SampleApplication::WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
     switch (uMsg)
     {
     case WM_DESTROY:
+    {
         PostQuitMessage(0);
         return 0;
+    }
 
     case WM_PAINT:
     {
@@ -529,11 +578,14 @@ LRESULT SampleApplication::WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
         FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1));
 
         EndPaint(hwnd, &ps);
+        return 0;
     }
-    return 0;
 
+    default:
+    {
+        return DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
-    return DefWindowProc(hwnd, uMsg, wParam, lParam);
+    }
 }
 
 std::tuple<HINSTANCE, HWND> SampleApplication::CreateMainWindow(const Husky::String& title, int32 width, int32 height)

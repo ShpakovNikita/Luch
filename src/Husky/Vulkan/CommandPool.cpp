@@ -35,6 +35,39 @@ namespace Husky::Vulkan
         Destroy();
     }
 
+    VulkanResultValue<Vector<CommandBuffer>> CommandPool::AllocateCommandBuffers(int32 count, CommandBufferLevel level)
+    {
+        vk::CommandBufferAllocateInfo allocateInfo;
+        allocateInfo.setCommandBufferCount(count);
+        allocateInfo.setCommandPool(commandPool);
+
+        switch (level)
+        {
+        case CommandBufferLevel::Primary:
+            allocateInfo.setLevel(vk::CommandBufferLevel::ePrimary);
+            break;
+        case CommandBufferLevel::Secondary:
+            allocateInfo.setLevel(vk::CommandBufferLevel::eSecondary);
+            break;
+        }
+
+        auto [allocateResult, allocatedBuffers] = device->device.allocateCommandBuffers(allocateInfo);
+        if (allocateResult != vk::Result::eSuccess)
+        {
+            return { allocateResult };
+        }
+
+        Vector<CommandBuffer> buffers;
+        buffers.reserve(count);
+
+        for (auto vulkanBuffer : allocatedBuffers)
+        {
+            buffers.emplace_back(device, vulkanBuffer);
+        }
+
+        return { allocateResult, std::move(buffers) };
+    }
+
     vk::Result CommandPool::Reset(bool releaseResources)
     {
         vk::CommandPoolResetFlags flags;
@@ -43,7 +76,7 @@ namespace Husky::Vulkan
             flags |= vk::CommandPoolResetFlagBits::eReleaseResources;
         }
 
-        return device->GetDevice().resetCommandPool(commandPool, flags);
+        return device->device.resetCommandPool(commandPool, flags);
     }
 
     void CommandPool::Destroy()

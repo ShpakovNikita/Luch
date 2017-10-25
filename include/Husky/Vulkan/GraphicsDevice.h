@@ -18,6 +18,7 @@
 #include <Husky/Vulkan/IndexBuffer.h>
 #include <Husky/Vulkan/VertexBuffer.h>
 #include <Husky/Vulkan/Framebuffer.h>
+#include <Husky/Vulkan/Fence.h>
 
 namespace Husky::Vulkan
 {
@@ -41,6 +42,7 @@ namespace Husky::Vulkan
         friend class PipelineLayout;
         friend class PipelineCache;
         friend class RenderPass;
+        friend class Fence;
     public:
         GraphicsDevice() = default;
 
@@ -83,6 +85,7 @@ namespace Husky::Vulkan
         VulkanResultValue<DescriptorSetLayout> CreateDescriptorSetLayout(const DescriptorSetLayoutCreateInfo& createInfo);
         VulkanResultValue<PipelineLayout> CreatePipelineLayout(const PipelineLayoutCreateInfo& createInfo);
         VulkanResultValue<Framebuffer> CreateFramebuffer(const FramebufferCreateInfo& createInfo);
+        VulkanResultValue<Fence> CreateFence(bool signaled = false);
     private:
         GraphicsDevice(
             PhysicalDevice* physicalDevice,
@@ -108,6 +111,7 @@ namespace Husky::Vulkan
         void DestroyRenderPass(RenderPass* renderPass);
         void DestroyDescriptorSetLayout(DescriptorSetLayout* descriptorSetLayout);
         void DestroyFramebuffer(Framebuffer* framebuffer);
+        void DestroyFence(Fence* fence);
 
         PhysicalDevice* physicalDevice = nullptr;
         vk::Device device;

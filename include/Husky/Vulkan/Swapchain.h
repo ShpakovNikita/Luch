@@ -3,6 +3,7 @@
 #include <Husky/Types.h>
 #include <Husky/Vulkan.h>
 #include <Husky/Format.h>
+#include <Husky/Vulkan/Fence.h>
 #include <Husky/Vulkan/Image.h>
 #include <Husky/Vulkan/ImageView.h>
 
@@ -41,6 +42,30 @@ namespace Husky::Vulkan
             int32 height,
             PhysicalDevice* physicalDevice,
             Surface* surface);
+
+        // TODO semaphore
+        inline VulkanResultValue<int32> AcquireNextImage(Fence* fence, Optional<int64> timeoutNs = {})
+        {
+            uint64 timeoutValue;
+            if (timeoutNs.has_value())
+            {
+                timeoutValue = timeoutNs.value();
+            }
+            else
+            {
+                timeoutValue = Limits<uint64>::max();
+            }
+
+            auto [acquireResult, index] = device->device.acquireNextImageKHR(swapchain, timeoutValue, nullptr, fence->GetFence());
+            if (acquireResult != vk::Result::eSuccess)
+            {
+                return { acquireResult };
+            }
+            else
+            {
+                return { acquireResult, index };
+            }
+        }
 
         inline Format GetFormat() const { return createInfo.format; }
         inline ImageView* GetImageView(int index) { return &swapchainImages[index].imageView; }

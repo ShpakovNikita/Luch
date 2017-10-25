@@ -134,7 +134,6 @@ namespace Husky::Vulkan
         VulkanGraphicsPipelineCreateInfo& operator=(VulkanGraphicsPipelineCreateInfo&& other) = default;
 
         vk::GraphicsPipelineCreateInfo createInfo;
-        vk::PipelineShaderStageCreateInfo stages;
         vk::PipelineVertexInputStateCreateInfo vertexInputState;
         vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState;
         //vk::PipelineTessellationStateCreateInfo tessellationState;

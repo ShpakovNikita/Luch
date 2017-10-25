@@ -477,6 +477,26 @@ namespace Husky::Vulkan
         }
     }
 
+    VulkanResultValue<Fence> GraphicsDevice::CreateFence(bool signaled)
+    {
+        vk::FenceCreateInfo vkci;
+        if (signaled)
+        {
+            vkci.setFlags(vk::FenceCreateFlagBits::eSignaled);
+        }
+
+        auto[createResult, vulkanFence] = device.createFence(vkci, allocationCallbacks);
+        if (createResult != vk::Result::eSuccess)
+        {
+            device.destroyFence(vulkanFence, allocationCallbacks);
+            return { createResult };
+        }
+        else
+        {
+            return { createResult, Fence{ this, vulkanFence } };
+        }
+    }
+
     VulkanResultValue<vk::DeviceMemory> GraphicsDevice::AllocateMemory(
         vk::MemoryRequirements memoryRequirements,
         vk::MemoryPropertyFlags memoryPropertyFlags)
@@ -573,5 +593,10 @@ namespace Husky::Vulkan
     void GraphicsDevice::DestroyFramebuffer(Framebuffer* framebuffer)
     {
         device.destroyFramebuffer(framebuffer->framebuffer);
+    }
+
+    void GraphicsDevice::DestroyFence(Fence* fence)
+    {
+        device.destroyFence(fence->fence);
     }
 }

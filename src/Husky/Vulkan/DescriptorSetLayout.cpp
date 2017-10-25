@@ -1,5 +1,6 @@
 #include <Husky/Vulkan/DescriptorSetLayout.h>
 #include <Husky/Vulkan/GraphicsDevice.h>
+#include <Husky/Vulkan/ShaderStage.h>
 
 namespace Husky::Vulkan
 {
@@ -38,16 +39,16 @@ namespace Husky::Vulkan
     DescriptorSetLayoutCreateInfo::VulkanDescriptorSetLayoutCreateInfo DescriptorSetLayoutCreateInfo::ToVulkanCreateInfo(const DescriptorSetLayoutCreateInfo& ci)
     {
         VulkanDescriptorSetLayoutCreateInfo description;
-        description.bindings.resize(ci.bindings.size());
+        description.bindings.reserve(ci.bindings.size());
 
         int currentBindingCount = 0;
         for (auto& binding : ci.bindings)
         {
-            vk::DescriptorSetLayoutBinding vulkanBinding;
+            auto& vulkanBinding = description.bindings.emplace_back();
             vulkanBinding.setBinding(currentBindingCount);
             vulkanBinding.setDescriptorCount(binding->count);
             vulkanBinding.setDescriptorType(binding->type);
-            vulkanBinding.setStageFlags(binding->stages);
+            vulkanBinding.setStageFlags(ToVulkanShaderStage(binding->stages));
 
             if (!binding->immutableSamplers.empty())
             {
@@ -61,7 +62,6 @@ namespace Husky::Vulkan
                 vulkanBinding.setPImmutableSamplers(samplers.data());
             }
 
-            description.bindings.push_back(vulkanBinding);
             currentBindingCount += binding->count;
         }
 

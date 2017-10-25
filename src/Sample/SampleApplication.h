@@ -34,6 +34,7 @@ struct FrameResources
     Husky::Vulkan::PipelineLayout pipelineLayout;
     Husky::Vulkan::IndexBuffer indexBuffer;
     Husky::Vulkan::VertexBuffer vertexBuffer;
+    Husky::Vulkan::Fence fence;
 };
 
 struct GraphicsContext
@@ -43,6 +44,7 @@ struct GraphicsContext
     Husky::Vulkan::GraphicsDevice device;
     Husky::Vulkan::Swapchain swapchain;
     Husky::Vulkan::CommandPool presentCommandPool;
+    Husky::Vulkan::DescriptorSetBinding uniformBufferBinding;
     Husky::Vulkan::DescriptorSetLayout descriptorSetLayout;
     Husky::Vulkan::GlslShaderCompiler shaderCompiler;
     Husky::Vulkan::GlslShaderCompiler::Bytecode vertexShaderBytecode;
@@ -66,6 +68,7 @@ public:
     bool Initialize(const Husky::Vector<Husky::String>& args) override;
     bool Deinitialize() override;
     void Run() override;
+    void Draw();
 
     const Husky::String& GetApplicationName() const
     {

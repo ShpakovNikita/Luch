@@ -3,6 +3,7 @@
 #include <Husky/Vulkan/SampleCount.h>
 #include <Husky/Vulkan/RenderPass.h>
 #include <Husky/Vulkan/PipelineLayout.h>
+#include <Husky/Vulkan/ShaderStage.h>
 
 namespace Husky::Vulkan
 {
@@ -19,7 +20,6 @@ namespace Husky::Vulkan
             vulkanStage.setModule(stage.shaderModule->GetModule());
             vulkanStage.setPName(stage.name.c_str());
             vulkanStage.setStage(ToVulkanShaderStage(stage.stage));
-            // TODO vulkanStage.setPSpecializationInfo
         }
 
         result->bindingDescriptions = ci.vertexInputState.bindingDescriptions;
@@ -65,7 +65,7 @@ namespace Husky::Vulkan
         result->rasterizationState.frontFace = ci.rasterizationState.frontFace;
         result->rasterizationState.depthBiasClamp = ci.rasterizationState.depthBiasClamp;
         result->rasterizationState.depthBiasConstantFactor = ci.rasterizationState.depthBiasConstantFactor;
-        result->rasterizationState.lineWidth = result->rasterizationState.lineWidth;
+        result->rasterizationState.lineWidth = ci.rasterizationState.lineWidth;
         result->rasterizationState.depthClampEnable = ci.rasterizationState.depthClampEnable;
         result->rasterizationState.depthBiasEnable = ci.rasterizationState.depthBiasEnable;
         result->rasterizationState.rasterizerDiscardEnable = ci.rasterizationState.rasterizerDiscardEnable;

@@ -40,7 +40,7 @@ namespace Husky::Vulkan
 
         ~Framebuffer();
 
-        vk::Framebuffer GetPFramebuffer() { return framebuffer; }
+        vk::Framebuffer GetFramebuffer() { return framebuffer; }
     private:
         Framebuffer(GraphicsDevice* device, vk::Framebuffer framebuffer);
         void Destroy();
