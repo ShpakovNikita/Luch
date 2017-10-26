@@ -485,7 +485,7 @@ namespace Husky::Vulkan
             vkci.setFlags(vk::FenceCreateFlagBits::eSignaled);
         }
 
-        auto[createResult, vulkanFence] = device.createFence(vkci, allocationCallbacks);
+        auto [createResult, vulkanFence] = device.createFence(vkci, allocationCallbacks);
         if (createResult != vk::Result::eSuccess)
         {
             device.destroyFence(vulkanFence, allocationCallbacks);
@@ -494,6 +494,22 @@ namespace Husky::Vulkan
         else
         {
             return { createResult, Fence{ this, vulkanFence } };
+        }
+    }
+
+    VulkanResultValue<Semaphore> GraphicsDevice::CreateSemaphore()
+    {
+        vk::SemaphoreCreateInfo vkci;
+        
+        auto [createResult, vulkanSemaphore] = device.createSemaphore(vkci, allocationCallbacks);
+        if (createResult != vk::Result::eSuccess)
+        {
+            device.destroySemaphore(vulkanSemaphore, allocationCallbacks);
+            return { createResult };
+        }
+        else
+        {
+            return { createResult, Semaphore {this, vulkanSemaphore} };
         }
     }
 
@@ -592,11 +608,16 @@ namespace Husky::Vulkan
 
     void GraphicsDevice::DestroyFramebuffer(Framebuffer* framebuffer)
     {
-        device.destroyFramebuffer(framebuffer->framebuffer);
+        device.destroyFramebuffer(framebuffer->framebuffer, allocationCallbacks);
     }
 
     void GraphicsDevice::DestroyFence(Fence* fence)
     {
-        device.destroyFence(fence->fence);
+        device.destroyFence(fence->fence, allocationCallbacks);
+    }
+
+    void GraphicsDevice::DestroySemaphore(Semaphore* semaphore)
+    {
+        device.destroySemaphore(semaphore->semaphore, allocationCallbacks);
     }
 }

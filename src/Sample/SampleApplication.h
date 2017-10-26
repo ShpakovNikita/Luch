@@ -35,6 +35,7 @@ struct FrameResources
     Husky::Vulkan::IndexBuffer indexBuffer;
     Husky::Vulkan::VertexBuffer vertexBuffer;
     Husky::Vulkan::Fence fence;
+    Husky::Vulkan::Semaphore semaphore;
 };
 
 struct GraphicsContext

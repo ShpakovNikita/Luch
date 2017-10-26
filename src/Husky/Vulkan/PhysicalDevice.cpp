@@ -171,8 +171,8 @@ namespace Husky::Vulkan
         auto vulkanComputeQueue = device.getQueue(indices.computeQueueFamilyIndex, 0);
 
         queueInfo.graphicsQueue = Queue{ vulkanGraphicsQueue };
-        queueInfo.presentQueue = Queue{ vulkanPresentQueue };
         queueInfo.computeQueue = Queue{ vulkanComputeQueue };
+        queueInfo.presentQueue = PresentQueue{ vulkanPresentQueue };
         queueInfo.indices = indices;
 
         Set<vk::Queue> uniqueQueues;

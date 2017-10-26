@@ -6,7 +6,7 @@
 
 namespace Husky::Vulkan
 {
-    vk::IndexType ToVulkanIndexType(IndexType indexType)
+    inline vk::IndexType ToVulkanIndexType(IndexType indexType)
     {
         switch (indexType)
         {
@@ -20,7 +20,7 @@ namespace Husky::Vulkan
         }
     }
 
-    IndexType FromVulkanIndexType(vk::IndexType indexType)
+    inline IndexType FromVulkanIndexType(vk::IndexType indexType)
     {
         switch (indexType)
         {

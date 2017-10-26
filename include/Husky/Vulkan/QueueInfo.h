@@ -28,7 +28,7 @@ namespace Husky::Vulkan
 
         Queue computeQueue;
         Queue graphicsQueue;
-        Queue presentQueue;
+        PresentQueue presentQueue;
 
         QueueIndices indices;
         Husky::Vector<vk::Queue> uniqueQueues;

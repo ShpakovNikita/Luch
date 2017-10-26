@@ -19,6 +19,7 @@
 #include <Husky/Vulkan/VertexBuffer.h>
 #include <Husky/Vulkan/Framebuffer.h>
 #include <Husky/Vulkan/Fence.h>
+#include <Husky/Vulkan/Semaphore.h>
 
 namespace Husky::Vulkan
 {
@@ -43,6 +44,7 @@ namespace Husky::Vulkan
         friend class PipelineCache;
         friend class RenderPass;
         friend class Fence;
+        friend class Semaphore;
     public:
         GraphicsDevice() = default;
 
@@ -55,7 +57,7 @@ namespace Husky::Vulkan
         inline vk::Device GetDevice() { return device; }
         inline const QueueIndices& GetQueueIndices() { return queueInfo.indices; }
         inline Queue* GetGraphicsQueue() { return &queueInfo.graphicsQueue; }
-        inline Queue* GetPresentQueue() { return &queueInfo.presentQueue; }
+        inline PresentQueue* GetPresentQueue() { return &queueInfo.presentQueue; }
         inline Queue* GetComputeQueue() { return &queueInfo.computeQueue; }
         inline const vk::AllocationCallbacks& GetAllocationCallbacks() const { return allocationCallbacks; }
 
@@ -86,6 +88,7 @@ namespace Husky::Vulkan
         VulkanResultValue<PipelineLayout> CreatePipelineLayout(const PipelineLayoutCreateInfo& createInfo);
         VulkanResultValue<Framebuffer> CreateFramebuffer(const FramebufferCreateInfo& createInfo);
         VulkanResultValue<Fence> CreateFence(bool signaled = false);
+        VulkanResultValue<Semaphore> CreateSemaphore();
     private:
         GraphicsDevice(
             PhysicalDevice* physicalDevice,
@@ -112,6 +115,7 @@ namespace Husky::Vulkan
         void DestroyDescriptorSetLayout(DescriptorSetLayout* descriptorSetLayout);
         void DestroyFramebuffer(Framebuffer* framebuffer);
         void DestroyFence(Fence* fence);
+        void DestroySemaphore(Semaphore* semaphore);
 
         PhysicalDevice* physicalDevice = nullptr;
         vk::Device device;

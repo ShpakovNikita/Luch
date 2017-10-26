@@ -28,7 +28,7 @@ namespace Husky::Vulkan
         inline vk::CommandPool GetCommandPool() { return commandPool; }
 
         VulkanResultValue<Vector<CommandBuffer>> AllocateCommandBuffers(int32 count, CommandBufferLevel level);
-        vk::Result Reset(bool releaseResources);
+        vk::Result Reset(bool releaseResources = false);
     private:
         CommandPool(GraphicsDevice* device, vk::CommandPool commandPool);
         void Destroy();

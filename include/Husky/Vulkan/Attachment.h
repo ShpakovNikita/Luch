@@ -70,7 +70,7 @@ namespace Husky::Vulkan
             return *this;
         }
 
-        inline vk::ImageLayout GetFinalLayout() const { return initialLayout; }
+        inline vk::ImageLayout GetFinalLayout() const { return finalLayout; }
 
         inline Attachment& SetFinalLayout(vk::ImageLayout layout)
         {

@@ -4,6 +4,8 @@
 #include <Husky/Vulkan/Format.h>
 #include <Husky/Vulkan/PhysicalDevice.h>
 #include <Husky/Vulkan/Surface.h>
+#include <Husky/Vulkan/Fence.h>
+#include <Husky/Vulkan/Semaphore.h>
 
 namespace Husky::Vulkan
 {
@@ -58,6 +60,24 @@ namespace Husky::Vulkan
         if (device)
         {
             device->DestroySwapchain(this);
+        }
+    }
+
+    VulkanResultValue<int32> Swapchain::AcquireNextImage(Fence* fence, Semaphore* semaphore, Optional<Timeout> timeout)
+    {
+        HUSKY_ASSERT(fence || semaphore);
+
+        auto vulkanFence = fence ? fence->GetFence() : nullptr;
+        auto vulkanSemaphore = semaphore ? semaphore->GetSemaphore() : nullptr;
+        
+        auto[acquireResult, index] = device->device.acquireNextImageKHR(swapchain, ToVulkanTimeout(timeout), vulkanSemaphore, vulkanFence);
+        if (acquireResult != vk::Result::eSuccess)
+        {
+            return { acquireResult };
+        }
+        else
+        {
+            return { acquireResult, (int32)index };
         }
     }
 

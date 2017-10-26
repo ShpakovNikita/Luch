@@ -38,7 +38,7 @@ static const char8* vertexShaderSource =
 "void main()\n"
 "{\n"
 "   outTexCoord = inTexCoord;\n"
-"   //gl_Position = mybuffer.mvp * vec4(position, 0.0);\n"
+"   //gl_Position = ub.mvp * vec4(position, 0.0);\n"
 "   gl_Position = vec4(position, 0.0);\n"
 "}\n";
 
@@ -229,16 +229,16 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     Attachment colorAttachment;
     colorAttachment
         .SetFormat(graphicsContext->swapchain.GetFormat())
-        .SetInitialLayout(vk::ImageLayout::eGeneral)
+        .SetInitialLayout(vk::ImageLayout::eUndefined)
         .SetLoadOp(vk::AttachmentLoadOp::eClear)
         .SetStoreOp(vk::AttachmentStoreOp::eStore)
         .SetSampleCount(SampleCount::e1)
-        .SetFinalLayout(vk::ImageLayout::eGeneral);
+        .SetFinalLayout(vk::ImageLayout::ePresentSrcKHR);
 
     Attachment depthAttachment;
     depthAttachment
         .SetFormat(FromVulkanFormat(depthStencilFormat))
-        .SetInitialLayout(vk::ImageLayout::eGeneral)
+        .SetInitialLayout(vk::ImageLayout::eUndefined)
         .SetLoadOp(vk::AttachmentLoadOp::eClear)
         .SetStoreOp(vk::AttachmentStoreOp::eStore)
         .SetStencilLoadOp(vk::AttachmentLoadOp::eClear)
@@ -451,7 +451,23 @@ bool SampleApplication::Initialize(const Vector<String>& args)
             return false;
         }
 
+        auto [allocateResult, allocatedBuffers] = frameResources.graphicsCommandPool.AllocateCommandBuffers(1, CommandBufferLevel::Primary);
+        if (allocateResult != vk::Result::eSuccess)
+        {
+            return false;
+        }
+
+        frameResources.commandBuffer = std::move(allocatedBuffers[0]);
+        
         frameResources.fence = std::move(createdFence);
+
+        auto[createSemaphoreResult, createdSemaphore] = device.CreateSemaphore();
+        if (createSemaphoreResult != vk::Result::eSuccess)
+        {
+            return false;
+        }
+
+        frameResources.semaphore = std::move(createdSemaphore);
     }
 
     return true;
@@ -471,24 +487,74 @@ void SampleApplication::Run()
     int32 frameResourceIndex = frameIndex % graphicsContext->frameResources.size();
     auto &frameResources = graphicsContext->frameResources[frameResourceIndex];
 
-    MSG msg;
-    while (GetMessage(&msg, NULL, 0, 0) != 0)
+    MSG msg{};
+
+    while (msg.message != WM_QUIT)
     {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
+        if (PeekMessage(&msg, hWnd, 0, 0, PM_REMOVE))
+        {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+        else
+        {
+            Draw();
+        }
     }
 }
 
 void SampleApplication::Draw()
 {
-    /*int32 frameResourceIndex = frameIndex % (int32)graphicsContext->frameResources.size();
+    // Think about maybe recreating a framebuffer for every acquire
 
-    auto& frameResource = graphicsContext->frameResources[frameResourceIndex];
+    auto[createSemaphoreResult, imageAcquiredSemaphore] = graphicsContext->device.CreateSemaphore();
+    HUSKY_ASSERT(createSemaphoreResult == vk::Result::eSuccess);
 
-    auto[acquireResult, index] = graphicsContext->swapchain.AcquireNextImage(&frameResource.fence);
+    auto[acquireResult, index] = graphicsContext->swapchain.AcquireNextImage(nullptr, &imageAcquiredSemaphore);
     HUSKY_ASSERT(acquireResult == vk::Result::eSuccess);
 
-    frameResource.framebuffer*/
+    auto& frameResource = graphicsContext->frameResources[index];
+
+    auto &cmdBuffer = frameResource.commandBuffer;
+
+    Array<float32, 4> clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+    vk::ClearColorValue colorClearValue{ clearColor };
+    vk::ClearDepthStencilValue depthStencilClearValue{ 0.0f, 0 };
+
+    Vector<vk::ClearValue> clearValues = { colorClearValue, depthStencilClearValue };
+
+    int32 framebufferWidth = graphicsContext->swapchain.GetSwapchainCreateInfo().width;
+    int32 framebufferHeight = graphicsContext->swapchain.GetSwapchainCreateInfo().height;
+
+    cmdBuffer
+        .Begin()
+        .BeginInlineRenderPass(&frameResource.renderPass, &frameResource.framebuffer, clearValues, { {0, 0}, {(uint32)framebufferWidth, (uint32)framebufferHeight } })
+            .BindGraphicsPipeline(&frameResource.pipeline)
+            .BindVertexBuffers({ &frameResource.vertexBuffer }, {0}, 0)
+            .BindIndexBuffer(&frameResource.indexBuffer, 0)
+            .DrawIndexed(graphicsContext->boxData.indices16.size(), 1, 0, 0, 0)
+        .EndRenderPass()
+        .End();
+
+    Submission submission;
+    submission.commandBuffers = { &cmdBuffer };
+    submission.fence = &frameResource.fence;
+    submission.waitOperations = { {&imageAcquiredSemaphore, vk::PipelineStageFlagBits::eColorAttachmentOutput} };
+    submission.signalSemaphores = { &frameResource.semaphore };
+
+    graphicsContext->device.GetGraphicsQueue()->Submit(submission);
+    
+    frameResource.fence.Wait();
+    frameResource.fence.Reset();
+
+    frameResource.graphicsCommandPool.Reset();
+
+    PresentSubmission presentSubmission;
+    presentSubmission.index = index;
+    presentSubmission.swapchain = &graphicsContext->swapchain;
+    presentSubmission.waitSemaphores = { &frameResource.semaphore };
+
+    graphicsContext->device.GetPresentQueue()->Present(presentSubmission);
 }
 
 vk::ResultValue<vk::Instance> SampleApplication::CreateVulkanInstance(const vk::AllocationCallbacks& allocationCallbacks)

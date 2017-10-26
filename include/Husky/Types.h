@@ -10,6 +10,7 @@
 #include <unordered_set>
 #include <tuple>
 #include <memory>
+#include <variant>
 
 namespace Husky
 {
@@ -55,5 +56,8 @@ using Optional = std::optional<T>;
 
 template<typename ... Args>
 using Tuple = std::tuple<Args...>;
+
+template<typename ... Args>
+using Variant = std::variant<Args...>;
 
 }
