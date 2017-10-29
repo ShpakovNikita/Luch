@@ -68,6 +68,31 @@ namespace Husky::Vulkan
         return { allocateResult, std::move(buffers) };
     }
 
+    VulkanResultValue<CommandBuffer> CommandPool::AllocateCommandBuffer(CommandBufferLevel level)
+    {
+        vk::CommandBufferAllocateInfo allocateInfo;
+        allocateInfo.setCommandBufferCount(1);
+        allocateInfo.setCommandPool(commandPool);
+
+        switch (level)
+        {
+        case CommandBufferLevel::Primary:
+            allocateInfo.setLevel(vk::CommandBufferLevel::ePrimary);
+            break;
+        case CommandBufferLevel::Secondary:
+            allocateInfo.setLevel(vk::CommandBufferLevel::eSecondary);
+            break;
+        }
+
+        auto[allocateResult, allocatedBuffers] = device->device.allocateCommandBuffers(allocateInfo);
+        if (allocateResult != vk::Result::eSuccess)
+        {
+            return { allocateResult };
+        }
+
+        return { allocateResult, CommandBuffer{ device, allocatedBuffers[0]} };
+    }
+
     vk::Result CommandPool::Reset(bool releaseResources)
     {
         vk::CommandPoolResetFlags flags;

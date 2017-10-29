@@ -206,8 +206,30 @@ namespace Husky::Vulkan
             device.destroyBuffer(vulkanBuffer, allocationCallbacks);
             return { bindResult };
         }
+        else
+        {
+            return { createBufferResult, Buffer{ this, vulkanBuffer, vulkanMemory, ci } };
+        }
+    }
 
-        return { createBufferResult, Buffer{this, vulkanBuffer, vulkanMemory, ci} };
+    VulkanResultValue<BufferView> GraphicsDevice::CreateBufferView(Buffer* buffer, Format format, int64 offset, int64 size)
+    {
+        vk::BufferViewCreateInfo createInfo;
+        createInfo.setBuffer(buffer->buffer);
+        createInfo.setFormat(ToVulkanFormat(format));
+        createInfo.setOffset(offset);
+        createInfo.setRange(size);
+        
+        auto [createResult, vulkanBufferView] = device.createBufferView(createInfo, allocationCallbacks);
+        if (createResult != vk::Result::eSuccess)
+        {
+            device.destroyBufferView(vulkanBufferView, allocationCallbacks);
+            return { createResult };
+        }
+        else
+        {
+            return { createResult, BufferView{this, vulkanBufferView} };
+        }
     }
 
     VulkanResultValue<IndexBuffer> GraphicsDevice::CreateIndexBuffer(IndexType indexType, int32 indexCount, QueueIndex queueIndex, bool mappable)
@@ -447,6 +469,42 @@ namespace Husky::Vulkan
         }
     }
 
+    VulkanResultValue<DescriptorPool> GraphicsDevice::CreateDescriptorPool(int32 maxSets, const UnorderedMap<vk::DescriptorType, int32>& poolSizes, bool canFreeDescriptors)
+    {
+        auto count = (int32)poolSizes.size();
+        Vector<vk::DescriptorPoolSize> vulkanPoolSizes;
+        vulkanPoolSizes.reserve(count);
+
+        for (auto& poolSize : poolSizes)
+        {
+            vulkanPoolSizes.emplace_back(poolSize.first, poolSize.second);
+        }
+
+
+        vk::DescriptorPoolCreateFlags flags;
+        if (canFreeDescriptors)
+        {
+            flags |= vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
+        }
+
+        vk::DescriptorPoolCreateInfo createInfo;
+        createInfo.setMaxSets(maxSets);
+        createInfo.setPoolSizeCount(count);
+        createInfo.setPPoolSizes(vulkanPoolSizes.data());
+        createInfo.setFlags(flags);
+
+        auto[createResult, vulkanDescriptorPool] = device.createDescriptorPool(createInfo, allocationCallbacks);
+        if (createResult != vk::Result::eSuccess)
+        {
+            device.destroyDescriptorPool(vulkanDescriptorPool, allocationCallbacks);
+            return { createResult };
+        }
+        else
+        {
+            return { createResult, DescriptorPool{ this, vulkanDescriptorPool } };
+        }
+    }
+
     VulkanResultValue<PipelineLayout> GraphicsDevice::CreatePipelineLayout(const PipelineLayoutCreateInfo& createInfo)
     {
         auto vkci = PipelineLayoutCreateInfo::ToVulkanCreateInfo(createInfo);
@@ -566,6 +624,11 @@ namespace Husky::Vulkan
         device.destroyBuffer(buffer->buffer, allocationCallbacks);
     }
 
+    void GraphicsDevice::DestroyBufferView(BufferView* bufferView)
+    {
+        device.destroyBufferView(bufferView->bufferView, allocationCallbacks);
+    }
+
     void GraphicsDevice::DestroyImage(Image* image)
     {
         device.freeMemory(image->memory, allocationCallbacks);
@@ -604,6 +667,11 @@ namespace Husky::Vulkan
     void GraphicsDevice::DestroyDescriptorSetLayout(DescriptorSetLayout* descriptorSetLayout)
     {
         device.destroyDescriptorSetLayout(descriptorSetLayout->descriptorSetLayout, allocationCallbacks);
+    }
+
+    void GraphicsDevice::DestroyDescriptorPool(DescriptorPool* descriptorPool)
+    {
+        device.destroyDescriptorPool(descriptorPool->descriptorPool, allocationCallbacks);
     }
 
     void GraphicsDevice::DestroyFramebuffer(Framebuffer* framebuffer)

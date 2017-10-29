@@ -27,7 +27,7 @@ static const char8* vertexShaderSource =
 "#version 450\n"
 "#extension GL_ARB_shading_language_420pack : enable\n"
 "#extension GL_ARB_separate_shader_objects : enable\n"
-"layout (binding = 0) uniform UniformBufferObject\n"
+"layout (set = 0, binding = 0) uniform UniformBufferObject\n"
 "{\n"
 "    mat4 mvp;\n"
 "} ub;\n"
@@ -38,8 +38,8 @@ static const char8* vertexShaderSource =
 "void main()\n"
 "{\n"
 "   outTexCoord = inTexCoord;\n"
-"   //gl_Position = ub.mvp * vec4(position, 0.0);\n"
-"   gl_Position = vec4(position, 0.0);\n"
+"   gl_Position = ub.mvp * vec4(position, 0.0);\n"
+"   //gl_Position = vec4(position, 0.0);\n"
 "}\n";
 
 static const char8* fragmentShaderSource =
@@ -282,7 +282,6 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     GraphicsPipelineCreateInfo pipelineState;
 
-
     auto& vertexShaderStage = pipelineState.shaderStages.emplace_back();
     vertexShaderStage.name = "main";
     vertexShaderStage.shaderModule = &graphicsContext->vertexShaderModule;
@@ -451,23 +450,31 @@ bool SampleApplication::Initialize(const Vector<String>& args)
             return false;
         }
 
-        auto [allocateResult, allocatedBuffers] = frameResources.graphicsCommandPool.AllocateCommandBuffers(1, CommandBufferLevel::Primary);
+        auto [allocateResult, allocatedBuffer] = frameResources.graphicsCommandPool.AllocateCommandBuffer(CommandBufferLevel::Primary);
         if (allocateResult != vk::Result::eSuccess)
         {
             return false;
         }
 
-        frameResources.commandBuffer = std::move(allocatedBuffers[0]);
+        frameResources.commandBuffer = std::move(allocatedBuffer);
         
         frameResources.fence = std::move(createdFence);
 
-        auto[createSemaphoreResult, createdSemaphore] = device.CreateSemaphore();
+        auto [createSemaphoreResult, createdSemaphore] = device.CreateSemaphore();
         if (createSemaphoreResult != vk::Result::eSuccess)
         {
             return false;
         }
 
         frameResources.semaphore = std::move(createdSemaphore);
+
+        auto[createDescriptorPoolResult, createdDescriptorPool] = device.CreateDescriptorPool(1, { {vk::DescriptorType::eUniformBuffer, 1} });
+        if (createDescriptorPoolResult != vk::Result::eSuccess)
+        {
+            return false;
+        }
+
+        frameResources.descriptorPool = std::move(createdDescriptorPool);
     }
 
     return true;
@@ -510,10 +517,22 @@ void SampleApplication::Draw()
     auto[createSemaphoreResult, imageAcquiredSemaphore] = graphicsContext->device.CreateSemaphore();
     HUSKY_ASSERT(createSemaphoreResult == vk::Result::eSuccess);
 
-    auto[acquireResult, index] = graphicsContext->swapchain.AcquireNextImage(nullptr, &imageAcquiredSemaphore);
+    auto [acquireResult, index] = graphicsContext->swapchain.AcquireNextImage(nullptr, &imageAcquiredSemaphore);
     HUSKY_ASSERT(acquireResult == vk::Result::eSuccess);
 
     auto& frameResource = graphicsContext->frameResources[index];
+
+    frameResource.descriptorPool.Reset();
+
+    auto [allocateDescriptorSetResult, allocatedDescriptorSet] = frameResource.descriptorPool.AllocateDescriptorSet(&graphicsContext->descriptorSetLayout);
+    HUSKY_ASSERT(allocateDescriptorSetResult == vk::Result::eSuccess);
+
+    frameResource.descriptorSet = std::move(allocatedDescriptorSet);
+
+    DescriptorSetWrites descriptorSetWrites;
+    descriptorSetWrites.WriteUniformBufferDescriptors(&frameResource.descriptorSet, &graphicsContext->uniformBufferBinding, { &frameResource.uniformBuffer });
+
+    DescriptorSet::Update(descriptorSetWrites);
 
     auto &cmdBuffer = frameResource.commandBuffer;
 
@@ -530,9 +549,10 @@ void SampleApplication::Draw()
         .Begin()
         .BeginInlineRenderPass(&frameResource.renderPass, &frameResource.framebuffer, clearValues, { {0, 0}, {(uint32)framebufferWidth, (uint32)framebufferHeight } })
             .BindGraphicsPipeline(&frameResource.pipeline)
-            .BindVertexBuffers({ &frameResource.vertexBuffer }, {0}, 0)
+            .BindVertexBuffers({ &frameResource.vertexBuffer }, { 0 }, 0)
             .BindIndexBuffer(&frameResource.indexBuffer, 0)
-            .DrawIndexed(graphicsContext->boxData.indices16.size(), 1, 0, 0, 0)
+            .BindDescriptorSets(&frameResource.pipelineLayout, { &frameResource.descriptorSet })
+            .DrawIndexed((int32)graphicsContext->boxData.indices16.size(), 1, 0, 0, 0)
         .EndRenderPass()
         .End();
 
@@ -791,7 +811,8 @@ Husky::Vector<const Husky::char8*> SampleApplication::GetRequiredDeviceExtension
 
 Vector<const char8*> SampleApplication::GetValidationLayerNames() const
 {
-    return {"VK_LAYER_LUNARG_standard_validation"};
+    return {};
+    //return {"VK_LAYER_LUNARG_standard_validation"};
 }
 
 VkBool32 SampleApplication::DebugCallback(

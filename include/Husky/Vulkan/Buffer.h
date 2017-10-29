@@ -24,6 +24,7 @@ namespace Husky::Vulkan
         vk::Result FlushMemory();
         vk::Result InvalidateMemory();
 
+        inline GraphicsDevice* GetDevice() { return device; }
         inline vk::Buffer GetBuffer() { return buffer; }
         inline vk::DeviceMemory GetDeviceMemory() { return memory; }
     private:

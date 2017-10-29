@@ -1,13 +1,16 @@
 #pragma once
 
+#include <Husky/ArrayProxy.h>
 #include <Husky/Vulkan.h>
-#include <Husky/Vulkan/RenderPass.h>
+#include <Husky/Vulkan/DescriptorSet.h>
 #include <Husky/Vulkan/Framebuffer.h>
 #include <Husky/Vulkan/GraphicsDevice.h>
-#include <Husky/Vulkan/Pipeline.h>
-#include <Husky/Vulkan/VertexBuffer.h>
 #include <Husky/Vulkan/IndexBuffer.h>
 #include <Husky/Vulkan/IndexType.h>
+#include <Husky/Vulkan/Pipeline.h>
+#include <Husky/Vulkan/PipelineLayout.h>
+#include <Husky/Vulkan/RenderPass.h>
+#include <Husky/Vulkan/VertexBuffer.h>
 
 namespace Husky::Vulkan
 {
@@ -43,12 +46,12 @@ namespace Husky::Vulkan
         // TODO
         //inline CommandBuffer& BeginRenderPass(RenderPass* renderPass, Framebuffer* framebuffer, CommandBuffer* secondaryCommandBuffer);
         
-        inline CommandBuffer& BeginInlineRenderPass(RenderPass* renderPass, Framebuffer* framebuffer, const Vector<vk::ClearValue>& clearValues, vk::Rect2D renderArea)
+        inline CommandBuffer& BeginInlineRenderPass(RenderPass* renderPass, Framebuffer* framebuffer, Vector<vk::ClearValue> clearValues, vk::Rect2D renderArea)
         {
             vk::RenderPassBeginInfo beginInfo;
             beginInfo.setRenderPass(renderPass->GetRenderPass());
             beginInfo.setFramebuffer(framebuffer->GetFramebuffer());
-            beginInfo.setClearValueCount((int32)clearValues.size());
+            beginInfo.setClearValueCount(clearValues.size());
             beginInfo.setPClearValues(clearValues.data());
             beginInfo.setRenderArea(renderArea);
             commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
@@ -61,7 +64,7 @@ namespace Husky::Vulkan
             return *this;
         }
 
-        inline CommandBuffer& BindVertexBuffers(const Vector<VertexBuffer*>& vertexBuffers, const Vector<int64>& offsets, int32 binding)
+        inline CommandBuffer& BindVertexBuffers(Vector<VertexBuffer*> vertexBuffers, Vector<int64> offsets, int32 binding)
         {
             Vector<vk::Buffer> vulkanBuffers;
             vulkanBuffers.reserve(vertexBuffers.size());
@@ -86,6 +89,20 @@ namespace Husky::Vulkan
         inline CommandBuffer& BindIndexBuffer(IndexBuffer* indexBuffer, int64 offset)
         {
             commandBuffer.bindIndexBuffer(indexBuffer->GetUnderlyingBuffer().GetBuffer(), offset, ToVulkanIndexType(indexBuffer->GetIndexType()));
+            return *this;
+        }
+
+        inline CommandBuffer& BindDescriptorSets(PipelineLayout* layout, Vector<DescriptorSet*> sets)
+        {
+            Vector<vk::DescriptorSet> vulkanSets;
+            vulkanSets.reserve(sets.size());
+
+            for (auto& set : sets)
+            {
+                vulkanSets.push_back(set->GetDescriptorSet());
+            }
+
+            commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, layout->GetPipelineLayout(), 0, vulkanSets, {});
             return *this;
         }
 

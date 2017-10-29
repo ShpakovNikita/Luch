@@ -1,25 +1,27 @@
 #pragma once
 
 #include <Husky/Vulkan.h>
-#include <Husky/Vulkan/QueueInfo.h>
-#include <Husky/Vulkan/Swapchain.h>
-#include <Husky/Vulkan/CommandPool.h>
-#include <Husky/Vulkan/CommandBuffer.h>
 #include <Husky/Vulkan/Buffer.h>
+#include <Husky/Vulkan/BufferView.h>
+#include <Husky/Vulkan/CommandBuffer.h>
+#include <Husky/Vulkan/CommandPool.h>
+#include <Husky/Vulkan/DescriptorPool.h>
+#include <Husky/Vulkan/DescriptorSetLayout.h>
+#include <Husky/Vulkan/Fence.h>
+#include <Husky/Vulkan/Framebuffer.h>
 #include <Husky/Vulkan/Image.h>
 #include <Husky/Vulkan/ImageView.h>
+#include <Husky/Vulkan/IndexBuffer.h>
 #include <Husky/Vulkan/Pipeline.h>
-#include <Husky/Vulkan/PipelineLayout.h>
 #include <Husky/Vulkan/PipelineCache.h>
 #include <Husky/Vulkan/PipelineCreateInfo.h>
-#include <Husky/Vulkan/ShaderModule.h>
+#include <Husky/Vulkan/PipelineLayout.h>
+#include <Husky/Vulkan/QueueInfo.h>
 #include <Husky/Vulkan/RenderPass.h>
-#include <Husky/Vulkan/DescriptorSetLayout.h>
-#include <Husky/Vulkan/IndexBuffer.h>
-#include <Husky/Vulkan/VertexBuffer.h>
-#include <Husky/Vulkan/Framebuffer.h>
-#include <Husky/Vulkan/Fence.h>
 #include <Husky/Vulkan/Semaphore.h>
+#include <Husky/Vulkan/ShaderModule.h>
+#include <Husky/Vulkan/Swapchain.h>
+#include <Husky/Vulkan/VertexBuffer.h>
 
 namespace Husky::Vulkan
 {
@@ -29,22 +31,25 @@ namespace Husky::Vulkan
 
     class GraphicsDevice
     {
-        friend class PhysicalDevice;
-        friend class Swapchain;
-        friend class CommandPool;
-        friend class CommandBuffer;
         friend class Buffer;
+        friend class BufferView;
+        friend class CommandBuffer;
+        friend class CommandPool;
+        friend class DescriptorPool;
+        friend class DescriptorSet;
+        friend class DescriptorSetLayout;
+        friend class Fence;
+        friend class Framebuffer;
         friend class Image;
         friend class ImageView;
-        friend class ShaderModule;
-        friend class DescriptorSetLayout;
-        friend class Framebuffer;
+        friend class PhysicalDevice;
         friend class Pipeline;
-        friend class PipelineLayout;
         friend class PipelineCache;
+        friend class PipelineLayout;
         friend class RenderPass;
-        friend class Fence;
         friend class Semaphore;
+        friend class ShaderModule;
+        friend class Swapchain;
     public:
         GraphicsDevice() = default;
 
@@ -71,6 +76,7 @@ namespace Husky::Vulkan
 
         VulkanResultValue<CommandPool> CreateCommandPool(QueueIndex queueIndex, bool transient = false, bool canReset = false);
         VulkanResultValue<Buffer> CreateBuffer(int64 size, QueueIndex queueIndex, vk::BufferUsageFlags usage, bool mappable);
+        VulkanResultValue<BufferView> CreateBufferView(Buffer* buffer, Format format, int64 offset, int64 size);
         VulkanResultValue<IndexBuffer> CreateIndexBuffer(IndexType indexType, int32 indexCount, QueueIndex queueIndex, bool mappable);
         VulkanResultValue<VertexBuffer> CreateVertexBuffer(int32 vertexSize, int32 vertexCount, QueueIndex queueIndex, bool mappable);
         VulkanResultValue<Image> CreateImage(const vk::ImageCreateInfo& imageCreateInfo);
@@ -85,6 +91,7 @@ namespace Husky::Vulkan
 
         VulkanResultValue<RenderPass> CreateRenderPass(const RenderPassCreateInfo& createInfo);
         VulkanResultValue<DescriptorSetLayout> CreateDescriptorSetLayout(const DescriptorSetLayoutCreateInfo& createInfo);
+        VulkanResultValue<DescriptorPool> CreateDescriptorPool(int32 maxSets, const UnorderedMap<vk::DescriptorType, int32>& poolSizes, bool canFreeDescriptors = false);
         VulkanResultValue<PipelineLayout> CreatePipelineLayout(const PipelineLayoutCreateInfo& createInfo);
         VulkanResultValue<Framebuffer> CreateFramebuffer(const FramebufferCreateInfo& createInfo);
         VulkanResultValue<Fence> CreateFence(bool signaled = false);
@@ -105,6 +112,7 @@ namespace Husky::Vulkan
         void DestroySwapchain(Swapchain* swapchain);
         void DestroyCommandPool(CommandPool* commandPool);
         void DestroyBuffer(Buffer* buffer);
+        void DestroyBufferView(BufferView* bufferView);
         void DestroyImage(Image* image);
         void DestroyImageView(ImageView* imageView);
         void DestroyPipeline(Pipeline* pipeline);
@@ -113,6 +121,7 @@ namespace Husky::Vulkan
         void DestroyShaderModule(ShaderModule* module);
         void DestroyRenderPass(RenderPass* renderPass);
         void DestroyDescriptorSetLayout(DescriptorSetLayout* descriptorSetLayout);
+        void DestroyDescriptorPool(DescriptorPool* descriptorPool);
         void DestroyFramebuffer(Framebuffer* framebuffer);
         void DestroyFence(Fence* fence);
         void DestroySemaphore(Semaphore* semaphore);

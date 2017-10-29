@@ -2,15 +2,16 @@
 
 #include <array>
 #include <cstdint>
-#include <string>
-#include <string_view>
-#include <vector>
+#include <memory>
 #include <optional>
 #include <set>
-#include <unordered_set>
+#include <string_view>
+#include <string>
 #include <tuple>
-#include <memory>
+#include <unordered_map>
+#include <unordered_set>
 #include <variant>
+#include <vector>
 
 namespace Husky
 {
@@ -59,5 +60,8 @@ using Tuple = std::tuple<Args...>;
 
 template<typename ... Args>
 using Variant = std::variant<Args...>;
+
+template<typename TKey, typename TValue>
+using UnorderedMap = std::unordered_map<TKey, TValue>;
 
 }

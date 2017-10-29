@@ -3,16 +3,11 @@
 #include <Husky/BaseApplication.h>
 #include <Husky/GeometryGenerator.h>
 #include <Husky/Vulkan.h>
-#include <Husky/Vulkan/CommandPool.h>
+#include <Husky/Vulkan/GlslShaderCompiler.h>
 #include <Husky/Vulkan/GraphicsDevice.h>
-#include <Husky/Vulkan/Swapchain.h>
 #include <Husky/Vulkan/PhysicalDevice.h>
 #include <Husky/Vulkan/Surface.h>
-#include <Husky/Vulkan/GlslShaderCompiler.h>
-#include <Husky/Vulkan/VertexBuffer.h>
-#include <Husky/Vulkan/IndexBuffer.h>
-#include <Husky/Vulkan/Framebuffer.h>
-#include <Husky/Vulkan/GlslShaderCompiler.h>
+#include <Husky/Vulkan/Swapchain.h>
 #include "VulkanAllocator.h"
 
 #ifdef _WIN32
@@ -36,6 +31,8 @@ struct FrameResources
     Husky::Vulkan::VertexBuffer vertexBuffer;
     Husky::Vulkan::Fence fence;
     Husky::Vulkan::Semaphore semaphore;
+    Husky::Vulkan::DescriptorPool descriptorPool;
+    Husky::Vulkan::DescriptorSet descriptorSet;
 };
 
 struct GraphicsContext
@@ -55,6 +52,9 @@ struct GraphicsContext
     Husky::GeometryGenerator geometryGenerator;
     Husky::MeshData boxData;
     Husky::Vector<FrameResources> frameResources;
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 projection;
 };
 
 class SampleApplication
