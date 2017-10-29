@@ -14,6 +14,15 @@
 #include <Husky/Platform/Win32/WndProcDelegate.h>
 #endif
 
+#pragma pack(push)
+#pragma pack(1)
+struct Uniform
+{
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 projection;
+};
+
 struct FrameResources
 {
     Husky::Vulkan::Framebuffer framebuffer;
@@ -52,9 +61,7 @@ struct GraphicsContext
     Husky::GeometryGenerator geometryGenerator;
     Husky::MeshData boxData;
     Husky::Vector<FrameResources> frameResources;
-    glm::mat4 model;
-    glm::mat4 view;
-    glm::mat4 projection;
+    Uniform uniform;
 };
 
 class SampleApplication
@@ -160,5 +167,7 @@ private:
 
     Husky::int32 width = 800;
     Husky::int32 height = 600;
+    Husky::float32 minDepth = 0.0;
+    Husky::float32 maxDepth = 1.0;
     Husky::int32 frameIndex = 0;
 };

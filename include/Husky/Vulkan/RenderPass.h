@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Husky/Assert.h>
+#include <Husky/UniquePtr.h>
 #include <Husky/Vulkan.h>
 #include <Husky/Vulkan/Attachment.h>
 
@@ -122,6 +123,7 @@ namespace Husky::Vulkan
             Vector<vk::AttachmentReference> inputAttachments;
             Vector<vk::AttachmentReference> colorAttachments;
             Vector<vk::AttachmentReference> resolveAttachments;
+            UniquePtr<vk::AttachmentReference> depthStencilAttachment;
             Vector<uint32> preserveAttachments;
         };
 

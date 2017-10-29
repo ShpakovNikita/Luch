@@ -4,7 +4,7 @@
 #include <Husky/Math/Math.h>
 
 #include <Husky/VectorTypes.h>
-
+#include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 
 using namespace Husky;
@@ -29,7 +29,9 @@ static const char8* vertexShaderSource =
 "#extension GL_ARB_separate_shader_objects : enable\n"
 "layout (set = 0, binding = 0) uniform UniformBufferObject\n"
 "{\n"
-"    mat4 mvp;\n"
+"    mat4 model;\n"
+"    mat4 view;\n"
+"    mat4 projection;\n"
 "} ub;\n"
 "layout (location = 0) in vec3 position;\n"
 "layout (location = 1) in vec3 normal;\n"
@@ -38,7 +40,7 @@ static const char8* vertexShaderSource =
 "void main()\n"
 "{\n"
 "   outTexCoord = inTexCoord;\n"
-"   gl_Position = ub.mvp * vec4(position, 0.0);\n"
+"   gl_Position = ub.projection * ub.view * ub.model * vec4(position, 1.0);\n"
 "   //gl_Position = vec4(position, 0.0);\n"
 "}\n";
 
@@ -50,7 +52,7 @@ static const char8* fragmentShaderSource =
 "layout (location = 0) out vec4 outColor;\n"
 "void main()\n"
 "{\n"
-"   outColor = vec4(texCoord, 0.0, 0.0);\n"
+"   outColor = vec4(texCoord, 0.0, 1.0);\n"
 "}\n";
 
 #ifdef _WIN32
@@ -195,9 +197,9 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     depthBufferCreateInfo.setTiling(vk::ImageTiling::eOptimal);
     depthBufferCreateInfo.setUsage(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransferSrc);
 
-    constexpr auto uniformBufferSize = sizeof(Mat4x4);
+    constexpr auto uniformBufferSize = sizeof(Uniform);
 
-    graphicsContext->boxData = graphicsContext->geometryGenerator.CreateBox("box01", { 0, 0, 0 }, 1, 1, 1, 0);
+    graphicsContext->boxData = graphicsContext->geometryGenerator.CreateBox("box01", { 0, 0, 0 }, 0.5, 0.5, 0.5, 0);
 
     auto vertexShaderCompiled = graphicsContext->shaderCompiler.TryCompileShader(ShaderStage::Vertex, vertexShaderSource, graphicsContext->vertexShaderBytecode);
     auto fragmentShaderCompiled = graphicsContext->shaderCompiler.TryCompileShader(ShaderStage::Fragment, fragmentShaderSource, graphicsContext->fragmentShaderBytecode);
@@ -244,7 +246,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
         .SetStencilLoadOp(vk::AttachmentLoadOp::eClear)
         .SetStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
         .SetSampleCount(SampleCount::e1)
-        .SetFinalLayout(vk::ImageLayout::eGeneral);
+        .SetFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
     SubpassDescription subpass;
     subpass
@@ -312,10 +314,10 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     pipelineState.inputAssemblyState.topology = graphicsContext->boxData.primitiveTopology;
     
-    pipelineState.viewportState.viewports = { {0.0f, 0.0f, (float32)width, (float32)height, 0.0f, 1.0f} };
+    pipelineState.viewportState.viewports = { {0.0f, 0.0f, (float32)width, (float32)height, minDepth, maxDepth} };
     pipelineState.viewportState.scissors = { {{0, 0}, {(uint32)width, (uint32)height}} };
 
-    pipelineState.rasterizationState.cullMode = vk::CullModeFlagBits::eBack;
+    pipelineState.rasterizationState.cullMode = vk::CullModeFlagBits::eNone;
 
     pipelineState.depthStencilState.depthTestEnable = true;
     pipelineState.depthStencilState.depthWriteEnable = true;
@@ -323,7 +325,6 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     auto &attachment = pipelineState.colorBlendState.attachments.emplace_back();
     attachment.blendEnable = false;
-
 
     for (int32 i = 0; i < swapchainCreateInfo.imageCount; i++)
     {
@@ -475,6 +476,26 @@ bool SampleApplication::Initialize(const Vector<String>& args)
         }
 
         frameResources.descriptorPool = std::move(createdDescriptorPool);
+
+        auto model = glm::mat4(1.0f);
+        model = glm::translate(model, { 0.0f, 0.0f, -1.4f });
+        model = glm::scale(model, { 0.5f, 0.5f, 0.5f });
+
+        graphicsContext->uniform.model = model;
+        graphicsContext->uniform.view = glm::lookAt(glm::vec3{ 0.2f, 0.2f, -2.0f }, glm::vec3{ 0.0f, 0.0f, 0.0f }, glm::vec3{0.0f, 1.0f, 0.0f});
+        graphicsContext->uniform.projection = glm::perspective(glm::radians(60.0f), (float32)width / height, 0.1f, 256.0f);
+
+        {
+            auto[mapUniformResult, uniformMemory] = frameResources.uniformBuffer.MapMemory(uniformBufferSize, 0);
+            if (mapUniformResult != vk::Result::eSuccess)
+            {
+                return false;
+            }
+        
+            memcpy(uniformMemory, &graphicsContext->uniform, uniformBufferSize);
+        
+            frameResources.uniformBuffer.UnmapMemory();
+        }
     }
 
     return true;
@@ -538,7 +559,7 @@ void SampleApplication::Draw()
 
     Array<float32, 4> clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
     vk::ClearColorValue colorClearValue{ clearColor };
-    vk::ClearDepthStencilValue depthStencilClearValue{ 0.0f, 0 };
+    vk::ClearDepthStencilValue depthStencilClearValue{ maxDepth, 0 };
 
     Vector<vk::ClearValue> clearValues = { colorClearValue, depthStencilClearValue };
 

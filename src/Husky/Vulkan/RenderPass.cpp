@@ -107,6 +107,15 @@ RenderPass::RenderPass(GraphicsDevice* aDevice, vk::RenderPass aRenderPass, int3
             vkSubpassDescription.preserveAttachments.push_back(preserveAttachment->GetIndex());
         }
 
+        if (subpassDescription.depthStencilAttachment.attachment)
+        {
+            vkSubpassDescription.depthStencilAttachment = MakeUnique<vk::AttachmentReference>();
+            vkSubpassDescription.depthStencilAttachment->setAttachment(subpassDescription.depthStencilAttachment.attachment->GetIndex());
+            vkSubpassDescription.depthStencilAttachment->setLayout(subpassDescription.depthStencilAttachment.layout);
+
+            vkSubpassDescription.subpass.setPDepthStencilAttachment(vkSubpassDescription.depthStencilAttachment.get());
+        }
+
         vkSubpassDescription.subpass.setInputAttachmentCount((int32)vkSubpassDescription.inputAttachments.size());
         vkSubpassDescription.subpass.setPInputAttachments(vkSubpassDescription.inputAttachments.data());
 
