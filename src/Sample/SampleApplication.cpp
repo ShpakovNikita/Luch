@@ -84,7 +84,7 @@ static LRESULT CALLBACK StaticWindowProc(
 
 bool SampleApplication::Initialize(const Vector<String>& args)
 {
-    GlslShaderCompiler::Initialize();
+    GLSLShaderCompiler::Initialize();
     graphicsContext = std::make_unique<GraphicsContext>();
 
     allocationCallbacks = allocator.GetAllocationCallbacks();
@@ -314,7 +314,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     pipelineState.inputAssemblyState.topology = graphicsContext->boxData.primitiveTopology;
     
-    pipelineState.viewportState.viewports = { {0.0f, 0.0f, (float32)width, (float32)height, minDepth, maxDepth} };
+    pipelineState.viewportState.viewports = { {0.0f, 0.0f, (float32)width, -(float32)height, minDepth, maxDepth} };
     pipelineState.viewportState.scissors = { {{0, 0}, {(uint32)width, (uint32)height}} };
 
     pipelineState.rasterizationState.cullMode = vk::CullModeFlagBits::eNone;
@@ -506,7 +506,7 @@ bool SampleApplication::Deinitialize()
     graphicsContext.release();
     DestroyDebugCallback(instance, debugCallback, allocationCallbacks);
     instance.destroy(allocationCallbacks);
-    GlslShaderCompiler::Deinitialize();
+    GLSLShaderCompiler::Deinitialize();
     return true;
 }
 

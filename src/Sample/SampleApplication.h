@@ -53,9 +53,9 @@ struct GraphicsContext
     Husky::Vulkan::CommandPool presentCommandPool;
     Husky::Vulkan::DescriptorSetBinding uniformBufferBinding;
     Husky::Vulkan::DescriptorSetLayout descriptorSetLayout;
-    Husky::Vulkan::GlslShaderCompiler shaderCompiler;
-    Husky::Vulkan::GlslShaderCompiler::Bytecode vertexShaderBytecode;
-    Husky::Vulkan::GlslShaderCompiler::Bytecode fragmentShaderBytecode;
+    Husky::Vulkan::GLSLShaderCompiler shaderCompiler;
+    Husky::Vulkan::GLSLShaderCompiler::Bytecode vertexShaderBytecode;
+    Husky::Vulkan::GLSLShaderCompiler::Bytecode fragmentShaderBytecode;
     Husky::Vulkan::ShaderModule vertexShaderModule;
     Husky::Vulkan::ShaderModule fragmentShaderModule;
     Husky::GeometryGenerator geometryGenerator;

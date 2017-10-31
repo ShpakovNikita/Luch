@@ -16,6 +16,8 @@
 #include <glm/mat4x3.hpp>
 #include <glm/mat4x4.hpp>
 
+#include <glm/gtc/quaternion.hpp>
+
 namespace Husky
 {
     using Vec2 = glm::vec2;
@@ -33,4 +35,6 @@ namespace Husky
     using Mat4x2 = glm::mat4x2;
     using Mat4x3 = glm::mat4x3;
     using Mat4x4 = glm::mat4x4;
+
+    using Quaternion = glm::fquat;
 }
