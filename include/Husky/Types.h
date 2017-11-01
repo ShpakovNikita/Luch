@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <optional>
 #include <set>
@@ -60,6 +61,9 @@ using Tuple = std::tuple<Args...>;
 
 template<typename ... Args>
 using Variant = std::variant<Args...>;
+
+template<typename TKey, typename TValue>
+using Map = std::map<TKey, TValue>;
 
 template<typename TKey, typename TValue>
 using UnorderedMap = std::unordered_map<TKey, TValue>;

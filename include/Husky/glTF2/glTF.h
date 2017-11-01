@@ -101,14 +101,14 @@ struct Sparse
 
 struct Accessor
 {
-    int32 bufferView = -1;
+    Optional<int32> bufferView;
     int32 bufferOffset = 0;
     ComponentType componentType = ComponentType::Float;
     bool normalized = false;
     int32 count = 0;
     AttributeType type;
-    AccessorValueHolder min;
-    AccessorValueHolder max;
+    Optional<AccessorValueHolder> min;
+    Optional<AccessorValueHolder> max;
     Sparse sparse;
 };
 
@@ -185,7 +185,7 @@ struct Image
 {
     String uri;
     String mimeType;
-    int32 bufferView = -1;
+    Optional<int32> bufferView;
     String name;
 };
 
@@ -193,7 +193,14 @@ struct Indices
 {
     int32 bufferView = -1;
     int32 byteOffset = 0;
-    ComponentType type = ComponentType::UInt16;
+    ComponentType componentType = ComponentType::UInt16;
+};
+
+struct TextureInfo
+{
+    int32 index = -1;
+    int32 texCoord = 0;
+    float32 scale = 1;
 };
 
 struct PBRMetallicRoughness
@@ -203,13 +210,6 @@ struct PBRMetallicRoughness
     float32 metallicFactor = 1;
     float32 roughnessFactor = 1;
     TextureInfo metallicRoughnessTexture;
-};
-
-struct TextureInfo
-{
-    int32 index = -1;
-    int32 texCoord = 0;
-    float32 scale = 1;
 };
 
 struct NormalTextureInfo : public TextureInfo
