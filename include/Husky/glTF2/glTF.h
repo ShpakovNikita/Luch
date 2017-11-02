@@ -23,6 +23,17 @@ enum class AnimationInterpolation
     CubicSpline,
 };
 
+enum class AttributeSemantic
+{
+    Position,
+    Normal,
+    Tangent,
+    Texcoord_0,
+    Texcoord_1,
+    Color_0,
+    Joints_0,
+};
+
 enum class AttributeType
 {
     Scalar,
@@ -77,6 +88,14 @@ enum class PrimitiveMode
     TriangleFan = 6,
 };
 
+enum class TargetPath
+{
+    Translation,
+    Rotation,
+    Scale,
+    Weights,
+};
+
 enum class WrapMode
 {
     ClampToEdge = 33071,
@@ -109,7 +128,7 @@ struct Accessor
     AttributeType type;
     Optional<AccessorValueHolder> min;
     Optional<AccessorValueHolder> max;
-    Sparse sparse;
+    Optional<Sparse> sparse;
 };
 
 struct AnimationSampler
@@ -132,6 +151,12 @@ struct Asset
     String generator;
     String version;
     String minVersion;
+};
+
+struct Attribute
+{
+    AttributeSemantic semantic;
+    int32 accessor;
 };
 
 struct Buffer
@@ -200,16 +225,15 @@ struct TextureInfo
 {
     int32 index = -1;
     int32 texCoord = 0;
-    float32 scale = 1;
 };
 
 struct PBRMetallicRoughness
 {
     Vec4 baseColorFactor = { 1, 1, 1, 1 };
-    TextureInfo baseColorTexture;
+    Optional<TextureInfo> baseColorTexture;
     float32 metallicFactor = 1;
     float32 roughnessFactor = 1;
-    TextureInfo metallicRoughnessTexture;
+    Optional<TextureInfo> metallicRoughnessTexture;
 };
 
 struct NormalTextureInfo : public TextureInfo
@@ -226,9 +250,9 @@ struct Material
 {
     String name;
     PBRMetallicRoughness pbrMetallicRoughness;
-    NormalTextureInfo normalTexture;
-    OcclusionTextureInfo occlusionTexture;
-    TextureInfo emissiveTexture;
+    Optional<NormalTextureInfo> normalTexture;
+    Optional<OcclusionTextureInfo> occlusionTexture;
+    Optional<TextureInfo> emissiveTexture;
     Vec3 emissiveFactor = { 0, 0, 0 };
     AlphaMode alphaMode = AlphaMode::Opaque;
     float32 alphaCutoff = 0.5f;
@@ -237,19 +261,19 @@ struct Material
 
 struct Primitive
 {
-    // attributes
-    int32 indices = -1;
-    int32 material = -1;
+    Vector<Attribute> attributes;
+    Optional<int32> indices;
+    Optional<int32> material;
     PrimitiveMode mode = PrimitiveMode::Triangles;
     // Vector<> targets;
 };
 
 struct Sampler
 {
-    MagFilter magFilter;
-    MinFilter minFilter;
-    WrapMode wrapS;
-    WrapMode wrapT;
+    Optional<MagFilter> magFilter;
+    Optional<MinFilter> minFilter;
+    WrapMode wrapS = WrapMode::Repeat;
+    WrapMode wrapT = WrapMode::Repeat;
     String name;
 };
 
@@ -276,9 +300,9 @@ struct Skin
 
 struct Node
 {
-    int32 camera = -1;
+    Optional<int32> camera;
     Vector<int32> children;
-    int32 skin = -1;
+    Optional<int32> skin;
     Optional<Mat4x4> matrix;
     Optional<Quaternion> rotation;
     Optional<Vec3> scale;
@@ -289,14 +313,14 @@ struct Node
 
 struct Target
 {
-    int32 node = -1;
-    String path;
+    Optional<int32> node;
+    TargetPath path;
 };
 
 struct Texture
 {
     Optional<int32> sampler;
-    int32 source;
+    Optional<int32> source;
     String name;
 };
 

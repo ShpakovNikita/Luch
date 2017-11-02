@@ -8,6 +8,32 @@ namespace Husky::glTF
 
 using json = nlohmann::json;
 
+Map<String, AlphaMode> alphaModeLookup = 
+{
+    { "OPAQUE", AlphaMode::Opaque },
+    { "MASK", AlphaMode::Mask },
+    { "BLEND", AlphaMode::Blend },
+};
+
+Map<String, AnimationInterpolation> animationInterpolationLookup =
+{
+    { "LINEAR", AnimationInterpolation::Linear },
+    { "STEP", AnimationInterpolation::Step },
+    { "CATMULLROMSPLINE", AnimationInterpolation::CatmullRomSpline },
+    { "CUBICSPLINE", AnimationInterpolation::CubicSpline },
+};
+
+Map<String, AttributeSemantic> attributeSemanticLookup =
+{
+    { "POSITION", AttributeSemantic::Position },
+    { "NORMAL", AttributeSemantic::Normal },
+    { "TANGENT", AttributeSemantic::Tangent },
+    { "TEXCOORD_0", AttributeSemantic::Texcoord_0 },
+    { "TEXCOORD_1", AttributeSemantic::Texcoord_1 },
+    { "COLOR_0", AttributeSemantic::Color_0 },
+    { "JOINTS_0", AttributeSemantic::Joints_0 },
+};
+
 Map<String, AttributeType> attributeTypeLookup =
 {
     {"SCALAR", AttributeType::Scalar},
@@ -19,19 +45,101 @@ Map<String, AttributeType> attributeTypeLookup =
     {"MAT4", AttributeType::Mat4x4},
 };
 
-Map<String, AnimationInterpolation> animationInterpolationLookup =
-{
-    { "LINEAR", AnimationInterpolation::Linear },
-    { "STEP", AnimationInterpolation::Step },
-    { "CATMULLROMSPLINE", AnimationInterpolation::CatmullRomSpline},
-    { "CUBICSPLINE", AnimationInterpolation::CubicSpline },
-};
-
 Map<String, CameraType> cameraTypeLookup = 
 {
     {"perspective", CameraType::Perspective},
     {"orthographic", CameraType::Orthographic}
 };
+
+Map<String, TargetPath> targetPathLookup =
+{
+    { "translation", TargetPath::Translation },
+    { "rotation", TargetPath::Rotation },
+    { "scale", TargetPath::Scale },
+    { "weights", TargetPath::Weights },
+};
+
+void from_json(const json& j, Vec3& v)
+{
+    v.x = j[0].get<float32>();
+    v.y = j[1].get<float32>();
+    v.z = j[2].get<float32>();
+}
+
+void from_json(const json& j, Vec4& v)
+{
+    v.x = j[0].get<float32>();
+    v.y = j[1].get<float32>();
+    v.z = j[2].get<float32>();
+    v.w = j[3].get<float32>();
+}
+
+String ParseString(const json& j, const char8* key)
+{
+    return j.value(key, "");
+}
+
+String ParseName(const json& j)
+{
+    return ParseString(j, "name");
+}
+
+Optional<int32> ParseOptionalIndex(const json& j, const char8* key)
+{
+    return j.value<Optional<int32>>(key, { });
+}
+
+MagFilter ParseMagFilter(const json& j)
+{
+    return (MagFilter)j.get<uint32>();
+}
+
+MinFilter ParseMinFilter(const json& j)
+{
+    return (MinFilter)j.get<uint32>();
+}
+
+Vec3 ParseVec3(const json& j)
+{
+    Vec3 v;
+    v.x = j[0].get<float32>();
+    v.y = j[1].get<float32>();
+    v.z = j[2].get<float32>();
+    return v;
+}
+
+Vec4 ParseVec4(const json& j)
+{
+    Vec4 v;
+    v.x = j[0].get<float32>();
+    v.y = j[1].get<float32>();
+    v.z = j[2].get<float32>();
+    v.w = j[3].get<float32>();
+    return v;
+}
+
+Mat4x4 ParseMat4x4(const json& j)
+{
+    Mat4x4 m;
+    for (int32 column = 0; column < 4; column++)
+    {
+        for (int32 row = 0; row < 4; row++)
+        {
+            m[column][row] = j[column*4 + row].get<float32>();
+        }
+    }
+    return m;
+}
+
+Quaternion ParseQuaternion(const json& j)
+{
+    Quaternion q;
+    q.x = j[0].get<float32>();
+    q.y = j[1].get<float32>();
+    q.z = j[2].get<float32>();
+    q.w = j[3].get<float32>();
+    return q;
+}
 
 template<typename T, T(*Function)(const json&)>
 Vector<T> ParseArray(const json& j)
@@ -47,10 +155,70 @@ Vector<T> ParseArray(const json& j)
     return result;
 }
 
-template<typename T>
-T ParseBuiltin(const json& j)
+template<typename T, T(*Function)(const json&)>
+Vector<T> ParseArrayOrEmpty(const json& j, const char8* key)
 {
-    return j.get<T>();
+    auto it = j.find(key);
+    if (it != j.end())
+    {
+        return ParseArray<T, Function>(*it);
+    }
+    else
+    {
+        return {};
+    }
+}
+
+template<typename T>
+Vector<T> ParseBuiltinArrayOrEmpty(const json& j, const char8* key)
+{
+    return ParseArrayOrEmpty<T, ParseBuiltin<T>>(j, key);
+}
+
+template<typename T, T(*Function)(const json&)>
+T ParseOrDefault(const json& j, const char8* key, const T& defaultValue)
+{
+    auto it = j.find(key);
+    if (it != j.end())
+    {
+        return Function(*it);
+    }
+    else
+    {
+        return defaultValue;
+    }
+}
+
+template<typename T>
+T ParseBuiltinOrDefault(const json& j, const char8* key, const T& defaultValue)
+{
+    return ParseOrDefault<T, ParseBuiltin<T>>(j, key, defaultValue);
+}
+
+template<typename T, T(*Function)(const json&)>
+Optional<T> ParseOptional(const json& j, const char8* key)
+{
+    auto it = j.find(key);
+    if (it != j.end())
+    {
+        return Function(*it);
+    }
+    else
+    {
+        return {};
+    }
+}
+
+template<typename T>
+Optional<T> ParseBuiltinOptional(const json& j, const char8* key)
+{
+    return ParseOptional<T, ParseBuiltin<T>>(j, key);
+}
+
+template<typename T>
+T ParseBuiltin(const json& j, const char8* key)
+{
+    return j[key].get<T>();
 }
 
 template<typename T>
@@ -74,11 +242,11 @@ AccessorValueHolder ParseAccessorMinMax(ComponentType componentType, AttributeTy
 Accessor ParseAccessor(const json& j)
 {
     Accessor accessor;
-    accessor.bufferView = j.value<Optional<int32>>("bufferView", {});
-    accessor.bufferOffset = j.value<int32>("bufferOffset", 0);
-    accessor.componentType = (ComponentType)j["componentType"].get<uint32>();
-    accessor.normalized = j.value<bool>("normalized", false);
-    accessor.count = j["count"].get<int>();
+    accessor.bufferView = ParseOptionalIndex(j, "bufferView");
+    accessor.bufferOffset = ParseBuiltinOrDefault<int32>(j, "bufferOffset", 0);
+    accessor.componentType = (ComponentType)ParseBuiltin<uint32>(j, "componentType");
+    accessor.normalized = ParseBuiltinOrDefault<bool>(j, "normalized", false);
+    accessor.count = ParseBuiltin<int32>(j, "count");
     accessor.type = attributeTypeLookup[j["type"].get<String>()];
 
     auto minIter = j.find("min");
@@ -93,11 +261,7 @@ Accessor ParseAccessor(const json& j)
         accessor.max = ParseAccessorMinMax(accessor.componentType, accessor.type, *maxIter);
     }
 
-    auto sparseIter = j.find("sparse");
-    if (sparseIter != j.end())
-    {
-        accessor.sparse = ParseSparse(*sparseIter);
-    }
+    accessor.sparse = ParseOptional<Sparse, ParseSparse>(j, "sparse");
 
     return accessor;
 }
@@ -105,9 +269,9 @@ Accessor ParseAccessor(const json& j)
 AnimationSampler ParseAnimationSampler(const json& j)
 {
     AnimationSampler animationSampler;
-    animationSampler.input = j["input"].get<int32>();
+    animationSampler.input = ParseBuiltin<int32>(j, "input");
     animationSampler.interpolation = animationInterpolationLookup[j.value("interpolation", "LINEAR")];
-    animationSampler.output = j["output"].get<int32>();
+    animationSampler.output = ParseBuiltin<int32>(j, "output");
     return animationSampler;
 }
 
@@ -116,56 +280,70 @@ Animation ParseAnimation(const json& j)
     Animation animation;
     animation.channels = ParseBuiltinArray<int32>(j["channels"]);
     animation.samplers = ParseArray<AnimationSampler, ParseAnimationSampler>(j["samplers"]);
-    animation.name = j.value("name", "");
+    animation.name = ParseName(j);
     return animation;
 }
 
 Asset ParseAsset(const json& j)
 {
     Asset result;
-    result.copyright = j.value("copyright", "");
-    result.generator = j.value("generator", "");
+    result.copyright = ParseString(j, "copyright");
+    result.generator = ParseString(j, "generator");
     result.version = j["version"].get<String>();
-    result.minVersion = j.value("minVersion", "");
+    result.minVersion = ParseString(j, "minVersion");
     return result;
+}
+
+Vector<Attribute> ParseAttributes(const json& j)
+{
+    Vector<Attribute> attributes;
+
+    for (auto it = j.begin(); it != j.end(); ++it)
+    {
+        auto semantic = attributeSemanticLookup[it.key()];
+        auto accessor = it->get<int32>();
+        attributes.emplace_back(semantic, accessor);
+    }
+
+    return attributes;
 }
 
 Buffer ParseBuffer(const json& j)
 {
     Buffer buffer;
-    buffer.uri = j.value("uri", "");
-    buffer.byteLength = j["byteLength"].get<int32>();
-    buffer.name = j.value("name", "");
+    buffer.uri = ParseString(j, "uri");
+    buffer.byteLength = ParseBuiltin<int32>(j, "byteLength");
+    buffer.name = ParseName(j);
     return buffer;
 }
 
 BufferView ParseBufferView(const json& j)
 {
     BufferView bufferView;
-    bufferView.buffer = j["buffer"].get<int32>();
-    bufferView.byteOffset = j.value<int32>("byteOffset", 0);
-    bufferView.byteLength = j["byteLength"].get<int32>();
-    bufferView.byteStride = j.value<Optional<int32>>("byteStride", {});
+    bufferView.buffer = ParseBuiltin<int32>(j, "buffer");
+    bufferView.byteOffset = ParseBuiltinOrDefault<int32>(j, "byteOffset", 0);
+    bufferView.byteLength = ParseBuiltin<int32>(j, "byteLength");
+    bufferView.byteStride = ParseOptionalIndex(j, "byteStride");
     return bufferView;
 }
 
 Orthographic ParseOrthographic(const json& j)
 {
     Orthographic orthographic;
-    orthographic.xmag = j["xmag"].get<float32>();
-    orthographic.ymag = j["ymag"].get<float32>();
-    orthographic.zfar = j["zfar"].get<float32>();
-    orthographic.znear = j["znear"].get<float32>();
+    orthographic.xmag = ParseBuiltin<float32>(j, "xmag");
+    orthographic.ymag = ParseBuiltin<float32>(j, "ymag");
+    orthographic.zfar = ParseBuiltin<float32>(j, "zfar");
+    orthographic.znear = ParseBuiltin<float32>(j, "znear");
     return orthographic;
 }
 
 Perspective ParsePerspective(const json& j)
 {
     Perspective perspective;
-    perspective.aspectRatio = j.value<Optional<float32>>("aspectRatio", {});
-    perspective.yfov = j["yfov"].get<float32>();
-    perspective.zfar = j.value<Optional<float32>>("zfar", {});
-    perspective.znear = j["znear"].get<float32>();
+    perspective.aspectRatio = ParseBuiltinOptional<float32>(j, "aspectRatio");
+    perspective.yfov = ParseBuiltin<float32>(j, "yfov");
+    perspective.zfar = ParseBuiltinOptional<float32>(j, "zfar");
+    perspective.znear = ParseBuiltin<float>(j, "znear");
     return perspective;
 }
 
@@ -200,7 +378,7 @@ Image ParseImage(const json& j)
     image.mimeType = j.value("mimeType", "");
     if (image.uri.empty())
     {
-        image.bufferView = j["bufferView"].get<int32>();
+        image.bufferView = ParseBuiltin<uint32>(j, "bufferView");
     }
     return image;
 }
@@ -208,17 +386,141 @@ Image ParseImage(const json& j)
 Indices ParseIndices(const json& j)
 {
     Indices indices;
-    indices.bufferView = j["bufferView"].get<int32>();
-    indices.byteOffset = j.value<int32>("byteOffset", 0);
-    indices.componentType = (ComponentType)j["componentType"].get<int32>();
+    indices.bufferView = ParseBuiltin<int32>(j, "bufferView");
+    indices.byteOffset = ParseBuiltinOrDefault<int32>(j, "byteOffset", 0);
+    indices.componentType = (ComponentType)ParseBuiltin<uint32>(j, "componentType");
     return indices;
 }
 
 TextureInfo ParseTextureInfo(const json& j)
 {
     TextureInfo textureInfo;
-    textureInfo.index = j["index"].get<int32>();
+    textureInfo.index = ParseBuiltin<int32>(j, "index");
+    textureInfo.texCoord = ParseBuiltinOrDefault<int32>(j, "texCoord", 0);
     return textureInfo;
+}
+
+NormalTextureInfo ParseNormalTextureInfo(const json& j)
+{
+    NormalTextureInfo textureInfo;
+    textureInfo.index = ParseBuiltin<int32>(j, "index");
+    textureInfo.texCoord = ParseBuiltinOrDefault<int32>(j, "texCoord", 0);
+    textureInfo.scale = ParseBuiltinOrDefault<float32>(j, "sacle", 1.0f);
+    return textureInfo;
+}
+
+OcclusionTextureInfo ParseOcclusionTextureInfo(const json& j)
+{
+    OcclusionTextureInfo textureInfo;
+    textureInfo.index = ParseBuiltin<int32>(j, "index");
+    textureInfo.texCoord = ParseBuiltinOrDefault<int32>(j, "texCoord", 0);
+    textureInfo.strength = ParseBuiltinOrDefault<float32>(j, "strength", 1.0f);
+    return textureInfo;
+}
+
+PBRMetallicRoughness ParsePBRMetallicRoughness(const json& j)
+{
+    PBRMetallicRoughness pbrMetallicRoughness;
+    pbrMetallicRoughness.baseColorFactor = ParseOrDefault<Vec4, ParseVec4>(j, "baseColorFactor", { 1, 1, 1, 1 });
+    pbrMetallicRoughness.baseColorTexture = ParseOptional<TextureInfo, ParseTextureInfo>(j, "baseColorTexture");
+    pbrMetallicRoughness.metallicFactor = j.value<float32>("metallicFactor", 1.0f);
+    pbrMetallicRoughness.roughnessFactor = j.value<float32>("roughnessFactor", 1.0f);
+    pbrMetallicRoughness.metallicRoughnessTexture = ParseOptional<TextureInfo, ParseTextureInfo>(j, "metallicRoughnessTexture");
+    return pbrMetallicRoughness;
+}
+
+Material ParseMaterial(const json& j)
+{
+    Material material;
+    material.name = ParseName(j);
+    material.pbrMetallicRoughness = ParseOrDefault<PBRMetallicRoughness, ParsePBRMetallicRoughness>(j, "pbrMetallicRoughness", {});
+    material.normalTexture = ParseOptional<NormalTextureInfo, ParseNormalTextureInfo>(j, "normalTexture");
+    material.occlusionTexture = ParseOptional<OcclusionTextureInfo, ParseOcclusionTextureInfo>(j, "occlusionTexture");
+    material.emissiveTexture = ParseOptional<TextureInfo, ParseTextureInfo>(j, "emissiveTexture");
+    material.emissiveFactor = ParseOrDefault<Vec3, ParseVec3>(j, "emissiveFactor", { 0, 0, 0 });
+    material.alphaMode = alphaModeLookup[j.value("alphaMode", "OPAQUE")];
+    material.alphaCutoff = ParseBuiltinOrDefault<float32>(j, "alphaCutoff", 0.5f);
+    material.doubleSided = ParseBuiltinOrDefault<bool>(j, "doubleSided", false);
+    return material;
+}
+
+Primitive ParsePrimitive(const json& j)
+{
+    Primitive primitive;
+    primitive.attributes = ParseAttributes(j["attributes"]);
+    primitive.indices = ParseOptionalIndex(j, "indices");
+    primitive.material = ParseOptionalIndex(j, "material");
+    primitive.mode = (PrimitiveMode)ParseBuiltinOrDefault<uint32>(j, "mode", 4);
+    return primitive;
+}
+
+Sampler ParseSampler(const json& j)
+{
+    Sampler sampler;
+    sampler.magFilter = ParseOptional<MagFilter, ParseMagFilter>(j, "magFilter");
+    sampler.minFilter = ParseOptional<MinFilter, ParseMinFilter>(j, "minFilter");
+    sampler.wrapS = (WrapMode)ParseBuiltinOrDefault<uint32>(j, "wrapS", 10497);
+    sampler.wrapT = (WrapMode)ParseBuiltinOrDefault<uint32>(j, "wrapT", 10497);
+    sampler.name = ParseName(j);
+    return sampler;
+}
+
+Mesh ParseMesh(const json& j)
+{
+    Mesh mesh;
+    mesh.primitives = ParseArray<Primitive, ParsePrimitive>(j["primitives"]);
+    mesh.weights = ParseBuiltinArrayOrEmpty<float32>(j, "weights");
+    mesh.name = ParseName(j);
+    return mesh;
+}
+
+Scene ParseScene(const json& j)
+{
+    Scene scene;
+    scene.nodes = ParseBuiltinArrayOrEmpty<int32>(j, "nodes");
+    scene.name = ParseName(j);
+    return scene;
+}
+
+Skin ParseSkin(const json& j)
+{
+    Skin skin;
+    skin.inverseBindMatrices = ParseOptionalIndex(j, "inverseBindMatrices");
+    skin.skeleton = ParseOptionalIndex(j, "skeleton");
+    skin.joints = ParseBuiltinArray<int32>(j["joints"]);
+    skin.name = ParseName(j);
+    return skin;
+}
+
+Node ParseNode(const json& j)
+{
+    Node node;
+    node.camera = ParseOptionalIndex(j, "camera");
+    node.children = ParseBuiltinArrayOrEmpty<int32>(j, "children");
+    node.skin = ParseOptionalIndex(j, "skin");
+    node.matrix = ParseOptional<Mat4x4, ParseMat4x4>(j, "matrix");
+    node.rotation = ParseOptional<Quaternion, ParseQuaternion>(j, "rotation");
+    node.scale = ParseOptional<Vec3, ParseVec3>(j, "scale");
+    node.transform = ParseOptional<Vec3, ParseVec3>(j, "transform");
+    node.weights = ParseBuiltinArrayOrEmpty<float32>(j, "weights");
+    node.name = ParseName(j);
+    return node;
+}
+
+Target ParseTarget(const json& j)
+{
+    Target target;
+    target.node = ParseOptionalIndex(j, "node");
+    target.path = targetPathLookup[j["path"].get<String>()];
+    return target;
+}
+
+Texture ParseTexture(const json& j)
+{
+    Texture texture;
+    texture.sampler = ParseOptionalIndex(j, "sampler");
+    texture.source = ParseOptionalIndex(j, "source");
+    return texture;
 }
 
 UniquePtr<glTF> glTFParser::ParseJSON(Stream* stream)
@@ -241,7 +543,6 @@ UniquePtr<glTF> glTFParser::ParseJSON(Stream* stream)
     auto assetIter = j.find("asset");
 
     HUSKY_ASSERT(assetIter != j.end());
-
 
     auto extensionsUsedIter = j.find("extensionsUsed");
     if (extensionsUsedIter != j.end())
