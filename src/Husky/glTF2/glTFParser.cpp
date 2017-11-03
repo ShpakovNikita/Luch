@@ -342,6 +342,8 @@ BufferView ParseBufferView(const json& j)
         bufferView.target = (BufferType)target.value();
     }
 
+    bufferView.name = ParseName(j);
+
     return bufferView;
 }
 
