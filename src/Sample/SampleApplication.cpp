@@ -2,7 +2,7 @@
 
 #include <Husky/Vulkan.h>
 #include <Husky/Math/Math.h>
-
+#include <Husky/FileStream.h>
 #include <Husky/VectorTypes.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
@@ -41,7 +41,6 @@ static const char8* vertexShaderSource =
 "{\n"
 "   outTexCoord = inTexCoord;\n"
 "   gl_Position = ub.projection * ub.view * ub.model * vec4(position, 1.0);\n"
-"   //gl_Position = vec4(position, 0.0);\n"
 "}\n";
 
 static const char8* fragmentShaderSource =
@@ -84,8 +83,12 @@ static LRESULT CALLBACK StaticWindowProc(
 
 bool SampleApplication::Initialize(const Vector<String>& args)
 {
+    glTF::glTFParser glTFparser;
+    FileStream fileStream{ "C:\\Development\\glTF\\DamagedHelmet.gltf", FileOpenModes::Read };
+    
     GLSLShaderCompiler::Initialize();
     graphicsContext = std::make_unique<GraphicsContext>();
+    graphicsContext->root = glTFparser.ParseJSON(&fileStream);
 
     allocationCallbacks = allocator.GetAllocationCallbacks();
 

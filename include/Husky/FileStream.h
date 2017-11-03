@@ -32,8 +32,8 @@ public:
     void Close() override;
     ~FileStream();
 private:
-    static constexpr std::ios::openmode ToStdOpenMode(FileOpenModes mode);
-    static constexpr std::ios::seekdir ToStdSeekDir(SeekOrigin origin);
+    static std::ios::openmode ToStdOpenMode(FileOpenModes mode);
+    static std::ios::seekdir ToStdSeekDir(SeekOrigin origin);
     mutable std::fstream fstream;
     FileOpenModes mode;
 };

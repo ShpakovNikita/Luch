@@ -96,6 +96,12 @@ enum class TargetPath
     Weights,
 };
 
+enum class BufferType
+{
+    ArrayBuffer = 34962,
+    ElementArrayBuffer = 34963,
+};
+
 enum class WrapMode
 {
     ClampToEdge = 33071,
@@ -172,7 +178,7 @@ struct BufferView
     int32 byteOffset = 0;
     int32 byteLength = 0;
     Optional<int32> byteStride;
-    int32 target;
+    Optional<BufferType> target;
     String name;
 };
 

@@ -74,14 +74,19 @@ void from_json(const json& j, Vec4& v)
     v.w = j[3].get<float32>();
 }
 
-String ParseString(const json& j, const char8* key)
+String ParseStringOrDefault(const json& j, const char8* key, const char8* default)
 {
-    return j.value(key, "");
+    return j.value(key, default);
+}
+
+String ParseStringOrEmpty(const json& j, const char8* key)
+{
+    return ParseStringOrDefault(j, key, "");
 }
 
 String ParseName(const json& j)
 {
-    return ParseString(j, "name");
+    return ParseStringOrEmpty(j, "name");
 }
 
 Optional<int32> ParseOptionalIndex(const json& j, const char8* key)
@@ -222,6 +227,12 @@ T ParseBuiltin(const json& j, const char8* key)
 }
 
 template<typename T>
+T ParseBuiltin(const json& j)
+{
+    return j.get<T>();
+}
+
+template<typename T>
 Vector<T> ParseBuiltinArray(const json& j)
 {
     return ParseArray<T, ParseBuiltin<T>>(j);
@@ -235,7 +246,7 @@ Sparse ParseSparse(const json& j)
 
 AccessorValueHolder ParseAccessorMinMax(ComponentType componentType, AttributeType type, const json& j)
 {
-    AccessorValueHolder valueHolder;
+    AccessorValueHolder valueHolder{};
     return valueHolder;
 }
 
@@ -270,7 +281,7 @@ AnimationSampler ParseAnimationSampler(const json& j)
 {
     AnimationSampler animationSampler;
     animationSampler.input = ParseBuiltin<int32>(j, "input");
-    animationSampler.interpolation = animationInterpolationLookup[j.value("interpolation", "LINEAR")];
+    animationSampler.interpolation = animationInterpolationLookup[ParseBuiltinOrDefault<String>(j, "interpolation", "LINEAR")];
     animationSampler.output = ParseBuiltin<int32>(j, "output");
     return animationSampler;
 }
@@ -287,10 +298,10 @@ Animation ParseAnimation(const json& j)
 Asset ParseAsset(const json& j)
 {
     Asset result;
-    result.copyright = ParseString(j, "copyright");
-    result.generator = ParseString(j, "generator");
-    result.version = j["version"].get<String>();
-    result.minVersion = ParseString(j, "minVersion");
+    result.copyright = ParseStringOrEmpty(j, "copyright");
+    result.generator = ParseStringOrEmpty(j, "generator");
+    result.version = ParseBuiltin<String>(j, "version");
+    result.minVersion = ParseStringOrEmpty(j, "minVersion");
     return result;
 }
 
@@ -302,7 +313,7 @@ Vector<Attribute> ParseAttributes(const json& j)
     {
         auto semantic = attributeSemanticLookup[it.key()];
         auto accessor = it->get<int32>();
-        attributes.emplace_back(semantic, accessor);
+        attributes.push_back(Attribute{ semantic, accessor });
     }
 
     return attributes;
@@ -311,7 +322,7 @@ Vector<Attribute> ParseAttributes(const json& j)
 Buffer ParseBuffer(const json& j)
 {
     Buffer buffer;
-    buffer.uri = ParseString(j, "uri");
+    buffer.uri = ParseStringOrEmpty(j, "uri");
     buffer.byteLength = ParseBuiltin<int32>(j, "byteLength");
     buffer.name = ParseName(j);
     return buffer;
@@ -324,6 +335,13 @@ BufferView ParseBufferView(const json& j)
     bufferView.byteOffset = ParseBuiltinOrDefault<int32>(j, "byteOffset", 0);
     bufferView.byteLength = ParseBuiltin<int32>(j, "byteLength");
     bufferView.byteStride = ParseOptionalIndex(j, "byteStride");
+
+    Optional<uint32> target = ParseBuiltinOptional<uint32>(j, "target");
+    if (target.has_value())
+    {
+        bufferView.target = (BufferType)target.value();
+    }
+
     return bufferView;
 }
 
@@ -343,14 +361,14 @@ Perspective ParsePerspective(const json& j)
     perspective.aspectRatio = ParseBuiltinOptional<float32>(j, "aspectRatio");
     perspective.yfov = ParseBuiltin<float32>(j, "yfov");
     perspective.zfar = ParseBuiltinOptional<float32>(j, "zfar");
-    perspective.znear = ParseBuiltin<float>(j, "znear");
+    perspective.znear = ParseBuiltin<float32>(j, "znear");
     return perspective;
 }
 
 Camera ParseCamera(const json& j)
 {
     Camera camera;
-    camera.type = cameraTypeLookup[j["type"].get<String>()];
+    camera.type = cameraTypeLookup[ParseBuiltin<String>(j, "type")];
     switch (camera.type)
     {
     case CameraType::Orthographic:
@@ -374,8 +392,8 @@ Channel ParseChannel(const json& j)
 Image ParseImage(const json& j)
 {
     Image image;
-    image.uri = j.value("uri", "");
-    image.mimeType = j.value("mimeType", "");
+    image.uri = ParseStringOrEmpty(j, "uri");
+    image.mimeType = ParseStringOrEmpty(j, "mimeType");
     if (image.uri.empty())
     {
         image.bufferView = ParseBuiltin<uint32>(j, "bufferView");
@@ -423,8 +441,8 @@ PBRMetallicRoughness ParsePBRMetallicRoughness(const json& j)
     PBRMetallicRoughness pbrMetallicRoughness;
     pbrMetallicRoughness.baseColorFactor = ParseOrDefault<Vec4, ParseVec4>(j, "baseColorFactor", { 1, 1, 1, 1 });
     pbrMetallicRoughness.baseColorTexture = ParseOptional<TextureInfo, ParseTextureInfo>(j, "baseColorTexture");
-    pbrMetallicRoughness.metallicFactor = j.value<float32>("metallicFactor", 1.0f);
-    pbrMetallicRoughness.roughnessFactor = j.value<float32>("roughnessFactor", 1.0f);
+    pbrMetallicRoughness.metallicFactor = ParseBuiltinOrDefault<float32>(j, "metallicFactor", 1.0f);
+    pbrMetallicRoughness.roughnessFactor = ParseBuiltinOrDefault<float32>(j, "roughnessFactor", 1.0f);
     pbrMetallicRoughness.metallicRoughnessTexture = ParseOptional<TextureInfo, ParseTextureInfo>(j, "metallicRoughnessTexture");
     return pbrMetallicRoughness;
 }
@@ -438,7 +456,7 @@ Material ParseMaterial(const json& j)
     material.occlusionTexture = ParseOptional<OcclusionTextureInfo, ParseOcclusionTextureInfo>(j, "occlusionTexture");
     material.emissiveTexture = ParseOptional<TextureInfo, ParseTextureInfo>(j, "emissiveTexture");
     material.emissiveFactor = ParseOrDefault<Vec3, ParseVec3>(j, "emissiveFactor", { 0, 0, 0 });
-    material.alphaMode = alphaModeLookup[j.value("alphaMode", "OPAQUE")];
+    material.alphaMode = alphaModeLookup[ParseStringOrDefault(j, "alphaMode", "OPAQUE")];
     material.alphaCutoff = ParseBuiltinOrDefault<float32>(j, "alphaCutoff", 0.5f);
     material.doubleSided = ParseBuiltinOrDefault<bool>(j, "doubleSided", false);
     return material;
@@ -511,7 +529,7 @@ Target ParseTarget(const json& j)
 {
     Target target;
     target.node = ParseOptionalIndex(j, "node");
-    target.path = targetPathLookup[j["path"].get<String>()];
+    target.path = targetPathLookup[ParseBuiltin<String>(j, "path")];
     return target;
 }
 
@@ -540,23 +558,22 @@ UniquePtr<glTF> glTFParser::ParseJSON(Stream* stream)
 
     UniquePtr<glTF> root = MakeUnique<glTF>();
 
-    auto assetIter = j.find("asset");
-
-    HUSKY_ASSERT(assetIter != j.end());
-
-    auto extensionsUsedIter = j.find("extensionsUsed");
-    if (extensionsUsedIter != j.end())
-    {
-        root->extensionsUsed = ParseBuiltinArray<String>(*extensionsUsedIter);
-    }
-
-    auto extensionsRequiredIter = j.find("extensionsRequired");
-    if (extensionsRequiredIter != j.end())
-    {
-        root->extensionsRequired = ParseBuiltinArray<String>(*extensionsRequiredIter);
-    }
-
-    root->asset = ParseAsset(*assetIter);
+    root->extensionsUsed = ParseBuiltinArrayOrEmpty<String>(j, "extensionsUsed");
+    root->extensionsRequired = ParseBuiltinArrayOrEmpty<String>(j, "extensionsRequired");
+    root->accessors = ParseArrayOrEmpty<Accessor, ParseAccessor>(j, "accessors");
+    root->asset = ParseAsset(j["asset"]);
+    root->buffers = ParseArrayOrEmpty<Buffer, ParseBuffer>(j, "buffers");
+    root->bufferViews = ParseArrayOrEmpty<BufferView, ParseBufferView>(j, "bufferViews");
+    root->cameras = ParseArrayOrEmpty<Camera, ParseCamera>(j, "cameras");
+    root->images = ParseArrayOrEmpty<Image, ParseImage>(j, "images");
+    root->materials = ParseArrayOrEmpty<Material, ParseMaterial>(j, "materials");
+    root->meshes = ParseArrayOrEmpty<Mesh, ParseMesh>(j, "meshes");
+    root->nodes = ParseArrayOrEmpty<Node, ParseNode>(j, "nodes");
+    root->samplers = ParseArrayOrEmpty<Sampler, ParseSampler>(j, "samplers");
+    root->scenes = ParseArrayOrEmpty<Scene, ParseScene>(j, "scenes");
+    root->scene = ParseOptionalIndex(j, "scene");
+    root->skins = ParseArrayOrEmpty<Skin, ParseSkin>(j, "skins");
+    root->textures = ParseArrayOrEmpty<Texture, ParseTexture>(j, "textures");
 
     return root;
 }

@@ -5,7 +5,7 @@ namespace Husky
 {
 
 FileStream::FileStream(const String& filename, FileOpenModes aMode)
-    : mode(mode)
+    : mode(aMode)
 {
     fstream.open(filename, ToStdOpenMode(mode));
 }
@@ -40,6 +40,7 @@ int64 FileStream::GetPosition() const
 int64 FileStream::Seek(int64 offset, SeekOrigin origin)
 {
     fstream.seekg(offset, ToStdSeekDir(origin));
+    return GetPosition();
 }
 
 bool FileStream::IsReadable() const

@@ -2,8 +2,10 @@
 
 #include <Husky/BaseApplication.h>
 #include <Husky/GeometryGenerator.h>
+#include <Husky/glTF2/glTFParser.h>
+#include <Husky/glTF2/glTF.h>
 #include <Husky/Vulkan.h>
-#include <Husky/Vulkan/GlslShaderCompiler.h>
+#include <Husky/Vulkan/GLSLShaderCompiler.h>
 #include <Husky/Vulkan/GraphicsDevice.h>
 #include <Husky/Vulkan/PhysicalDevice.h>
 #include <Husky/Vulkan/Surface.h>
@@ -62,6 +64,7 @@ struct GraphicsContext
     Husky::MeshData boxData;
     Husky::Vector<FrameResources> frameResources;
     Uniform uniform;
+    Husky::UniquePtr<Husky::glTF::glTF> root;
 };
 
 class SampleApplication
