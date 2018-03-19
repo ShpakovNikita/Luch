@@ -9,7 +9,7 @@ namespace Husky
 
 namespace Husky::glTF
 {
-    class glTF;
+    struct glTF;
 
     class glTFParser
     {

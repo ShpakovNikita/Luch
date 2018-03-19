@@ -29,6 +29,16 @@ inline uint64 ToVulkanTimeout(Optional<Timeout> timeout)
     }
 }
 
+inline uint32 ToVulkanSize(size_t size)
+{
+    if(size > std::numeric_limits<uint32>::max())
+    {
+        HUSKY_ASSERT(false, "Too big");
+    }
+
+    return static_cast<uint32>(size);
+}
+
 template<typename Value>
 using VulkanResultValue = ResultValue<vk::Result, Value>;
 

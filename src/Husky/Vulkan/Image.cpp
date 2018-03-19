@@ -3,7 +3,7 @@
 
 namespace Husky::Vulkan
 {
-    ImageAspects GetAspects(vk::Format format)
+    constexpr ImageAspects GetAspects(vk::Format format)
     {
         switch (format)
         {

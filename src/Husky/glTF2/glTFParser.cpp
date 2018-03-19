@@ -74,9 +74,9 @@ void from_json(const json& j, Vec4& v)
     v.w = j[3].get<float32>();
 }
 
-String ParseStringOrDefault(const json& j, const char8* key, const char8* default)
+String ParseStringOrDefault(const json& j, const char8* key, const char8* defaultValue)
 {
-    return j.value(key, default);
+    return j.value(key, defaultValue);
 }
 
 String ParseStringOrEmpty(const json& j, const char8* key)
@@ -91,7 +91,15 @@ String ParseName(const json& j)
 
 Optional<int32> ParseOptionalIndex(const json& j, const char8* key)
 {
-    return j.value<Optional<int32>>(key, { });
+    auto it = j.find(key);
+    if(it != j.end())
+    {
+        return j.value<int32>(key, -1);
+    }
+    else
+    {
+        return {};
+    }
 }
 
 MagFilter ParseMagFilter(const json& j)
@@ -241,6 +249,7 @@ Vector<T> ParseBuiltinArray(const json& j)
 Sparse ParseSparse(const json& j)
 {
     Sparse sparse;
+    HUSKY_ASSERT(false);
     return sparse;
 }
 
@@ -258,7 +267,7 @@ Accessor ParseAccessor(const json& j)
     accessor.componentType = (ComponentType)ParseBuiltin<uint32>(j, "componentType");
     accessor.normalized = ParseBuiltinOrDefault<bool>(j, "normalized", false);
     accessor.count = ParseBuiltin<int32>(j, "count");
-    accessor.type = attributeTypeLookup[j["type"].get<String>()];
+    accessor.type = attributeTypeLookup[ParseBuiltin<String>(j, "type")];
 
     auto minIter = j.find("min");
     if (minIter != j.end())
