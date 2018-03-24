@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Husky/UniquePtr.h>
+#include <Husky/SharedPtr.h>
 
 namespace Husky
 {
@@ -9,11 +9,11 @@ namespace Husky
 
 namespace Husky::glTF
 {
-    struct glTF;
+    struct glTFRoot;
 
     class glTFParser
     {
     public:
-        UniquePtr<glTF> ParseJSON(Stream* stream);
+        SharedPtr<glTFRoot> ParseJSON(Stream* stream);
     };
 }

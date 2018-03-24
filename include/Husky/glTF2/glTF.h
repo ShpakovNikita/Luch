@@ -127,8 +127,8 @@ struct Sparse
 struct Accessor
 {
     Optional<int32> bufferView;
-    int32 bufferOffset = 0;
-    ComponentType componentType = ComponentType::Float;
+    int32 byteOffset = 0;
+    ComponentType componentType;
     bool normalized = false;
     int32 count = 0;
     AttributeType type;
@@ -174,9 +174,9 @@ struct Buffer
 
 struct BufferView
 {
-    int32 buffer = -1;
+    int32 buffer;
     int32 byteOffset = 0;
-    int32 byteLength = 0;
+    int32 byteLength;
     Optional<int32> byteStride;
     Optional<BufferType> target;
     String name;
@@ -312,7 +312,7 @@ struct Node
     Optional<Mat4x4> matrix;
     Optional<Quaternion> rotation;
     Optional<Vec3> scale;
-    Optional<Vec3> transform;
+    Optional<Vec3> translation;
     Vector<float32> weights;
     String name;
 };
@@ -330,7 +330,7 @@ struct Texture
     String name;
 };
 
-struct glTF
+struct glTFRoot
 {
     Vector<String> extensionsUsed;
     Vector<String> extensionsRequired;

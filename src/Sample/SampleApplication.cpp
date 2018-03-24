@@ -84,7 +84,7 @@ static LRESULT CALLBACK StaticWindowProc(
 bool SampleApplication::Initialize(const Vector<String>& args)
 {
     glTF::glTFParser glTFparser;
-    FileStream fileStream{ "C:\\Development\\glTF\\DamagedHelmet.gltf", FileOpenModes::Read };
+    FileStream fileStream{ "C:\\Development\\glTF\\cube.gltf", FileOpenModes::Read };
     
     GLSLShaderCompiler::Initialize();
     graphicsContext = std::make_unique<GraphicsContext>();

@@ -5,12 +5,10 @@
 #include <Husky/Vulkan/DescriptorSet.h>
 #include <Husky/Vulkan/Framebuffer.h>
 #include <Husky/Vulkan/GraphicsDevice.h>
-#include <Husky/Vulkan/IndexBuffer.h>
 #include <Husky/Vulkan/IndexType.h>
 #include <Husky/Vulkan/Pipeline.h>
 #include <Husky/Vulkan/PipelineLayout.h>
 #include <Husky/Vulkan/RenderPass.h>
-#include <Husky/Vulkan/VertexBuffer.h>
 
 namespace Husky::Vulkan
 {
@@ -64,14 +62,14 @@ namespace Husky::Vulkan
             return *this;
         }
 
-        inline CommandBuffer& BindVertexBuffers(Vector<VertexBuffer*> vertexBuffers, Vector<int64> offsets, int32 binding)
+        inline CommandBuffer& BindVertexBuffers(Vector<Buffer*> vertexBuffers, Vector<int64> offsets, int32 binding)
         {
             Vector<vk::Buffer> vulkanBuffers;
             vulkanBuffers.reserve(vertexBuffers.size());
 
             for (auto& vertexBuffer : vertexBuffers)
             {
-                vulkanBuffers.push_back(vertexBuffer->GetUnderlyingBuffer().GetBuffer());
+                vulkanBuffers.push_back(vertexBuffer->GetBuffer());
             }
 
             Vector<vk::DeviceSize> vulkanOffsets;
@@ -86,9 +84,9 @@ namespace Husky::Vulkan
             return *this;
         }
 
-        inline CommandBuffer& BindIndexBuffer(IndexBuffer* indexBuffer, int64 offset)
+        inline CommandBuffer& BindIndexBuffer(Buffer* indexBuffer, vk::IndexType indexType, int64 offset)
         {
-            commandBuffer.bindIndexBuffer(indexBuffer->GetUnderlyingBuffer().GetBuffer(), offset, ToVulkanIndexType(indexBuffer->GetIndexType()));
+            commandBuffer.bindIndexBuffer(indexBuffer->GetBuffer(), offset, indexType);
             return *this;
         }
 

@@ -551,7 +551,7 @@ namespace Husky::Vulkan
         }
         else
         {
-            return { createResult, Fence{ this, vulkanFence } };
+            return { createResult, Fence{ this, vulkanFence }};
         }
     }
 
@@ -567,7 +567,21 @@ namespace Husky::Vulkan
         }
         else
         {
-            return { createResult, Semaphore {this, vulkanSemaphore} };
+            return { createResult, Semaphore{this, vulkanSemaphore} };
+        }
+    }
+
+    VulkanResultValue<Sampler> GraphicsDevice::CreateSampler(const vk::SamplerCreateInfo& createInfo)
+    {
+        auto [createResult, vulkanSampler] = device.createSampler(createInfo, allocationCallbacks);
+        if (createResult != vk::Result::eSuccess)
+        {
+            device.destroySampler(vulkanSampler, allocationCallbacks);
+            return { createResult };
+        }
+        else
+        {
+            return { createResult, Sampler{this, vulkanSampler} };
         }
     }
 
@@ -687,5 +701,10 @@ namespace Husky::Vulkan
     void GraphicsDevice::DestroySemaphore(Semaphore* semaphore)
     {
         device.destroySemaphore(semaphore->semaphore, allocationCallbacks);
+    }
+
+    void GraphicsDevice::DestroySampler(Sampler* sampler)
+    {
+        device.destroySampler(sampler->sampler, allocationCallbacks);
     }
 }

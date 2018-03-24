@@ -1,18 +1,25 @@
 #pragma once
 
+#include <Husky/RefPtr.h>
 #include <Husky/IndexType.h>
 #include <Husky/Vulkan/Buffer.h>
 
 namespace Husky::Vulkan
 {
-    class IndexBuffer
+    class IndexBufferObject : public BaseObject
     {
-        friend class GraphicsDevice;
     public:
-        IndexBuffer() = default;
-        IndexBuffer(IndexBuffer&& other) = default;
-        IndexBuffer& operator=(IndexBuffer&& other) = default;
-        ~IndexBuffer() = default;
+        IndexBufferObject(
+            const RefPtr<BufferObject>& aBuffer,
+            IndexType aIndexType,
+            int32 aIndexCount)
+            : buffer(aBuffer)
+            , indexType(aIndexType)
+            , indexCount(aIndexCount)
+        {
+        }
+
+        ~IndexBufferObject() = default;
 
         inline IndexType GetIndexType() const { return indexType; }
         inline int32 GetIndexCount() const { return indexCount; }
@@ -26,16 +33,9 @@ namespace Husky::Vulkan
             indexType = newIndexType;
         }
 
-        inline Buffer& GetUnderlyingBuffer() { return buffer; }
+        inline Buffer* GetUnderlyingBuffer() { return buffer->GetBuffer(); }
     private:
-        inline IndexBuffer(Buffer&& aBuffer, IndexType aIndexType, int32 aIndexCount)
-            : buffer(std::forward<Buffer>(aBuffer))
-            , indexType(aIndexType)
-            , indexCount(aIndexCount)
-        {
-        }
-
-        Buffer buffer;
+        RefPtr<BufferObject> buffer;
         int32 indexCount = 0;
         IndexType indexType;
     };

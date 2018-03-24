@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Husky/BaseObject.h>
 #include <Husky/Vulkan.h>
 
 namespace Husky::Vulkan
@@ -35,5 +36,15 @@ namespace Husky::Vulkan
         vk::Buffer buffer;
         vk::DeviceMemory memory;
         vk::BufferCreateInfo bufferCreateInfo;
+    };
+
+    class BufferObject : public BaseObject
+    {
+    public:
+        BufferObject(Buffer&& aBuffer) : buffer(std::move(aBuffer)) { }
+
+        inline Buffer* GetBuffer() { return &buffer; }
+    private:
+        Buffer buffer;
     };
 }

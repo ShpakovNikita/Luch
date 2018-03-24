@@ -64,7 +64,7 @@ struct GraphicsContext
     Husky::MeshData boxData;
     Husky::Vector<FrameResources> frameResources;
     Uniform uniform;
-    Husky::UniquePtr<Husky::glTF::glTF> root;
+    Husky::SharedPtr<Husky::glTF::glTFRoot> root;
 };
 
 class SampleApplication

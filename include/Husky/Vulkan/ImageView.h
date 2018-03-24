@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Husky/Vulkan.h>
+#include <Husky/BaseObject.h>
 
 namespace Husky::Vulkan
 {
@@ -24,5 +25,18 @@ namespace Husky::Vulkan
 
         GraphicsDevice* device = nullptr;
         vk::ImageView imageView;
+    };
+
+    class ImageViewObject : public BaseObject
+    {
+    public:
+        inline explicit ImageViewObject(ImageView aImageView)
+            : imageView(std::move(aImageView))
+        {
+        }
+
+        inline ImageView* GetImageView() { return &imageView; }
+    private:
+        ImageView imageView;
     };
 }

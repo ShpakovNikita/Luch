@@ -263,7 +263,7 @@ Accessor ParseAccessor(const json& j)
 {
     Accessor accessor;
     accessor.bufferView = ParseOptionalIndex(j, "bufferView");
-    accessor.bufferOffset = ParseBuiltinOrDefault<int32>(j, "bufferOffset", 0);
+    accessor.byteOffset = ParseBuiltinOrDefault<int32>(j, "byteOffset", 0);
     accessor.componentType = (ComponentType)ParseBuiltin<uint32>(j, "componentType");
     accessor.normalized = ParseBuiltinOrDefault<bool>(j, "normalized", false);
     accessor.count = ParseBuiltin<int32>(j, "count");
@@ -530,7 +530,7 @@ Node ParseNode(const json& j)
     node.matrix = ParseOptional<Mat4x4, ParseMat4x4>(j, "matrix");
     node.rotation = ParseOptional<Quaternion, ParseQuaternion>(j, "rotation");
     node.scale = ParseOptional<Vec3, ParseVec3>(j, "scale");
-    node.transform = ParseOptional<Vec3, ParseVec3>(j, "transform");
+    node.translation = ParseOptional<Vec3, ParseVec3>(j, "translation");
     node.weights = ParseBuiltinArrayOrEmpty<float32>(j, "weights");
     node.name = ParseName(j);
     return node;
@@ -552,7 +552,7 @@ Texture ParseTexture(const json& j)
     return texture;
 }
 
-UniquePtr<glTF> glTFParser::ParseJSON(Stream* stream)
+SharedPtr<glTFRoot> glTFParser::ParseJSON(Stream* stream)
 {
     json j;
 
@@ -567,7 +567,7 @@ UniquePtr<glTF> glTFParser::ParseJSON(Stream* stream)
 
     HUSKY_ASSERT(j.is_object());
 
-    UniquePtr<glTF> root = MakeUnique<glTF>();
+    SharedPtr<glTFRoot> root = MakeShared<glTFRoot>();
 
     root->extensionsUsed = ParseBuiltinArrayOrEmpty<String>(j, "extensionsUsed");
     root->extensionsRequired = ParseBuiltinArrayOrEmpty<String>(j, "extensionsRequired");

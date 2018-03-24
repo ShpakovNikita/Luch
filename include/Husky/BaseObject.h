@@ -8,6 +8,8 @@ namespace Husky
 {
     class BaseObject
     {
+        template<typename T>
+        friend class RefPtr;
     public:
         virtual ~BaseObject() {}
     protected:
@@ -16,15 +18,20 @@ namespace Husky
         {
         }
 
-        BaseObject(const BaseObject& other) = default;
-        BaseObject& operator=(const BaseObject& other) = default;
+        BaseObject(const BaseObject& other) = delete;
+        BaseObject& operator=(const BaseObject& other) = delete;
 
         BaseObject(BaseObject&& other)
+            : refCount(other.refCount.load())
         {
-
+            other.refCount.store(0);
         }
 
-        BaseObject& operator=(BaseObject&& other) = default;
+        BaseObject& operator=(BaseObject&& other)
+        {
+            refCount = other.refCount.load();
+            other.refCount.store(0);
+        }
 
         inline void AddReference() noexcept
         {
@@ -33,6 +40,7 @@ namespace Husky
 
         inline void RemoveReference() noexcept
         {
+            // TODO
             auto newRefCount = --refCount;
             HUSKY_ASSERT(newRefCount >= 0, "Negative refcount");
             if (newRefCount == 0)

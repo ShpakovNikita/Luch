@@ -4,6 +4,7 @@
 #include <Husky/Format.h>
 #include <Husky/ImageAspects.h>
 #include <Husky/Vulkan/Format.h>
+#include <Husky/BaseObject.h>
 
 namespace Husky::Vulkan
 {
@@ -34,5 +35,18 @@ namespace Husky::Vulkan
         vk::ImageCreateInfo createInfo;
         ImageAspects aspects = ImageAspects::None;
         bool owning = true;
+    };
+
+    class ImageObject : public BaseObject
+    {
+    public:
+        ImageObject(Image&& aImage)
+            : image(std::move(aImage))
+        {
+        }
+
+        inline Image* GetImage() { return &image; }
+    private:
+        Image image;
     };
 }

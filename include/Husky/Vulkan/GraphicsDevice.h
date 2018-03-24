@@ -22,6 +22,7 @@
 #include <Husky/Vulkan/ShaderModule.h>
 #include <Husky/Vulkan/Swapchain.h>
 #include <Husky/Vulkan/VertexBuffer.h>
+#include <Husky/Vulkan/Sampler.h>
 
 namespace Husky::Vulkan
 {
@@ -50,6 +51,7 @@ namespace Husky::Vulkan
         friend class Semaphore;
         friend class ShaderModule;
         friend class Swapchain;
+        friend class Sampler;
     public:
         GraphicsDevice() = default;
 
@@ -96,6 +98,7 @@ namespace Husky::Vulkan
         VulkanResultValue<Framebuffer> CreateFramebuffer(const FramebufferCreateInfo& createInfo);
         VulkanResultValue<Fence> CreateFence(bool signaled = false);
         VulkanResultValue<Semaphore> CreateSemaphore();
+        VulkanResultValue<Sampler> CreateSampler(const vk::SamplerCreateInfo& createInfo);
     private:
         GraphicsDevice(
             PhysicalDevice* physicalDevice,
@@ -125,6 +128,7 @@ namespace Husky::Vulkan
         void DestroyFramebuffer(Framebuffer* framebuffer);
         void DestroyFence(Fence* fence);
         void DestroySemaphore(Semaphore* semaphore);
+        void DestroySampler(Sampler* sampler);
 
         PhysicalDevice* physicalDevice = nullptr;
         vk::Device device;
