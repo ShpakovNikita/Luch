@@ -4,6 +4,7 @@
 #include <Husky/SharedPtr.h>
 #include <Husky/Vulkan/Forwards.h>
 #include <Husky/SceneV1/Forwards.h>
+#include <Husky/SceneV1/BufferSource.h>
 #include <Husky/glTF2/Forwards.h>
 #include <Husky/SceneV1/Primitive.h>
 
@@ -26,9 +27,9 @@ namespace Husky::SceneV1::Loader
         RefPtr<OrthographicCamera> MakeOrthographicCamera(const String& name, const glTF::Orthographic& camera);
         RefPtr<Primitive> MakePrimitive(const glTF::Primitive& primitive);
         RefPtr<IndexBuffer> MakeIndexBuffer(const glTF::Accessor& indices);
-        RefPtr<VertexBuffer> MakeVertexBuffer(const glTF::Attribute& indices);
         RefPtr<PbrMaterial> MakePbrMaterial(const glTF::Material& material);
         RefPtr<Texture> MakeTexture(const glTF::TextureInfo& textureInfo);
+        RefPtr<Sampler> MakeSampler(const glTF::Sampler& sampler);
 
         constexpr int32 CalculateStride(ComponentType componentType, AttributeType attributeType);
 
@@ -36,14 +37,13 @@ namespace Husky::SceneV1::Loader
         SharedPtr<glTF::glTFRoot> root;
 
         bool loaded = false;
-        Vector<RefPtr<Node>> loadedNodes;
-        Vector<RefPtr<Mesh>> loadedMeshes;
-        Vector<RefPtr<Camera>> loadedCameras;
+        RefPtrVector<Node> loadedNodes;
+        RefPtrVector<Mesh> loadedMeshes;
+        RefPtrVector<Camera> loadedCameras;
         Vector<BufferSource> loadedBuffers;
+        RefPtrVector<PbrMaterial> loadedMaterials;
 
         Set<int32> buffersWithIndices;
         Set<int32> buffersWithVertices;
-        Vector<RefPtr<Buffer>> buffers;
-
     };
 }

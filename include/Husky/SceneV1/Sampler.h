@@ -10,10 +10,14 @@ namespace Husky::SceneV1
     {
     public:
         Sampler(
-            const RefPtr<Vulkan::SamplerObject>& sampler,
             const String& name = "");
+
+        ~Sampler();
     private:
         String name;
+
+        //vk::SamplerCreateInfo samplerDescription;
+
         RefPtr<Vulkan::SamplerObject> sampler;
     };
 }

@@ -1,24 +1,15 @@
-#pragma once
-
-#include <Husky/BaseObject.h>
-#include <Husky/RefPtr.h>
-#include <Husky/Vulkan/Forwards.h>
-#include <Husky/SceneV1/Forwards.h>
+#include <Husky/SceneV1/Texture.h>
+#include <Husky/SceneV1/Sampler.h>
+#include <Husky/Vulkan/Image.h>
+#include <Husky/Vulkan/ImageView.h>
 
 namespace Husky::SceneV1
 {
-    class Texture : public BaseObject
+    Texture::Texture(const RefPtr<Sampler>& aSampler, const String& aName)
+        : sampler(aSampler)
+        , name(aName)
     {
-    public:
-        Texture(
-            const RefPtr<Sampler>& sampler,
-            const RefPtr<Vulkan::ImageObject>& image,
-            const RefPtr<Vulkan::ImageViewObject>& imageViewObject,
-            const String& name = "");
-    private:
-        String name;
-        RefPtr<Vulkan::ImageObject> image;
-        RefPtr<Vulkan::ImageViewObject> imageView;
-        RefPtr<Sampler> sampler;
-    };
+    }
+
+    Texture::~Texture() = default;
 }

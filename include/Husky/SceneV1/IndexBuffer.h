@@ -13,16 +13,12 @@ namespace Husky::SceneV1
     {
     public:
         IndexBuffer(
-            const BufferSource& aBufferSource,
-            IndexType aIndexType,
-            int32 aByteOffset,
-            int32 aByteLength)
-            : bufferSource(aBufferSource)
-            , indexType(aIndexType)
-            , byteOffset(aByteOffset)
-            , byteLength(aByteLength)
-        {
-        }
+            const BufferSource& bufferSource,
+            IndexType indexType,
+            int32 byteOffset,
+            int32 byteLength);
+
+        ~IndexBuffer();
     private:
         BufferSource bufferSource;
 

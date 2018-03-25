@@ -351,45 +351,45 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
         frameResources.uniformBuffer = std::move(createdBuffer);
 
-        auto[createVertexBufferResult, createdVertexBuffer] = device.CreateVertexBuffer(vertexSize, verticesCount, indices.graphicsQueueFamilyIndex, true);
-        if (createVertexBufferResult != vk::Result::eSuccess)
-        {
-            return false;
-        }
+        //auto[createVertexBufferResult, createdVertexBuffer] = device.CreateVertexBuffer(vertexSize, verticesCount, indices.graphicsQueueFamilyIndex, true);
+        //if (createVertexBufferResult != vk::Result::eSuccess)
+        //{
+        //    return false;
+        //}
 
-        {
-            auto[mapVerticesResult, verticesMemory] = createdVertexBuffer.GetUnderlyingBuffer().MapMemory(indexBufferSize, 0);
-            if (mapVerticesResult != vk::Result::eSuccess)
-            {
-                return false;
-            }
+        //{
+        //    auto[mapVerticesResult, verticesMemory] = createdVertexBuffer.GetUnderlyingBuffer().MapMemory(indexBufferSize, 0);
+        //    if (mapVerticesResult != vk::Result::eSuccess)
+        //    {
+        //        return false;
+        //    }
 
-            memcpy(verticesMemory, graphicsContext->boxData.vertices.data(), vertexSize * verticesCount);
+        //    memcpy(verticesMemory, graphicsContext->boxData.vertices.data(), vertexSize * verticesCount);
 
-            createdVertexBuffer.GetUnderlyingBuffer().UnmapMemory();
-        }
+        //    createdVertexBuffer.GetUnderlyingBuffer().UnmapMemory();
+        //}
 
-        frameResources.vertexBuffer = std::move(createdVertexBuffer);
+        //frameResources.vertexBuffer = std::move(createdVertexBuffer);
 
-        auto[createIndexBufferResult, createdIndexBuffer] = device.CreateIndexBuffer(IndexType::UInt16, indicesCount, indices.graphicsQueueFamilyIndex, true);
-        if (createIndexBufferResult != vk::Result::eSuccess)
-        {
-            // TODO
-            return false;
-        }
+        //auto[createIndexBufferResult, createdIndexBuffer] = device.CreateIndexBuffer(IndexType::UInt16, indicesCount, indices.graphicsQueueFamilyIndex, true);
+        //if (createIndexBufferResult != vk::Result::eSuccess)
+        //{
+        //    // TODO
+        //    return false;
+        //}
 
-        {
-            auto[mapIndicesResult, indicesMemory] = createdIndexBuffer.GetUnderlyingBuffer().MapMemory(indexBufferSize, 0);
-            if (mapIndicesResult != vk::Result::eSuccess)
-            {
-                return false;
-            }
-            memcpy(indicesMemory, graphicsContext->boxData.indices16.data(), indexBufferSize);
+        //{
+        //    auto[mapIndicesResult, indicesMemory] = createdIndexBuffer.GetUnderlyingBuffer().MapMemory(indexBufferSize, 0);
+        //    if (mapIndicesResult != vk::Result::eSuccess)
+        //    {
+        //        return false;
+        //    }
+        //    memcpy(indicesMemory, graphicsContext->boxData.indices16.data(), indexBufferSize);
 
-            createdIndexBuffer.GetUnderlyingBuffer().UnmapMemory();
-        }
+        //    createdIndexBuffer.GetUnderlyingBuffer().UnmapMemory();
+        //}
 
-        frameResources.indexBuffer = std::move(createdIndexBuffer);
+        //frameResources.indexBuffer = std::move(createdIndexBuffer);
 
         auto[createDepthStencilBufferResult, createdDepthStencilBuffer] = device.CreateImage(depthBufferCreateInfo);
         if (createDepthStencilBufferResult != vk::Result::eSuccess)
@@ -573,8 +573,8 @@ void SampleApplication::Draw()
         .Begin()
         .BeginInlineRenderPass(&frameResource.renderPass, &frameResource.framebuffer, clearValues, { {0, 0}, {(uint32)framebufferWidth, (uint32)framebufferHeight } })
             .BindGraphicsPipeline(&frameResource.pipeline)
-            .BindVertexBuffers({ &frameResource.vertexBuffer }, { 0 }, 0)
-            .BindIndexBuffer(&frameResource.indexBuffer, 0)
+            //.BindVertexBuffers({ &frameResource.vertexBuffer }, { 0 }, 0)
+            //.BindIndexBuffer(&frameResource.indexBuffer, vk::IndexType::eUint16, 0)
             .BindDescriptorSets(&frameResource.pipelineLayout, { &frameResource.descriptorSet })
             .DrawIndexed((int32)graphicsContext->boxData.indices16.size(), 1, 0, 0, 0)
         .EndRenderPass()

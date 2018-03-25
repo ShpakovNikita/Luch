@@ -8,6 +8,9 @@
 #include <Husky/SceneV1/Texture.h>
 #include <Husky/SceneV1/BufferSource.h>
 #include <Husky/SceneV1/IndexBuffer.h>
+#include <Husky/SceneV1/VertexBuffer.h>
+#include <Husky/SceneV1/PbrMaterial.h>
+#include <Husky/SceneV1/Sampler.h>
 
 namespace Husky::SceneV1::Loader
 {
@@ -166,7 +169,7 @@ namespace Husky::SceneV1::Loader
             int32 index;
         };
 
-        Map<int32, BufferWithIndex> vertexBuffers;
+        Map<int32, BufferWithIndex> vertexBuffersMap;
 
         int32 currentVertexBufferIndex = 0;
         attributes.reserve(primitive.attributes.size());
@@ -198,8 +201,8 @@ namespace Husky::SceneV1::Loader
                     stride = CalculateStride(attribute.componentType, attribute.attributeType);
                 }
 
-                auto it = vertexBuffers.find(bufferViewIndex.value());
-                if (it != vertexBuffers.end())
+                auto it = vertexBuffersMap.find(bufferViewIndex.value());
+                if (it != vertexBuffersMap.end())
                 {
                     vb = it->second.buffer;
                 }
@@ -212,7 +215,7 @@ namespace Husky::SceneV1::Loader
                         bufferView.byteOffset,
                         bufferView.byteLength);
 
-                    vertexBuffers[bufferViewIndex.value()] = BufferWithIndex{ vb, currentVertexBufferIndex };
+                    vertexBuffersMap[bufferViewIndex.value()] = BufferWithIndex{ vb, currentVertexBufferIndex };
 
                     currentVertexBufferIndex++;
                 }
@@ -221,7 +224,31 @@ namespace Husky::SceneV1::Loader
             attribute.vertexBufferIndex = currentVertexBufferIndex;
         }
 
+        RefPtrVector<VertexBuffer> vertexBuffers;
+        vertexBuffers.resize(vertexBuffersMap.size());
+        for (const auto& kv : vertexBuffersMap)
+        {
+            vertexBuffers[kv.second.index] = kv.second.buffer;
+        }
 
+        RefPtr<IndexBuffer> indexBuffer;
+        if (primitive.indices.has_value())
+        {
+            indexBuffer = MakeIndexBuffer(root->accessors[primitive.indices.value()]);
+        }
+
+        RefPtr<PbrMaterial> pbrMaterial;
+        if (primitive.material.has_value())
+        {
+            pbrMaterial = loadedMaterials[primitive.material.value()];
+        }
+
+        return MakeRef<Primitive>(
+            move(attributes),
+            move(vertexBuffers),
+            indexBuffer,
+            pbrMaterial,
+            PrimitiveTopology::TriangleList);
     }
 
     RefPtr<IndexBuffer> glTFLoader::MakeIndexBuffer(const glTF::Accessor& indices)
@@ -260,9 +287,13 @@ namespace Husky::SceneV1::Loader
             );
     }
 
-    RefPtr<PbrMaterial> glTFLoader::MakePbrMaterial(const glTF::Material& material)
+    RefPtr<PbrMaterial> glTFLoader::MakePbrMaterial(const glTF::Material& glTFMaterial)
     {
-        return RefPtr<PbrMaterial>();
+        RefPtr<PbrMaterial> material = MakeRef<PbrMaterial>();
+
+        material->name = glTFMaterial.name;
+
+        return material;
     }
 
     RefPtr<Texture> glTFLoader::MakeTexture(const glTF::TextureInfo& textureInfo)
@@ -270,7 +301,12 @@ namespace Husky::SceneV1::Loader
         return RefPtr<Texture>();
     }
 
-    int32 glTFLoader::CalculateStride(ComponentType componentType, AttributeType attributeType)
+    RefPtr<Sampler> glTFLoader::MakeSampler(const glTF::Sampler & sampler)
+    {
+        return RefPtr<Sampler>();
+    }
+
+    constexpr int32 glTFLoader::CalculateStride(ComponentType componentType, AttributeType attributeType)
     {
         int32 componentSize = 0;
         int32 componentCount = 0;

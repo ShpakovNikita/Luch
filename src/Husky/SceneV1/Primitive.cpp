@@ -1,6 +1,7 @@
 #include <Husky/SceneV1/Primitive.h>
 #include <Husky/SceneV1/PbrMaterial.h>
 #include <Husky/SceneV1/IndexBuffer.h>
+#include <Husky/SceneV1/VertexBuffer.h>
 
 namespace Husky::SceneV1
 {

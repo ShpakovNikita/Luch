@@ -232,33 +232,33 @@ namespace Husky::Vulkan
         }
     }
 
-    VulkanResultValue<IndexBuffer> GraphicsDevice::CreateIndexBuffer(IndexType indexType, int32 indexCount, QueueIndex queueIndex, bool mappable)
-    {
-        auto size = indexCount * (int64)IndexSize(indexType);
-        auto [createResult, buffer] = CreateBuffer(size, queueIndex, vk::BufferUsageFlagBits::eIndexBuffer, mappable);
-        if (createResult != vk::Result::eSuccess)
-        {
-            return { createResult };
-        }
-        else
-        {
-            return { createResult, IndexBuffer{std::move(buffer), indexType, indexCount } };
-        }
-    }
-
-    VulkanResultValue<VertexBuffer> GraphicsDevice::CreateVertexBuffer(int32 vertexSize, int32 vertexCount, QueueIndex queueIndex, bool mappable)
-    {
-        auto size = vertexSize * (int64)vertexCount;
-        auto [createResult, buffer] = CreateBuffer(size, queueIndex, vk::BufferUsageFlagBits::eVertexBuffer, mappable);
-        if (createResult != vk::Result::eSuccess)
-        {
-            return { createResult };
-        }
-        else
-        {
-            return { createResult, VertexBuffer{ std::move(buffer), vertexSize, vertexCount } };
-        }
-    }
+    //VulkanResultValue<IndexBuffer> GraphicsDevice::CreateIndexBuffer(IndexType indexType, int32 indexCount, QueueIndex queueIndex, bool mappable)
+    //{
+    //    auto size = indexCount * (int64)IndexSize(indexType);
+    //    auto [createResult, buffer] = CreateBuffer(size, queueIndex, vk::BufferUsageFlagBits::eIndexBuffer, mappable);
+    //    if (createResult != vk::Result::eSuccess)
+    //    {
+    //        return { createResult };
+    //    }
+    //    else
+    //    {
+    //        return { createResult, IndexBuffer{std::move(buffer), indexType, indexCount } };
+    //    }
+    //}
+    //
+    //VulkanResultValue<VertexBuffer> GraphicsDevice::CreateVertexBuffer(int32 vertexSize, int32 vertexCount, QueueIndex queueIndex, bool mappable)
+    //{
+    //    auto size = vertexSize * (int64)vertexCount;
+    //    auto [createResult, buffer] = CreateBuffer(size, queueIndex, vk::BufferUsageFlagBits::eVertexBuffer, mappable);
+    //    if (createResult != vk::Result::eSuccess)
+    //    {
+    //        return { createResult };
+    //    }
+    //    else
+    //    {
+    //        return { createResult, VertexBuffer{ std::move(buffer), vertexSize, vertexCount } };
+    //    }
+    //}
 
     VulkanResultValue<Image> GraphicsDevice::CreateImage(const vk::ImageCreateInfo& imageCreateInfo)
     {

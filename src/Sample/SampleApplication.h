@@ -38,8 +38,8 @@ struct FrameResources
     Husky::Vulkan::RenderPass renderPass;
     Husky::Vulkan::Pipeline pipeline;
     Husky::Vulkan::PipelineLayout pipelineLayout;
-    Husky::Vulkan::IndexBuffer indexBuffer;
-    Husky::Vulkan::VertexBuffer vertexBuffer;
+    //Husky::Vulkan::IndexBuffer indexBuffer;
+    //Husky::Vulkan::VertexBuffer vertexBuffer;
     Husky::Vulkan::Fence fence;
     Husky::Vulkan::Semaphore semaphore;
     Husky::Vulkan::DescriptorPool descriptorPool;

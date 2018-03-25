@@ -1,19 +1,12 @@
-#pragma once
-
-#include <Husky/BaseObject.h>
-#include <Husky/RefPtr.h>
-#include <Husky/Vulkan/Forwards.h>
+#include <Husky/SceneV1/Sampler.h>
+#include <Husky/Vulkan/Sampler.h>
 
 namespace Husky::SceneV1
 {
-    class Sampler : public BaseObject
+    Sampler::Sampler(const String& aName)
+        : name(aName)
     {
-    public:
-        Sampler(
-            const RefPtr<Vulkan::SamplerObject>& sampler,
-            const String& name = "");
-    private:
-        String name;
-        RefPtr<Vulkan::SamplerObject> sampler;
-    };
+    }
+
+    Sampler::~Sampler() = default;
 }

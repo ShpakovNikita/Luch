@@ -3,6 +3,12 @@
 
 namespace Husky::Vulkan
 {
+    Sampler::Sampler(GraphicsDevice* aDevice, vk::Sampler aSampler)
+        : device(aDevice)
+        , sampler(aSampler)
+    {
+    }
+
     Sampler::Sampler(Sampler&& other)
         : device(other.device)
         , sampler(other.sampler)

@@ -12,8 +12,6 @@ namespace Husky::Vulkan
     class DescriptorSet;
     class DescriptorSetLayout;
     class Fence;
-    class Format;
-    class Forwards;
     class Framebuffer;
     class GlslShaderCompiler;
     class GraphicsDevice;
@@ -21,27 +19,21 @@ namespace Husky::Vulkan
     class ImageObject;
     class ImageView;
     class ImageViewObject;
-    class IndexBuffer;
     class IndexBufferObject;
-    class IndexType;
     class PhysicalDevice;
     class Pipeline;
     class PipelineCache;
-    class PipelineCreateInfo;
     class PipelineLayout;
     class Queue;
     class QueueInfo;
     class RenderPass;
-    class SampleCount;
     class Sampler;
     class SamplerObject;
     class Semaphore;
     class ShaderCompiler;
     class ShaderModule;
-    class ShaderStage;
     class Surface;
     class Swapchain;
-    class VertexBuffer;
     class VertexBufferObject;
     class VulkanAllocationDelegate;
 }

@@ -11,7 +11,6 @@
 #include <Husky/Vulkan/Framebuffer.h>
 #include <Husky/Vulkan/Image.h>
 #include <Husky/Vulkan/ImageView.h>
-#include <Husky/Vulkan/IndexBuffer.h>
 #include <Husky/Vulkan/Pipeline.h>
 #include <Husky/Vulkan/PipelineCache.h>
 #include <Husky/Vulkan/PipelineCreateInfo.h>
@@ -21,7 +20,6 @@
 #include <Husky/Vulkan/Semaphore.h>
 #include <Husky/Vulkan/ShaderModule.h>
 #include <Husky/Vulkan/Swapchain.h>
-#include <Husky/Vulkan/VertexBuffer.h>
 #include <Husky/Vulkan/Sampler.h>
 
 namespace Husky::Vulkan
@@ -79,8 +77,8 @@ namespace Husky::Vulkan
         VulkanResultValue<CommandPool> CreateCommandPool(QueueIndex queueIndex, bool transient = false, bool canReset = false);
         VulkanResultValue<Buffer> CreateBuffer(int64 size, QueueIndex queueIndex, vk::BufferUsageFlags usage, bool mappable);
         VulkanResultValue<BufferView> CreateBufferView(Buffer* buffer, Format format, int64 offset, int64 size);
-        VulkanResultValue<IndexBuffer> CreateIndexBuffer(IndexType indexType, int32 indexCount, QueueIndex queueIndex, bool mappable);
-        VulkanResultValue<VertexBuffer> CreateVertexBuffer(int32 vertexSize, int32 vertexCount, QueueIndex queueIndex, bool mappable);
+        //VulkanResultValue<IndexBuffer> CreateIndexBuffer(IndexType indexType, int32 indexCount, QueueIndex queueIndex, bool mappable);
+        //VulkanResultValue<VertexBuffer> CreateVertexBuffer(int32 vertexSize, int32 vertexCount, QueueIndex queueIndex, bool mappable);
         VulkanResultValue<Image> CreateImage(const vk::ImageCreateInfo& imageCreateInfo);
         VulkanResultValue<ImageView> CreateImageView(Image* image, vk::ImageViewCreateInfo& imageViewCreateInfo);
         VulkanResultValue<ImageView> CreateImageView(Image* image);

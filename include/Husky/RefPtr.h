@@ -7,6 +7,8 @@ namespace Husky
     template<typename T>
     class RefPtr final
     {
+        template<typename U>
+        friend class RefPtr;
     public:
         RefPtr() = default;
 
@@ -17,13 +19,19 @@ namespace Husky
 
         ~RefPtr()
         {
-            ptr->RemoveReference();
+            if (ptr)
+            {
+                ptr->RemoveReference();
+            }
         }
 
         RefPtr(const RefPtr& other)
             : ptr(other.ptr)
         {
-            ptr->AddReference();
+            if (ptr)
+            {
+                ptr->AddReference();
+            }
         }
 
         RefPtr(RefPtr&& other)
@@ -36,20 +44,34 @@ namespace Husky
         RefPtr(RefPtr<U>&& other)
             : ptr(static_cast<T*>(other.ptr))
         {
-
+            other.ptr = nullptr;
         }
 
         template<typename U>
         RefPtr(const RefPtr<U>& other)
             : ptr(static_cast<T*>(other.ptr))
         {
-            ptr->AddReference();
+            if (ptr)
+            {
+                ptr->AddReference();
+            }
         }
 
         RefPtr& operator=(const RefPtr& other)
         {
             ptr = other.ptr;
-            ptr->AddReference();
+            if (ptr)
+            {
+                ptr->AddReference();
+            }
+            return *this;
+        }
+
+        RefPtr& operator==(RefPtr&& other)
+        {
+            ptr = other.ptr;
+            other.ptr = nullptr;
+            return *this;
         }
 
         bool operator==(const RefPtr& other)

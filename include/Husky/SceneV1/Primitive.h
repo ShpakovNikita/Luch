@@ -3,6 +3,7 @@
 #include <Husky/PrimitiveTopology.h>
 #include <Husky/Types.h>
 #include <Husky/RefPtr.h>
+#include <Husky/BaseObject.h>
 #include <Husky/SceneV1/AttributeSemantic.h>
 #include <Husky/Vulkan/Forwards.h>
 #include <Husky/SceneV1/Forwards.h>
@@ -42,7 +43,7 @@ namespace Husky::SceneV1
         int32 vertexBufferIndex;
     };
 
-    class Primitive
+    class Primitive : public BaseObject
     {
     public:
         Primitive(
