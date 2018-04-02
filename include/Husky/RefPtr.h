@@ -74,9 +74,29 @@ namespace Husky
             return *this;
         }
 
-        bool operator==(const RefPtr& other)
+        friend bool operator==(const RefPtr& ptr, nullptr_t np)
         {
-            return ptr == other.ptr;
+            return ptr.ptr == np;
+        }
+
+        friend bool operator==(nullptr_t np, const RefPtr& ptr)
+        {
+            return ptr.ptr == np;
+        }
+
+        friend bool operator!=(const RefPtr& ptr, nullptr_t np)
+        {
+            return ptr.ptr != np;
+        }
+
+        friend bool operator!=(nullptr_t np, const RefPtr& ptr)
+        {
+            return ptr.ptr != np;
+        }
+
+        operator bool()
+        {
+            return ptr != nullptr;
         }
 
         bool operator==(nullptr_t other)
@@ -116,3 +136,5 @@ namespace Husky
     template<typename T>
     using RefPtrVector = Vector<RefPtr<T>>;
 }
+
+

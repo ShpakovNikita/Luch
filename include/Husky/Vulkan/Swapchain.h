@@ -3,8 +3,10 @@
 #include <Husky/Types.h>
 #include <Husky/Vulkan.h>
 #include <Husky/Format.h>
+#include <Husky/RefPtr.h>
 #include <Husky/Vulkan/Image.h>
 #include <Husky/Vulkan/ImageView.h>
+#include <Husky/Vulkan/SwapchainCreateInfo.h>
 
 namespace Husky::Vulkan
 {
@@ -14,29 +16,29 @@ namespace Husky::Vulkan
     class Fence;
     class Semaphore;
 
-    struct SwapchainCreateInfo
+    struct SwapchainImage
     {
-        int32 imageCount = 0;
-        int32 width = 0;
-        int32 height = 0;
-        int32 arrayLayers = 1;
-        Format format = Format::Undefined;
-        vk::ColorSpaceKHR colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
-        vk::PresentModeKHR presentMode = vk::PresentModeKHR::eFifo;
+        RefPtr<Image> image;
+        RefPtr<ImageView> imageView;
     };
 
-    class Swapchain
+    class Swapchain : public BaseObject
     {
         friend class GraphicsDevice;
     public:
-        static constexpr int MaxSwapchainLength = 3;
+        Swapchain(
+            GraphicsDevice* device,
+            vk::SwapchainKHR swapchain,
+            SwapchainCreateInfo createInfo,
+            int32 swapchainImageCount,
+            Vector<SwapchainImage>&& swapchainImages);
 
-        Swapchain() = default;
+        Swapchain(Swapchain&& other) = delete;
+        Swapchain(const Swapchain& other) = delete;
+        Swapchain& operator=(const Swapchain& other) = delete;
+        Swapchain& operator=(Swapchain&& other) = delete;
 
-        Swapchain(Swapchain&& other);
-        Swapchain& operator=(Swapchain&& other);
-
-        ~Swapchain();
+        ~Swapchain() override;
 
         static VulkanResultValue<SwapchainCreateInfo> ChooseSwapchainCreateInfo(
             int32 width,
@@ -49,22 +51,9 @@ namespace Husky::Vulkan
 
         inline SwapchainCreateInfo GetSwapchainCreateInfo() const { return createInfo; }
         inline Format GetFormat() const { return createInfo.format; }
-        inline ImageView* GetImageView(int index) { return &swapchainImages[index].imageView; }
+        inline ImageView* GetImageView(int index) { return swapchainImages[index].imageView.Get(); }
         inline vk::SwapchainKHR GetSwapchain() { return swapchain; }
     private:
-        struct SwapchainImage
-        {
-            Image image;
-            ImageView imageView;
-        };
-
-        Swapchain(
-            GraphicsDevice* device,
-            vk::SwapchainKHR swapchain,
-            SwapchainCreateInfo createInfo,
-            int32 swapchainImageCount,
-            Vector<SwapchainImage>&& swapchainImages);
-
         void Destroy();
 
         SwapchainCreateInfo createInfo;

@@ -28,22 +28,21 @@ namespace Husky::SceneV1::Loader
         RefPtr<Primitive> MakePrimitive(const glTF::Primitive& primitive);
         RefPtr<IndexBuffer> MakeIndexBuffer(const glTF::Accessor& indices);
         RefPtr<PbrMaterial> MakePbrMaterial(const glTF::Material& material);
-        RefPtr<Texture> MakeTexture(const glTF::TextureInfo& textureInfo);
+        RefPtr<Texture> MakeTexture(const glTF::Texture& texture);
         RefPtr<Sampler> MakeSampler(const glTF::Sampler& sampler);
 
-        constexpr int32 CalculateStride(ComponentType componentType, AttributeType attributeType);
+        Vector<uint8> ReadHostBuffer(const BufferSource& source);
+        RefPtr<Image> ReadHostImage(const TextureSource& source);
 
         String rootFolder;
         SharedPtr<glTF::glTFRoot> root;
 
         bool loaded = false;
-        RefPtrVector<Node> loadedNodes;
         RefPtrVector<Mesh> loadedMeshes;
         RefPtrVector<Camera> loadedCameras;
         Vector<BufferSource> loadedBuffers;
         RefPtrVector<PbrMaterial> loadedMaterials;
-
-        Set<int32> buffersWithIndices;
-        Set<int32> buffersWithVertices;
+        RefPtrVector<Sampler> loadedSamplers;
+        RefPtrVector<Texture> loadedTextures;
     };
 }

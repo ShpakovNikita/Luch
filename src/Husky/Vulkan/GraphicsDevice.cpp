@@ -3,6 +3,29 @@
 #include <Husky/Vulkan/PhysicalDevice.h>
 #include <Husky/Vulkan/ShaderCompiler.h>
 #include <Husky/Vulkan/Surface.h>
+#include <Husky/Vulkan/Buffer.h>
+#include <Husky/Vulkan/BufferView.h>
+#include <Husky/Vulkan/CommandBuffer.h>
+#include <Husky/Vulkan/CommandPool.h>
+#include <Husky/Vulkan/DescriptorPool.h>
+#include <Husky/Vulkan/DescriptorSetLayout.h>
+#include <Husky/Vulkan/Fence.h>
+#include <Husky/Vulkan/Framebuffer.h>
+#include <Husky/Vulkan/Image.h>
+#include <Husky/Vulkan/ImageView.h>
+#include <Husky/Vulkan/Pipeline.h>
+#include <Husky/Vulkan/PipelineCache.h>
+#include <Husky/Vulkan/PipelineCreateInfo.h>
+#include <Husky/Vulkan/PipelineLayout.h>
+#include <Husky/Vulkan/RenderPass.h>
+#include <Husky/Vulkan/Semaphore.h>
+#include <Husky/Vulkan/ShaderModule.h>
+#include <Husky/Vulkan/Swapchain.h>
+#include <Husky/Vulkan/Sampler.h>
+#include <Husky/Vulkan/RenderPassCreateInfo.h>
+#include <Husky/Vulkan/DescriptorSetLayoutCreateInfo.h>
+#include <Husky/Vulkan/PipelineLayoutCreateInfo.h>
+#include <Husky/Vulkan/FramebufferCreateInfo.h>
 
 namespace Husky::Vulkan
 {
@@ -16,31 +39,6 @@ namespace Husky::Vulkan
         , queueInfo(std::move(aQueueInfo))
         , allocationCallbacks(aAllocationCallbacks)
     {
-    }
-
-    GraphicsDevice::GraphicsDevice(GraphicsDevice&& other)
-        : physicalDevice(other.physicalDevice)
-        , device(other.device)
-        , queueInfo(std::move(other.queueInfo))
-        , allocationCallbacks(other.allocationCallbacks)
-    {
-        other.physicalDevice = nullptr;
-        other.device = nullptr;
-    }
-
-    GraphicsDevice& GraphicsDevice::operator=(GraphicsDevice&& other)
-    {
-        Destroy();
-
-        physicalDevice = other.physicalDevice;
-        device = other.device;
-        queueInfo = std::move(other.queueInfo);
-        allocationCallbacks = other.allocationCallbacks;
-
-        other.physicalDevice = nullptr;
-        other.device = nullptr;
-
-        return *this;
     }
 
     GraphicsDevice::~GraphicsDevice()
@@ -68,7 +66,7 @@ namespace Husky::Vulkan
         return -1;
     }
 
-    VulkanResultValue<Swapchain> GraphicsDevice::CreateSwapchain(const SwapchainCreateInfo& swapchainCreateInfo, Surface* surface)
+    VulkanRefResultValue<Swapchain> GraphicsDevice::CreateSwapchain(const SwapchainCreateInfo& swapchainCreateInfo, Surface* surface)
     {
         vk::SwapchainCreateInfoKHR ci;
         ci.setImageColorSpace(swapchainCreateInfo.colorSpace);
@@ -107,13 +105,13 @@ namespace Husky::Vulkan
 
             auto swapchainImageCount = (int32)images.size();
 
-            Vector<Swapchain::SwapchainImage> swapchainImages;
+            Vector<SwapchainImage> swapchainImages;
             swapchainImages.resize(swapchainImageCount);
 
             for (int32 i = 0; i < swapchainCreateInfo.imageCount; i++)
             {
                 auto vulkanImage = images[i];
-                auto image = Image{ this, vulkanImage, nullptr, {}, false };
+                auto image = MakeRef<Image>(this, vulkanImage, nullptr, vk::ImageCreateInfo{}, false);
 
                 vk::ImageSubresourceRange subresourceRange;
                 subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eColor);
@@ -125,17 +123,17 @@ namespace Husky::Vulkan
                 imageViewCi.setViewType(vk::ImageViewType::e2D);
                 imageViewCi.setFormat(ToVulkanFormat(swapchainCreateInfo.format));
                 imageViewCi.setSubresourceRange(subresourceRange);
-                auto [imageViewCreateResult, imageView] = CreateImageView(&image, imageViewCi);
+                auto [imageViewCreateResult, imageView] = CreateImageView(image.Get(), imageViewCi);
                 if (imageViewCreateResult != vk::Result::eSuccess)
                 {
                     // TODO
                     return { imageViewCreateResult };
                 }
 
-                swapchainImages[i] = { std::move(image), std::move(imageView) };
+                swapchainImages[i] = { image, imageView };
             }
             
-            return { result, Swapchain{ this, vulkanSwapchain, swapchainCreateInfo, swapchainImageCount, std::move(swapchainImages) } };
+            return { result, MakeRef<Swapchain>(this, vulkanSwapchain, swapchainCreateInfo, swapchainImageCount, std::move(swapchainImages)) };
         }
         else
         {
@@ -144,7 +142,7 @@ namespace Husky::Vulkan
         }
     }
 
-    VulkanResultValue<CommandPool> GraphicsDevice::CreateCommandPool(QueueIndex queueIndex, bool transient, bool canReset)
+    VulkanRefResultValue<CommandPool> GraphicsDevice::CreateCommandPool(QueueIndex queueIndex, bool transient, bool canReset)
     {
         vk::CommandPoolCreateInfo ci;
 
@@ -169,11 +167,11 @@ namespace Husky::Vulkan
         }
         else
         {
-            return { result, CommandPool{ this, vulkanCommandPool } };
+            return { result, MakeRef<CommandPool>(this, vulkanCommandPool) };
         }
     }
 
-    VulkanResultValue<Buffer> GraphicsDevice::CreateBuffer(int64 size, QueueIndex queueIndex, vk::BufferUsageFlags usage, bool mappable)
+    VulkanRefResultValue<Buffer> GraphicsDevice::CreateBuffer(int64 size, QueueIndex queueIndex, vk::BufferUsageFlags usage, bool mappable)
     {
         vk::BufferCreateInfo ci;
         ci.setPQueueFamilyIndices(&queueIndex);
@@ -208,11 +206,11 @@ namespace Husky::Vulkan
         }
         else
         {
-            return { createBufferResult, Buffer{ this, vulkanBuffer, vulkanMemory, ci } };
+            return { createBufferResult, MakeRef<Buffer>(this, vulkanBuffer, vulkanMemory, ci) };
         }
     }
 
-    VulkanResultValue<BufferView> GraphicsDevice::CreateBufferView(Buffer* buffer, Format format, int64 offset, int64 size)
+    VulkanRefResultValue<BufferView> GraphicsDevice::CreateBufferView(Buffer* buffer, Format format, int64 offset, int64 size)
     {
         vk::BufferViewCreateInfo createInfo;
         createInfo.setBuffer(buffer->buffer);
@@ -228,39 +226,11 @@ namespace Husky::Vulkan
         }
         else
         {
-            return { createResult, BufferView{this, vulkanBufferView} };
+            return { createResult, MakeRef<BufferView>(this, vulkanBufferView) };
         }
     }
 
-    //VulkanResultValue<IndexBuffer> GraphicsDevice::CreateIndexBuffer(IndexType indexType, int32 indexCount, QueueIndex queueIndex, bool mappable)
-    //{
-    //    auto size = indexCount * (int64)IndexSize(indexType);
-    //    auto [createResult, buffer] = CreateBuffer(size, queueIndex, vk::BufferUsageFlagBits::eIndexBuffer, mappable);
-    //    if (createResult != vk::Result::eSuccess)
-    //    {
-    //        return { createResult };
-    //    }
-    //    else
-    //    {
-    //        return { createResult, IndexBuffer{std::move(buffer), indexType, indexCount } };
-    //    }
-    //}
-    //
-    //VulkanResultValue<VertexBuffer> GraphicsDevice::CreateVertexBuffer(int32 vertexSize, int32 vertexCount, QueueIndex queueIndex, bool mappable)
-    //{
-    //    auto size = vertexSize * (int64)vertexCount;
-    //    auto [createResult, buffer] = CreateBuffer(size, queueIndex, vk::BufferUsageFlagBits::eVertexBuffer, mappable);
-    //    if (createResult != vk::Result::eSuccess)
-    //    {
-    //        return { createResult };
-    //    }
-    //    else
-    //    {
-    //        return { createResult, VertexBuffer{ std::move(buffer), vertexSize, vertexCount } };
-    //    }
-    //}
-
-    VulkanResultValue<Image> GraphicsDevice::CreateImage(const vk::ImageCreateInfo& imageCreateInfo)
+    VulkanRefResultValue<Image> GraphicsDevice::CreateImage(const vk::ImageCreateInfo& imageCreateInfo)
     {
         auto [createImageResult, vulkanImage] = device.createImage(imageCreateInfo, allocationCallbacks);
         if(createImageResult != vk::Result::eSuccess)
@@ -285,10 +255,10 @@ namespace Husky::Vulkan
             return { bindResult };
         }
 
-        return { vk::Result::eSuccess, Image{this, vulkanImage, vulkanMemory, imageCreateInfo } };
+        return { vk::Result::eSuccess, MakeRef<Image>(this, vulkanImage, vulkanMemory, imageCreateInfo) };
     }
 
-    VulkanResultValue<ImageView> GraphicsDevice::CreateImageView(Image* image, vk::ImageViewCreateInfo& imageViewCreateInfo)
+    VulkanRefResultValue<ImageView> GraphicsDevice::CreateImageView(Image* image, vk::ImageViewCreateInfo& imageViewCreateInfo)
     {
         imageViewCreateInfo.setImage(image->GetImage());
         auto[createImageViewResult, vulkanImageView] = device.createImageView(imageViewCreateInfo, allocationCallbacks);
@@ -298,10 +268,10 @@ namespace Husky::Vulkan
             return { createImageViewResult };
         }
         
-        return { createImageViewResult, ImageView{this, vulkanImageView} };
+        return { createImageViewResult, MakeRef<ImageView>(this, vulkanImageView) };
     }
 
-    VulkanResultValue<ImageView> GraphicsDevice::CreateImageView(Image * image)
+    VulkanRefResultValue<ImageView> GraphicsDevice::CreateImageView(Image* image)
     {
         const vk::ImageCreateInfo& imageCi = image->createInfo;
 
@@ -387,7 +357,7 @@ namespace Husky::Vulkan
         return CreateImageView(image, ci);
     }
 
-    VulkanResultValue<ShaderModule> GraphicsDevice::CreateShaderModule(uint32* bytecode, int64 bytecodeSizeInBytes)
+    VulkanRefResultValue<ShaderModule> GraphicsDevice::CreateShaderModule(uint32* bytecode, int64 bytecodeSizeInBytes)
     {
         vk::ShaderModuleCreateInfo ci;
         ci.setPCode(bytecode);
@@ -400,11 +370,11 @@ namespace Husky::Vulkan
         }
         else
         {
-            return { createResult, ShaderModule{this, vulkanShaderModule} };
+            return { createResult, MakeRef<ShaderModule>(this, vulkanShaderModule) };
         }
     }
 
-    VulkanResultValue<PipelineCache> GraphicsDevice::CreatePipelineCache()
+    VulkanRefResultValue<PipelineCache> GraphicsDevice::CreatePipelineCache()
     {
         vk::PipelineCacheCreateInfo ci;
         auto [createResult, vulkanPipelineCache] = device.createPipelineCache(ci, allocationCallbacks);
@@ -415,11 +385,11 @@ namespace Husky::Vulkan
         }
         else
         {
-            return { createResult, PipelineCache{this, vulkanPipelineCache} };
+            return { createResult, MakeRef<PipelineCache>(this, vulkanPipelineCache) };
         }
     }
 
-    VulkanResultValue<Pipeline> GraphicsDevice::CreateGraphicsPipeline(
+    VulkanRefResultValue<Pipeline> GraphicsDevice::CreateGraphicsPipeline(
         const GraphicsPipelineCreateInfo & graphicsPipelineCreateInfo,
         PipelineCache* pipelineCache)
     {
@@ -435,11 +405,11 @@ namespace Husky::Vulkan
         }
         else
         {
-            return { createResult, Pipeline{this, vulkanPipeline} };
+            return { createResult, MakeRef<Pipeline>(this, vulkanPipeline) };
         }
     }
 
-    VulkanResultValue<RenderPass> GraphicsDevice::CreateRenderPass(const RenderPassCreateInfo & ci)
+    VulkanRefResultValue<RenderPass> GraphicsDevice::CreateRenderPass(const RenderPassCreateInfo & ci)
     {
         auto vkci = RenderPassCreateInfo::ToVulkanCreateInfo(ci);
         auto [createResult, vulkanRenderPass] = device.createRenderPass(vkci.createInfo, allocationCallbacks);
@@ -450,11 +420,11 @@ namespace Husky::Vulkan
         }
         else
         {
-            return { createResult, RenderPass{this, vulkanRenderPass, (int32)vkci.attachments.size()} };
+            return { createResult, MakeRef<RenderPass>(this, vulkanRenderPass, (int32)vkci.attachments.size()) };
         }
     }
 
-    VulkanResultValue<DescriptorSetLayout> GraphicsDevice::CreateDescriptorSetLayout(const DescriptorSetLayoutCreateInfo& ci)
+    VulkanRefResultValue<DescriptorSetLayout> GraphicsDevice::CreateDescriptorSetLayout(const DescriptorSetLayoutCreateInfo& ci)
     {
         auto vkci = DescriptorSetLayoutCreateInfo::ToVulkanCreateInfo(ci);
         auto [createResult, vulkanDescriptorSetLayout] = device.createDescriptorSetLayout(vkci.createInfo, allocationCallbacks);
@@ -465,11 +435,11 @@ namespace Husky::Vulkan
         }
         else
         {
-            return { createResult, DescriptorSetLayout{this, vulkanDescriptorSetLayout } };
+            return { createResult, MakeRef<DescriptorSetLayout>(this, vulkanDescriptorSetLayout) };
         }
     }
 
-    VulkanResultValue<DescriptorPool> GraphicsDevice::CreateDescriptorPool(int32 maxSets, const UnorderedMap<vk::DescriptorType, int32>& poolSizes, bool canFreeDescriptors)
+    VulkanRefResultValue<DescriptorPool> GraphicsDevice::CreateDescriptorPool(int32 maxSets, const UnorderedMap<vk::DescriptorType, int32>& poolSizes, bool canFreeDescriptors)
     {
         auto count = (int32)poolSizes.size();
         Vector<vk::DescriptorPoolSize> vulkanPoolSizes;
@@ -501,11 +471,11 @@ namespace Husky::Vulkan
         }
         else
         {
-            return { createResult, DescriptorPool{ this, vulkanDescriptorPool } };
+            return { createResult, MakeRef<DescriptorPool>(this, vulkanDescriptorPool) };
         }
     }
 
-    VulkanResultValue<PipelineLayout> GraphicsDevice::CreatePipelineLayout(const PipelineLayoutCreateInfo& createInfo)
+    VulkanRefResultValue<PipelineLayout> GraphicsDevice::CreatePipelineLayout(const PipelineLayoutCreateInfo& createInfo)
     {
         auto vkci = PipelineLayoutCreateInfo::ToVulkanCreateInfo(createInfo);
         auto [createResult, vulkanPipelineLayout] = device.createPipelineLayout(vkci.createInfo, allocationCallbacks);
@@ -516,11 +486,11 @@ namespace Husky::Vulkan
         }
         else
         {
-            return { createResult, PipelineLayout{this, vulkanPipelineLayout} };
+            return { createResult, MakeRef<PipelineLayout>(this, vulkanPipelineLayout) };
         }
     }
 
-    VulkanResultValue<Framebuffer> GraphicsDevice::CreateFramebuffer(const FramebufferCreateInfo & createInfo)
+    VulkanRefResultValue<Framebuffer> GraphicsDevice::CreateFramebuffer(const FramebufferCreateInfo & createInfo)
     {
         auto vkci = FramebufferCreateInfo::ToVulkanCreateInfo(createInfo);
         auto [createResult, vulkanFramebuffer] = device.createFramebuffer(vkci, allocationCallbacks);
@@ -531,11 +501,11 @@ namespace Husky::Vulkan
         }
         else
         {
-            return { createResult, Framebuffer{this, vulkanFramebuffer} };
+            return { createResult, MakeRef<Framebuffer>(this, vulkanFramebuffer) };
         }
     }
 
-    VulkanResultValue<Fence> GraphicsDevice::CreateFence(bool signaled)
+    VulkanRefResultValue<Fence> GraphicsDevice::CreateFence(bool signaled)
     {
         vk::FenceCreateInfo vkci;
         if (signaled)
@@ -551,11 +521,11 @@ namespace Husky::Vulkan
         }
         else
         {
-            return { createResult, Fence{ this, vulkanFence }};
+            return { createResult, MakeRef<Fence>(this, vulkanFence) };
         }
     }
 
-    VulkanResultValue<Semaphore> GraphicsDevice::CreateSemaphore()
+    VulkanRefResultValue<Semaphore> GraphicsDevice::CreateSemaphore()
     {
         vk::SemaphoreCreateInfo vkci;
         
@@ -567,11 +537,11 @@ namespace Husky::Vulkan
         }
         else
         {
-            return { createResult, Semaphore{this, vulkanSemaphore} };
+            return { createResult, MakeRef<Semaphore>(this, vulkanSemaphore) };
         }
     }
 
-    VulkanResultValue<Sampler> GraphicsDevice::CreateSampler(const vk::SamplerCreateInfo& createInfo)
+    VulkanRefResultValue<Sampler> GraphicsDevice::CreateSampler(const vk::SamplerCreateInfo& createInfo)
     {
         auto [createResult, vulkanSampler] = device.createSampler(createInfo, allocationCallbacks);
         if (createResult != vk::Result::eSuccess)
@@ -581,7 +551,7 @@ namespace Husky::Vulkan
         }
         else
         {
-            return { createResult, Sampler{this, vulkanSampler} };
+            return { createResult, MakeRef<Sampler>(this, vulkanSampler) };
         }
     }
 

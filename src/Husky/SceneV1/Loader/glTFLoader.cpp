@@ -1,8 +1,13 @@
 #include <Husky/SceneV1/Loader/glTFLoader.h>
+#include <Husky/SceneV1/Loader/LoaderUtils.h>
 #include <Husky/glTF2/glTF.h>
+#include <Husky/Vulkan.h>
+#include <Husky/UniquePtr.h>
+#include <Husky/FileStream.h>
 #include <Husky/SceneV1/Scene.h>
 #include <Husky/SceneV1/Mesh.h>
 #include <Husky/SceneV1/Node.h>
+#include <Husky/SceneV1/Image.h>
 #include <Husky/SceneV1/Camera.h>
 #include <Husky/SceneV1/Primitive.h>
 #include <Husky/SceneV1/Texture.h>
@@ -24,14 +29,16 @@ namespace Husky::SceneV1::Loader
     {
         if (!loaded)
         {
-            
+            LoadProperties();
+            loaded = true;
         }
+
         RefPtrVector<Scene> result;
         result.reserve(root->scenes.size());
 
-        for (const auto& glTFScene : root->scenes)
+        for (const auto& scene : root->scenes)
         {
-            
+            result.emplace_back(MakeScene(scene));
         }
 
         return result;
@@ -39,20 +46,8 @@ namespace Husky::SceneV1::Loader
 
     void glTFLoader::LoadProperties()
     {
-        loadedNodes.reserve(root->nodes.size());
-        for (const auto& node : root->nodes)
-        {
-            loadedNodes.emplace_back(MakeNode(node));
-        }
-
-        loadedMeshes.reserve(root->meshes.size());
-        for (const auto& mesh: root->meshes)
-        {
-            loadedMeshes.emplace_back(MakeMesh(mesh));
-        }
-
         loadedCameras.reserve(root->cameras.size());
-        for (const auto& camera: root->cameras)
+        for (const auto& camera : root->cameras)
         {
             loadedCameras.emplace_back(MakeCamera(camera));
         }
@@ -61,9 +56,35 @@ namespace Husky::SceneV1::Loader
         for (const auto& buffer : root->buffers)
         {
             BufferSource bufferSource;
+            bufferSource.root = rootFolder;
             bufferSource.byteLength = buffer.byteLength;
             bufferSource.filename = buffer.uri;
             loadedBuffers.emplace_back(bufferSource);
+        }
+
+        loadedSamplers.reserve(root->samplers.size());
+        for (const auto& sampler : root->samplers)
+        {
+            loadedSamplers.emplace_back(MakeSampler(sampler));
+        }
+
+        loadedTextures.reserve(root->textures.size());
+        for (const auto& texture : root->textures)
+        {
+            loadedTextures.emplace_back(MakeTexture(texture));
+        }
+
+
+        loadedMaterials.reserve(root->materials.size());
+        for (const auto& material : root->materials)
+        {
+            loadedMaterials.emplace_back(MakePbrMaterial(material));
+        }
+
+        loadedMeshes.reserve(root->meshes.size());
+        for (const auto& mesh : root->meshes)
+        {
+            loadedMeshes.emplace_back(MakeMesh(mesh));
         }
     }
 
@@ -76,7 +97,8 @@ namespace Husky::SceneV1::Loader
 
         for (auto nodeIndex : scene.nodes)
         {
-            nodes.emplace_back(loadedNodes[nodeIndex]);
+            const auto& node = root->nodes[nodeIndex];
+            nodes.emplace_back(MakeNode(node));
         }
 
         return MakeRef<Scene>(move(nodes), name);
@@ -86,12 +108,18 @@ namespace Husky::SceneV1::Loader
     {
         const String& name = node.name;
 
-        RefPtrVector<Mesh> meshes;
-        meshes.reserve(node.children.size());
-
-        for (auto meshIndex : node.children)
+        RefPtrVector<Node> children;
+        children.reserve(node.children.size());
+        for (auto nodeIndex : node.children)
         {
-            meshes.emplace_back(loadedMeshes[meshIndex]);
+            const auto& node = root->nodes[nodeIndex];
+            children.emplace_back(MakeNode(node));
+        }
+
+        RefPtr<Mesh> mesh;
+        if (node.mesh.has_value())
+        {
+            mesh = loadedMeshes[node.mesh.value()];
         }
 
         RefPtr<Camera> camera;
@@ -113,13 +141,13 @@ namespace Husky::SceneV1::Loader
         {
             transform = Transform
             {
-                node.rotation.value(),
-                node.scale.value(),
-                node.translation.value()
+                node.rotation.value_or(Quaternion{}),
+                node.scale.value_or(Vec3{1.0f, 1.0f, 1.0f}),
+                node.translation.value_or(Vec3{0, 0,0 })
             };
         }
 
-        return MakeRef<Node>(move(meshes), transform, name);
+        return MakeRef<Node>(move(children), mesh, camera, transform, name);
     }
 
     RefPtr<Mesh> glTFLoader::MakeMesh(const glTF::Mesh& mesh)
@@ -178,7 +206,7 @@ namespace Husky::SceneV1::Loader
             const auto& accessor = root->accessors[glTFAttribute.accessor];
 
             PrimitiveAttribute attribute;
-            attribute.attributeSemantic = (AttributeSemantic)glTFAttribute.semantic;
+            attribute.semantic = (AttributeSemantic)glTFAttribute.semantic;
             attribute.componentType = (ComponentType)accessor.componentType;
             attribute.attributeType = (AttributeType)accessor.type;
             attribute.offset = accessor.byteOffset;
@@ -209,8 +237,9 @@ namespace Husky::SceneV1::Loader
                 else
                 {
                     const auto& bufferSource = loadedBuffers[bufferView.buffer];
+                    auto hostBuffer = ReadHostBuffer(bufferSource);
                     vb = MakeRef<VertexBuffer>(
-                        bufferSource,
+                        move(hostBuffer),
                         stride,
                         bufferView.byteOffset,
                         bufferView.byteLength);
@@ -262,6 +291,7 @@ namespace Husky::SceneV1::Loader
         HUSKY_ASSERT(!bufferView.byteStride.has_value(), "index accessor buffer views should not have stride");
 
         const auto& bufferSource = loadedBuffers[bufferView.buffer];
+        auto hostBuffer = ReadHostBuffer(bufferSource);
 
         IndexType indexType;
 
@@ -280,8 +310,9 @@ namespace Husky::SceneV1::Loader
         HUSKY_ASSERT(indices.byteOffset == 0, "wtf");
 
         return MakeRef<IndexBuffer>(
-            bufferSource,
+            hostBuffer,
             indexType,
+            indices.count,
             bufferView.byteOffset,
             bufferView.byteLength
             );
@@ -293,65 +324,116 @@ namespace Husky::SceneV1::Loader
 
         material->name = glTFMaterial.name;
 
+        material->metallicRoughness.baseColorFactor = glTFMaterial.pbrMetallicRoughness.baseColorFactor;
+        material->metallicRoughness.metallicFactor = glTFMaterial.pbrMetallicRoughness.metallicFactor;
+        material->metallicRoughness.roughnessFactor = glTFMaterial.pbrMetallicRoughness.roughnessFactor;
+        
+        if (glTFMaterial.pbrMetallicRoughness.baseColorTexture.has_value())
+        {
+            const auto& textureInfo = glTFMaterial.pbrMetallicRoughness.baseColorTexture.value();
+            material->metallicRoughness.baseColorTexture.texCoord = textureInfo.texCoord;
+            material->metallicRoughness.baseColorTexture.texture = loadedTextures[textureInfo.index];
+        }
+
+        if (glTFMaterial.pbrMetallicRoughness.metallicRoughnessTexture.has_value())
+        {
+            const auto& textureInfo = glTFMaterial.pbrMetallicRoughness.metallicRoughnessTexture.value();
+            material->metallicRoughness.metallicRoughnessTexture.texCoord = textureInfo.texCoord;
+            material->metallicRoughness.metallicRoughnessTexture.texture = loadedTextures[textureInfo.index];
+        }
+
+        if (glTFMaterial.normalTexture.has_value())
+        {
+            const auto& textureInfo = glTFMaterial.normalTexture.value();
+            material->normalTexture.texCoord = textureInfo.texCoord;
+            material->normalTexture.texture = loadedTextures[textureInfo.index];
+            material->normalTexture.scale = textureInfo.scale;
+        }
+
+        if (glTFMaterial.occlusionTexture.has_value())
+        {
+            const auto& textureInfo = glTFMaterial.occlusionTexture.value();
+            material->occlusionTexture.texCoord = textureInfo.texCoord;
+            material->occlusionTexture.texture = loadedTextures[textureInfo.index];
+            material->occlusionTexture.strength = textureInfo.strength;
+        }
+
+        if (glTFMaterial.emissiveTexture.has_value())
+        {
+            const auto& textureInfo = glTFMaterial.emissiveTexture.value();
+            material->emissiveTexture.texCoord = textureInfo.texCoord;
+            material->emissiveTexture.texture = loadedTextures[textureInfo.index];
+        }
+
+        material->emissiveFactor = glTFMaterial.emissiveFactor;
+        material->alphaMode = (AlphaMode)glTFMaterial.alphaMode; // TODO
+        material->alphaCutoff = glTFMaterial.alphaCutoff;
+        material->doubleSided = glTFMaterial.doubleSided;
+
         return material;
     }
 
-    RefPtr<Texture> glTFLoader::MakeTexture(const glTF::TextureInfo& textureInfo)
+    RefPtr<Texture> glTFLoader::MakeTexture(const glTF::Texture& texture)
     {
-        return RefPtr<Texture>();
-    }
+        const auto& name = texture.name;
 
-    RefPtr<Sampler> glTFLoader::MakeSampler(const glTF::Sampler & sampler)
-    {
-        return RefPtr<Sampler>();
-    }
-
-    constexpr int32 glTFLoader::CalculateStride(ComponentType componentType, AttributeType attributeType)
-    {
-        int32 componentSize = 0;
-        int32 componentCount = 0;
-
-        switch (componentType)
+        RefPtr<Sampler> sampler;
+        if (texture.sampler.has_value())
         {
-        case ComponentType::Int8:
-        case ComponentType::UInt8:
-            componentSize = 1;
-            break;
-        case ComponentType::Int16:
-        case ComponentType::UInt16:
-            componentSize = 2;
-            break;
-        case ComponentType::UInt:
-        case ComponentType::Float:
-            componentSize = 4;
-            break;
+            sampler = loadedSamplers[texture.sampler.value()];
         }
 
-        switch (attributeType)
+        TextureSource source;
+        if (texture.source.has_value())
         {
-        case AttributeType::Scalar:
-            componentCount = 1;
-            break;
-        case AttributeType::Vec2:
-            componentCount = 2;
-            break;
-        case AttributeType::Vec3:
-            componentCount = 3;
-            break;
-        case AttributeType::Vec4:
-            componentCount = 4;
-            break;
-        case AttributeType::Mat2x2:
-            componentCount = 4;
-            break;
-        case AttributeType::Mat3x3:
-            componentCount = 9;
-            break;
-        case AttributeType::Mat4x4:
-            componentCount = 16;
-            break;
+            const auto& image = root->images[texture.source.value()];
+            source.root = rootFolder;
+            source.filename = image.uri;
         }
 
-        return componentSize * componentCount;
+        RefPtr<Image> image = ReadHostImage(source);
+
+        return MakeRef<Texture>(sampler, image, name);
+    }
+
+    RefPtr<Sampler> glTFLoader::MakeSampler(const glTF::Sampler& sampler)
+    {
+        const auto& name = sampler.name;
+
+        vk::SamplerCreateInfo samplerCreateInfo;
+
+        samplerCreateInfo.addressModeU = ToVkSamplerAddresMode(sampler.wrapS);
+        samplerCreateInfo.addressModeV = ToVkSamplerAddresMode(sampler.wrapT);
+
+        if (sampler.minFilter.has_value())
+        {
+            MinFilter minFilter = ToVkMinFilter(sampler.minFilter.value());
+            samplerCreateInfo.minFilter = minFilter.minFilter;
+            samplerCreateInfo.mipmapMode = minFilter.mipmapMode;
+            samplerCreateInfo.minLod = minFilter.minLod;
+            samplerCreateInfo.maxLod = minFilter.maxLod;
+        }
+        
+        if (sampler.magFilter.has_value())
+        {
+            samplerCreateInfo.magFilter = ToVkMagFilter(sampler.magFilter.value());
+        }
+
+        return MakeRef<Sampler>(samplerCreateInfo, name);
+    }
+    Vector<uint8> glTFLoader::ReadHostBuffer(const BufferSource& source)
+    {
+        UniquePtr<FileStream> stream = MakeUnique<FileStream>(source.root + "/" + source.filename, FileOpenModes::Read);
+        Vector<uint8> buffer;
+        buffer.resize(source.byteLength);
+
+        stream->Read(buffer.data(), source.byteLength, 1);
+
+        return move(buffer);
+    }
+
+    RefPtr<Image> glTFLoader::ReadHostImage(const TextureSource& source)
+    {
+        return Image::LoadFromFile(source.root + "/" + source.filename);
     }
 }

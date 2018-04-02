@@ -74,8 +74,9 @@ find_library(SPIRV_REMAPPER_DLIB NAMES SPVRemapperd REQUIRED HINTS ${GLSLANG_DEB
 
 include_directories(AFTER
     ${Vulkan_INCLUDE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/stb/
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/glm/
-	${CMAKE_CURRENT_SOURCE_DIR}/lib/json/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/json/src
     ${CMAKE_CURRENT_SOURCE_DIR}/include/
     ${GLSLANG_INCLUDE_DIR}
 )

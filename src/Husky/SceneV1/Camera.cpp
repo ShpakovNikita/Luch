@@ -1,69 +1,52 @@
-#pragma once
-
-#include <Husky/Types.h>
-#include <Husky/VectorTypes.h>
-#include <Husky/BaseObject.h>
-#include <Husky/SceneV1/CameraType.h>
+#include <Husky/SceneV1/Camera.h>
+#include <glm/gtc/matrix_transform.hpp>
 
 namespace Husky::SceneV1
 {
-    class Camera : public BaseObject
+    Camera::Camera(
+        CameraType aType,
+        const String &aName)
+        : type(aType)
+        , name(aName)
     {
-    protected:
-        Camera(CameraType type, const String& name = "");
-    public:
-        inline CameraType GetCameraType() const { return type; }
+    }
 
-        virtual Mat4x4 GetCameraMatrix() const = 0;
-    private:
-        CameraType type;
-        String name;
-    };
-
-    class PerspectiveCamera : public Camera
+    PerspectiveCamera::PerspectiveCamera(
+        float32 aYfov,
+        float32 aZnear,
+        Optional<float32> aZfar,
+        Optional<float32> aAspectRatio,
+        const String &aName)
+        : Camera(CameraType::Perspective, aName)
+        , yfov(aYfov)
+        , znear(aZnear)
+        , zfar(aZfar)
+        , aspectRatio(aAspectRatio)
     {
-    public:
-        PerspectiveCamera(
-            float32 yfov,
-            float32 znear,
-            Optional<float32> zfar = {},
-            Optional<float32> aspectRatio = {},
-            const String& name = "");
+    }
 
-        Mat4x4 GetCameraMatrix() const override;
-
-        inline float32 GetYFOV() const { return yfov; }
-        inline float32 GetZNear() const { return znear; }
-        inline const Optional<float32>& GetZFar() const { return zfar; }
-        inline const Optional<float32>& GetAspectRatio() const { return aspectRatio; }
-    private:
-        float32 yfov;
-        float32 znear;
-        Optional<float32> zfar;
-        Optional<float32> aspectRatio;
-    };
-
-    class OrthographicCamera : public Camera
+    Mat4x4 PerspectiveCamera::GetCameraProjectionMatrix() const
     {
-    public:
-        OrthographicCamera(
-            float32 xmag,
-            float32 ymag,
-            float32 zfar,
-            float32 znear,
-            const String& name = ""
-        );
+        // TODO
+        return Mat4x4();//glm::perspective(yfov, aspectRatio.value_or(1.0f), znear, zfar.value_or(1000.0f));
+    }
 
-        Mat4x4 GetCameraMatrix() const override;
+    OrthographicCamera::OrthographicCamera(
+        float32 aXmag,
+        float32 aYmag,
+        float32 aZfar,
+        float32 aZnear,
+        const String& name)
+        : Camera(CameraType::Orthographic, name)
+        , xmag(aXmag)
+        , ymag(aYmag)
+        , zfar(aZfar)
+        , znear(aZnear)
+    {
+    }
 
-        inline float32 GetXMag()  const { return xmag; }
-        inline float32 GetYMag()  const { return ymag; }
-        inline float32 GetZFar()  const { return zfar; }
-        inline float32 GetZNear() const { return znear; }
-    private:
-        float32 xmag;
-        float32 ymag;
-        float32 zfar;
-        float32 znear;
-    };
+    Mat4x4 OrthographicCamera::GetCameraProjectionMatrix() const
+    {
+        return Mat4x4();// TODO
+    }
 }

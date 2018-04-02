@@ -310,6 +310,7 @@ struct Node
     Vector<int32> children;
     Optional<int32> skin;
     Optional<Mat4x4> matrix;
+    Optional<int32> mesh;
     Optional<Quaternion> rotation;
     Optional<Vec3> scale;
     Optional<Vec3> translation;

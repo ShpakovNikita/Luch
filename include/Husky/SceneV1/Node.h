@@ -20,7 +20,7 @@ namespace Husky::SceneV1
     public:
         using TransformType = Variant<Mat4x4, Transform>;
 
-        Node(
+        /*Node(
             const RefPtrVector<Mesh>& children,
             const Mat4x4 matrix,
             const String& name);
@@ -28,15 +28,27 @@ namespace Husky::SceneV1
         Node(
             const RefPtrVector<Mesh>& children,
             const Transform& transform,
-            const String& name);
+            const String& name);*/
 
         Node(
-            const RefPtrVector<Mesh>& children,
+            RefPtrVector<Node>&& children,
+            const RefPtr<Mesh>& mesh,
+            const RefPtr<Camera>& camera,
             const TransformType& transform,
             const String& name);
+
+        ~Node();
+
+        inline const String& GetName() const { return name; }
+        inline const RefPtrVector<Node>& GetChildren() const { return children; }
+        inline const RefPtr<Mesh>& GetMesh() const { return mesh; }
+        inline const RefPtr<Camera>& GetCamera() const { return camera; }
+        inline const TransformType& GetTransform() const { return transform; }
     private:
         String name;
-        RefPtrVector<Mesh> children;
+        RefPtrVector<Node> children;
+        RefPtr<Mesh> mesh;
+        RefPtr<Camera> camera;
         TransformType transform;
     };
 }

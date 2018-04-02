@@ -1,20 +1,13 @@
-#pragma once
-
-#include <Husky/BaseObject.h>
-#include <Husky/RefPtr.h>
-#include <Husky/Vulkan/Forwards.h>
-#include <Husky/SceneV1/Forwards.h>
+#include <Husky/SceneV1/Mesh.h>
+#include <Husky/SceneV1/Primitive.h>
 
 namespace Husky::SceneV1
 {
-    class Mesh : public BaseObject
+    Mesh::Mesh(RefPtrVector<Primitive>&& aPrimitives, const String &aName)
+        : primitives(aPrimitives)
+        , name(aName)
     {
-    public:
-        Mesh(
-            const RefPtrVector<Primitive>& primitives,
-            const String& name = "");
-    private:
-        String name;
-        RefPtrVector<Primitive> primitives;
-    };
+    }
+
+    Mesh::~Mesh() = default;
 }

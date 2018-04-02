@@ -1,20 +1,15 @@
-#pragma once
-
-#include <Husky/BaseObject.h>
-#include <Husky/RefPtr.h>
-#include <Husky/Vulkan/Forwards.h>
-#include <Husky/SceneV1/Forwards.h>
+#include <Husky/SceneV1/Scene.h>
+#include <Husky/SceneV1/Node.h>
 
 namespace Husky::SceneV1
 {
-    class Scene : public BaseObject
+    Scene::Scene(
+        RefPtrVector<Node>&& aNodes,
+        const String &aName)
+        : nodes(move(aNodes))
+        , name(aName)
     {
-    public:
-        Scene(
-            RefPtrVector<Node> nodes,
-            const String& name);
-    private:
-        String name;
-        RefPtrVector<Node> nodes;
-    };
+    }
+
+    Scene::~Scene() = default;
 }

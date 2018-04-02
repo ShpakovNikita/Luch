@@ -7,18 +7,21 @@ namespace Husky::Vulkan
 {
     class GraphicsDevice;
 
-    class Buffer
+    class Buffer : public BaseObject
     {
         friend class GraphicsDevice;
     public:
-        Buffer() = default;
+        Buffer(GraphicsDevice* device, vk::Buffer buffer, vk::DeviceMemory memory, vk::BufferCreateInfo bufferCreateInfo);
 
-        Buffer(Buffer&& other);
-        Buffer& operator=(Buffer&& other);
+        Buffer(const Buffer& other) = delete;
+        Buffer(Buffer&& other) = delete;
+        Buffer& operator=(const Buffer& other) = delete;
+        Buffer& operator=(Buffer&& other) = delete;
 
-        ~Buffer();
+        ~Buffer() override;
 
         VulkanResultValue<void*> MapMemory(int64 size, int64 offset);
+        void* GetMappedMemory() const { return mappedMemory; }
         void UnmapMemory();
 
         // TODO more control
@@ -29,22 +32,13 @@ namespace Husky::Vulkan
         inline vk::Buffer GetBuffer() { return buffer; }
         inline vk::DeviceMemory GetDeviceMemory() { return memory; }
     private:
-        Buffer(GraphicsDevice* device, vk::Buffer buffer, vk::DeviceMemory memory, vk::BufferCreateInfo bufferCreateInfo);
         void Destroy();
 
         GraphicsDevice* device = nullptr;
         vk::Buffer buffer;
         vk::DeviceMemory memory;
         vk::BufferCreateInfo bufferCreateInfo;
-    };
 
-    class BufferObject : public BaseObject
-    {
-    public:
-        BufferObject(Buffer&& aBuffer) : buffer(std::move(aBuffer)) { }
-
-        inline Buffer* GetBuffer() { return &buffer; }
-    private:
-        Buffer buffer;
+        void* mappedMemory = nullptr;
     };
 }

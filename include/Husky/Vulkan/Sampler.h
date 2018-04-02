@@ -7,36 +7,24 @@ namespace Husky::Vulkan
 {
     class GraphicsDevice;
 
-    class Sampler
+    class Sampler : public BaseObject
     {
         friend class GraphicsDevice;
     public:
-        Sampler() = default;
+        Sampler(GraphicsDevice* device, vk::Sampler sampler);
 
-        Sampler(Sampler&& other);
-        Sampler& operator=(Sampler&& other);
+        Sampler(Sampler&& other) = delete;
+        Sampler(const Sampler& other) = delete;
+        Sampler& operator=(const Sampler& other) = delete;
+        Sampler& operator=(Sampler&& other) = delete;
 
         ~Sampler();
 
         inline vk::Sampler GetSampler() { return sampler; }
     private:
-        Sampler(GraphicsDevice* device, vk::Sampler sampler);
         void Destroy();
 
         GraphicsDevice* device = nullptr;
         vk::Sampler sampler;
-    };
-
-    class SamplerObject : public BaseObject
-    {
-    public:
-        inline explicit SamplerObject(Sampler aSampler)
-            : sampler(std::move(aSampler))
-        {
-        }
-
-        inline Sampler* GetSampler() { return &sampler; }
-    private:
-        Sampler sampler;
     };
 }

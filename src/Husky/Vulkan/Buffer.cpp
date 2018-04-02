@@ -15,33 +15,6 @@ namespace Husky::Vulkan
     {
     }
 
-    Buffer::Buffer(Buffer&& other)
-        : device(other.device)
-        , buffer(other.buffer)
-        , memory(other.memory)
-        , bufferCreateInfo(other.bufferCreateInfo)
-    {
-        other.device = nullptr;
-        other.buffer = nullptr;
-        other.memory = nullptr;
-    }
-
-    Buffer& Buffer::operator=(Buffer&& other)
-    {
-        Destroy();
-
-        device = other.device;
-        buffer = other.buffer;
-        memory = other.memory;
-        bufferCreateInfo = other.bufferCreateInfo;
-
-        other.device = nullptr;
-        other.buffer = nullptr;
-        other.memory = nullptr;
-
-        return *this;
-    }
-
     Buffer::~Buffer()
     {
         Destroy();
@@ -50,11 +23,13 @@ namespace Husky::Vulkan
     VulkanResultValue<void*> Buffer::MapMemory(int64 size, int64 offset)
     {
         auto [result, memoryPointer] = device->GetDevice().mapMemory(memory, offset, size);
+        mappedMemory = memoryPointer;
         return { result, memoryPointer };
     }
 
     void Buffer::UnmapMemory()
     {
+        mappedMemory = nullptr;
         device->GetDevice().unmapMemory(memory);
     }
 

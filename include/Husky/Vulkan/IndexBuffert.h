@@ -1,16 +1,15 @@
 #pragma once
 
-#include <Husky/RefPtr.h>
 #include <Husky/IndexType.h>
 #include <Husky/Vulkan/Buffer.h>
 
 namespace Husky::Vulkan
 {
-    class IndexBufferObject : public BaseObject
+    class IndexBuffer
     {
     public:
-        IndexBufferObject(
-            const RefPtr<BufferObject>& aBuffer,
+        IndexBuffer(
+            const RefPtr<Buffer>& aBuffer,
             IndexType aIndexType,
             int32 aIndexCount)
             : buffer(aBuffer)
@@ -18,8 +17,6 @@ namespace Husky::Vulkan
             , indexCount(aIndexCount)
         {
         }
-
-        ~IndexBufferObject() = default;
 
         inline IndexType GetIndexType() const { return indexType; }
         inline int32 GetIndexCount() const { return indexCount; }
@@ -33,9 +30,9 @@ namespace Husky::Vulkan
             indexType = newIndexType;
         }
 
-        inline Buffer* GetUnderlyingBuffer() { return buffer->GetBuffer(); }
+        inline Buffer* GetUnderlyingBuffer() { return buffer.Get(); }
     private:
-        RefPtr<BufferObject> buffer;
+        RefPtr<Buffer> buffer;
         int32 indexCount = 0;
         IndexType indexType;
     };

@@ -9,27 +9,6 @@ namespace Husky::Vulkan
     {
     }
 
-    PipelineCache::PipelineCache(PipelineCache&& other)
-        : device(other.device)
-        , pipelineCache(other.pipelineCache)
-    {
-        other.device = nullptr;
-        other.pipelineCache = nullptr;
-    }
-
-    PipelineCache & PipelineCache::operator=(PipelineCache&& other)
-    {
-        Destroy();
-
-        device = other.device;
-        pipelineCache = other.pipelineCache;
-
-        other.device = nullptr;
-        other.pipelineCache = nullptr;
-
-        return *this;
-    }
-
     PipelineCache::~PipelineCache()
     {
         Destroy();

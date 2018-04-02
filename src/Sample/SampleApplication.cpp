@@ -4,8 +4,21 @@
 #include <Husky/Math/Math.h>
 #include <Husky/FileStream.h>
 #include <Husky/VectorTypes.h>
+#include <Husky/SceneV1/Loader/glTFLoader.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
+
+#include <Husky/SceneV1/Scene.h>
+#include <Husky/SceneV1/Mesh.h>
+#include <Husky/SceneV1/Node.h>
+#include <Husky/SceneV1/Camera.h>
+#include <Husky/SceneV1/Primitive.h>
+#include <Husky/SceneV1/Texture.h>
+#include <Husky/SceneV1/BufferSource.h>
+#include <Husky/SceneV1/IndexBuffer.h>
+#include <Husky/SceneV1/VertexBuffer.h>
+#include <Husky/SceneV1/PbrMaterial.h>
+#include <Husky/SceneV1/Sampler.h>
 
 using namespace Husky;
 using namespace Husky::Vulkan;
@@ -23,36 +36,7 @@ static VkBool32 StaticDebugCallback(
     return static_cast<VulkanDebugDelegate*>(userData)->DebugCallback(flags, objectType, object, location, messageCode, pLayerPrefix, pMessage);
 }
 
-static const char8* vertexShaderSource =
-"#version 450\n"
-"#extension GL_ARB_shading_language_420pack : enable\n"
-"#extension GL_ARB_separate_shader_objects : enable\n"
-"layout (set = 0, binding = 0) uniform UniformBufferObject\n"
-"{\n"
-"    mat4 model;\n"
-"    mat4 view;\n"
-"    mat4 projection;\n"
-"} ub;\n"
-"layout (location = 0) in vec3 position;\n"
-"layout (location = 1) in vec3 normal;\n"
-"layout (location = 2) in vec2 inTexCoord;\n"
-"layout (location = 0) out vec2 outTexCoord;\n"
-"void main()\n"
-"{\n"
-"   outTexCoord = inTexCoord;\n"
-"   gl_Position = ub.projection * ub.view * ub.model * vec4(position, 1.0);\n"
-"}\n";
 
-static const char8* fragmentShaderSource =
-"#version 450\n"
-"#extension GL_ARB_shading_language_420pack : enable\n"
-"#extension GL_ARB_separate_shader_objects : enable\n"
-"layout (location = 0) in vec2 texCoord;\n"
-"layout (location = 0) out vec4 outColor;\n"
-"void main()\n"
-"{\n"
-"   outColor = vec4(texCoord, 0.0, 1.0);\n"
-"}\n";
 
 #ifdef _WIN32
 
@@ -83,12 +67,15 @@ static LRESULT CALLBACK StaticWindowProc(
 
 bool SampleApplication::Initialize(const Vector<String>& args)
 {
-    glTF::glTFParser glTFparser;
-    FileStream fileStream{ "C:\\Development\\glTF\\cube.gltf", FileOpenModes::Read };
-    
-    GLSLShaderCompiler::Initialize();
-    graphicsContext = std::make_unique<GraphicsContext>();
-    graphicsContext->root = glTFparser.ParseJSON(&fileStream);
+    //glTF::glTFParser glTFparser;
+    //FileStream fileStream{ "C:\\Development\\HuskyResources\\glTF-Sample-Models\\2.0\\BoxTextured\\glTF\\BoxTextured.gltf", FileOpenModes::Read };
+    //
+    //
+    //graphicsContext = std::make_unique<GraphicsContext>();
+    //graphicsContext->root = glTFparser.ParseJSON(&fileStream);
+    //
+    //SceneV1::Loader::glTFLoader loader{ "C:\\Development\\HuskyResources\\glTF-Sample-Models\\2.0\\BoxTextured\\glTF\\", graphicsContext->root };
+    //auto scenes = loader.LoadScenes();
 
     allocationCallbacks = allocator.GetAllocationCallbacks();
 
@@ -118,7 +105,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
         return false;
     }
 
-    graphicsContext->physicalDevice = { ChoosePhysicalDevice(physicalDevices), allocationCallbacks };
+    physicalDevice = PhysicalDevice{ ChoosePhysicalDevice(physicalDevices), allocationCallbacks };
 
 #if _WIN32
     std::tie(hInstance, hWnd) = CreateMainWindow(GetMainWindowTitle(), width, height);
@@ -136,388 +123,25 @@ bool SampleApplication::Initialize(const Vector<String>& args)
         return false;
     }
 
-    graphicsContext->surface = std::move(createdSurface);
+    surface = std::move(createdSurface);
 
     ShowWindow(hWnd, SW_SHOW);
 #endif
 
-    auto [chooseQueuesResult, queueIndices] = graphicsContext->physicalDevice.ChooseDeviceQueues(&graphicsContext->surface);
-    if (chooseQueuesResult != vk::Result::eSuccess)
-    {
-        // TODO
-        return false;
-    }
-
-    auto [createDeviceResult, createdDevice] = graphicsContext->physicalDevice.CreateDevice(std::move(queueIndices), GetRequiredDeviceExtensionNames());
-    if (createDeviceResult != vk::Result::eSuccess)
-    {
-        // TODO
-        return false;
-    }
-
-    graphicsContext->device = std::move(createdDevice);
-    auto& device = graphicsContext->device;
-    auto& indices = graphicsContext->device.GetQueueIndices();
-
-    auto[createdPresentCommandPoolResult, createdPresentCommandPool] = device.CreateCommandPool(indices.presentQueueFamilyIndex, true, false);
-    if (createdPresentCommandPoolResult != vk::Result::eSuccess)
-    {
-        // TODO
-        return false;
-    }
-
-    graphicsContext->presentCommandPool = std::move(createdPresentCommandPool);
-
-    auto [swapchainChooseCreateInfoResult, swapchainCreateInfo] = Swapchain::ChooseSwapchainCreateInfo(width, height, &graphicsContext->physicalDevice, &graphicsContext->surface);
-    if (swapchainChooseCreateInfoResult != vk::Result::eSuccess)
-    {
-        // TODO
-        return false;
-    }
-
-    auto [createSwapchainResult, createdSwapchain] = device.CreateSwapchain(swapchainCreateInfo, &graphicsContext->surface);
-    if (createSwapchainResult != vk::Result::eSuccess)
-    {
-        // TODO
-        return false;
-    }
-
-    graphicsContext->swapchain = std::move(createdSwapchain);
-
-    auto depthStencilFormat = vk::Format::eD24UnormS8Uint;
-
-    vk::ImageCreateInfo depthBufferCreateInfo;
-    depthBufferCreateInfo.setFormat(depthStencilFormat);
-    depthBufferCreateInfo.setArrayLayers(1);
-    depthBufferCreateInfo.setImageType(vk::ImageType::e2D);
-    depthBufferCreateInfo.setExtent({ (uint32)swapchainCreateInfo.width, (uint32)swapchainCreateInfo.height, 1 });
-    depthBufferCreateInfo.setInitialLayout(vk::ImageLayout::eUndefined);
-    depthBufferCreateInfo.setMipLevels(1);
-    depthBufferCreateInfo.setQueueFamilyIndexCount(1);
-    depthBufferCreateInfo.setPQueueFamilyIndices(&indices.graphicsQueueFamilyIndex);
-    depthBufferCreateInfo.setSamples(vk::SampleCountFlagBits::e1);
-    depthBufferCreateInfo.setSharingMode(vk::SharingMode::eExclusive);
-    depthBufferCreateInfo.setTiling(vk::ImageTiling::eOptimal);
-    depthBufferCreateInfo.setUsage(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransferSrc);
-
-    constexpr auto uniformBufferSize = sizeof(Uniform);
-
-    graphicsContext->boxData = graphicsContext->geometryGenerator.CreateBox("box01", { 0, 0, 0 }, 0.5, 0.5, 0.5, 0);
-
-    auto vertexShaderCompiled = graphicsContext->shaderCompiler.TryCompileShader(ShaderStage::Vertex, vertexShaderSource, graphicsContext->vertexShaderBytecode);
-    auto fragmentShaderCompiled = graphicsContext->shaderCompiler.TryCompileShader(ShaderStage::Fragment, fragmentShaderSource, graphicsContext->fragmentShaderBytecode);
-    HUSKY_ASSERT(vertexShaderCompiled, "Vertex shader failed to compile");
-    HUSKY_ASSERT(fragmentShaderCompiled, "Fragment shader failed to compile");
-
-    auto[createVertexShaderModuleResult, createdVertexShaderModule] = device.CreateShaderModule(graphicsContext->vertexShaderBytecode.data(), graphicsContext->vertexShaderBytecode.size() * sizeof(uint32));
-    if (createVertexShaderModuleResult != vk::Result::eSuccess)
-    {
-        return false;
-    }
-
-    graphicsContext->vertexShaderModule = std::move(createdVertexShaderModule);
-
-    auto[createFragmentShaderModuleResult, createdFragmentShaderModule] = device.CreateShaderModule(graphicsContext->fragmentShaderBytecode.data(), graphicsContext->fragmentShaderBytecode.size() * sizeof(uint32));
-    if (createFragmentShaderModuleResult != vk::Result::eSuccess)
-    {
-        return false;
-    }
-
-    graphicsContext->fragmentShaderModule = std::move(createdFragmentShaderModule);
-
-    auto indicesCount = (int32)graphicsContext->boxData.indices16.size();
-    auto indexBufferSize = indicesCount * sizeof(uint16);
-
-    auto verticesCount = (int32)graphicsContext->boxData.vertices.size();
-    int32 vertexSize = sizeof(Vertex);
-
-    Attachment colorAttachment;
-    colorAttachment
-        .SetFormat(graphicsContext->swapchain.GetFormat())
-        .SetInitialLayout(vk::ImageLayout::eUndefined)
-        .SetLoadOp(vk::AttachmentLoadOp::eClear)
-        .SetStoreOp(vk::AttachmentStoreOp::eStore)
-        .SetSampleCount(SampleCount::e1)
-        .SetFinalLayout(vk::ImageLayout::ePresentSrcKHR);
-
-    Attachment depthAttachment;
-    depthAttachment
-        .SetFormat(FromVulkanFormat(depthStencilFormat))
-        .SetInitialLayout(vk::ImageLayout::eUndefined)
-        .SetLoadOp(vk::AttachmentLoadOp::eClear)
-        .SetStoreOp(vk::AttachmentStoreOp::eStore)
-        .SetStencilLoadOp(vk::AttachmentLoadOp::eClear)
-        .SetStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-        .SetSampleCount(SampleCount::e1)
-        .SetFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
-
-    SubpassDescription subpass;
-    subpass
-        .AddColorAttachment(&colorAttachment, vk::ImageLayout::eColorAttachmentOptimal)
-        .WithDepthStencilAttachment(&depthAttachment, vk::ImageLayout::eDepthStencilAttachmentOptimal);
-
-    RenderPassCreateInfo renderPassCreateInfo;
-    renderPassCreateInfo
-        .AddAttachment(&colorAttachment)
-        .AddAttachment(&depthAttachment)
-        .AddSubpass(std::move(subpass));
-
-    graphicsContext->uniformBufferBinding
-        .OfType(vk::DescriptorType::eUniformBuffer)
-        .AtStages(ShaderStage::Vertex);
-
-    DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo;
-    descriptorSetLayoutCreateInfo
-        .AddBinding(&graphicsContext->uniformBufferBinding);
-
-    auto [createDescriptorSetLayoutResult, createdDescriptorSetLayout] = device.CreateDescriptorSetLayout(descriptorSetLayoutCreateInfo);
-    if (createDescriptorSetLayoutResult != vk::Result::eSuccess)
-    {
-        return false;
-    }
-
-    graphicsContext->descriptorSetLayout = std::move(createdDescriptorSetLayout);
-
-    PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
-    pipelineLayoutCreateInfo
-        .WithNSetLayouts(1)
-        .AddSetLayout(&graphicsContext->descriptorSetLayout);
-
-    graphicsContext->frameResources.reserve(swapchainCreateInfo.imageCount);
-
-    GraphicsPipelineCreateInfo pipelineState;
-
-    auto& vertexShaderStage = pipelineState.shaderStages.emplace_back();
-    vertexShaderStage.name = "main";
-    vertexShaderStage.shaderModule = &graphicsContext->vertexShaderModule;
-    vertexShaderStage.stage = ShaderStage::Vertex;
-
-    auto& fragmentShaderStage = pipelineState.shaderStages.emplace_back();
-    fragmentShaderStage.name = "main";
-    fragmentShaderStage.shaderModule = &graphicsContext->fragmentShaderModule;
-    fragmentShaderStage.stage = ShaderStage::Fragment;
-
-    pipelineState.vertexInputState.bindingDescriptions =
-    {
-        { 0, sizeof(Vertex), vk::VertexInputRate::eVertex }
-    };
-
-    pipelineState.vertexInputState.attributeDescriptions =
-    {
-        {
-            0, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, position)
-        },
-        {
-            1, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, normal)
-        },
-        {
-            2, 0, vk::Format::eR32G32Sfloat, offsetof(Vertex, texCoord)
-        }
-    };
-
-    pipelineState.inputAssemblyState.topology = graphicsContext->boxData.primitiveTopology;
     
-    pipelineState.viewportState.viewports = { {0.0f, 0.0f, (float32)width, (float32)height, minDepth, maxDepth} };
-    pipelineState.viewportState.scissors = { {{0, 0}, {(uint32)width, (uint32)height}} };
-
-    pipelineState.rasterizationState.cullMode = vk::CullModeFlagBits::eNone;
-
-    pipelineState.depthStencilState.depthTestEnable = true;
-    pipelineState.depthStencilState.depthWriteEnable = true;
-    pipelineState.depthStencilState.depthCompareOp = vk::CompareOp::eLess;
-
-    auto &attachment = pipelineState.colorBlendState.attachments.emplace_back();
-    attachment.blendEnable = false;
-
-    for (int32 i = 0; i < swapchainCreateInfo.imageCount; i++)
-    {
-        auto& frameResources = graphicsContext->frameResources.emplace_back();
-
-        auto[createdGraphicsCommandPoolResult, createdGraphicsCommandPool] = device.CreateCommandPool(indices.graphicsQueueFamilyIndex, false, false);
-        if (createdGraphicsCommandPoolResult != vk::Result::eSuccess)
-        {
-            // TODO
-            return false;
-        }
-
-        frameResources.graphicsCommandPool = std::move(createdGraphicsCommandPool);
-
-        auto[createBufferResult, createdBuffer] = device.CreateBuffer(uniformBufferSize, indices.graphicsQueueFamilyIndex, vk::BufferUsageFlagBits::eUniformBuffer, true);
-        if (createBufferResult != vk::Result::eSuccess)
-        {
-            // TODO
-            return false;
-        }
-
-        frameResources.uniformBuffer = std::move(createdBuffer);
-
-        //auto[createVertexBufferResult, createdVertexBuffer] = device.CreateVertexBuffer(vertexSize, verticesCount, indices.graphicsQueueFamilyIndex, true);
-        //if (createVertexBufferResult != vk::Result::eSuccess)
-        //{
-        //    return false;
-        //}
-
-        //{
-        //    auto[mapVerticesResult, verticesMemory] = createdVertexBuffer.GetUnderlyingBuffer().MapMemory(indexBufferSize, 0);
-        //    if (mapVerticesResult != vk::Result::eSuccess)
-        //    {
-        //        return false;
-        //    }
-
-        //    memcpy(verticesMemory, graphicsContext->boxData.vertices.data(), vertexSize * verticesCount);
-
-        //    createdVertexBuffer.GetUnderlyingBuffer().UnmapMemory();
-        //}
-
-        //frameResources.vertexBuffer = std::move(createdVertexBuffer);
-
-        //auto[createIndexBufferResult, createdIndexBuffer] = device.CreateIndexBuffer(IndexType::UInt16, indicesCount, indices.graphicsQueueFamilyIndex, true);
-        //if (createIndexBufferResult != vk::Result::eSuccess)
-        //{
-        //    // TODO
-        //    return false;
-        //}
-
-        //{
-        //    auto[mapIndicesResult, indicesMemory] = createdIndexBuffer.GetUnderlyingBuffer().MapMemory(indexBufferSize, 0);
-        //    if (mapIndicesResult != vk::Result::eSuccess)
-        //    {
-        //        return false;
-        //    }
-        //    memcpy(indicesMemory, graphicsContext->boxData.indices16.data(), indexBufferSize);
-
-        //    createdIndexBuffer.GetUnderlyingBuffer().UnmapMemory();
-        //}
-
-        //frameResources.indexBuffer = std::move(createdIndexBuffer);
-
-        auto[createDepthStencilBufferResult, createdDepthStencilBuffer] = device.CreateImage(depthBufferCreateInfo);
-        if (createDepthStencilBufferResult != vk::Result::eSuccess)
-        {
-            return false;
-        }
-
-        frameResources.depthStencilBuffer = std::move(createdDepthStencilBuffer);
-
-        auto[createDepthStencilBufferViewResult, createdDepthStencilBufferView] = device.CreateImageView(&frameResources.depthStencilBuffer);
-        if (createDepthStencilBufferViewResult != vk::Result::eSuccess)
-        {
-            return false;
-        }
-
-        frameResources.depthStencilBufferView = std::move(createdDepthStencilBufferView);
-
-        auto[createRenderPassResult, createdRenderPass] = device.CreateRenderPass(renderPassCreateInfo);
-        if (createRenderPassResult != vk::Result::eSuccess)
-        {
-            return false;
-        }
-
-        frameResources.renderPass = std::move(createdRenderPass);
-
-        FramebufferCreateInfo framebufferCreateInfo(&frameResources.renderPass, swapchainCreateInfo.width, swapchainCreateInfo.height, 1);
-        framebufferCreateInfo
-            .AddAtachment(&colorAttachment, graphicsContext->swapchain.GetImageView(i))
-            .AddAtachment(&depthAttachment, &frameResources.depthStencilBufferView);
-
-        auto [createFramebufferResult, createdFramebuffer] = device.CreateFramebuffer(framebufferCreateInfo);
-        if (createFramebufferResult != vk::Result::eSuccess)
-        {
-            return false;
-        }
-
-        frameResources.framebuffer = std::move(createdFramebuffer);
-
-        auto [createPipelineLayoutResult, createdPipelineLayout] = device.CreatePipelineLayout(pipelineLayoutCreateInfo);
-        if (createPipelineLayoutResult != vk::Result::eSuccess)
-        {
-            return false;
-        }
-
-        frameResources.pipelineLayout = std::move(createdPipelineLayout);
-
-        GraphicsPipelineCreateInfo pipelineStateCopy{ pipelineState };
-        pipelineStateCopy.renderPass = &frameResources.renderPass;
-        pipelineStateCopy.layout = &frameResources.pipelineLayout;
-
-        auto[createPipelineResult, createdPipeline] = device.CreateGraphicsPipeline(pipelineStateCopy);
-        if (createPipelineResult != vk::Result::eSuccess)
-        {
-            return false;
-        }
-
-        frameResources.pipeline = std::move(createdPipeline);
-
-        auto[createFenceResult, createdFence] = device.CreateFence();
-        if (createFenceResult != vk::Result::eSuccess)
-        {
-            return false;
-        }
-
-        auto [allocateResult, allocatedBuffer] = frameResources.graphicsCommandPool.AllocateCommandBuffer(CommandBufferLevel::Primary);
-        if (allocateResult != vk::Result::eSuccess)
-        {
-            return false;
-        }
-
-        frameResources.commandBuffer = std::move(allocatedBuffer);
-        
-        frameResources.fence = std::move(createdFence);
-
-        auto [createSemaphoreResult, createdSemaphore] = device.CreateSemaphore();
-        if (createSemaphoreResult != vk::Result::eSuccess)
-        {
-            return false;
-        }
-
-        frameResources.semaphore = std::move(createdSemaphore);
-
-        auto[createDescriptorPoolResult, createdDescriptorPool] = device.CreateDescriptorPool(1, { {vk::DescriptorType::eUniformBuffer, 1} });
-        if (createDescriptorPoolResult != vk::Result::eSuccess)
-        {
-            return false;
-        }
-
-        frameResources.descriptorPool = std::move(createdDescriptorPool);
-
-        auto model = glm::mat4(1.0f);
-        model = glm::translate(model, { 0.0f, 0.0f, -1.4f });
-        model = glm::scale(model, { 0.5f, 0.5f, 0.5f });
-
-        graphicsContext->uniform.model = model;
-        graphicsContext->uniform.view = glm::lookAt(glm::vec3{ 0.2f, 0.2f, -2.0f }, glm::vec3{ 0.0f, 0.0f, 0.0f }, glm::vec3{0.0f, 1.0f, 0.0f});
-        graphicsContext->uniform.projection = glm::perspective(glm::radians(60.0f), (float32)width / height, 0.1f, 256.0f);
-
-        {
-            auto[mapUniformResult, uniformMemory] = frameResources.uniformBuffer.MapMemory(uniformBufferSize, 0);
-            if (mapUniformResult != vk::Result::eSuccess)
-            {
-                return false;
-            }
-        
-            memcpy(uniformMemory, &graphicsContext->uniform, uniformBufferSize);
-        
-            frameResources.uniformBuffer.UnmapMemory();
-        }
-    }
 
     return true;
 }
 
 bool SampleApplication::Deinitialize()
 {
-    graphicsContext.release();
     DestroyDebugCallback(instance, debugCallback, allocationCallbacks);
     instance.destroy(allocationCallbacks);
-    GLSLShaderCompiler::Deinitialize();
     return true;
 }
 
 void SampleApplication::Run()
 {
-    int32 frameResourceIndex = frameIndex % graphicsContext->frameResources.size();
-    auto &frameResources = graphicsContext->frameResources[frameResourceIndex];
-
     MSG msg{};
 
     while (msg.message != WM_QUIT)
@@ -529,76 +153,9 @@ void SampleApplication::Run()
         }
         else
         {
-            Draw();
+            //Draw();
         }
     }
-}
-
-void SampleApplication::Draw()
-{
-    // Think about maybe recreating a framebuffer for every acquire
-
-    auto[createSemaphoreResult, imageAcquiredSemaphore] = graphicsContext->device.CreateSemaphore();
-    HUSKY_ASSERT(createSemaphoreResult == vk::Result::eSuccess);
-
-    auto [acquireResult, index] = graphicsContext->swapchain.AcquireNextImage(nullptr, &imageAcquiredSemaphore);
-    HUSKY_ASSERT(acquireResult == vk::Result::eSuccess);
-
-    auto& frameResource = graphicsContext->frameResources[index];
-
-    frameResource.descriptorPool.Reset();
-
-    auto [allocateDescriptorSetResult, allocatedDescriptorSet] = frameResource.descriptorPool.AllocateDescriptorSet(&graphicsContext->descriptorSetLayout);
-    HUSKY_ASSERT(allocateDescriptorSetResult == vk::Result::eSuccess);
-
-    frameResource.descriptorSet = std::move(allocatedDescriptorSet);
-
-    DescriptorSetWrites descriptorSetWrites;
-    descriptorSetWrites.WriteUniformBufferDescriptors(&frameResource.descriptorSet, &graphicsContext->uniformBufferBinding, { &frameResource.uniformBuffer });
-
-    DescriptorSet::Update(descriptorSetWrites);
-
-    auto &cmdBuffer = frameResource.commandBuffer;
-
-    Array<float32, 4> clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-    vk::ClearColorValue colorClearValue{ clearColor };
-    vk::ClearDepthStencilValue depthStencilClearValue{ maxDepth, 0 };
-
-    Vector<vk::ClearValue> clearValues = { colorClearValue, depthStencilClearValue };
-
-    int32 framebufferWidth = graphicsContext->swapchain.GetSwapchainCreateInfo().width;
-    int32 framebufferHeight = graphicsContext->swapchain.GetSwapchainCreateInfo().height;
-
-    cmdBuffer
-        .Begin()
-        .BeginInlineRenderPass(&frameResource.renderPass, &frameResource.framebuffer, clearValues, { {0, 0}, {(uint32)framebufferWidth, (uint32)framebufferHeight } })
-            .BindGraphicsPipeline(&frameResource.pipeline)
-            //.BindVertexBuffers({ &frameResource.vertexBuffer }, { 0 }, 0)
-            //.BindIndexBuffer(&frameResource.indexBuffer, vk::IndexType::eUint16, 0)
-            .BindDescriptorSets(&frameResource.pipelineLayout, { &frameResource.descriptorSet })
-            .DrawIndexed((int32)graphicsContext->boxData.indices16.size(), 1, 0, 0, 0)
-        .EndRenderPass()
-        .End();
-
-    Submission submission;
-    submission.commandBuffers = { &cmdBuffer };
-    submission.fence = &frameResource.fence;
-    submission.waitOperations = { {&imageAcquiredSemaphore, vk::PipelineStageFlagBits::eColorAttachmentOutput} };
-    submission.signalSemaphores = { &frameResource.semaphore };
-
-    graphicsContext->device.GetGraphicsQueue()->Submit(submission);
-    
-    frameResource.fence.Wait();
-    frameResource.fence.Reset();
-
-    frameResource.graphicsCommandPool.Reset();
-
-    PresentSubmission presentSubmission;
-    presentSubmission.index = index;
-    presentSubmission.swapchain = &graphicsContext->swapchain;
-    presentSubmission.waitSemaphores = { &frameResource.semaphore };
-
-    graphicsContext->device.GetPresentQueue()->Present(presentSubmission);
 }
 
 vk::ResultValue<vk::Instance> SampleApplication::CreateVulkanInstance(const vk::AllocationCallbacks& allocationCallbacks)
@@ -741,76 +298,6 @@ std::tuple<HINSTANCE, HWND> SampleApplication::CreateMainWindow(const Husky::Str
 
 #endif
 
-//vk::ResultValue<vk::Image> SampleApplication::CreateDepthStencilBufferForSwapchain(
-//    vk::Device& device,
-//    vk::Format format,
-//    uint32 graphicsQueueFamilyIndex,
-//    const vk::PhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties,
-//    const SwapchainCreateInfo& swapchainCreateInfo,
-//    const vk::AllocationCallbacks& allocationCallbacks)
-//{
-//    vk::ImageCreateInfo ci;
-//    ci.setFormat(format);
-//    ci.setArrayLayers(1);
-//    ci.setImageType(vk::ImageType::e2D);
-//    ci.setExtent({ swapchainCreateInfo.width, swapchainCreateInfo.height, 1 });
-//    ci.setInitialLayout(vk::ImageLayout::eUndefined);
-//    ci.setMipLevels(1);
-//    ci.setQueueFamilyIndexCount(1);
-//    ci.setPQueueFamilyIndices(&graphicsQueueFamilyIndex);
-//    ci.setSamples(vk::SampleCountFlagBits::e1);
-//    ci.setSharingMode(vk::SharingMode::eExclusive);
-//    ci.setTiling(vk::ImageTiling::eOptimal);
-//    ci.setUsage(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransferSrc);
-//
-//    auto [createImageResult, createdImage] = device.createImage(ci, allocationCallbacks);
-//    if (createImageResult != vk::Result::eSuccess)
-//    {
-//        return { createImageResult, createdImage };
-//    }
-//
-//    auto memoryRequirements = device.getImageMemoryRequirements(createdImage);
-//    auto memoryType = ChooseMemoryType(physicalDeviceMemoryProperties, memoryRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal);
-//
-//    vk::MemoryAllocateInfo memoryAllocInfo;
-//    memoryAllocInfo.setAllocationSize(memoryRequirements.size);
-//    memoryAllocInfo.setMemoryTypeIndex(memoryType);
-//
-//    auto [allocateResult, allocatedMemory] = device.allocateMemory(memoryAllocInfo);
-//    if (allocateResult != vk::Result::eSuccess)
-//    {
-//        return { allocateResult, createdImage };
-//    }
-//
-//    auto bindResult = device.bindImageMemory(createdImage, allocatedMemory, 0);
-//    if (bindResult != vk::Result::eSuccess)
-//    {
-//        return { bindResult, createdImage };
-//    }
-//
-//    return { vk::Result::eSuccess, createdImage };
-//}
-
-vk::ResultValue<vk::ImageView> SampleApplication::CreateDepthStencilBufferViewForSwapchain(
-    vk::Device& device,
-    vk::Format format,
-    vk::Image& depthStencilBuffer,
-    const vk::AllocationCallbacks& allocationCallbacks)
-{
-    vk::ImageSubresourceRange subresourceRange;
-    subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eDepth);
-    subresourceRange.setLayerCount(1);
-    subresourceRange.setLevelCount(1);
-
-    vk::ImageViewCreateInfo ci;
-    ci.setImage(depthStencilBuffer);
-    ci.setFormat(format);
-    ci.setViewType(vk::ImageViewType::e2D);
-    ci.setSubresourceRange(subresourceRange);
-
-    return device.createImageView(ci, allocationCallbacks);
-}
-
 Vector<const char8*> SampleApplication::GetRequiredInstanceExtensionNames() const
 {
     Vector<const char8*> requiredExtensionNames;
@@ -824,19 +311,9 @@ Vector<const char8*> SampleApplication::GetRequiredInstanceExtensionNames() cons
     return requiredExtensionNames;
 }
 
-Husky::Vector<const Husky::char8*> SampleApplication::GetRequiredDeviceExtensionNames() const
-{
-    Vector<const char8*> requiredExtensionNames;
-
-    requiredExtensionNames.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-
-    return requiredExtensionNames;
-}
-
 Vector<const char8*> SampleApplication::GetValidationLayerNames() const
 {
-    return {};
-    //return {"VK_LAYER_LUNARG_standard_validation"};
+    return {"VK_LAYER_LUNARG_standard_validation"};
 }
 
 VkBool32 SampleApplication::DebugCallback(

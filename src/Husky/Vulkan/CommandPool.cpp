@@ -9,33 +9,12 @@ namespace Husky::Vulkan
     {
     }
 
-    CommandPool::CommandPool(CommandPool&& other)
-        : device(other.device)
-        , commandPool(other.commandPool)
-    {
-        other.device = nullptr;
-        other.commandPool = nullptr;
-    }
-
-    CommandPool& CommandPool::operator=(CommandPool&& other)
-    {
-        Destroy();
-
-        device = other.device;
-        commandPool = other.commandPool;
-
-        other.device = nullptr;
-        other.commandPool = nullptr;
-
-        return *this;
-    }
-
     CommandPool::~CommandPool()
     {
         Destroy();
     }
 
-    VulkanResultValue<Vector<CommandBuffer>> CommandPool::AllocateCommandBuffers(int32 count, CommandBufferLevel level)
+    VulkanResultValue<RefPtrVector<CommandBuffer>> CommandPool::AllocateCommandBuffers(int32 count, CommandBufferLevel level)
     {
         vk::CommandBufferAllocateInfo allocateInfo;
         allocateInfo.setCommandBufferCount(count);
@@ -57,18 +36,18 @@ namespace Husky::Vulkan
             return { allocateResult };
         }
 
-        Vector<CommandBuffer> buffers;
+        RefPtrVector<CommandBuffer> buffers;
         buffers.reserve(count);
 
         for (auto vulkanBuffer : allocatedBuffers)
         {
-            buffers.emplace_back(device, vulkanBuffer);
+            buffers.emplace_back(MakeRef<CommandBuffer>(device, vulkanBuffer));
         }
 
         return { allocateResult, std::move(buffers) };
     }
 
-    VulkanResultValue<CommandBuffer> CommandPool::AllocateCommandBuffer(CommandBufferLevel level)
+    VulkanRefResultValue<CommandBuffer> CommandPool::AllocateCommandBuffer(CommandBufferLevel level)
     {
         vk::CommandBufferAllocateInfo allocateInfo;
         allocateInfo.setCommandBufferCount(1);
@@ -90,7 +69,7 @@ namespace Husky::Vulkan
             return { allocateResult };
         }
 
-        return { allocateResult, CommandBuffer{ device, allocatedBuffers[0]} };
+        return { allocateResult, MakeRef<CommandBuffer>(device, allocatedBuffers[0]) };
     }
 
     vk::Result CommandPool::Reset(bool releaseResources)

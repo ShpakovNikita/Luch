@@ -11,27 +11,6 @@ namespace Husky::Vulkan
     {
     }
 
-    BufferView::BufferView(BufferView&& other)
-        : device(other.device)
-        , bufferView(other.bufferView)
-    {
-        other.device = nullptr;
-        other.bufferView = nullptr;
-    }
-
-    BufferView& BufferView::operator=(BufferView&& other)
-    {
-        Destroy();
-
-        device = other.device;
-        bufferView = other.bufferView;
-
-        other.device = nullptr;
-        other.bufferView = nullptr;
-
-        return *this;
-    }
-
     BufferView::~BufferView()
     {
         Destroy();

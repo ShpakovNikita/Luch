@@ -19,35 +19,8 @@ namespace Husky::Vulkan
         , swapchain(aSwapchain)
         , createInfo(aCreateInfo)
         , swapchainImageCount(aSwapchainImageCount)
-        , swapchainImages(std::forward<Vector<SwapchainImage>>(aSwapchainImages))
+        , swapchainImages(move(aSwapchainImages))
     {
-    }
-
-    Swapchain::Swapchain(Swapchain&& other)
-        : device(other.device)
-        , swapchain(other.swapchain)
-        , createInfo(other.createInfo)
-        , swapchainImageCount(other.swapchainImageCount)
-        , swapchainImages(std::move(other.swapchainImages))
-    {
-        other.device = nullptr;
-        other.swapchain = nullptr;
-    }
-
-    Swapchain & Swapchain::operator=(Swapchain && other)
-    {
-        Destroy();
-
-        device = other.device;
-        swapchain = other.swapchain;
-        createInfo = other.createInfo;
-        swapchainImageCount = other.swapchainImageCount;
-        swapchainImages = std::move(other.swapchainImages);
-
-        other.device = nullptr;
-        other.swapchain = nullptr;
-
-        return *this;
     }
 
     Swapchain::~Swapchain()

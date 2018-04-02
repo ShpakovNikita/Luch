@@ -7,8 +7,9 @@
 
 namespace Husky::SceneV1
 {
-    class TextureSource
+    struct TextureSource
     {
+        String root;
         String filename;
         // TODO
     };
@@ -18,6 +19,7 @@ namespace Husky::SceneV1
     public:
         Texture(
             const RefPtr<Sampler>& sampler,
+            const RefPtr<Image>& hostImage,
             const String& name = "");
 
         ~Texture();
@@ -26,8 +28,9 @@ namespace Husky::SceneV1
     private:
         String name;
 
-        RefPtr<Vulkan::ImageObject> image;
-        RefPtr<Vulkan::ImageViewObject> imageView;
+        RefPtr<Image> hostImage;
+        RefPtr<Vulkan::Image> deviceImage;
+        RefPtr<Vulkan::ImageView> deviceImageView;
 
         RefPtr<Sampler> sampler;
     };

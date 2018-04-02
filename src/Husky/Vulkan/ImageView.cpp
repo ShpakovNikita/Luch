@@ -8,28 +8,6 @@ namespace Husky::Vulkan
         , imageView(aImageView)
     {
     }
-
-    ImageView::ImageView(ImageView&& other)
-        : device(other.device)
-        , imageView(other.imageView)
-    {
-        other.device = nullptr;
-        other.imageView = nullptr;
-    }
-
-    ImageView& ImageView::operator=(ImageView&& other)
-    {
-        Destroy();
-
-        device = other.device;
-        imageView = other.imageView;
-
-        other.device = nullptr;
-        other.imageView = nullptr;
-
-        return *this;
-    }
-
     ImageView::~ImageView()
     {
         Destroy();

@@ -12,19 +12,22 @@ namespace Husky::SceneV1
     {
     public:
         VertexBuffer(
-            const BufferSource& aBufferSource,
+            Vector<uint8>&& aHostBuffer,
             int32 aStride,
             int32 aByteOffset,
             int32 aByteLength)
-            : bufferSource(aBufferSource)
+            : hostBuffer(aHostBuffer)
             , stride(aStride)
             , byteOffset(aByteOffset)
             , byteLength(aByteLength)
         {
         }
-    private:
-        BufferSource bufferSource;
 
+        inline int32 GetStride() const { return stride; }
+        inline int32 GetByteOffset() const { return byteOffset; }
+        inline const Vector<uint8>& GetHostBuffer() const { return hostBuffer; }
+        inline const RefPtr<Vulkan::VertexBufferObject>& GetDeviceBuffer() const { return deviceBuffer; }
+    private:
         int32 stride = 4;
         int32 byteOffset = 0;
         int32 byteLength = 0;

@@ -3,27 +3,25 @@
 namespace Husky::Vulkan
 {
     class Buffer;
-    class BufferObject;
     class BufferView;
-    class BufferViewObject;
     class CommandBuffer;
     class CommandPool;
     class DescriptorPool;
     class DescriptorSet;
     class DescriptorSetLayout;
+    class DescriptorSetWrites;
     class Fence;
     class Framebuffer;
     class GlslShaderCompiler;
     class GraphicsDevice;
     class Image;
-    class ImageObject;
     class ImageView;
-    class ImageViewObject;
-    class IndexBufferObject;
+    class IndexBuffer;
     class PhysicalDevice;
     class Pipeline;
     class PipelineCache;
     class PipelineLayout;
+    class PresentQueue;
     class Queue;
     class QueueInfo;
     class RenderPass;
@@ -32,8 +30,16 @@ namespace Husky::Vulkan
     class Semaphore;
     class ShaderCompiler;
     class ShaderModule;
+    class SubpassDescription;
     class Surface;
     class Swapchain;
-    class VertexBufferObject;
-    class VulkanAllocationDelegate;
+    class VertexBuffer;
+
+    struct DescriptorSetLayoutCreateInfo;
+    struct FramebufferCreateInfo;
+    struct GraphicsPipelineCreateInfo;
+    struct RenderPassCreateInfo;
+    struct PipelineLayoutCreateInfo;
+    struct SubpassCreateInfo;
+    struct SwapchainCreateInfo;
 }

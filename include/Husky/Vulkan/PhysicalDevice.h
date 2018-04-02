@@ -1,14 +1,14 @@
 #pragma once
 
+#include <Husky/BaseObject.h>
 #include <Husky/Vulkan.h>
-#include <Husky/Vulkan/GraphicsDevice.h>
 #include <Husky/Vulkan/QueueInfo.h>
 
 namespace Husky::Vulkan
 {
     class Surface;
 
-    class PhysicalDevice
+    class PhysicalDevice : public BaseObject
     {
     public:
         PhysicalDevice() = default;
@@ -24,7 +24,7 @@ namespace Husky::Vulkan
 
         VulkanResultValue<QueueIndices> ChooseDeviceQueues(Surface* surface);
 
-        VulkanResultValue<GraphicsDevice> CreateDevice(
+        VulkanRefResultValue<GraphicsDevice> CreateDevice(
             QueueIndices&& queueIndices,
             const Husky::Vector<const char8*>& requiredDeviceExtensionNames);
     private:

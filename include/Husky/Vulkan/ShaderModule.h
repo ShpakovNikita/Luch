@@ -1,25 +1,27 @@
 #pragma once
 
+#include <Husky/BaseObject.h>
 #include <Husky/Vulkan.h>
 
 namespace Husky::Vulkan
 {
     class GraphicsDevice;
 
-    class ShaderModule
+    class ShaderModule : public BaseObject
     {
         friend class GraphicsDevice;
     public:
-        ShaderModule() = default;
+        ShaderModule(GraphicsDevice* device, vk::ShaderModule module);
 
-        ShaderModule(ShaderModule&& other);
-        ShaderModule& operator=(ShaderModule&& other);
+        ShaderModule(const ShaderModule& other) = delete;
+        ShaderModule(ShaderModule&& other) = delete;
+        ShaderModule& operator=(const ShaderModule& other) = delete;
+        ShaderModule& operator=(ShaderModule&& other) = delete;
 
-        ~ShaderModule();
+        ~ShaderModule() override;
 
         inline vk::ShaderModule GetModule() { return module; }
     private:
-        ShaderModule(GraphicsDevice* device, vk::ShaderModule module);
         void Destroy();
 
         GraphicsDevice* device = nullptr;

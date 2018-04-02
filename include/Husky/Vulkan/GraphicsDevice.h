@@ -1,26 +1,11 @@
 #pragma once
 
+#include <Husky/BaseObject.h>
+#include <Husky/RefPtr.h>
 #include <Husky/Vulkan.h>
-#include <Husky/Vulkan/Buffer.h>
-#include <Husky/Vulkan/BufferView.h>
-#include <Husky/Vulkan/CommandBuffer.h>
-#include <Husky/Vulkan/CommandPool.h>
-#include <Husky/Vulkan/DescriptorPool.h>
-#include <Husky/Vulkan/DescriptorSetLayout.h>
-#include <Husky/Vulkan/Fence.h>
-#include <Husky/Vulkan/Framebuffer.h>
-#include <Husky/Vulkan/Image.h>
-#include <Husky/Vulkan/ImageView.h>
-#include <Husky/Vulkan/Pipeline.h>
-#include <Husky/Vulkan/PipelineCache.h>
-#include <Husky/Vulkan/PipelineCreateInfo.h>
-#include <Husky/Vulkan/PipelineLayout.h>
+#include <Husky/Format.h>
 #include <Husky/Vulkan/QueueInfo.h>
-#include <Husky/Vulkan/RenderPass.h>
-#include <Husky/Vulkan/Semaphore.h>
-#include <Husky/Vulkan/ShaderModule.h>
-#include <Husky/Vulkan/Swapchain.h>
-#include <Husky/Vulkan/Sampler.h>
+#include <Husky/Vulkan/Forwards.h>
 
 namespace Husky::Vulkan
 {
@@ -28,7 +13,7 @@ namespace Husky::Vulkan
     class Surface;
     class ShaderCompiler;
 
-    class GraphicsDevice
+    class GraphicsDevice : public BaseObject
     {
         friend class Buffer;
         friend class BufferView;
@@ -51,52 +36,40 @@ namespace Husky::Vulkan
         friend class Swapchain;
         friend class Sampler;
     public:
-        GraphicsDevice() = default;
+        ~GraphicsDevice() override;
 
-        GraphicsDevice(GraphicsDevice&& other);
-        GraphicsDevice& operator=(GraphicsDevice&& other);
-
-        ~GraphicsDevice();
+        inline vk::Device GetDevice() { return device; }
+        inline const vk::AllocationCallbacks& GetAllocationCallbacks() const { return allocationCallbacks; }
 
         inline PhysicalDevice* GetPhysicalDevice() const { return physicalDevice; }
-        inline vk::Device GetDevice() { return device; }
-        inline const QueueIndices& GetQueueIndices() { return queueInfo.indices; }
-        inline Queue* GetGraphicsQueue() { return &queueInfo.graphicsQueue; }
-        inline PresentQueue* GetPresentQueue() { return &queueInfo.presentQueue; }
-        inline Queue* GetComputeQueue() { return &queueInfo.computeQueue; }
-        inline const vk::AllocationCallbacks& GetAllocationCallbacks() const { return allocationCallbacks; }
+        inline const QueueIndices* GetQueueIndices() { return &queueInfo.indices; }
+        inline Queue* GetGraphicsQueue() { return queueInfo.graphicsQueue.Get(); }
+        inline PresentQueue* GetPresentQueue() { return queueInfo.presentQueue.Get(); }
+        inline Queue* GetComputeQueue() { return queueInfo.computeQueue.Get(); }
 
         vk::Result WaitIdle();
 
         int32 ChooseMemoryType(Husky::uint32 memoryTypeBits, vk::MemoryPropertyFlags memoryProperties);
 
-        VulkanResultValue<Swapchain> CreateSwapchain(
-            const SwapchainCreateInfo& swapchainCreateInfo,
-            Surface* surface);
+        VulkanRefResultValue<Swapchain> CreateSwapchain(const SwapchainCreateInfo& swapchainCreateInfo, Surface* surface);
 
-        VulkanResultValue<CommandPool> CreateCommandPool(QueueIndex queueIndex, bool transient = false, bool canReset = false);
-        VulkanResultValue<Buffer> CreateBuffer(int64 size, QueueIndex queueIndex, vk::BufferUsageFlags usage, bool mappable);
-        VulkanResultValue<BufferView> CreateBufferView(Buffer* buffer, Format format, int64 offset, int64 size);
-        //VulkanResultValue<IndexBuffer> CreateIndexBuffer(IndexType indexType, int32 indexCount, QueueIndex queueIndex, bool mappable);
-        //VulkanResultValue<VertexBuffer> CreateVertexBuffer(int32 vertexSize, int32 vertexCount, QueueIndex queueIndex, bool mappable);
-        VulkanResultValue<Image> CreateImage(const vk::ImageCreateInfo& imageCreateInfo);
-        VulkanResultValue<ImageView> CreateImageView(Image* image, vk::ImageViewCreateInfo& imageViewCreateInfo);
-        VulkanResultValue<ImageView> CreateImageView(Image* image);
-        VulkanResultValue<ShaderModule> CreateShaderModule(uint32* bytecode, int64 bytecodeSizeInBytes);
-        VulkanResultValue<PipelineCache> CreatePipelineCache();
-
-        VulkanResultValue<Pipeline> CreateGraphicsPipeline(
-            const GraphicsPipelineCreateInfo& graphicsPipelineCreateInfo,
-            PipelineCache* pipelineCache = nullptr);
-
-        VulkanResultValue<RenderPass> CreateRenderPass(const RenderPassCreateInfo& createInfo);
-        VulkanResultValue<DescriptorSetLayout> CreateDescriptorSetLayout(const DescriptorSetLayoutCreateInfo& createInfo);
-        VulkanResultValue<DescriptorPool> CreateDescriptorPool(int32 maxSets, const UnorderedMap<vk::DescriptorType, int32>& poolSizes, bool canFreeDescriptors = false);
-        VulkanResultValue<PipelineLayout> CreatePipelineLayout(const PipelineLayoutCreateInfo& createInfo);
-        VulkanResultValue<Framebuffer> CreateFramebuffer(const FramebufferCreateInfo& createInfo);
-        VulkanResultValue<Fence> CreateFence(bool signaled = false);
-        VulkanResultValue<Semaphore> CreateSemaphore();
-        VulkanResultValue<Sampler> CreateSampler(const vk::SamplerCreateInfo& createInfo);
+        VulkanRefResultValue<CommandPool> CreateCommandPool(QueueIndex queueIndex, bool transient = false, bool canReset = false);
+        VulkanRefResultValue<Buffer> CreateBuffer(int64 size, QueueIndex queueIndex, vk::BufferUsageFlags usage, bool mappable);
+        VulkanRefResultValue<BufferView> CreateBufferView(Buffer* buffer, Format format, int64 offset, int64 size);
+        VulkanRefResultValue<Image> CreateImage(const vk::ImageCreateInfo& imageCreateInfo);
+        VulkanRefResultValue<ImageView> CreateImageView(Image* image, vk::ImageViewCreateInfo& imageViewCreateInfo);
+        VulkanRefResultValue<ImageView> CreateImageView(Image* image);
+        VulkanRefResultValue<ShaderModule> CreateShaderModule(uint32* bytecode, int64 bytecodeSizeInBytes);
+        VulkanRefResultValue<PipelineCache> CreatePipelineCache();
+        VulkanRefResultValue<Pipeline> CreateGraphicsPipeline(const GraphicsPipelineCreateInfo& graphicsPipelineCreateInfo, PipelineCache* pipelineCache = nullptr);
+        VulkanRefResultValue<RenderPass> CreateRenderPass(const RenderPassCreateInfo& createInfo);
+        VulkanRefResultValue<DescriptorSetLayout> CreateDescriptorSetLayout(const DescriptorSetLayoutCreateInfo& createInfo);
+        VulkanRefResultValue<DescriptorPool> CreateDescriptorPool(int32 maxSets, const UnorderedMap<vk::DescriptorType, int32>& poolSizes, bool canFreeDescriptors = false);
+        VulkanRefResultValue<PipelineLayout> CreatePipelineLayout(const PipelineLayoutCreateInfo& createInfo);
+        VulkanRefResultValue<Framebuffer> CreateFramebuffer(const FramebufferCreateInfo& createInfo);
+        VulkanRefResultValue<Fence> CreateFence(bool signaled = false);
+        VulkanRefResultValue<Semaphore> CreateSemaphore();
+        VulkanRefResultValue<Sampler> CreateSampler(const vk::SamplerCreateInfo& createInfo);
     private:
         GraphicsDevice(
             PhysicalDevice* physicalDevice,
@@ -133,5 +106,4 @@ namespace Husky::Vulkan
         QueueInfo queueInfo;
         vk::AllocationCallbacks allocationCallbacks;
     };
-
 }

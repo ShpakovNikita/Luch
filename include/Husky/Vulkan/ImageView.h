@@ -1,42 +1,32 @@
 #pragma once
 
-#include <Husky/Vulkan.h>
 #include <Husky/BaseObject.h>
+#include <Husky/Vulkan.h>
 
 namespace Husky::Vulkan
 {
     class GraphicsDevice;
 
-    class ImageView
+    class ImageView : public BaseObject
     {
         friend class GraphicsDevice;
     public:
+        ImageView(GraphicsDevice* device, vk::ImageView imageView);
+
         ImageView() = default;
 
-        ImageView(ImageView&& other);
-        ImageView& operator=(ImageView&& other);
+        ImageView(ImageView&& other) = delete;
+        ImageView(const ImageView& other) = delete;
+        ImageView& operator=(const ImageView& other) = delete;
+        ImageView& operator=(ImageView&& other) = delete;
 
         ~ImageView();
 
         inline vk::ImageView GetImageView() { return imageView; }
     private:
-        ImageView(GraphicsDevice* device, vk::ImageView imageView);
         void Destroy();
 
         GraphicsDevice* device = nullptr;
         vk::ImageView imageView;
-    };
-
-    class ImageViewObject : public BaseObject
-    {
-    public:
-        inline explicit ImageViewObject(ImageView aImageView)
-            : imageView(std::move(aImageView))
-        {
-        }
-
-        inline ImageView* GetImageView() { return &imageView; }
-    private:
-        ImageView imageView;
     };
 }

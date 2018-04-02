@@ -11,10 +11,21 @@ namespace Husky::SceneV1
     {
     public:
         Mesh(
-            const RefPtrVector<Primitive>& primitives,
+            RefPtrVector<Primitive>&& primitives,
             const String& name = "");
+
+        ~Mesh();
+
+        inline const String& GetName() const { return name; }
+        inline const RefPtrVector<Primitive>& GetPrimitives() const { return primitives; }
+
+        inline const RefPtr<Vulkan::Buffer>& GetUniformBuffer() const { return uniformBuffer; }
+        inline void SetUniformBuffer(const RefPtr<Vulkan::Buffer>& aUniformBuffer) { uniformBuffer = aUniformBuffer; }
     private:
         String name;
+
         RefPtrVector<Primitive> primitives;
+
+        RefPtr<Vulkan::Buffer> uniformBuffer;
     };
 }

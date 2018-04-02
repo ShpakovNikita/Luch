@@ -5,8 +5,12 @@
 
 namespace Husky::SceneV1
 {
-    Texture::Texture(const RefPtr<Sampler>& aSampler, const String& aName)
+    Texture::Texture(
+        const RefPtr<Sampler>& aSampler,
+        const RefPtr<Image>& aHostImage,
+        const String& aName)
         : sampler(aSampler)
+        , hostImage(aHostImage)
         , name(aName)
     {
     }

@@ -9,27 +9,6 @@ namespace Husky::Vulkan
     {
     }
 
-    Fence::Fence(Fence&& other)
-        : device(other.device)
-        , fence(other.fence)
-    {
-        other.device = nullptr;
-        other.fence = nullptr;
-    }
-
-    Fence& Fence::operator=(Fence&& other)
-    {
-        Destroy();
-
-        device = other.device;
-        fence = other.fence;
-
-        other.device = nullptr;
-        other.fence = nullptr;
-
-        return *this;
-    }
-
     VulkanResultValue<FenceWaitResult> Fence::Wait(Optional<Timeout> timeout)
     {
         auto waitResult = device->device.waitForFences({ fence }, VK_TRUE, ToVulkanTimeout(timeout));

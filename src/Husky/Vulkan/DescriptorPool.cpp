@@ -1,33 +1,13 @@
 #include <Husky/Vulkan/DescriptorPool.h>
+#include <Husky/Vulkan/DescriptorSetLayout.h>
 #include <Husky/Vulkan/GraphicsDevice.h>
 
 namespace Husky::Vulkan
 {
-    DescriptorPool::DescriptorPool(GraphicsDevice * aDevice, vk::DescriptorPool aDescriptorPool)
+    DescriptorPool::DescriptorPool(GraphicsDevice* aDevice, vk::DescriptorPool aDescriptorPool)
         : device(aDevice)
         , descriptorPool(aDescriptorPool)
     {
-    }
-
-    DescriptorPool::DescriptorPool(DescriptorPool&& other)
-        : device(other.device)
-        , descriptorPool(other.descriptorPool)
-    {
-        other.device = nullptr;
-        other.descriptorPool = nullptr;
-    }
-
-    DescriptorPool& DescriptorPool::operator=(DescriptorPool&& other)
-    {
-        Destroy();
-
-        device = other.device;
-        descriptorPool = other.descriptorPool;
-
-        other.device = nullptr;
-        other.descriptorPool = nullptr;
-
-        return *this;
     }
 
     DescriptorPool::~DescriptorPool()
@@ -35,7 +15,7 @@ namespace Husky::Vulkan
         Destroy();
     }
 
-    VulkanResultValue<Vector<DescriptorSet>> DescriptorPool::AllocateDescriptorSets(Vector<DescriptorSetLayout*> layouts)
+    VulkanResultValue<RefPtrVector<DescriptorSet>> DescriptorPool::AllocateDescriptorSets(const Vector<DescriptorSetLayout*>& layouts)
     {
         auto count = layouts.size();
 
@@ -58,18 +38,18 @@ namespace Husky::Vulkan
             return { allocateResult };
         }
 
-        Vector<DescriptorSet> sets;
+        RefPtrVector<DescriptorSet> sets;
         sets.reserve(count);
 
         for (auto vulkanSet : allocatedSets)
         {
-            sets.emplace_back(device, vulkanSet);
+            sets.emplace_back(MakeRef<DescriptorSet>(device, vulkanSet));
         }
 
         return { allocateResult, std::move(sets) };
     }
 
-    VulkanResultValue<DescriptorSet> DescriptorPool::AllocateDescriptorSet(DescriptorSetLayout* layout)
+    VulkanRefResultValue<DescriptorSet> DescriptorPool::AllocateDescriptorSet(DescriptorSetLayout* layout)
     {
         vk::DescriptorSetLayout vulkanLayout = layout->GetDescriptorSetLayout();
         
@@ -84,7 +64,7 @@ namespace Husky::Vulkan
             return { allocateResult };
         }
 
-        return { allocateResult, DescriptorSet{ device, allocatedSets[0]} };
+        return { allocateResult, MakeRef<DescriptorSet>(device, allocatedSets[0]) };
     }
 
     vk::Result DescriptorPool::Reset()

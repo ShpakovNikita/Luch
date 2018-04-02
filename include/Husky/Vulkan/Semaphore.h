@@ -1,25 +1,27 @@
 #pragma once
 
+#include <Husky/BaseObject.h>
 #include <Husky/Vulkan.h>
 
 namespace Husky::Vulkan
 {
     class GraphicsDevice;
 
-    class Semaphore
+    class Semaphore : public BaseObject
     {
         friend class GraphicsDevice;
     public:
-        Semaphore() = default;
+        Semaphore(GraphicsDevice* device, vk::Semaphore semaphore);
 
-        Semaphore(Semaphore&& other);
-        Semaphore& operator=(Semaphore&& other);
+        Semaphore(Semaphore&& other) = delete;
+        Semaphore(const Semaphore& other) = delete;
+        Semaphore& operator=(const Semaphore& other) = delete;
+        Semaphore& operator=(Semaphore&& other) = delete;
 
-        ~Semaphore();
+        ~Semaphore() override;
 
         inline vk::Semaphore GetSemaphore() { return semaphore; }
     private:
-        Semaphore(GraphicsDevice* device, vk::Semaphore semaphore);
         void Destroy();
 
         GraphicsDevice* device = nullptr;

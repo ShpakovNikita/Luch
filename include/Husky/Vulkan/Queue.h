@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Husky/BaseObject.h>
 #include <Husky/Vulkan.h>
 
 namespace Husky::Vulkan
@@ -33,16 +34,16 @@ namespace Husky::Vulkan
         int32 index;
     };
 
-    class Queue
+    class Queue : public BaseObject
     {
         friend GraphicsDevice;
         friend PhysicalDevice;
         friend QueueInfo;
     public:
-        Queue() = default;
-
-        Queue(Queue&& other) = default;
-        Queue& operator=(Queue&& other) = default;
+        Queue(Queue&& other) = delete;
+        Queue(const Queue& other) = delete;
+        Queue& operator=(const Queue& other) = delete;
+        Queue& operator=(Queue&& other) = delete;
 
         ~Queue() = default; // Queues are owned by device, so we don't destroy them in destructor
 
@@ -59,8 +60,6 @@ namespace Husky::Vulkan
         friend class GraphicsDevice;
         friend class PhysicalDevice;
     public:
-        PresentQueue() = default;
-
         vk::Result Present(const PresentSubmission& presentSubmission);
     protected:
         inline explicit PresentQueue(vk::Queue queue)

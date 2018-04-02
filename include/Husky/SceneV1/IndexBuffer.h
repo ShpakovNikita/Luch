@@ -13,21 +13,29 @@ namespace Husky::SceneV1
     {
     public:
         IndexBuffer(
-            const BufferSource& bufferSource,
+            Vector<uint8>&& hostBuffer,
             IndexType indexType,
+            int32 count,
             int32 byteOffset,
             int32 byteLength);
 
         ~IndexBuffer();
+
+        inline IndexType GetIndexType() const { return indexType; }
+        inline int32 GetIndexCount() const { return count; }
+        inline int32 GetByteOffset() const { return byteOffset; }
+        inline const Vector<uint8>& GetHostBuffer() const { return hostBuffer; }
+        inline const Vulkan::IndexBuffer& GetDeviceBuffer() const { return deviceBuffer; }
     private:
         BufferSource bufferSource;
+
+        IndexType indexType;
+        int32 count = 0;
 
         int32 byteOffset = 0;
         int32 byteLength = 0;
 
-        IndexType indexType;
-
         Vector<uint8> hostBuffer;
-        RefPtr<Vulkan::IndexBufferObject> deviceBuffer;
+        Vulkan::IndexBuffer deviceBuffer;
     };
 }

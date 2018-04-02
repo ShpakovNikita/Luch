@@ -1,7 +1,8 @@
 #pragma once
 
+#include <Husky/BaseObject.h>
 #include <Husky/Vulkan.h>
-#include <Husky/ArrayProxy.h>
+#include <Husky/Vulkan/Forwards.h>
 
 namespace Husky::Vulkan
 {
@@ -9,31 +10,17 @@ namespace Husky::Vulkan
     class DescriptorSetBinding;
     class Buffer;
 
-    class DescriptorSetWrites
-    {
-        friend class DescriptorSet;
-    public:
-        DescriptorSetWrites() = default;
-        DescriptorSetWrites(DescriptorSetWrites&& other) = default;
-        DescriptorSetWrites& operator=(DescriptorSetWrites&& other) = default;
-
-        DescriptorSetWrites& WriteUniformBufferDescriptors(DescriptorSet* descriptorSet, DescriptorSetBinding* binding, Vector<Buffer*> buffers);
-    private:
-        GraphicsDevice* device = nullptr;
-        Vector<vk::WriteDescriptorSet> writes;
-        Vector<Vector<vk::DescriptorBufferInfo>> bufferInfos;
-    };
-
-    class DescriptorSet
+    class DescriptorSet : public BaseObject
     {
         friend class GraphicsDevice;
         friend class DescriptorPool;
     public:
-        DescriptorSet() = default;
         DescriptorSet(GraphicsDevice* device, vk::DescriptorSet descriptorSet);
 
-        DescriptorSet(DescriptorSet&& other);
-        DescriptorSet& operator=(DescriptorSet&& other);
+        DescriptorSet(DescriptorSet&& other) = delete;
+        DescriptorSet(const DescriptorSet& other) = delete;
+        DescriptorSet& operator=(const DescriptorSet& other) = delete;
+        DescriptorSet& operator=(DescriptorSet&& other) = delete;
 
         vk::Result Free();
 

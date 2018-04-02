@@ -2,6 +2,7 @@
 
 #include <Husky/ArrayProxy.h>
 #include <Husky/Vulkan.h>
+#include <Husky/Vulkan/Buffer.h>
 #include <Husky/Vulkan/DescriptorSet.h>
 #include <Husky/Vulkan/Framebuffer.h>
 #include <Husky/Vulkan/GraphicsDevice.h>

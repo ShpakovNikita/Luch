@@ -1,33 +1,34 @@
 #pragma once
 
 #include <Husky/Vulkan.h>
+#include <Husky/BaseObject.h>
 #include <Husky/ArrayProxy.h>
-#include <Husky/Vulkan/DescriptorSet.h>
-#include <Husky/Vulkan/DescriptorSetLayout.h>
+#include <Husky/Vulkan/Forwards.h>
 
 namespace Husky::Vulkan
 {
     class GraphicsDevice;
 
-    class DescriptorPool
+    class DescriptorPool : public BaseObject
     {
         friend class GraphicsDevice;
     public:
-        DescriptorPool() = default;
+        DescriptorPool(GraphicsDevice* device, vk::DescriptorPool descriptorPool);
 
-        ~DescriptorPool();
+        DescriptorPool(DescriptorPool&& other) = delete;
+        DescriptorPool(const DescriptorPool& other) = delete;
+        DescriptorPool& operator=(const DescriptorPool& other) = delete;
+        DescriptorPool& operator=(DescriptorPool&& other) = delete;
 
-        DescriptorPool(DescriptorPool&& other);
-        DescriptorPool& operator=(DescriptorPool&& other);
+        ~DescriptorPool() override;
 
         inline vk::DescriptorPool GetDescriptorPool() { return descriptorPool; }
 
-        VulkanResultValue<Vector<DescriptorSet>> AllocateDescriptorSets(Vector<DescriptorSetLayout*> layouts);
-        VulkanResultValue<DescriptorSet> AllocateDescriptorSet(DescriptorSetLayout* layout);
+        VulkanResultValue<RefPtrVector<DescriptorSet>> AllocateDescriptorSets(const Vector<DescriptorSetLayout*>& layouts);
+        VulkanRefResultValue<DescriptorSet> AllocateDescriptorSet(DescriptorSetLayout* layout);
 
         vk::Result Reset();
     private:
-        DescriptorPool(GraphicsDevice* device, vk::DescriptorPool descriptorPool);
         void Destroy();
 
         GraphicsDevice* device = nullptr;

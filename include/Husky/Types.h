@@ -33,8 +33,8 @@ using float64 = double;
 using String = std::string;
 using StringView = std::string_view;
 
+using uchar8 = unsigned char;
 using char8 = char;
-using byte = char8;
 
 template<typename T, int32 Size>
 using Array = std::array<T, Size>;

@@ -3,8 +3,11 @@
 
 namespace Husky::SceneV1
 {
-    Sampler::Sampler(const String& aName)
-        : name(aName)
+    Sampler::Sampler(
+        const vk::SamplerCreateInfo& aSamplerDescription,
+        const String& aName)
+        : samplerDescription(aSamplerDescription)
+        , name(aName)
     {
     }
 

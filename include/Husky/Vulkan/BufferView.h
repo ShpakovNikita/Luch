@@ -1,23 +1,25 @@
 #pragma once
 
+#include <Husky/BaseObject.h>
 #include <Husky/Vulkan.h>
 
 namespace Husky::Vulkan
 {
-    class BufferView
+    class BufferView : public BaseObject
     {
         friend class GraphicsDevice;
     public:
-        BufferView() = default;
+        BufferView(GraphicsDevice* device, vk::BufferView bufferView);
 
-        BufferView(BufferView&& other);
-        BufferView& operator=(BufferView&& other);
+        BufferView(BufferView&& other) = delete;
+        BufferView(const BufferView& other) = delete;
+        BufferView& operator=(const BufferView& other) = delete;
+        BufferView& operator=(BufferView&& other) = delete;
 
-        ~BufferView();
+        ~BufferView() override;
 
         inline vk::BufferView GetBufferView() { return bufferView; }
     private:
-        BufferView(GraphicsDevice* device, vk::BufferView bufferView);
         void Destroy();
 
         GraphicsDevice* device = nullptr;

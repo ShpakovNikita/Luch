@@ -5,12 +5,12 @@
 
 namespace Husky::Vulkan
 {
-    class VertexBufferObject : public BaseObject
+    class VertexBuffer
     {
         friend class GraphicsDevice;
     public:
-        VertexBufferObject(
-            const RefPtr<BufferObject>& aBuffer,
+        VertexBuffer(
+            const RefPtr<Buffer>& aBuffer,
             int32 aVertexSize,
             int32 aVertexCount)
             : buffer(aBuffer)
@@ -19,11 +19,11 @@ namespace Husky::Vulkan
         {
         }
 
-        inline Buffer* GetUnderlyingBuffer() { return buffer->GetBuffer(); }
+        inline Buffer* GetUnderlyingBuffer() { return buffer.Get(); }
         inline int32 GetVertexSize() { return vertexSize; }
         inline int32 GetVertexCount() { return vertexCount; }
     private:
-        RefPtr<BufferObject> buffer;
+        RefPtr<Buffer> buffer;
         int32 vertexSize = 0;
         int32 vertexCount = 0;
     };

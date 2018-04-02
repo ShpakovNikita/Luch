@@ -528,6 +528,7 @@ Node ParseNode(const json& j)
     node.children = ParseBuiltinArrayOrEmpty<int32>(j, "children");
     node.skin = ParseOptionalIndex(j, "skin");
     node.matrix = ParseOptional<Mat4x4, ParseMat4x4>(j, "matrix");
+    node.mesh = ParseOptionalIndex(j, "mesh");
     node.rotation = ParseOptional<Quaternion, ParseQuaternion>(j, "rotation");
     node.scale = ParseOptional<Vec3, ParseVec3>(j, "scale");
     node.translation = ParseOptional<Vec3, ParseVec3>(j, "translation");

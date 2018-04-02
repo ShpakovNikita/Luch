@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Husky/Types.h>
+#include <Husky/RefPtr.h>
 #include <Husky/Vulkan.h>
 #include <Husky/Vulkan/Queue.h>
 
@@ -22,13 +23,14 @@ namespace Husky::Vulkan
     struct QueueInfo
     {
         QueueInfo() = default;
+        ~QueueInfo() = default;
 
         QueueInfo(QueueInfo&& other) = default;
         QueueInfo& operator=(QueueInfo&& other) = default;
 
-        Queue computeQueue;
-        Queue graphicsQueue;
-        PresentQueue presentQueue;
+        RefPtr<Queue> computeQueue;
+        RefPtr<Queue> graphicsQueue;
+        RefPtr<PresentQueue> presentQueue;
 
         QueueIndices indices;
         Husky::Vector<vk::Queue> uniqueQueues;

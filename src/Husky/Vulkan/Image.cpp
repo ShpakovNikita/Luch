@@ -38,37 +38,6 @@ namespace Husky::Vulkan
     {
     }
 
-    Image::Image(Image&& other)
-        : device(other.device)
-        , image(other.image)
-        , memory(other.memory)
-        , createInfo(other.createInfo)
-        , aspects(other.aspects)
-        , owning(other.owning)
-    {
-        other.device = nullptr;
-        other.image = nullptr;
-        other.memory = nullptr;
-    }
-
-    Image& Image::operator=(Image&& other)
-    {
-        Destroy();
-
-        device = other.device;
-        image = other.image;
-        memory = other.memory;
-        createInfo = other.createInfo;
-        aspects = other.aspects;
-        owning = other.owning;
-
-        other.device = nullptr;
-        other.image = nullptr;
-        other.memory = nullptr;
-
-        return *this;
-    }
-
     Image::~Image()
     {
         Destroy();

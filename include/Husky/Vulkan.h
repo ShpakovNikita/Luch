@@ -9,8 +9,8 @@
 
 #include <Husky/Assert.h>
 #include <Husky/Types.h>
+#include <Husky/RefPtr.h>
 #include <Husky/ResultValue.h>
-
 
 namespace Husky::Vulkan
 {
@@ -41,6 +41,9 @@ inline uint32 ToVulkanSize(size_t size)
 
 template<typename Value>
 using VulkanResultValue = ResultValue<vk::Result, Value>;
+
+template<typename Value>
+using VulkanRefResultValue = ResultValue<vk::Result, RefPtr<Value>>;
 
 class VulkanDebugDelegate
 {

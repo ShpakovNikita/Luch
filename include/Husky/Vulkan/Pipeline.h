@@ -1,25 +1,27 @@
 #pragma once
 
 #include <Husky/Vulkan.h>
+#include <Husky/BaseObject.h>
 
 namespace Husky::Vulkan
 {
     class GraphicsDevice;
 
-    class Pipeline
+    class Pipeline : public BaseObject
     {
         friend class GraphicsDevice;
     public:
-        Pipeline() = default;
+        Pipeline(GraphicsDevice* device, vk::Pipeline pipeline);
 
-        Pipeline(Pipeline&& other);
-        Pipeline& operator=(Pipeline&& other);
+        Pipeline(const Pipeline& other) = delete;
+        Pipeline(Pipeline&& other) = delete;
+        Pipeline& operator=(const Pipeline& other) = delete;
+        Pipeline& operator=(Pipeline&& other) = delete;
 
-        ~Pipeline();
+        ~Pipeline() override;
 
         vk::Pipeline GetPipeline() { return pipeline; }
     private:
-        Pipeline(GraphicsDevice* device, vk::Pipeline pipeline);
         void Destroy();
 
         GraphicsDevice* device = nullptr;

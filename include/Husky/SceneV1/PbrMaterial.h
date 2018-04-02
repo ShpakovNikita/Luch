@@ -9,13 +9,29 @@
 
 namespace Husky::SceneV1
 {
+    struct TextureInfo
+    {
+        RefPtr<Texture> texture;
+        int32 texCoord = 0;
+    };
+
+    struct NormalTextureInfo : public TextureInfo
+    {
+        float32 scale = 1;
+    };
+
+    struct OcclusionTextureInfo : public TextureInfo
+    {
+        float32 strength = 1;
+    };
+
     struct PbrMetallicRoughness
     {
         Vec4 baseColorFactor = { 1, 1, 1, 1 };
-        RefPtr<Texture> baseColorTexture;
+        TextureInfo baseColorTexture;
         float32 metallicFactor = 1;
         float32 roughnessFactor = 1;
-        RefPtr<Texture> metallicRoughnessTexture;
+        TextureInfo metallicRoughnessTexture;
     };
 
     class PbrMaterial : public BaseObject
@@ -26,11 +42,9 @@ namespace Husky::SceneV1
 
         String name;
         PbrMetallicRoughness metallicRoughness;
-        RefPtr<Texture> normalTexture;
-        float32 normalScale = 1;
-        RefPtr<Texture> occlusionTexture;
-        float32 occlusionStrength = 1;
-        RefPtr<Texture> emissiveTexture;
+        NormalTextureInfo normalTexture;
+        OcclusionTextureInfo occlusionTexture;
+        TextureInfo emissiveTexture;
         AlphaMode alphaMode = AlphaMode::Opaque;
         Vec3 emissiveFactor = { 0, 0, 0 };
         float32 alphaCutoff = 0.5f;

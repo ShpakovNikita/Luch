@@ -1,9 +1,12 @@
 #include <Husky/Vulkan/PhysicalDevice.h>
+#include <Husky/Vulkan/GraphicsDevice.h>
 #include <Husky/Vulkan/Surface.h>
 
 namespace Husky::Vulkan
 {
-    PhysicalDevice::PhysicalDevice(vk::PhysicalDevice aPhysicalDevice, vk::AllocationCallbacks aAllocationCallbacks)
+    PhysicalDevice::PhysicalDevice(
+        vk::PhysicalDevice aPhysicalDevice,
+        vk::AllocationCallbacks aAllocationCallbacks)
         : physicalDevice(aPhysicalDevice)
         , allocationCallbacks(aAllocationCallbacks)
         , physicalDeviceMemoryProperties(aPhysicalDevice.getMemoryProperties())
@@ -89,7 +92,7 @@ namespace Husky::Vulkan
         return { vk::Result::eSuccess, std::move(indices) };
     }
 
-    VulkanResultValue<GraphicsDevice> PhysicalDevice::CreateDevice(
+    VulkanRefResultValue<GraphicsDevice> PhysicalDevice::CreateDevice(
         QueueIndices&& queueIndices,
         const Husky::Vector<const char8*>& requiredDeviceExtensionNames)
     {
@@ -152,7 +155,7 @@ namespace Husky::Vulkan
         if (result == vk::Result::eSuccess)
         {
             auto queueInfo = ObtainQueueInfo(vulkanDevice, std::move(queueIndices));
-            auto device = GraphicsDevice{ this, vulkanDevice, std::move(queueInfo), allocationCallbacks };
+            auto device = MakeRef<GraphicsDevice>(this, vulkanDevice, std::move(queueInfo), allocationCallbacks);
             return { result, std::move(device) };
         }
         else
@@ -162,7 +165,7 @@ namespace Husky::Vulkan
         }
     }
 
-    QueueInfo PhysicalDevice::ObtainQueueInfo(vk::Device & device, QueueIndices && indices)
+    QueueInfo PhysicalDevice::ObtainQueueInfo(vk::Device& device, QueueIndices&& indices)
     {
         QueueInfo queueInfo;
 
@@ -170,9 +173,9 @@ namespace Husky::Vulkan
         auto vulkanPresentQueue = device.getQueue(indices.presentQueueFamilyIndex, 0);
         auto vulkanComputeQueue = device.getQueue(indices.computeQueueFamilyIndex, 0);
 
-        queueInfo.graphicsQueue = Queue{ vulkanGraphicsQueue };
-        queueInfo.computeQueue = Queue{ vulkanComputeQueue };
-        queueInfo.presentQueue = PresentQueue{ vulkanPresentQueue };
+        queueInfo.graphicsQueue = MakeRef<Queue>(vulkanGraphicsQueue);
+        queueInfo.computeQueue = MakeRef<Queue>(vulkanComputeQueue);
+        queueInfo.presentQueue = MakeRef<PresentQueue>(vulkanPresentQueue);
         queueInfo.indices = indices;
 
         Set<vk::Queue> uniqueQueues;

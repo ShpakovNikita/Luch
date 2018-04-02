@@ -9,25 +9,6 @@ namespace Husky::Vulkan
     {
     }
 
-    PipelineLayout::PipelineLayout(PipelineLayout&& other)
-        : device(other.device)
-        , pipelineLayout(other.pipelineLayout)
-    {
-        other.device = nullptr;
-        other.pipelineLayout = nullptr;
-    }
-
-    PipelineLayout& PipelineLayout::operator=(PipelineLayout&& other)
-    {
-        device = other.device;
-        pipelineLayout = other.pipelineLayout;
-
-        other.device = nullptr;
-        other.pipelineLayout = nullptr;
-
-        return *this;
-    }
-
     PipelineLayout::~PipelineLayout()
     {
         Destroy();
@@ -39,20 +20,5 @@ namespace Husky::Vulkan
         {
             device->DestroyPipelineLayout(this);
         }
-    }
-
-    PipelineLayoutCreateInfo::VulkanPipelineLayoutCreateInfo PipelineLayoutCreateInfo::ToVulkanCreateInfo(const PipelineLayoutCreateInfo& ci)
-    {
-        VulkanPipelineLayoutCreateInfo createInfo;
-        createInfo.setLayouts.reserve(ci.setLayouts.size());
-        for(auto setLayout : ci.setLayouts)
-        {
-            createInfo.setLayouts.push_back(setLayout->GetDescriptorSetLayout());
-        }
-
-        createInfo.createInfo.setPSetLayouts(createInfo.setLayouts.data());
-        createInfo.createInfo.setSetLayoutCount((int32)createInfo.setLayouts.size());
-
-        return createInfo;
     }
 }

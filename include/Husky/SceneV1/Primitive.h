@@ -2,6 +2,7 @@
 
 #include <Husky/PrimitiveTopology.h>
 #include <Husky/Types.h>
+#include <Husky/Format.h>
 #include <Husky/RefPtr.h>
 #include <Husky/BaseObject.h>
 #include <Husky/SceneV1/AttributeSemantic.h>
@@ -36,9 +37,10 @@ namespace Husky::SceneV1
 
     struct PrimitiveAttribute
     {
-        AttributeSemantic attributeSemantic;
+        AttributeSemantic semantic;
         ComponentType componentType;
         AttributeType attributeType;
+        Format format;
         int32 offset = 0;
         int32 vertexBufferIndex;
     };
@@ -56,12 +58,20 @@ namespace Husky::SceneV1
 
         ~Primitive();
 
+        const Vector<PrimitiveAttribute>& GetAttributes() const { return attributes; }
+        const RefPtrVector<VertexBuffer>& GetVertexBuffers() const { return vertexBuffers; }
+        const RefPtr<IndexBuffer>& GetIndexBuffer() const { return indexBuffer; }
+        const RefPtr<PbrMaterial>& GetMaterial() const { return material; }
         inline PrimitiveTopology GetTopology() const { return topology; }
+        inline const RefPtr<Vulkan::Pipeline>& GetPipeline() const { return pipeline; }
+        inline void SetPipeline(const RefPtr<Vulkan::Pipeline>& aPipeline) { pipeline = aPipeline; }
     private:
         Vector<PrimitiveAttribute> attributes;
         RefPtrVector<VertexBuffer> vertexBuffers;
         RefPtr<IndexBuffer> indexBuffer;
         RefPtr<PbrMaterial> material;
         PrimitiveTopology topology = PrimitiveTopology::TriangleList;
+
+        RefPtr<Vulkan::Pipeline> pipeline;
     };
 }

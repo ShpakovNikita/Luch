@@ -2,7 +2,6 @@
 
 namespace Husky
 {
-
     template<typename Result, typename Value>
     class ResultValue
     {
@@ -36,5 +35,4 @@ namespace Husky
         Result result;
         Value value;
     };
-
 }
