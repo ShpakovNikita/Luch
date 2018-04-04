@@ -5,6 +5,7 @@
 #include <Husky/UniquePtr.h>
 #include <Husky/FileStream.h>
 #include <Husky/SceneV1/Scene.h>
+#include <Husky/SceneV1/SceneProperties.h>
 #include <Husky/SceneV1/Mesh.h>
 #include <Husky/SceneV1/Node.h>
 #include <Husky/SceneV1/Image.h>
@@ -95,16 +96,18 @@ namespace Husky::SceneV1::Loader
         RefPtrVector<Node> nodes;
         nodes.reserve(scene.nodes.size());
 
+        SceneProperties sceneProperties;
+
         for (auto nodeIndex : scene.nodes)
         {
             const auto& node = root->nodes[nodeIndex];
-            nodes.emplace_back(MakeNode(node));
+            nodes.emplace_back(MakeNode(node, &sceneProperties));
         }
 
         return MakeRef<Scene>(move(nodes), name);
     }
 
-    RefPtr<Node> glTFLoader::MakeNode(const glTF::Node& node)
+    RefPtr<Node> glTFLoader::MakeNode(const glTF::Node& node, SceneProperties* sceneProperties)
     {
         const String& name = node.name;
 
@@ -113,20 +116,67 @@ namespace Husky::SceneV1::Loader
         for (auto nodeIndex : node.children)
         {
             const auto& node = root->nodes[nodeIndex];
-            children.emplace_back(MakeNode(node));
+            children.emplace_back(MakeNode(node, sceneProperties));
         }
 
         RefPtr<Mesh> mesh;
         if (node.mesh.has_value())
         {
+            HUSKY_ASSERT(!node.camera.has_value(), "Node should have either mesh or camera, not both");
+
             mesh = loadedMeshes[node.mesh.value()];
+            sceneProperties->meshes.insert(mesh);
+
+            for (const auto& primitive : mesh->GetPrimitives())
+            {
+                sceneProperties->primitives.insert(primitive);
+                const auto& material = primitive->GetMaterial();
+                if (material != nullptr)
+                {
+                    sceneProperties->materials.insert(material);
+
+                    if (material->metallicRoughness.baseColorTexture.texture != nullptr)
+                    {
+                        sceneProperties->textures.insert(material->metallicRoughness.baseColorTexture.texture);
+                        sceneProperties->samplers.insert(material->metallicRoughness.baseColorTexture.texture->GetSampler());
+                    }
+
+                    if (material->metallicRoughness.metallicRoughnessTexture.texture != nullptr)
+                    {
+                        sceneProperties->textures.insert(material->metallicRoughness.metallicRoughnessTexture.texture);
+                        sceneProperties->samplers.insert(material->metallicRoughness.metallicRoughnessTexture.texture->GetSampler());
+                    }
+
+                    if (material->normalTexture.texture != nullptr)
+                    {
+                        sceneProperties->textures.insert(material->normalTexture.texture);
+                        sceneProperties->samplers.insert(material->normalTexture.texture->GetSampler());
+                    }
+
+                    if (material->occlusionTexture.texture != nullptr)
+                    {
+                        sceneProperties->textures.insert(material->occlusionTexture.texture);
+                        sceneProperties->samplers.insert(material->occlusionTexture.texture->GetSampler());
+                    }
+
+                    if (material->emissiveTexture.texture != nullptr)
+                    {
+                        sceneProperties->textures.insert(material->emissiveTexture.texture);
+                        sceneProperties->samplers.insert(material->emissiveTexture.texture->GetSampler());
+                    }
+
+                    sceneProperties->samplers.erase(RefPtr<Sampler>());
+                }
+            }
         }
 
         RefPtr<Camera> camera;
         if (node.camera.has_value())
         {
+            HUSKY_ASSERT(!node.mesh.has_value(), "Node should have either mesh or camera, not both");
             auto cameraIndex = node.camera.value();
             camera = loadedCameras[cameraIndex];
+            sceneProperties->cameras.insert(camera);
         }
 
         // TODO skin

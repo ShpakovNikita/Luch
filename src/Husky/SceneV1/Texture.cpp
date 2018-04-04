@@ -1,5 +1,6 @@
 #include <Husky/SceneV1/Texture.h>
 #include <Husky/SceneV1/Sampler.h>
+#include <Husky/SceneV1/Image.h>
 #include <Husky/Vulkan/Image.h>
 #include <Husky/Vulkan/ImageView.h>
 

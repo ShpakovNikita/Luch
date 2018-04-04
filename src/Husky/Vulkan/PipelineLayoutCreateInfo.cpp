@@ -1,4 +1,4 @@
-#include <Husky/Vulkan/class PipelineLayoutCreateInfo.h>
+#include <Husky/Vulkan/PipelineLayoutCreateInfo.h>
 
 namespace Husky::Vulkan
 {

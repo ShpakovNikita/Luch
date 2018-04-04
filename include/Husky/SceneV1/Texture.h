@@ -25,6 +25,8 @@ namespace Husky::SceneV1
         ~Texture();
         // void LoadToHost()
         // void LoadToDevice()
+
+        inline const RefPtr<Sampler>& GetSampler() const { return sampler; }
     private:
         String name;
 

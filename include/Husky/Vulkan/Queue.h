@@ -40,6 +40,8 @@ namespace Husky::Vulkan
         friend PhysicalDevice;
         friend QueueInfo;
     public:
+        explicit Queue(vk::Queue queue);
+
         Queue(Queue&& other) = delete;
         Queue(const Queue& other) = delete;
         Queue& operator=(const Queue& other) = delete;
@@ -50,8 +52,6 @@ namespace Husky::Vulkan
         vk::Result WaitIdle();
         vk::Result Submit(const Submission& submission);
     protected:
-        explicit Queue(vk::Queue queue);
-
         vk::Queue queue;
     };
 
@@ -60,11 +60,11 @@ namespace Husky::Vulkan
         friend class GraphicsDevice;
         friend class PhysicalDevice;
     public:
-        vk::Result Present(const PresentSubmission& presentSubmission);
-    protected:
         inline explicit PresentQueue(vk::Queue queue)
             : Queue(queue)
         {
         }
+
+        vk::Result Present(const PresentSubmission& presentSubmission);
     };
 }

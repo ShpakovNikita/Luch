@@ -1,4 +1,5 @@
 #include <Husky/Vulkan/DescriptorSetLayoutCreateInfo.h>
+#include <Husky/Vulkan/ShaderStage.h>
 
 namespace Husky::Vulkan
 {

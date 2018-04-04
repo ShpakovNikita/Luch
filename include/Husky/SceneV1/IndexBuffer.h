@@ -25,17 +25,17 @@ namespace Husky::SceneV1
         inline int32 GetIndexCount() const { return count; }
         inline int32 GetByteOffset() const { return byteOffset; }
         inline const Vector<uint8>& GetHostBuffer() const { return hostBuffer; }
-        inline const Vulkan::IndexBuffer& GetDeviceBuffer() const { return deviceBuffer; }
+        inline const RefPtr<Vulkan::Buffer>& GetDeviceBuffer() const { return deviceBuffer; }
     private:
         BufferSource bufferSource;
 
-        IndexType indexType;
+        IndexType indexType = IndexType::UInt16;
         int32 count = 0;
 
         int32 byteOffset = 0;
         int32 byteLength = 0;
 
         Vector<uint8> hostBuffer;
-        Vulkan::IndexBuffer deviceBuffer;
+        RefPtr<Vulkan::Buffer> deviceBuffer;
     };
 }

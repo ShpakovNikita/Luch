@@ -2,6 +2,7 @@
 #include <Husky/SceneV1/PbrMaterial.h>
 #include <Husky/SceneV1/IndexBuffer.h>
 #include <Husky/SceneV1/VertexBuffer.h>
+#include <Husky/Vulkan/Pipeline.h>
 
 namespace Husky::SceneV1
 {

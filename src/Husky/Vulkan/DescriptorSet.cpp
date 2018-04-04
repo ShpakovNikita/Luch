@@ -12,25 +12,6 @@ namespace Husky::Vulkan
     {
     }
 
-    DescriptorSet::DescriptorSet(DescriptorSet&& other)
-        : device(other.device)
-        , descriptorSet(other.descriptorSet)
-    {
-        other.device = nullptr;
-        other.descriptorSet = nullptr;
-    }
-
-    DescriptorSet& DescriptorSet::operator=(DescriptorSet&& other)
-    {
-        device = other.device;
-        descriptorSet = other.descriptorSet;
-
-        other.device = nullptr;
-        other.descriptorSet = nullptr;
-
-        return *this;
-    }
-
     inline vk::Result DescriptorSet::Free()
     {
         return device->GetDevice().freeDescriptorSets(descriptorPool, { descriptorSet });

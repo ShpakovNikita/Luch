@@ -5,7 +5,7 @@
 
 namespace Husky::SceneV1
 {
-    class Image
+    class Image : public BaseObject
     {
     public:
         static RefPtr<Image> LoadFromFile(const String& filename);

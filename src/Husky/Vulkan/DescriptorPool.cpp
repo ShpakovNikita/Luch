@@ -1,4 +1,5 @@
 #include <Husky/Vulkan/DescriptorPool.h>
+#include <Husky/Vulkan/DescriptorSet.h>
 #include <Husky/Vulkan/DescriptorSetLayout.h>
 #include <Husky/Vulkan/GraphicsDevice.h>
 

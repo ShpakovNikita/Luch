@@ -20,7 +20,7 @@ namespace Husky::SceneV1::Loader
         void LoadProperties();
 
         RefPtr<Scene> MakeScene(const glTF::Scene& scene);
-        RefPtr<Node> MakeNode(const glTF::Node& node);
+        RefPtr<Node> MakeNode(const glTF::Node& node, SceneProperties* context);
         RefPtr<Mesh> MakeMesh(const glTF::Mesh& mesh);
         RefPtr<Camera> MakeCamera(const glTF::Camera& camera);
         RefPtr<PerspectiveCamera> MakePerspectiveCamera(const String& name, const glTF::Perspective& camera);

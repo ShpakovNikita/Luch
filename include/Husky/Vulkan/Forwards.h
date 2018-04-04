@@ -8,6 +8,7 @@ namespace Husky::Vulkan
     class CommandPool;
     class DescriptorPool;
     class DescriptorSet;
+    class DescriptorSetBinding;
     class DescriptorSetLayout;
     class DescriptorSetWrites;
     class Fence;

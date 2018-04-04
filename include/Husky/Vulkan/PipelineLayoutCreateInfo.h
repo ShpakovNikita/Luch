@@ -36,6 +36,11 @@ namespace Husky::Vulkan
             return *this;
         }
 
+        inline PipelineLayoutCreateInfo& AddPushConstantRange()
+        {
+            return *this;
+        }
+
         // TODO push constants
     private:
         Vector<DescriptorSetLayout*> setLayouts;

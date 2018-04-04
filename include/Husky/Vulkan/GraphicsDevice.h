@@ -36,6 +36,12 @@ namespace Husky::Vulkan
         friend class Swapchain;
         friend class Sampler;
     public:
+        GraphicsDevice(
+            PhysicalDevice* physicalDevice,
+            vk::Device device,
+            QueueInfo&& queueInfo,
+            vk::AllocationCallbacks allocationCallbacks);
+
         ~GraphicsDevice() override;
 
         inline vk::Device GetDevice() { return device; }
@@ -71,12 +77,6 @@ namespace Husky::Vulkan
         VulkanRefResultValue<Semaphore> CreateSemaphore();
         VulkanRefResultValue<Sampler> CreateSampler(const vk::SamplerCreateInfo& createInfo);
     private:
-        GraphicsDevice(
-            PhysicalDevice* physicalDevice,
-            vk::Device device,
-            QueueInfo&& queueInfo,
-            vk::AllocationCallbacks allocationCallbacks);
-
         VulkanResultValue<vk::DeviceMemory> AllocateMemory(
             vk::MemoryRequirements memoryRequirements,
             vk::MemoryPropertyFlags memoryPropertyFlags);

@@ -1,5 +1,5 @@
 #include <Husky/SceneV1/IndexBuffer.h>
-#include <Husky/Vulkan/IndexBufferObject.h>
+#include <Husky/Vulkan/Buffer.h>
 
 namespace Husky::SceneV1
 {

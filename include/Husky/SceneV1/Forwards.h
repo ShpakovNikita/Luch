@@ -15,6 +15,7 @@ namespace Husky::SceneV1
     class Primitive;
     class Sampler;
     class Scene;
+    class SceneProperties;
     class Texture;
     class VertexBuffer;
 

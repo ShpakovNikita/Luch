@@ -1,6 +1,8 @@
 #include <Husky/Vulkan/Queue.h>
 #include <Husky/Vulkan/CommandBuffer.h>
 #include <Husky/Vulkan/Fence.h>
+#include <Husky/Vulkan/Semaphore.h>
+#include <Husky/Vulkan/Swapchain.h>
 
 namespace Husky::Vulkan
 {

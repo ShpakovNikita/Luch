@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Husky/Types.h>
+#include <Husky/BaseObject.h>
 
 namespace Husky
 {
@@ -21,7 +22,7 @@ namespace Husky
         {
             if (ptr)
             {
-                ptr->RemoveReference();
+                reinterpret_cast<BaseObject*>(ptr)->RemoveReference();
             }
         }
 
@@ -30,7 +31,7 @@ namespace Husky
         {
             if (ptr)
             {
-                ptr->AddReference();
+                reinterpret_cast<BaseObject*>(ptr)->AddReference();
             }
         }
 
@@ -53,7 +54,7 @@ namespace Husky
         {
             if (ptr)
             {
-                ptr->AddReference();
+                reinterpret_cast<BaseObject*>(ptr)->AddReference();
             }
         }
 
@@ -62,7 +63,18 @@ namespace Husky
             ptr = other.ptr;
             if (ptr)
             {
-                ptr->AddReference();
+                reinterpret_cast<BaseObject*>(ptr)->AddReference();
+            }
+            return *this;
+        }
+
+        template<typename U>
+        RefPtr& operator=(const RefPtr<U>& other)
+        {
+            ptr = static_cast<T*>(other.ptr);
+            if (ptr)
+            {
+                reinterpret_cast<BaseObject*>(ptr)->AddReference();
             }
             return *this;
         }
@@ -135,6 +147,9 @@ namespace Husky
 
     template<typename T>
     using RefPtrVector = Vector<RefPtr<T>>;
+
+    template<typename T>
+    using RefPtrSet = Set<RefPtr<T>>;
 }
 
 

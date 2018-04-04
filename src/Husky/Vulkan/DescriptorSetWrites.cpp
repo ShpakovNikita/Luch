@@ -1,4 +1,7 @@
 #include <Husky/Vulkan/DescriptorSetWrites.h>
+#include <Husky/Vulkan/Buffer.h>
+#include <Husky/Vulkan/DescriptorSet.h>
+#include <Husky/Vulkan/DescriptorSetBinding.h>
 
 namespace Husky::Vulkan
 {

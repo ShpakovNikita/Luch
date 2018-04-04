@@ -31,6 +31,7 @@ namespace Husky
         {
             refCount = other.refCount.load();
             other.refCount.store(0);
+            return *this;
         }
 
         inline void AddReference() noexcept

@@ -16,36 +16,37 @@ namespace Husky::Vulkan
     class GraphicsDevice;
     class CommandPool;
 
-    class CommandBuffer
+    class CommandBuffer : public BaseObject
     {
         friend class GraphicsDevice;
         friend class CommandPool;
     public:
-        CommandBuffer() = default;
         CommandBuffer(GraphicsDevice* device, vk::CommandBuffer commandBuffer);
 
-        CommandBuffer(CommandBuffer&& other);
-        CommandBuffer& operator=(CommandBuffer&& other);
+        CommandBuffer(CommandBuffer&& other) = delete;
+        CommandBuffer(const CommandBuffer& other) = delete;
+        CommandBuffer& operator=(const CommandBuffer& other) = delete;
+        CommandBuffer& operator=(CommandBuffer&& other) = delete;
 
         inline vk::CommandBuffer GetCommandBuffer() { return commandBuffer; }
 
-        inline CommandBuffer& Begin()
+        inline CommandBuffer* Begin()
         {
             vk::CommandBufferBeginInfo beginInfo;
             commandBuffer.begin(beginInfo);
-            return *this;
+            return this;
         }
 
-        inline CommandBuffer& End()
+        inline CommandBuffer* End()
         {
             commandBuffer.end();
-            return *this;
+            return this;
         }
 
         // TODO
         //inline CommandBuffer& BeginRenderPass(RenderPass* renderPass, Framebuffer* framebuffer, CommandBuffer* secondaryCommandBuffer);
         
-        inline CommandBuffer& BeginInlineRenderPass(RenderPass* renderPass, Framebuffer* framebuffer, Vector<vk::ClearValue> clearValues, vk::Rect2D renderArea)
+        inline CommandBuffer* BeginInlineRenderPass(RenderPass* renderPass, Framebuffer* framebuffer, Vector<vk::ClearValue> clearValues, vk::Rect2D renderArea)
         {
             vk::RenderPassBeginInfo beginInfo;
             beginInfo.setRenderPass(renderPass->GetRenderPass());
@@ -54,16 +55,22 @@ namespace Husky::Vulkan
             beginInfo.setPClearValues(clearValues.data());
             beginInfo.setRenderArea(renderArea);
             commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
-            return *this;
+            return this;
         }
 
-        inline CommandBuffer& BindGraphicsPipeline(Pipeline* pipeline)
+        inline CommandBuffer* BindGraphicsPipeline(Pipeline* pipeline)
         {
             commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->GetPipeline());
-            return *this;
+            return this;
         }
 
-        inline CommandBuffer& BindVertexBuffers(Vector<Buffer*> vertexBuffers, Vector<int64> offsets, int32 binding)
+        inline CommandBuffer* BindGraphicsPipeline(const RefPtr<Pipeline>& pipeline)
+        {
+            commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->GetPipeline());
+            return this;
+        }
+
+        inline CommandBuffer* BindVertexBuffers(Vector<Buffer*> vertexBuffers, Vector<int64> offsets, int32 binding)
         {
             Vector<vk::Buffer> vulkanBuffers;
             vulkanBuffers.reserve(vertexBuffers.size());
@@ -82,16 +89,22 @@ namespace Husky::Vulkan
             }
 
             commandBuffer.bindVertexBuffers(binding, vulkanBuffers, vulkanOffsets);
-            return *this;
+            return this;
         }
 
-        inline CommandBuffer& BindIndexBuffer(Buffer* indexBuffer, vk::IndexType indexType, int64 offset)
+        inline CommandBuffer* BindIndexBuffer(Buffer* indexBuffer, vk::IndexType indexType, int64 offset)
         {
             commandBuffer.bindIndexBuffer(indexBuffer->GetBuffer(), offset, indexType);
-            return *this;
+            return this;
         }
 
-        inline CommandBuffer& BindDescriptorSets(PipelineLayout* layout, Vector<DescriptorSet*> sets)
+        inline CommandBuffer* BindIndexBuffer(const RefPtr<Buffer>& indexBuffer, vk::IndexType indexType, int64 offset)
+        {
+            commandBuffer.bindIndexBuffer(indexBuffer->GetBuffer(), offset, indexType);
+            return this;
+        }
+
+        inline CommandBuffer* BindDescriptorSets(PipelineLayout* layout, Vector<DescriptorSet*> sets)
         {
             Vector<vk::DescriptorSet> vulkanSets;
             vulkanSets.reserve(sets.size());
@@ -102,27 +115,27 @@ namespace Husky::Vulkan
             }
 
             commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, layout->GetPipelineLayout(), 0, vulkanSets, {});
-            return *this;
+            return this;
         }
 
         //inline CommandBuffer& NextSubpass(CommandBuffer* secondaryCommandBuffer);
 
-        inline CommandBuffer& NextInlineSubpass()
+        inline CommandBuffer* NextInlineSubpass()
         {
             commandBuffer.nextSubpass(vk::SubpassContents::eInline);
-            return *this;
+            return this;
         }
 
-        inline CommandBuffer& EndRenderPass()
+        inline CommandBuffer* EndRenderPass()
         {
             commandBuffer.endRenderPass();
-            return *this;
+            return this;
         }
 
-        inline CommandBuffer& DrawIndexed(int32 indexCount, int32 instanceCount, int32 firstIndex, int32 vertexOffset, int32 firstInstance)
+        inline CommandBuffer* DrawIndexed(int32 indexCount, int32 instanceCount, int32 firstIndex, int32 vertexOffset, int32 firstInstance)
         {
             commandBuffer.drawIndexed(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
-            return *this;
+            return this;
         }
     private:
         GraphicsDevice* device = nullptr;
