@@ -25,12 +25,6 @@ namespace Husky::SceneV1
     {
     }
 
-    Mat4x4 PerspectiveCamera::GetCameraProjectionMatrix() const
-    {
-        // TODO
-        return Mat4x4();//glm::perspective(yfov, aspectRatio.value_or(1.0f), znear, zfar.value_or(1000.0f));
-    }
-
     OrthographicCamera::OrthographicCamera(
         float32 aXmag,
         float32 aYmag,
@@ -43,10 +37,5 @@ namespace Husky::SceneV1
         , zfar(aZfar)
         , znear(aZnear)
     {
-    }
-
-    Mat4x4 OrthographicCamera::GetCameraProjectionMatrix() const
-    {
-        return Mat4x4();// TODO
     }
 }

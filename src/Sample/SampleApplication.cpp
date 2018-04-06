@@ -67,16 +67,6 @@ static LRESULT CALLBACK StaticWindowProc(
 
 bool SampleApplication::Initialize(const Vector<String>& args)
 {
-    //glTF::glTFParser glTFparser;
-    //FileStream fileStream{ "C:\\Development\\HuskyResources\\glTF-Sample-Models\\2.0\\BoxTextured\\glTF\\BoxTextured.gltf", FileOpenModes::Read };
-    //
-    //
-    //graphicsContext = std::make_unique<GraphicsContext>();
-    //graphicsContext->root = glTFparser.ParseJSON(&fileStream);
-    //
-    //SceneV1::Loader::glTFLoader loader{ "C:\\Development\\HuskyResources\\glTF-Sample-Models\\2.0\\BoxTextured\\glTF\\", graphicsContext->root };
-    //auto scenes = loader.LoadScenes();
-
     allocationCallbacks = allocator.GetAllocationCallbacks();
 
     auto [createInstanceResult, createdInstance] = CreateVulkanInstance(allocationCallbacks);
@@ -128,7 +118,23 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     ShowWindow(hWnd, SW_SHOW);
 #endif
 
+    glTF::glTFParser glTFparser;
+
+    String rootDir{ "C:\\Development\\HuskyResources\\glTF-Sample-Models\\2.0\\DamagedHelmet\\glTF\\" };
+
+    FileStream fileStream{ rootDir + "DamagedHelmet.gltf", FileOpenModes::Read };
+
+    auto root = glTFparser.ParseJSON(&fileStream);
     
+    SceneV1::Loader::glTFLoader loader{ rootDir, root };
+    auto scenes = loader.LoadScenes();
+
+    renderer = MakeUnique<Render::ForwardRenderer>(&physicalDevice, &surface, width, height);
+
+
+    renderer->Initialize();
+
+    auto preparedScene = renderer->PrepareScene(scenes[0]);
 
     return true;
 }

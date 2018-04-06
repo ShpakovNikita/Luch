@@ -13,6 +13,7 @@ namespace Husky::SceneV1
     public:
         Scene(
             RefPtrVector<Node>&& nodes,
+            SceneProperties&& sceneProperties,
             const String& name);
 
         ~Scene();

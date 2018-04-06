@@ -11,7 +11,8 @@ namespace Husky::SceneV1
         int32 height;
         int32 componentCount;
 
-        const uchar8* data = stbi_load(filename.c_str(), &width, &height, &componentCount, 0);
+        // Force 4 components for now
+        const uchar8* data = stbi_load(filename.c_str(), &width, &height, &componentCount, 4);
         if (data)
         {
             int32 sizeInBytes = width * height * componentCount;
@@ -19,7 +20,7 @@ namespace Husky::SceneV1
             imageBuffer.resize(sizeInBytes);
             memcpy(imageBuffer.data(), data, sizeInBytes);
 
-            return MakeRef<Image>(width, height, componentCount, move(imageBuffer));
+            return MakeRef<Image>(width, height, 4, move(imageBuffer));
         }
         else
         {
@@ -32,8 +33,8 @@ namespace Husky::SceneV1
         int32 aHeight,
         int32 aComponentCount,
         Vector<uint8>&& aBuffer)
-        : width(width)
-        , height(height)
+        : width(aWidth)
+        , height(aHeight)
         , componentCount(aComponentCount)
         , buffer(move(aBuffer))
     {

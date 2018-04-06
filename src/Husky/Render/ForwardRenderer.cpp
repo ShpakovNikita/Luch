@@ -172,9 +172,9 @@ namespace Husky::Render
 
         UnorderedMap<vk::DescriptorType, int32> descriptorCount = 
         {
-            { vk::DescriptorType::eSampledImage, textureDescriptorCount},
-            { vk::DescriptorType::eSampler, samplerDescriptorCount },
-            { vk::DescriptorType::eUniformBuffer, perMeshUBOCount + perCameraUBOCount}
+            { vk::DescriptorType::eSampledImage, textureDescriptorCount + 1},
+            { vk::DescriptorType::eSampler, samplerDescriptorCount + 1 },
+            { vk::DescriptorType::eUniformBuffer, perMeshUBOCount + perCameraUBOCount + 1}
         };
 
         auto vertexShaderCompiled = context->shaderCompiler.TryCompileShader(ShaderStage::Vertex, vertexShaderSource, preparedScene.vertexShaderBytecode);

@@ -31,8 +31,8 @@ namespace Husky::SceneV1
             Optional<float32> aspectRatio = {},
             const String& name = "");
 
-        Mat4x4 GetCameraViewMatrix() const override;
-        Mat4x4 GetCameraProjectionMatrix() const override;
+        Mat4x4 GetCameraViewMatrix() const override { return Mat4x4{}; }
+        Mat4x4 GetCameraProjectionMatrix() const override { return Mat4x4{}; }
 
         void SetViewAspectRatio(Optional<float32> aspectRatio) { viewAspectRatio = aspectRatio; }
 
@@ -59,8 +59,8 @@ namespace Husky::SceneV1
             const String& name = ""
         );
 
-        Mat4x4 GetCameraViewMatrix() const override;
-        Mat4x4 GetCameraProjectionMatrix() const override;
+        Mat4x4 GetCameraViewMatrix() const override { return Mat4x4{}; }
+        Mat4x4 GetCameraProjectionMatrix() const override { return Mat4x4{}; }
 
         inline float32 GetXMag()  const { return xmag; }
         inline float32 GetYMag()  const { return ymag; }

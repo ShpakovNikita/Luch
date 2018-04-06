@@ -8,6 +8,7 @@ namespace Husky::Vulkan
         , imageView(aImageView)
     {
     }
+
     ImageView::~ImageView()
     {
         Destroy();

@@ -104,7 +104,7 @@ namespace Husky::SceneV1::Loader
             nodes.emplace_back(MakeNode(node, &sceneProperties));
         }
 
-        return MakeRef<Scene>(move(nodes), name);
+        return MakeRef<Scene>(move(nodes), std::move(sceneProperties), name);
     }
 
     RefPtr<Node> glTFLoader::MakeNode(const glTF::Node& node, SceneProperties* sceneProperties)

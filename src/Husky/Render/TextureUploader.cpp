@@ -128,7 +128,6 @@ namespace Husky::Render
             return { false };
         }
 
-        texture->SetDeviceImage(createdImage);
 
         const auto &queueIndices = device->GetQueueIndices();
         int32 stagingBufferSize = createdImage->GetMemoryRequirements().size;
@@ -169,7 +168,11 @@ namespace Husky::Render
             return { false };
         }
 
+        texture->SetDeviceImage(createdImage);
+        texture->SetDeviceImageView(createdImageView);
         texture->GetSampler()->SetDeviceSampler(createdSampler);
+
+        const auto& indices = device->GetQueueIndices();
 
         result.image = createdImage;
         result.stagingBuffer = stagingBuffer;
@@ -180,14 +183,18 @@ namespace Husky::Render
             .ForImage(createdImage)
             .FromLayout(vk::ImageLayout::eUndefined)
             .ToLayout(vk::ImageLayout::eTransferDstOptimal)
-            .ToAccess(vk::AccessFlagBits::eTransferWrite);
+            .ToAccess(vk::AccessFlagBits::eTransferWrite)
+            .FromQueue(indices->graphicsQueueFamilyIndex)
+            .ToQueue(indices->graphicsQueueFamilyIndex);
 
         result.readImageBarrier
             .ForImage(createdImage)
             .FromLayout(vk::ImageLayout::eTransferDstOptimal)
             .ToLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
             .FromAccess(vk::AccessFlagBits::eTransferWrite)
-            .ToAccess(vk::AccessFlagBits::eShaderRead);
+            .ToAccess(vk::AccessFlagBits::eShaderRead)
+            .FromQueue(indices->graphicsQueueFamilyIndex)
+            .ToQueue(indices->graphicsQueueFamilyIndex);
 
         return { true, result };
     }

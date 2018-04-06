@@ -10,6 +10,9 @@
 #include <Husky/Vulkan/PhysicalDevice.h>
 #include <Husky/Vulkan/Surface.h>
 #include <Husky/Vulkan/Swapchain.h>
+
+#include <Husky/Render/ForwardRenderer.h>
+
 #include "VulkanAllocator.h"
 
 #ifdef _WIN32
@@ -106,4 +109,6 @@ private:
     vk::AllocationCallbacks allocationCallbacks;
     vk::Instance instance;
     vk::DebugReportCallbackEXT debugCallback;
+
+    Husky::UniquePtr<Husky::Render::ForwardRenderer> renderer;
 };
