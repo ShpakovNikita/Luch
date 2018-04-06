@@ -1,11 +1,16 @@
 #include <Husky/Vulkan/DescriptorSetWrites.h>
 #include <Husky/Vulkan/Buffer.h>
+#include <Husky/Vulkan/Image.h>
+#include <Husky/Vulkan/ImageView.h>
 #include <Husky/Vulkan/DescriptorSet.h>
 #include <Husky/Vulkan/DescriptorSetBinding.h>
 
 namespace Husky::Vulkan
 {
-    DescriptorSetWrites& DescriptorSetWrites::WriteUniformBufferDescriptors(DescriptorSet* descriptorSet, DescriptorSetBinding* binding, Vector<Buffer*> buffers)
+    DescriptorSetWrites& DescriptorSetWrites::WriteUniformBufferDescriptors(
+        DescriptorSet* descriptorSet,
+        DescriptorSetBinding* binding,
+        const Vector<Buffer*>& buffers)
     {
         if (buffers.empty())
         {
@@ -28,6 +33,7 @@ namespace Husky::Vulkan
 
         for (auto& buffer : buffers)
         {
+            HUSKY_ASSERT(buffer != nullptr);
             HUSKY_ASSERT(buffer->GetDevice() == device);
             auto& bufferInfo = infos.emplace_back();
             bufferInfo.setBuffer(buffer->GetBuffer());
@@ -36,6 +42,45 @@ namespace Husky::Vulkan
         }
 
         descriptorWrite.setPBufferInfo(infos.data());
+
+        return *this;
+    }
+
+    DescriptorSetWrites & DescriptorSetWrites::WriteImageDescriptors(
+        DescriptorSet* descriptorSet,
+        DescriptorSetBinding* binding,
+        const Vector<ImageDescriptorInfo>& images)
+    {
+        if (images.empty())
+        {
+            return *this;
+        }
+
+        if (device == nullptr)
+        {
+            device = images.front().imageView->GetDevice();
+        }
+
+        auto& descriptorWrite = writes.emplace_back();
+        descriptorWrite.setDstSet(descriptorSet->GetDescriptorSet());
+        descriptorWrite.setDstBinding(binding->GetBinding());
+        descriptorWrite.setDstArrayElement(0);
+        descriptorWrite.setDescriptorCount(images.size());
+        descriptorWrite.setDescriptorType(vk::DescriptorType::eSampledImage);
+
+        auto& infos = imageInfos.emplace_back();
+
+        for (auto& image : images)
+        {
+            HUSKY_ASSERT(image.imageView != nullptr);
+            HUSKY_ASSERT(image.imageView->GetDevice() == device);
+
+            auto& imageInfo = infos.emplace_back();
+            imageInfo.setImageLayout(image.layout);
+            imageInfo.setImageView(image.imageView->GetImageView());
+        }
+
+        descriptorWrite.setPImageInfo(infos.data());
 
         return *this;
     }

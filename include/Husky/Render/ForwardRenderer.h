@@ -9,6 +9,7 @@
 #include <Husky/Vulkan.h>
 #include <Husky/Vulkan/Forwards.h>
 #include <Husky/Vulkan/GlslShaderCompiler.h>
+#include <Husky/Vulkan/DescriptorSetBinding.h>
 
 namespace Husky::Render
 {
@@ -16,13 +17,18 @@ namespace Husky::Render
 
 #pragma pack(push)
 #pragma pack(1)
-    struct Uniform
+    struct CameraUniformBuffer
     {
         Mat4x4 model;
         Mat4x4 view;
         Mat4x4 projection;
         Vec3 cameraPosition;
         float32 _padding0;
+    };
+
+    struct MeshUniformBuffer
+    {
+        Mat4x4 transform;
     };
     
     struct MaterialPushConstants
@@ -55,7 +61,7 @@ namespace Husky::Render
     struct FrameResources
     {
         RefPtr<Framebuffer> framebuffer;
-        //DescriptorPool descriptorPool;
+        RefPtr<DescriptorSet> cameraDescriptorSet;
         RefPtr<CommandPool> graphicsCommandPool;
 
         RefPtr<CommandBuffer> commandBuffer;
@@ -66,6 +72,7 @@ namespace Husky::Render
         RefPtr<Buffer> vertexBuffer;
         RefPtr<Fence> fence;
         RefPtr<Semaphore> semaphore;
+        RefPtr<Buffer> cameraUniformBuffer;
     };
 
     struct ForwardRendererContext
@@ -94,7 +101,16 @@ namespace Husky::Render
         RefPtr<DescriptorPool> descriptorPool;
         RefPtr<RenderPass> renderPass;
         RefPtr<PipelineLayout> pipelineLayout;
-        RefPtr<DescriptorSetLayout> descriptorSetLayout;
+
+        DescriptorSetBinding cameraUniformBufferBinding;
+        DescriptorSetBinding meshUniformBufferBinding;
+        DescriptorSetBinding materialImageBinding;
+        DescriptorSetBinding materialSamplerBinding;
+
+        RefPtr<DescriptorSetLayout> cameraDescriptorSetLayout;
+        RefPtr<DescriptorSetLayout> meshDescriptorSetLayout;
+        RefPtr<DescriptorSetLayout> materialDescriptorSetLayout;
+        RefPtr<CommandPool> commandPool;
         GLSLShaderCompiler::Bytecode vertexShaderBytecode;
         GLSLShaderCompiler::Bytecode fragmentShaderBytecode;
         RefPtr<ShaderModule> vertexShaderModule;
@@ -116,13 +132,14 @@ namespace Husky::Render
         ResultValue<bool, PreparedScene> PrepareScene(const RefPtr<SceneV1::Scene>& scene);
         void DrawScene(const PreparedScene& scene);
     private:
-        void PrepareNode(const RefPtr<SceneV1::Node>& node);
-        void PrepareMesh(const RefPtr<SceneV1::Mesh>& mesh);
+        void PrepareNode(const RefPtr<SceneV1::Node>& node, PreparedScene& scene);
+        void PrepareMesh(const RefPtr<SceneV1::Mesh>& mesh, PreparedScene& scene);
+        void PrepareMaterial(const RefPtr<SceneV1::PbrMaterial>& mesh, PreparedScene& scene);
 
         void DrawMesh(const RefPtr<SceneV1::Mesh>& mesh, GlobalDrawContext* drawContext, CommandBuffer* cmdBuffer);
         void DrawPrimitive(const RefPtr<SceneV1::Primitive>& primitive, GlobalDrawContext* drawContext, CommandBuffer* cmdBuffer);
 
-        RefPtr<Pipeline> CreatePipeline(const RefPtr<SceneV1::Primitive>& primitive);
+        RefPtr<Pipeline> CreatePipeline(const RefPtr<SceneV1::Primitive>& primitive, PreparedScene& scene);
 
         Vector<const char8*> GetRequiredDeviceExtensionNames() const;
 

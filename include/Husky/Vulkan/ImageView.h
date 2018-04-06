@@ -22,6 +22,7 @@ namespace Husky::Vulkan
 
         ~ImageView();
 
+        inline GraphicsDevice* GetDevice() { return device; }
         inline vk::ImageView GetImageView() { return imageView; }
     private:
         void Destroy();

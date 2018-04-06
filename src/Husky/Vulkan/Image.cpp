@@ -28,12 +28,14 @@ namespace Husky::Vulkan
         vk::Image aImage,
         vk::DeviceMemory aMemory,
         vk::ImageCreateInfo aCreateInfo,
+        vk::MemoryRequirements aMemoryRequirements,
         bool aOwning)
         : device(aDevice)
         , image(aImage)
         , memory(aMemory)
         , createInfo(aCreateInfo)
         , aspects(GetAspects(aCreateInfo.format))
+        , memoryRequirements(aMemoryRequirements)
         , owning(aOwning)
     {
     }

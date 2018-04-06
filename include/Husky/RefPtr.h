@@ -79,11 +79,26 @@ namespace Husky
             return *this;
         }
 
-        RefPtr& operator==(RefPtr&& other)
+        RefPtr& operator=(RefPtr&& other)
         {
             ptr = other.ptr;
             other.ptr = nullptr;
             return *this;
+        }
+
+        friend bool operator==(const RefPtr& left, RefPtr& right)
+        {
+            return left.ptr == right.ptr;
+        }
+
+        friend bool operator!=(const RefPtr& left, RefPtr& right)
+        {
+            return left.ptr != right.ptr;
+        }
+
+        bool operator<(const RefPtr& right) const
+        {
+            return ptr < right.ptr;
         }
 
         friend bool operator==(const RefPtr& ptr, nullptr_t np)
@@ -106,14 +121,14 @@ namespace Husky
             return ptr.ptr != np;
         }
 
-        operator bool()
+        operator T*() const
         {
-            return ptr != nullptr;
+            return ptr;
         }
 
-        bool operator==(nullptr_t other)
+        operator bool() const
         {
-            return ptr == nullptr;
+            return ptr != nullptr;
         }
 
         T* operator->() const
@@ -146,10 +161,19 @@ namespace Husky
     }
 
     template<typename T>
+    class Less
+    {
+    public:
+        bool operator()(const RefPtr<T>& left, const RefPtr<T>& right) const
+        {
+            return left.operator<(right);
+        }
+    };
+
+    template<typename T>
     using RefPtrVector = Vector<RefPtr<T>>;
 
     template<typename T>
-    using RefPtrSet = Set<RefPtr<T>>;
+    using RefPtrSet = std::set<RefPtr<T>, Less<T>>;
 }
-
 

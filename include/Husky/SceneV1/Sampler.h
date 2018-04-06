@@ -14,7 +14,9 @@ namespace Husky::SceneV1
             const vk::SamplerCreateInfo& samplerDescription, // TODO
             const String& name = "");
 
-        ~Sampler();
+        inline const vk::SamplerCreateInfo& GetSamplerDescription() const { return samplerDescription; }
+        inline const RefPtr<Vulkan::Sampler>& GetDeviceSampler() const { return sampler; }
+        inline void SetDeviceSampler(const RefPtr<Vulkan::Sampler>& aSampler) { sampler = aSampler; }
     private:
         String name;
 

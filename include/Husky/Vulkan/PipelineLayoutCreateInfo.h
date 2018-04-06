@@ -2,6 +2,7 @@
 
 #include <Husky/Vulkan.h>
 #include <Husky/Vulkan/DescriptorSetLayout.h>
+#include <Husky/Vulkan/PushConstantRange.h>
 
 namespace Husky::Vulkan
 {
@@ -36,13 +37,21 @@ namespace Husky::Vulkan
             return *this;
         }
 
-        inline PipelineLayoutCreateInfo& AddPushConstantRange()
+        inline PipelineLayoutCreateInfo& WithNPushConstantRanges(int32 count)
         {
+            pushConstantRanges.reserve(count);
+            return *this;
+        }
+
+        inline PipelineLayoutCreateInfo& AddPushConstantRange(const PushConstantRange& pushConstantRange)
+        {
+            pushConstantRanges.push_back(pushConstantRange);
             return *this;
         }
 
         // TODO push constants
     private:
         Vector<DescriptorSetLayout*> setLayouts;
+        Vector<PushConstantRange> pushConstantRanges;
     };
 }

@@ -20,6 +20,7 @@ namespace Husky::Vulkan
     class IndexBuffer;
     class PhysicalDevice;
     class Pipeline;
+    class PipelineBarrier;
     class PipelineCache;
     class PipelineLayout;
     class PresentQueue;

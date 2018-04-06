@@ -360,7 +360,7 @@ namespace Husky::SceneV1::Loader
         HUSKY_ASSERT(indices.byteOffset == 0, "wtf");
 
         return MakeRef<IndexBuffer>(
-            hostBuffer,
+            std::move(hostBuffer),
             indexType,
             indices.count,
             bufferView.byteOffset,

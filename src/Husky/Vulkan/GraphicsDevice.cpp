@@ -111,7 +111,7 @@ namespace Husky::Vulkan
             for (int32 i = 0; i < swapchainCreateInfo.imageCount; i++)
             {
                 auto vulkanImage = images[i];
-                auto image = MakeRef<Image>(this, vulkanImage, nullptr, vk::ImageCreateInfo{}, false);
+                auto image = MakeRef<Image>(this, vulkanImage, nullptr, vk::ImageCreateInfo{}, vk::MemoryRequirements{}, false);
 
                 vk::ImageSubresourceRange subresourceRange;
                 subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eColor);
@@ -255,7 +255,7 @@ namespace Husky::Vulkan
             return { bindResult };
         }
 
-        return { vk::Result::eSuccess, MakeRef<Image>(this, vulkanImage, vulkanMemory, imageCreateInfo) };
+        return { vk::Result::eSuccess, MakeRef<Image>(this, vulkanImage, vulkanMemory, imageCreateInfo, memoryRequirements) };
     }
 
     VulkanRefResultValue<ImageView> GraphicsDevice::CreateImageView(Image* image, vk::ImageViewCreateInfo& imageViewCreateInfo)

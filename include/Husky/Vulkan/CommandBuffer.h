@@ -10,11 +10,23 @@
 #include <Husky/Vulkan/Pipeline.h>
 #include <Husky/Vulkan/PipelineLayout.h>
 #include <Husky/Vulkan/RenderPass.h>
+#include <Husky/Vulkan/PipelineBarrier.h>
+#include <Husky/Vulkan/Image.h>
+#include <Husky/Vulkan/ImageAspects.h>
 
 namespace Husky::Vulkan
 {
     class GraphicsDevice;
     class CommandPool;
+
+    struct BufferToImageCopy
+    {
+        int32 bufferOffset = 0;
+        int32 bufferRowLength = 0;
+        int32 bufferImageHeight = 0;
+        vk::Offset3D imageOffset;
+        vk::Extent3D imageExtent;
+    };
 
     class CommandBuffer : public BaseObject
     {
@@ -64,12 +76,6 @@ namespace Husky::Vulkan
             return this;
         }
 
-        inline CommandBuffer* BindGraphicsPipeline(const RefPtr<Pipeline>& pipeline)
-        {
-            commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->GetPipeline());
-            return this;
-        }
-
         inline CommandBuffer* BindVertexBuffers(Vector<Buffer*> vertexBuffers, Vector<int64> offsets, int32 binding)
         {
             Vector<vk::Buffer> vulkanBuffers;
@@ -93,12 +99,6 @@ namespace Husky::Vulkan
         }
 
         inline CommandBuffer* BindIndexBuffer(Buffer* indexBuffer, vk::IndexType indexType, int64 offset)
-        {
-            commandBuffer.bindIndexBuffer(indexBuffer->GetBuffer(), offset, indexType);
-            return this;
-        }
-
-        inline CommandBuffer* BindIndexBuffer(const RefPtr<Buffer>& indexBuffer, vk::IndexType indexType, int64 offset)
         {
             commandBuffer.bindIndexBuffer(indexBuffer->GetBuffer(), offset, indexType);
             return this;
@@ -135,6 +135,52 @@ namespace Husky::Vulkan
         inline CommandBuffer* DrawIndexed(int32 indexCount, int32 instanceCount, int32 firstIndex, int32 vertexOffset, int32 firstInstance)
         {
             commandBuffer.drawIndexed(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+            return this;
+        }
+
+        inline CommandBuffer* PipelineBarrier(const PipelineBarrier& barrier)
+        {
+            auto vulkanBarrier = PipelineBarrier::ToVulkanPipelineBarrier(barrier);
+
+            commandBuffer.pipelineBarrier(
+                vulkanBarrier.srcStageMask,
+                vulkanBarrier.dstStageMask,
+                vulkanBarrier.dependencyFlags,
+                {},
+                vulkanBarrier.bufferMemoryBarriers,
+                vulkanBarrier.imageMemoryBarriers
+            );
+
+            return this;
+        }
+
+        inline CommandBuffer* CopyBufferToImage(
+            Buffer* buffer,
+            Image* image,
+            vk::ImageLayout dstLayout,
+            const BufferToImageCopy& copy)
+        {
+            vk::ImageSubresourceLayers subresource;
+            subresource.setAspectMask(ToVulkanImageAspectFlags(image->GetImageAspects()));
+            subresource.setBaseArrayLayer(0);
+            subresource.setLayerCount(1);
+            subresource.setMipLevel(0);
+
+            vk::BufferImageCopy bufferImageCopy;
+            bufferImageCopy.setBufferOffset(copy.bufferOffset);
+            bufferImageCopy.setBufferRowLength(copy.bufferRowLength);
+            bufferImageCopy.setBufferImageHeight(copy.bufferImageHeight);
+            bufferImageCopy.setImageOffset(copy.imageOffset);
+            bufferImageCopy.setImageExtent(copy.imageExtent);
+            bufferImageCopy.setImageSubresource(subresource);
+
+            commandBuffer.copyBufferToImage(
+                buffer->GetBuffer(),
+                image->GetImage(),
+                dstLayout,
+                { bufferImageCopy }
+            );
+
             return this;
         }
     private:

@@ -23,6 +23,8 @@ namespace Husky::SceneV1
         inline int32 GetByteOffset() const { return byteOffset; }
         inline const Vector<uint8>& GetHostBuffer() const { return hostBuffer; }
         inline const RefPtr<Vulkan::Buffer>& GetDeviceBuffer() const { return deviceBuffer; }
+
+        bool UploadToDevice(const RefPtr<Vulkan::GraphicsDevice>& device);
     private:
         int32 stride = 4;
         int32 byteOffset = 0;

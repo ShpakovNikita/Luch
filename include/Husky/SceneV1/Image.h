@@ -22,7 +22,7 @@ namespace Husky::SceneV1
         int32 GetHeight() const { return height; }
         int32 GetComponentCount() const { return componentCount; }
 
-        const Vector<uint8>& GetBubffer() const { return  buffer; }
+        const Vector<uint8>& GetBuffer() const { return  buffer; }
     private:
         int32 width;
         int32 height;

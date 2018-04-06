@@ -1,5 +1,6 @@
 #include <Husky/SceneV1/IndexBuffer.h>
 #include <Husky/Vulkan/Buffer.h>
+#include <Husky/Vulkan/GraphicsDevice.h>
 
 namespace Husky::SceneV1
 {
@@ -18,4 +19,33 @@ namespace Husky::SceneV1
     }
 
     IndexBuffer::~IndexBuffer() = default;
+
+    bool IndexBuffer::UploadToDevice(const RefPtr<Vulkan::GraphicsDevice>& device)
+    {
+        auto[createIndexBufferResult, createdIndexBuffer] = device->CreateBuffer(
+            byteLength,
+            device->GetQueueIndices()->graphicsQueueFamilyIndex,
+            vk::BufferUsageFlagBits::eIndexBuffer,
+            true);
+
+        if (createIndexBufferResult != vk::Result::eSuccess)
+        {
+            // TODO
+            return false;
+        }
+
+        {
+            auto[mapIndicesResult, indicesMemory] = createdIndexBuffer->MapMemory(byteLength, 0);
+            if (mapIndicesResult != vk::Result::eSuccess)
+            {
+                return false;
+            }
+
+            memcpy(indicesMemory, hostBuffer.data() + byteOffset, byteLength);
+
+            createdIndexBuffer->UnmapMemory();
+        }
+
+        return true;
+    }
 }

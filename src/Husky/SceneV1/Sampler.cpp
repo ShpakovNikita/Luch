@@ -10,6 +10,4 @@ namespace Husky::SceneV1
         , name(aName)
     {
     }
-
-    Sampler::~Sampler() = default;
 }

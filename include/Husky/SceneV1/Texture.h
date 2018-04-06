@@ -3,6 +3,7 @@
 #include <Husky/BaseObject.h>
 #include <Husky/RefPtr.h>
 #include <Husky/Vulkan/Forwards.h>
+#include <Husky/Vulkan/CommandBuffer.h>
 #include <Husky/SceneV1/Forwards.h>
 
 namespace Husky::SceneV1
@@ -22,9 +23,12 @@ namespace Husky::SceneV1
             const RefPtr<Image>& hostImage,
             const String& name = "");
 
-        ~Texture();
-        // void LoadToHost()
-        // void LoadToDevice()
+        inline const RefPtr<Image>& GetHostImage() const { return hostImage; }
+        inline const RefPtr<Vulkan::Image>& GetDeviceImage() const { return deviceImage; }
+        inline const RefPtr<Vulkan::ImageView>& GetDeviceImageView() const { return deviceImageView; }
+
+        inline void SetDeviceImage(const RefPtr<Vulkan::Image>& aDeviceImage) { deviceImage = aDeviceImage; }
+        inline void SetDeviceImageView(const RefPtr<Vulkan::ImageView>& aDeviceImageView) { deviceImageView = aDeviceImageView; }
 
         inline const RefPtr<Sampler>& GetSampler() const { return sampler; }
     private:

@@ -1,5 +1,8 @@
 #include <Husky/Render/ForwardRenderer.h>
+#include <Husky/Render/TextureUploader.h>
+
 #include <Husky/PrimitiveTopology.h>
+
 #include <Husky/SceneV1/Scene.h>
 #include <Husky/SceneV1/Node.h>
 #include <Husky/SceneV1/Mesh.h>
@@ -7,6 +10,7 @@
 #include <Husky/SceneV1/Camera.h>
 #include <Husky/SceneV1/AlphaMode.h>
 #include <Husky/SceneV1/PbrMaterial.h>
+#include <Husky/SceneV1/Texture.h>
 #include <Husky/SceneV1/VertexBuffer.h>
 #include <Husky/SceneV1/IndexBuffer.h>
 #include <Husky/SceneV1/AttributeSemantic.h>
@@ -14,7 +18,9 @@
 #include <Husky/Vulkan/Attachment.h>
 #include <Husky/Vulkan/PhysicalDevice.h>
 #include <Husky/Vulkan/GraphicsDevice.h>
+#include <Husky/Vulkan/DescriptorSetWrites.h>
 #include <Husky/Vulkan/CommandPool.h>
+#include <Husky/Vulkan/DescriptorPool.h>
 #include <Husky/Vulkan/CommandBuffer.h>
 #include <Husky/Vulkan/Swapchain.h>
 #include <Husky/Vulkan/Pipeline.h>
@@ -35,11 +41,11 @@ namespace Husky::Render
     static const Map<SceneV1::AttributeSemantic, int32> SemanticToLocation =
     {
         { SceneV1::AttributeSemantic::Position, 0 },
-    { SceneV1::AttributeSemantic::Normal, 1 },
-    { SceneV1::AttributeSemantic::Tangent, 2 },
-    { SceneV1::AttributeSemantic::Texcoord_0, 3 },
-    { SceneV1::AttributeSemantic::Texcoord_1, 4 },
-    { SceneV1::AttributeSemantic::Color_0, 5 },
+        { SceneV1::AttributeSemantic::Normal, 1 },
+        { SceneV1::AttributeSemantic::Tangent, 2 },
+        { SceneV1::AttributeSemantic::Texcoord_0, 3 },
+        { SceneV1::AttributeSemantic::Texcoord_1, 4 },
+        { SceneV1::AttributeSemantic::Color_0, 5 },
     };
 
     static const char8* vertexShaderSource =
@@ -161,6 +167,9 @@ namespace Husky::Render
         int32 perMeshUBOCount = sceneProperties.meshes.size();
         int32 perCameraUBOCount = 1;
 
+        // one set per material, one set per mesh, one set for camera
+        int32 maxDescriptorSets = sceneProperties.materials.size() + sceneProperties.meshes.size() + 1;
+
         UnorderedMap<vk::DescriptorType, int32> descriptorCount = 
         {
             { vk::DescriptorType::eSampledImage, textureDescriptorCount},
@@ -181,7 +190,7 @@ namespace Husky::Render
 
         if (createVertexShaderModuleResult != vk::Result::eSuccess)
         {
-            return false;
+            return { false };
         }
 
         preparedScene.vertexShaderModule = std::move(createdVertexShaderModule);
@@ -192,7 +201,7 @@ namespace Husky::Render
 
         if (createFragmentShaderModuleResult != vk::Result::eSuccess)
         {
-            return false;
+            return { false };
         }
 
         preparedScene.fragmentShaderModule = std::move(createdFragmentShaderModule);
@@ -231,57 +240,83 @@ namespace Husky::Render
         auto[createRenderPassResult, createdRenderPass] = context->device->CreateRenderPass(renderPassCreateInfo);
         if (createRenderPassResult != vk::Result::eSuccess)
         {
-            return false;
+            return { false };
         }
 
         preparedScene.renderPass = std::move(createdRenderPass);
 
-        DescriptorSetBinding cameraUniformBufferBinding;
-        cameraUniformBufferBinding
+        preparedScene.cameraUniformBufferBinding
             .OfType(vk::DescriptorType::eUniformBuffer)
             .AtStages(ShaderStage::Vertex | ShaderStage::Fragment);
 
-        DescriptorSetBinding perMaterialImageBinding;
-        perMaterialImageBinding
+        preparedScene.meshUniformBufferBinding
+            .OfType(vk::DescriptorType::eUniformBuffer)
+            .AtStages(ShaderStage::Vertex);
+
+        preparedScene.materialImageBinding
             .OfType(vk::DescriptorType::eSampledImage)
             .AtStages(ShaderStage::Fragment)
             .WithNBindings(texturesPerMaterial);
 
-        DescriptorSetBinding perMaterialSamplerBinding;
-        perMaterialSamplerBinding
+        preparedScene.materialSamplerBinding
             .OfType(vk::DescriptorType::eSampler)
             .AtStages(ShaderStage::Fragment)
-            .WithNBindings(texturesPerMaterial);
+            .WithNBindings(samplersPerMaterial);
 
-        DescriptorSetBinding perMeshUniformBufferBinding;
-        perMeshUniformBufferBinding
-            .OfType(vk::DescriptorType::eUniformBuffer)
-            .AtStages(ShaderStage::Vertex);
+        DescriptorSetLayoutCreateInfo cameraDescriptorSetLayoutCreateInfo;
+        cameraDescriptorSetLayoutCreateInfo
+            .AddBinding(&preparedScene.cameraUniformBufferBinding);
 
-        DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo;
-        descriptorSetLayoutCreateInfo
-            .AddBinding(&cameraUniformBufferBinding)
-            .AddBinding(&perMaterialImageBinding)
-            .AddBinding(&perMaterialSamplerBinding)
-            .AddBinding(&perMeshUniformBufferBinding);
+        DescriptorSetLayoutCreateInfo meshDescriptorSetLayoutCreateInfo;
+        meshDescriptorSetLayoutCreateInfo
+            .AddBinding(&preparedScene.meshUniformBufferBinding);
 
-        auto[createDescriptorSetLayoutResult, createdDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(descriptorSetLayoutCreateInfo);
-        if (createDescriptorSetLayoutResult != vk::Result::eSuccess)
+        DescriptorSetLayoutCreateInfo materialDescriptorSetLayoutCreateInfo;
+        materialDescriptorSetLayoutCreateInfo
+            .AddBinding(&preparedScene.materialImageBinding)
+            .AddBinding(&preparedScene.materialSamplerBinding);
+
+        auto[createCameraDescriptorSetLayoutResult, createdCameraDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(cameraDescriptorSetLayoutCreateInfo);
+        if (createCameraDescriptorSetLayoutResult != vk::Result::eSuccess)
         {
-            return false;
+            return { false };
         }
 
-        preparedScene.descriptorSetLayout = std::move(createdDescriptorSetLayout);
+        preparedScene.cameraDescriptorSetLayout = std::move(createdCameraDescriptorSetLayout);
+
+        auto[createMeshDescriptorSetLayoutResult, createdMeshDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(meshDescriptorSetLayoutCreateInfo);
+        if (createMeshDescriptorSetLayoutResult != vk::Result::eSuccess)
+        {
+            return { false };
+        }
+
+        preparedScene.meshDescriptorSetLayout = std::move(createdMeshDescriptorSetLayout);
+
+        
+        auto[createMaterialDescriptorSetLayoutResult, createdMaterialDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(materialDescriptorSetLayoutCreateInfo);
+        if (createMaterialDescriptorSetLayoutResult != vk::Result::eSuccess)
+        {
+            return { false };
+        }
+
+        preparedScene.materialDescriptorSetLayout = std::move(createdMaterialDescriptorSetLayout);
+
+
+        // TODO check push constant size limit
 
         PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
         pipelineLayoutCreateInfo
-            .WithNSetLayouts(1)
-            .AddSetLayout(preparedScene.descriptorSetLayout.Get());
+            .WithNSetLayouts(3)
+            .AddSetLayout(preparedScene.cameraDescriptorSetLayout)
+            .AddSetLayout(preparedScene.meshDescriptorSetLayout)
+            .AddSetLayout(preparedScene.materialDescriptorSetLayout)
+            .WithNPushConstantRanges(1)
+            .AddPushConstantRange({ ShaderStage::Fragment, 0, sizeof(MaterialPushConstants) });
 
         auto[createPipelineLayoutResult, createdPipelineLayout] = context->device->CreatePipelineLayout(pipelineLayoutCreateInfo);
         if (createPipelineLayoutResult != vk::Result::eSuccess)
         {
-            return false;
+            return { false };
         }
 
         preparedScene.pipelineLayout = std::move(createdPipelineLayout);
@@ -292,67 +327,27 @@ namespace Husky::Render
 
         const auto& indices = context->device->GetQueueIndices();
 
+        auto[createdGraphicsCommandPoolResult, createdGraphicsCommandPool] = context->device->CreateCommandPool(indices->graphicsQueueFamilyIndex, false, false);
+        if (createdGraphicsCommandPoolResult != vk::Result::eSuccess)
+        {
+            // TODO
+            return { false };
+        }
+
+        preparedScene.commandPool = std::move(createdGraphicsCommandPool);
+
         for (int32 i = 0; i < swapchainCreateInfo.imageCount; i++)
         {
             auto& frameResources = preparedScene.frameResources.emplace_back();
 
-            auto[createdGraphicsCommandPoolResult, createdGraphicsCommandPool] = context->device->CreateCommandPool(indices->graphicsQueueFamilyIndex, false, false);
-            if (createdGraphicsCommandPoolResult != vk::Result::eSuccess)
+            auto[createFrameGraphicsCommandPoolResult, createdFrameGraphicsCommandPool] = context->device->CreateCommandPool(indices->graphicsQueueFamilyIndex, false, false);
+            if (createFrameGraphicsCommandPoolResult != vk::Result::eSuccess)
             {
                 // TODO
-                return false;
+                return { false };
             }
 
-            frameResources.graphicsCommandPool = std::move(createdGraphicsCommandPool);
-
-            //auto[createBufferResult, createdBuffer] = device->CreateBuffer(uniformBufferSize, indices->graphicsQueueFamilyIndex, vk::BufferUsageFlagBits::eUniformBuffer, true);
-            //if (createBufferResult != vk::Result::eSuccess)
-            //{
-            //    // TODO
-            //    return false;
-            //}
-            //
-            //frameResources.uniformBuffer = std::move(createdBuffer);
-
-            //auto[createVertexBufferResult, createdVertexBuffer] = device.CreateVertexBuffer(vertexSize, verticesCount, indices.graphicsQueueFamilyIndex, true);
-            //if (createVertexBufferResult != vk::Result::eSuccess)
-            //{
-            //    return false;
-            //}
-
-            //{
-            //    auto[mapVerticesResult, verticesMemory] = createdVertexBuffer.GetUnderlyingBuffer().MapMemory(indexBufferSize, 0);
-            //    if (mapVerticesResult != vk::Result::eSuccess)
-            //    {
-            //        return false;
-            //    }
-
-            //    memcpy(verticesMemory, graphicsContext->boxData.vertices.data(), vertexSize * verticesCount);
-
-            //    createdVertexBuffer.GetUnderlyingBuffer().UnmapMemory();
-            //}
-
-            //frameResources.vertexBuffer = std::move(createdVertexBuffer);
-
-            //auto[createIndexBufferResult, createdIndexBuffer] = device.CreateIndexBuffer(IndexType::UInt16, indicesCount, indices.graphicsQueueFamilyIndex, true);
-            //if (createIndexBufferResult != vk::Result::eSuccess)
-            //{
-            //    // TODO
-            //    return false;
-            //}
-
-            //{
-            //    auto[mapIndicesResult, indicesMemory] = createdIndexBuffer.GetUnderlyingBuffer().MapMemory(indexBufferSize, 0);
-            //    if (mapIndicesResult != vk::Result::eSuccess)
-            //    {
-            //        return false;
-            //    }
-            //    memcpy(indicesMemory, graphicsContext->boxData.indices16.data(), indexBufferSize);
-
-            //    createdIndexBuffer.GetUnderlyingBuffer().UnmapMemory();
-            //}
-
-            //frameResources.indexBuffer = std::move(createdIndexBuffer);
+            frameResources.graphicsCommandPool = std::move(createdFrameGraphicsCommandPool);
 
             vk::ImageCreateInfo depthBufferCreateInfo;
             depthBufferCreateInfo.setFormat(ToVulkanFormat(depthStencilFormat));
@@ -371,7 +366,7 @@ namespace Husky::Render
             auto[createDepthStencilBufferResult, createdDepthStencilBuffer] = context->device->CreateImage(depthBufferCreateInfo);
             if (createDepthStencilBufferResult != vk::Result::eSuccess)
             {
-                return false;
+                return { false };
             }
 
             frameResources.depthStencilBuffer = std::move(createdDepthStencilBuffer);
@@ -379,7 +374,7 @@ namespace Husky::Render
             auto[createDepthStencilBufferViewResult, createdDepthStencilBufferView] = context->device->CreateImageView(frameResources.depthStencilBuffer.Get());
             if (createDepthStencilBufferViewResult != vk::Result::eSuccess)
             {
-                return false;
+                return { false };
             }
 
             frameResources.depthStencilBufferView = std::move(createdDepthStencilBufferView);
@@ -392,7 +387,7 @@ namespace Husky::Render
             auto[createFramebufferResult, createdFramebuffer] = context->device->CreateFramebuffer(framebufferCreateInfo);
             if (createFramebufferResult != vk::Result::eSuccess)
             {
-                return false;
+                return { false };
             }
 
             frameResources.framebuffer = std::move(createdFramebuffer);
@@ -400,13 +395,13 @@ namespace Husky::Render
             auto[createFenceResult, createdFence] = context->device->CreateFence();
             if (createFenceResult != vk::Result::eSuccess)
             {
-                return false;
+                return { false };
             }
 
             auto[allocateResult, allocatedBuffer] = frameResources.graphicsCommandPool->AllocateCommandBuffer(CommandBufferLevel::Primary);
             if (allocateResult != vk::Result::eSuccess)
             {
-                return false;
+                return { false };
             }
 
             frameResources.commandBuffer = std::move(allocatedBuffer);
@@ -416,36 +411,81 @@ namespace Husky::Render
             auto[createSemaphoreResult, createdSemaphore] = context->device->CreateSemaphore();
             if (createSemaphoreResult != vk::Result::eSuccess)
             {
-                return false;
+                return { false };
             }
 
             frameResources.semaphore = std::move(createdSemaphore);
 
-            //auto[createDescriptorPoolResult, createdDescriptorPool] = device->CreateDescriptorPool(1, { { vk::DescriptorType::eUniformBuffer, 1 } });
-            //if (createDescriptorPoolResult != vk::Result::eSuccess)
-            //{
-            //    return false;
-            //}
-            //
-            //frameResources.descriptorPool = std::move(createdDescriptorPool);
-            //
-            //{
-            //    auto[mapUniformResult, uniformMemory] = frameResources.uniformBuffer.MapMemory(uniformBufferSize, 0);
-            //    if (mapUniformResult != vk::Result::eSuccess)
-            //    {
-            //        return false;
-            //    }
-            //
-            //
-            //    // TODO
-            //    memcpy(uniformMemory, nullptr, uniformBufferSize);
-            //
-            //    frameResources.uniformBuffer.UnmapMemory();
-            //}
+            auto[createDescriptorPoolResult, createdDescriptorPool] = context->device->CreateDescriptorPool(maxDescriptorSets, descriptorCount);
+            if (createDescriptorPoolResult != vk::Result::eSuccess)
+            {
+                return { false };
+            }
+            
+            preparedScene.descriptorPool = std::move(createdDescriptorPool);
+
+            auto[createCameraDescriptorSetResult , createdCameraDescriptorSet] = preparedScene.descriptorPool->AllocateDescriptorSet(preparedScene.cameraDescriptorSetLayout);
+            if (createCameraDescriptorSetResult != vk::Result::eSuccess)
+            {
+                return { false };
+            }
+
+            frameResources.cameraDescriptorSet = std::move(createdCameraDescriptorSet);
+
+            auto[createUniformBufferResult, createdUniformBuffer] = context->device->CreateBuffer(
+                sizeof(CameraUniformBuffer),
+                indices->graphicsQueueFamilyIndex,
+                vk::BufferUsageFlagBits::eUniformBuffer,
+                true);
+
+            if (createUniformBufferResult != vk::Result::eSuccess)
+            {
+                return { false };
+            }
+
+            frameResources.cameraUniformBuffer = std::move(createdUniformBuffer);
+
+            DescriptorSetWrites descriptorSetWrites;
+            descriptorSetWrites.WriteUniformBufferDescriptors(frameResources.cameraDescriptorSet, &preparedScene.cameraUniformBufferBinding, { frameResources.cameraUniformBuffer });
+            
+            DescriptorSet::Update(descriptorSetWrites);
         }
+
+        const auto& textures = sceneProperties.textures;
+
+        Vector<SceneV1::Texture*> texturesVector;
+        for (const auto& texture : textures)
+        {
+            texturesVector.push_back(texture);
+        }
+
+        TextureUploader textureUploader{ context->device, preparedScene.commandPool };
+        auto [uploadTexturesSucceeded, uploadTexturesResult] = textureUploader.UploadTextures(texturesVector);
+
+        HUSKY_ASSERT(uploadTexturesSucceeded);
+
+        // TODO semaphores
+
+        Submission uploadTexturesSubmission;
+        for (const auto& buffer : uploadTexturesResult.commandBuffers)
+        {
+            uploadTexturesSubmission.commandBuffers.push_back(buffer);
+        }
+
+        context->device->GetGraphicsQueue()->Submit(uploadTexturesSubmission);
+        context->device->GetGraphicsQueue()->WaitIdle();
+
+        const auto& nodes = scene->GetNodes();
+
+        for (const auto& node : nodes)
+        {
+            PrepareNode(node, preparedScene);
+        }
+
+        return { true, preparedScene };
     }
 
-    void ForwardRenderer::Draw(const RefPtr<SceneV1::Node>& node)
+    void ForwardRenderer::DrawScene(const PreparedScene& scene)
     {
         auto[createSemaphoreResult, imageAcquiredSemaphore] = context->device->CreateSemaphore();
         HUSKY_ASSERT(createSemaphoreResult == vk::Result::eSuccess);
@@ -453,19 +493,7 @@ namespace Husky::Render
         auto[acquireResult, index] = context->swapchain->AcquireNextImage(nullptr, imageAcquiredSemaphore.Get());
         HUSKY_ASSERT(acquireResult == vk::Result::eSuccess);
 
-        auto& frameResource = context->frameResources[index];
-
-        //frameResource.descriptorPool->Reset();
-
-        //auto[allocateDescriptorSetResult, allocatedDescriptorSet] = frameResource.descriptorPool.AllocateDescriptorSet(&context->descriptorSetLayout);
-        //HUSKY_ASSERT(allocateDescriptorSetResult == vk::Result::eSuccess);
-        //
-        //frameResource.descriptorSet = std::move(allocatedDescriptorSet);
-
-        // DescriptorSetWrites descriptorSetWrites;
-        // descriptorSetWrites.WriteUniformBufferDescriptors(&frameResource.descriptorSet, &context->uniformBufferBinding, { &frameResource.uniformBuffer });
-        // 
-        // DescriptorSet::Update(descriptorSetWrites);
+        auto& frameResource = scene.frameResources[index];
 
         auto &cmdBuffer = frameResource.commandBuffer;
 
@@ -480,7 +508,7 @@ namespace Husky::Render
 
         cmdBuffer
             ->Begin()
-            ->BeginInlineRenderPass(context->renderPass.Get(), frameResource.framebuffer.Get(), clearValues, { { 0, 0 },{ (uint32)framebufferWidth, (uint32)framebufferHeight } });
+            ->BeginInlineRenderPass(scene.renderPass.Get(), frameResource.framebuffer.Get(), clearValues, { { 0, 0 },{ (uint32)framebufferWidth, (uint32)framebufferHeight } });
 
         cmdBuffer
             ->EndRenderPass()
@@ -507,36 +535,87 @@ namespace Husky::Render
         context->device->GetPresentQueue()->Present(presentSubmission);
     }
 
-    void ForwardRenderer::PrepareNode(const RefPtr<SceneV1::Node>& node)
+    void ForwardRenderer::PrepareNode(const RefPtr<SceneV1::Node>& node, PreparedScene& scene)
     {
         const auto& mesh = node->GetMesh();
 
         if (mesh != nullptr)
         {
-            PrepareMesh(mesh);
+            PrepareMesh(mesh, scene);
         }
 
         for (const auto& child : node->GetChildren())
         {
-            PrepareNode(node);
+            PrepareNode(node, scene);
         }
     }
 
-    void ForwardRenderer::PrepareMesh(const RefPtr<SceneV1::Mesh>& mesh)
+    void ForwardRenderer::PrepareMesh(const RefPtr<SceneV1::Mesh>& mesh, PreparedScene& scene)
     {
         for (const auto& primitive : mesh->GetPrimitives())
         {
             RefPtr<Pipeline> pipeline = primitive->GetPipeline();
             if (pipeline == nullptr)
             {
-                pipeline = CreatePipeline(primitive);
+                pipeline = CreatePipeline(primitive, scene);
                 primitive->SetPipeline(pipeline);
             }
 
             const auto& indexBuffer = primitive->GetIndexBuffer();
+            bool indexBufferUploaded = indexBuffer->UploadToDevice(context->device);
+            HUSKY_ASSERT(indexBufferUploaded);
+
             const auto& vertexBuffers = primitive->GetVertexBuffers();
-            const auto& material = primitive->GetMaterial();
+            for (const auto& vertexBuffer : vertexBuffers)
+            {
+                bool vertexBufferUploaded = vertexBuffer->UploadToDevice(context->device);
+                HUSKY_ASSERT(vertexBufferUploaded);
+            }
+
+            auto[createUniformBufferResult, createdUniformBuffer] = context->device->CreateBuffer(
+                sizeof(MeshUniformBuffer),
+                context->device->GetQueueIndices()->graphicsQueueFamilyIndex,
+                vk::BufferUsageFlagBits::eUniformBuffer,
+                true);
+
+            HUSKY_ASSERT(createUniformBufferResult == vk::Result::eSuccess);
+
+            mesh->SetUniformBuffer(createdUniformBuffer);
+
+            auto [allocateDescriptorSetResult, allocatedDescriptorSet] = scene.descriptorPool->AllocateDescriptorSet(scene.meshDescriptorSetLayout);
+            HUSKY_ASSERT(allocateDescriptorSetResult == vk::Result::eSuccess);
+
+            mesh->SetDescriptorSet(allocatedDescriptorSet);
+
+            DescriptorSetWrites descriptorSetWrites;
+            descriptorSetWrites.WriteUniformBufferDescriptors(allocatedDescriptorSet, &scene.meshUniformBufferBinding, { createdUniformBuffer });
+
+            DescriptorSet::Update(descriptorSetWrites);
         }
+    }
+
+    void ForwardRenderer::PrepareMaterial(const RefPtr<SceneV1::PbrMaterial>& material, PreparedScene& scene)
+    {
+        auto[allocateDescriptorSetResult, allocatedDescriptorSet] = scene.descriptorPool->AllocateDescriptorSet(scene.materialDescriptorSetLayout);
+        HUSKY_ASSERT(allocateDescriptorSetResult == vk::Result::eSuccess);
+
+        material->SetDescriptorSet(allocatedDescriptorSet);
+
+        DescriptorSetWrites descriptorSetWrites;
+
+        Vector<ImageDescriptorInfo> imageDescriptors;
+
+        // TODO replace null textures with empty texture descriptors
+
+        imageDescriptors.push_back(ImageDescriptorInfo{ material->metallicRoughness.baseColorTexture.texture->GetDeviceImageView(), vk::ImageLayout::eShaderReadOnlyOptimal });
+        imageDescriptors.push_back(ImageDescriptorInfo{ material->metallicRoughness.metallicRoughnessTexture.texture->GetDeviceImageView(), vk::ImageLayout::eShaderReadOnlyOptimal });
+        imageDescriptors.push_back(ImageDescriptorInfo{ material->normalTexture.texture->GetDeviceImageView(), vk::ImageLayout::eShaderReadOnlyOptimal });
+        imageDescriptors.push_back(ImageDescriptorInfo{ material->occlusionTexture.texture->GetDeviceImageView(), vk::ImageLayout::eShaderReadOnlyOptimal });
+        imageDescriptors.push_back(ImageDescriptorInfo{ material->emissiveTexture.texture->GetDeviceImageView(), vk::ImageLayout::eShaderReadOnlyOptimal });
+
+        descriptorSetWrites.WriteImageDescriptors(allocatedDescriptorSet, &scene.meshUniformBufferBinding, imageDescriptors);
+
+        DescriptorSet::Update(descriptorSetWrites);
     }
 
     void ForwardRenderer::DrawMesh(const RefPtr<SceneV1::Mesh>& mesh, GlobalDrawContext* drawContext, CommandBuffer* cmdBuffer)
@@ -583,25 +662,25 @@ namespace Husky::Render
             ->BindVertexBuffers(vulkanVertexBuffers, offsets, 0)
             // TODO push material constants
             ->BindIndexBuffer(
-            indexBuffer->GetDeviceBuffer().Get(),
-            ToVulkanIndexType(indexBuffer->GetIndexType()),
-            indexBuffer->GetByteOffset())
+                indexBuffer->GetDeviceBuffer().Get(),
+                ToVulkanIndexType(indexBuffer->GetIndexType()),
+                indexBuffer->GetByteOffset())
             ->DrawIndexed(indexBuffer->GetIndexCount(), 1, 0, 0, 0);
     }
 
     // Assume that all primitives have the same vertex layout
-    RefPtr<Pipeline> ForwardRenderer::CreatePipeline(const RefPtr<SceneV1::Primitive>& primitive)
+    RefPtr<Pipeline> ForwardRenderer::CreatePipeline(const RefPtr<SceneV1::Primitive>& primitive, PreparedScene& scene)
     {
         GraphicsPipelineCreateInfo pipelineState;
 
         auto& vertexShaderStage = pipelineState.shaderStages.emplace_back();
         vertexShaderStage.name = "main";
-        vertexShaderStage.shaderModule = context->vertexShaderModule.Get();
+        vertexShaderStage.shaderModule = scene.vertexShaderModule.Get();
         vertexShaderStage.stage = ShaderStage::Vertex;
 
         auto& fragmentShaderStage = pipelineState.shaderStages.emplace_back();
         fragmentShaderStage.name = "main";
-        fragmentShaderStage.shaderModule = context->fragmentShaderModule.Get();
+        fragmentShaderStage.shaderModule = scene.fragmentShaderModule.Get();
         fragmentShaderStage.stage = ShaderStage::Fragment;
 
         const auto& vertexBuffers = primitive->GetVertexBuffers();
@@ -656,8 +735,8 @@ namespace Husky::Render
             attachmentBlendState.alphaBlendOp = vk::BlendOp::eAdd;
         }
 
-        pipelineState.renderPass = context->renderPass.Get();
-        pipelineState.layout = context->pipelineLayout.Get();
+        pipelineState.renderPass = scene.renderPass.Get();
+        pipelineState.layout = scene.pipelineLayout.Get();
 
         pipelineState.dynamicState.dynamicStates.push_back(vk::DynamicState::eScissor);
         pipelineState.dynamicState.dynamicStates.push_back(vk::DynamicState::eViewport);

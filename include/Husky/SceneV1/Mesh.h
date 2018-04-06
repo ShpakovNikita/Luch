@@ -21,11 +21,15 @@ namespace Husky::SceneV1
 
         inline const RefPtr<Vulkan::Buffer>& GetUniformBuffer() const { return uniformBuffer; }
         inline void SetUniformBuffer(const RefPtr<Vulkan::Buffer>& aUniformBuffer) { uniformBuffer = aUniformBuffer; }
+
+        inline const RefPtr<Vulkan::DescriptorSet>& GetDescriptorSet() const { return descriptorSet; }
+        inline void SetDescriptorSet(const RefPtr<Vulkan::DescriptorSet>& aDescriptorSet) { descriptorSet = aDescriptorSet; }
     private:
         String name;
 
         RefPtrVector<Primitive> primitives;
 
         RefPtr<Vulkan::Buffer> uniformBuffer;
+        RefPtr<Vulkan::DescriptorSet> descriptorSet;
     };
 }

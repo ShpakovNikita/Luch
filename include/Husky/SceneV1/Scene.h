@@ -19,8 +19,10 @@ namespace Husky::SceneV1
 
         inline const String& GetName() const { return name;  }
         inline const SceneProperties& GetSceneProperties() const { return sceneProperties; }
+        inline const RefPtrVector<Node>& GetNodes() const { return nodes; }
     private:
         String name;
+        RefPtrVector<Node> nodes;
         SceneProperties sceneProperties;
     };
 }
