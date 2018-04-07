@@ -46,6 +46,8 @@ namespace Husky::SceneV1
             createdIndexBuffer->UnmapMemory();
         }
 
+        deviceBuffer = createdIndexBuffer;
+
         return true;
     }
 }

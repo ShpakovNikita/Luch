@@ -26,6 +26,7 @@ namespace Husky::Render
 
         Vector<TextureUploadIntermediateResult> intermediateResults;
         intermediateResults.reserve(textures.size());
+        result.stagingBuffers.reserve(textures.size());
 
         for (SceneV1::Texture* texture : textures)
         {
@@ -40,6 +41,7 @@ namespace Husky::Render
             // TODO
             HUSKY_ASSERT(succeeded);
 
+            result.stagingBuffers.push_back(intermediateResult.stagingBuffer);
             intermediateResults.push_back(intermediateResult);
         }
 
@@ -130,7 +132,6 @@ namespace Husky::Render
 
 
         const auto &queueIndices = device->GetQueueIndices();
-        int32 stagingBufferSize = createdImage->GetMemoryRequirements().size;
 
         auto &hostImageBuffer = hostImage->GetBuffer();
 
@@ -177,7 +178,11 @@ namespace Husky::Render
         result.image = createdImage;
         result.stagingBuffer = stagingBuffer;
 
+        result.copy.bufferOffset = 0;
+        result.copy.bufferRowLength = 0;
+        result.copy.bufferImageHeight = 0;
         result.copy.imageExtent = vk::Extent3D{ (uint32)hostImage->GetWidth(), (uint32)hostImage->GetHeight(), 1 };
+        result.copy.imageOffset = vk::Offset3D{ 0, 0, 0 };
 
         result.transferImageBarrier
             .ForImage(createdImage)

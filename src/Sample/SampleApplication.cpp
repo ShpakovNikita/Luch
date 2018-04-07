@@ -134,7 +134,10 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     renderer->Initialize();
 
-    auto preparedScene = renderer->PrepareScene(scenes[0]);
+    auto [prepareSceneResult, preparedScene] = renderer->PrepareScene(scenes[0]);
+    HUSKY_ASSERT(prepareSceneResult);
+
+    scene = std::move(preparedScene);
 
     return true;
 }
@@ -159,7 +162,7 @@ void SampleApplication::Run()
         }
         else
         {
-            //Draw();
+            renderer->DrawScene(scene);
         }
     }
 }

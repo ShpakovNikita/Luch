@@ -52,31 +52,48 @@ namespace Husky::Render
         "#version 450\n"
         "#extension GL_ARB_shading_language_420pack : enable\n"
         "#extension GL_ARB_separate_shader_objects : enable\n"
-        "layout (set = 0, binding = 0) uniform UniformBufferObject\n"
+        "layout (set = 0, binding = 0) uniform CameraUniformBufferObject\n"
         "{\n"
-        "    mat4 model;\n"
         "    mat4 view;\n"
         "    mat4 projection;\n"
-        "} ub;\n"
+        "} camera;\n"
+        "layout (set = 1, binding = 0) uniform MeshUniformBufferObject\n"
+        "{\n"
+        "    mat4 model;\n"
+        "} mesh;\n"
+        
         "layout (location = 0) in vec3 position;\n"
         "layout (location = 1) in vec3 normal;\n"
-        "layout (location = 2) in vec2 inTexCoord;\n"
-        "layout (location = 0) out vec2 outTexCoord;\n"
+        "//layout (location = 2) in vec3 tangent;\n"
+        "layout (location = 3) in vec2 inTexCoord;\n"
+        "layout (location = 1) out vec2 outNormal;\n"
+        "layout (location = 3) out vec2 outTexCoord;\n"
         "void main()\n"
         "{\n"
         "   outTexCoord = inTexCoord;\n"
-        "   gl_Position = ub.projection * ub.view * ub.model * vec4(position, 1.0);\n"
+        "   gl_Position = vec4(position, 1.0);\n"
         "}\n";
 
     static const char8* fragmentShaderSource =
         "#version 450\n"
         "#extension GL_ARB_shading_language_420pack : enable\n"
         "#extension GL_ARB_separate_shader_objects : enable\n"
-        "layout (location = 0) in vec2 texCoord;\n"
+        "layout (set = 2, binding = 0) uniform texture2D baseColorMap;\n"
+        "layout (set = 2, binding = 1) uniform texture2D roughnessMap;\n"
+        "layout (set = 2, binding = 2) uniform texture2D normalMap;\n"
+        "layout (set = 2, binding = 3) uniform texture2D occlusionMap;\n"
+        "layout (set = 2, binding = 4) uniform texture2D emissiveMap;\n"
+        "layout (set = 2, binding = 5) uniform sampler2D baseColorSampler;\n"
+        "layout (set = 2, binding = 6) uniform sampler2D roughnessSampler;\n"
+        "layout (set = 2, binding = 7) uniform sampler2D normalSampler;\n"
+        "layout (set = 2, binding = 8) uniform sampler2D occlusionSampler;\n"
+        "layout (set = 2, binding = 9) uniform sampler2D emissiveSampler;\n"
+        "layout (location = 1) in vec2 normal;\n"
+        "layout (location = 3) in vec2 texCoord;\n"
         "layout (location = 0) out vec4 outColor;\n"
         "void main()\n"
         "{\n"
-        "   outColor = vec4(texCoord, 0.0, 1.0);\n"
+        "   outColor = vec4(normal, 0.0, 1.0);\n"
         "}\n";
 
     ForwardRenderer::ForwardRenderer(
@@ -156,6 +173,8 @@ namespace Husky::Render
     ResultValue<bool, PreparedScene> ForwardRenderer::PrepareScene(const RefPtr<SceneV1::Scene>& scene)
     {
         PreparedScene preparedScene;
+
+        preparedScene.scene = scene;
 
         const auto& sceneProperties = scene->GetSceneProperties();
 
@@ -482,6 +501,11 @@ namespace Husky::Render
             PrepareNode(node, preparedScene);
         }
 
+        for (const auto& material : sceneProperties.materials)
+        {
+            PrepareMaterial(material, preparedScene);
+        }
+
         return { true, preparedScene };
     }
 
@@ -508,7 +532,18 @@ namespace Husky::Render
 
         cmdBuffer
             ->Begin()
-            ->BeginInlineRenderPass(scene.renderPass.Get(), frameResource.framebuffer.Get(), clearValues, { { 0, 0 },{ (uint32)framebufferWidth, (uint32)framebufferHeight } });
+            ->SetViewport({ 0, 0, (float32)framebufferWidth, (float32)framebufferHeight, 0.0f, 1.0f })
+            ->SetScissor({ {0, 0}, {(uint32)framebufferWidth, (uint32)framebufferHeight} })
+            ->BeginInlineRenderPass(
+                scene.renderPass,
+                frameResource.framebuffer,
+                clearValues,
+                { { 0, 0 },{ (uint32)framebufferWidth, (uint32)framebufferHeight } });
+
+        for (const auto& node : scene.scene->GetNodes())
+        {
+            DrawNode(node, scene, cmdBuffer);
+        }
 
         cmdBuffer
             ->EndRenderPass()
@@ -618,13 +653,29 @@ namespace Husky::Render
         DescriptorSet::Update(descriptorSetWrites);
     }
 
-    void ForwardRenderer::DrawMesh(const RefPtr<SceneV1::Mesh>& mesh, GlobalDrawContext* drawContext, CommandBuffer* cmdBuffer)
+    void Husky::Render::ForwardRenderer::DrawNode(const RefPtr<SceneV1::Node>& node, const PreparedScene & scene, CommandBuffer * cmdBuffer)
     {
+        const auto& mesh = node->GetMesh();
+        if (mesh != nullptr)
+        {
+            DrawMesh(mesh, scene, cmdBuffer);
+        }
+
+        for (const auto& child : node->GetChildren())
+        {
+            DrawNode(child, scene, cmdBuffer);
+        }
+    }
+
+    void ForwardRenderer::DrawMesh(const RefPtr<SceneV1::Mesh>& mesh, const PreparedScene& scene, CommandBuffer* cmdBuffer)
+    {
+        cmdBuffer->BindDescriptorSet(scene.pipelineLayout, 1, mesh->GetDescriptorSet());
+
         for (const auto& primitive : mesh->GetPrimitives())
         {
             if (primitive->GetMaterial()->alphaMode != SceneV1::AlphaMode::Blend)
             {
-                DrawPrimitive(primitive, drawContext, cmdBuffer);
+                DrawPrimitive(primitive, scene, cmdBuffer);
             }
         }
 
@@ -633,12 +684,12 @@ namespace Husky::Render
         {
             if (primitive->GetMaterial()->alphaMode == SceneV1::AlphaMode::Blend)
             {
-                DrawPrimitive(primitive, drawContext, cmdBuffer);
+                DrawPrimitive(primitive, scene, cmdBuffer);
             }
         }
     }
 
-    void ForwardRenderer::DrawPrimitive(const RefPtr<SceneV1::Primitive>& primitive, GlobalDrawContext* drawContext, CommandBuffer* cmdBuffer)
+    void ForwardRenderer::DrawPrimitive(const RefPtr<SceneV1::Primitive>& primitive, const PreparedScene& scene, CommandBuffer* cmdBuffer)
     {
         RefPtr<Pipeline> pipeline = primitive->GetPipeline();
 
@@ -652,7 +703,7 @@ namespace Husky::Render
         for (const auto& vertexBuffer : vertexBuffers)
         {
             vulkanVertexBuffers.push_back(vertexBuffer->GetDeviceBuffer().Get());
-            offsets.push_back(vertexBuffer->GetByteOffset());
+            offsets.push_back(0);
         }
 
         const auto& indexBuffer = primitive->GetIndexBuffer();
@@ -660,11 +711,11 @@ namespace Husky::Render
         cmdBuffer
             ->BindGraphicsPipeline(pipeline.Get())
             ->BindVertexBuffers(vulkanVertexBuffers, offsets, 0)
-            // TODO push material constants
+            ->BindDescriptorSet(scene.pipelineLayout, 2, primitive->GetMaterial()->GetDescriptorSet())
             ->BindIndexBuffer(
                 indexBuffer->GetDeviceBuffer().Get(),
                 ToVulkanIndexType(indexBuffer->GetIndexType()),
-                indexBuffer->GetByteOffset())
+                0)
             ->DrawIndexed(indexBuffer->GetIndexCount(), 1, 0, 0, 0);
     }
 
@@ -737,6 +788,9 @@ namespace Husky::Render
 
         pipelineState.renderPass = scene.renderPass.Get();
         pipelineState.layout = scene.pipelineLayout.Get();
+
+        pipelineState.viewportState.viewports.emplace_back();
+        pipelineState.viewportState.scissors.emplace_back();
 
         pipelineState.dynamicState.dynamicStates.push_back(vk::DynamicState::eScissor);
         pipelineState.dynamicState.dynamicStates.push_back(vk::DynamicState::eViewport);

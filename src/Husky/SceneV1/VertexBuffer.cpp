@@ -44,6 +44,8 @@ namespace Husky::SceneV1
             createdVertexBuffer->UnmapMemory();
         }
 
+        deviceBuffer = createdVertexBuffer;
+
         return true;
     }
 }

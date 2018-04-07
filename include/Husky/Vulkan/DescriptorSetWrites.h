@@ -38,6 +38,12 @@ namespace Husky::Vulkan
             DescriptorSet* descriptorSet,
             DescriptorSetBinding* binding,
             const Vector<ImageDescriptorInfo>& images);
+
+        DescriptorSetWrites& WriteSamplerDescriptors(
+            DescriptorSet* descriptorSet,
+            DescriptorSetBinding* binding,
+            const Vector<Sampler*>& samplers);
+
     private:
         GraphicsDevice* device = nullptr;
         Vector<vk::WriteDescriptorSet> writes;

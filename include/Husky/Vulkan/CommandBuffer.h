@@ -104,7 +104,7 @@ namespace Husky::Vulkan
             return this;
         }
 
-        inline CommandBuffer* BindDescriptorSets(PipelineLayout* layout, Vector<DescriptorSet*> sets)
+        inline CommandBuffer* BindDescriptorSets(PipelineLayout* layout, int32 firstSet, Vector<DescriptorSet*> sets)
         {
             Vector<vk::DescriptorSet> vulkanSets;
             vulkanSets.reserve(sets.size());
@@ -114,7 +114,25 @@ namespace Husky::Vulkan
                 vulkanSets.push_back(set->GetDescriptorSet());
             }
 
-            commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, layout->GetPipelineLayout(), 0, vulkanSets, {});
+            commandBuffer.bindDescriptorSets(
+                vk::PipelineBindPoint::eGraphics,
+                layout->GetPipelineLayout(),
+                firstSet,
+                vulkanSets,
+                {});
+
+            return this;
+        }
+
+        inline CommandBuffer* BindDescriptorSet(PipelineLayout* layout, int32 index, DescriptorSet* set)
+        {
+            commandBuffer.bindDescriptorSets(
+                vk::PipelineBindPoint::eGraphics,
+                layout->GetPipelineLayout(),
+                index,
+                { set->GetDescriptorSet() },
+                {});
+
             return this;
         }
 
@@ -181,6 +199,18 @@ namespace Husky::Vulkan
                 { bufferImageCopy }
             );
 
+            return this;
+        }
+
+        inline CommandBuffer* SetViewport(const vk::Viewport& viewport)
+        {
+            commandBuffer.setViewport(0, { viewport });
+            return this;
+        }
+
+        inline CommandBuffer* SetScissor(const vk::Rect2D& scissor)
+        {
+            commandBuffer.setScissor(0, { scissor });
             return this;
         }
     private:

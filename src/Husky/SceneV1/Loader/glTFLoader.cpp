@@ -20,6 +20,16 @@
 
 namespace Husky::SceneV1::Loader
 {
+    Map<glTF::ComponentType, ComponentType> ComponentTypes = 
+    {
+        { glTF::ComponentType:: Int8, ComponentType:: Int8 },
+        { glTF::ComponentType:: UInt8, ComponentType:: UInt8 },
+        { glTF::ComponentType:: Int16, ComponentType:: Int16 },
+        { glTF::ComponentType:: UInt16, ComponentType:: UInt16 },
+        { glTF::ComponentType:: UInt, ComponentType:: UInt },
+        { glTF::ComponentType:: Float, ComponentType:: Float },
+    };
+
     glTFLoader::glTFLoader(const String& aRootFolder, SharedPtr<glTF::glTFRoot> glTFRoot)
         : rootFolder(aRootFolder)
         , root(move(glTFRoot))
@@ -255,11 +265,12 @@ namespace Husky::SceneV1::Loader
         {
             const auto& accessor = root->accessors[glTFAttribute.accessor];
 
-            PrimitiveAttribute attribute;
+            auto& attribute = attributes.emplace_back();
             attribute.semantic = (AttributeSemantic)glTFAttribute.semantic;
-            attribute.componentType = (ComponentType)accessor.componentType;
+            attribute.componentType = ComponentTypes.at(accessor.componentType);
             attribute.attributeType = (AttributeType)accessor.type;
             attribute.offset = accessor.byteOffset;
+            attribute.format = AttribuiteToFormat(attribute.attributeType, attribute.componentType);
 
             const auto& bufferViewIndex = accessor.bufferView;
 
@@ -283,6 +294,7 @@ namespace Husky::SceneV1::Loader
                 if (it != vertexBuffersMap.end())
                 {
                     vb = it->second.buffer;
+                    attribute.vertexBufferIndex = it->second.index;
                 }
                 else
                 {
@@ -295,12 +307,11 @@ namespace Husky::SceneV1::Loader
                         bufferView.byteLength);
 
                     vertexBuffersMap[bufferViewIndex.value()] = BufferWithIndex{ vb, currentVertexBufferIndex };
+                    attribute.vertexBufferIndex = currentVertexBufferIndex;
 
                     currentVertexBufferIndex++;
                 }
             }
-
-            attribute.vertexBufferIndex = currentVertexBufferIndex;
         }
 
         RefPtrVector<VertexBuffer> vertexBuffers;

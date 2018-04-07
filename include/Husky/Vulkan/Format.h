@@ -28,6 +28,46 @@ namespace Husky::Vulkan
             return vk::Format::eD24UnormS8Uint;
         case Format::D32SfloatS8Uint:
             return vk::Format::eD32SfloatS8Uint;
+
+        case Format::R8G8Sint:
+            return vk::Format::eR8G8Sint;
+        case Format::R8G8Uint:
+            return vk::Format::eR8G8Uint;
+        case Format::R16G16Sint:
+            return vk::Format::eR16G16Sint;
+        case Format::R16G16Uint:
+            return vk::Format::eR16G16Uint;
+        case Format::R32G32Uint:
+            return vk::Format::eR32G32Uint;
+        case Format::R32G32Sfloat:
+            return vk::Format::eR32G32Sfloat;
+
+        case Format::R8G8B8Sint:
+            return vk::Format::eR8G8B8Sint;
+        case Format::R8G8B8Uint:
+            return vk::Format::eR8G8B8Uint;
+        case Format::R16G16B16Sint:
+            return vk::Format::eR16G16B16Sint;
+        case Format::R16G16B16Uint:
+            return vk::Format::eR16G16B16Uint;
+        case Format::R32G32B32Uint:
+            return vk::Format::eR32G32B32Uint;
+        case Format::R32G32B32Sfloat:
+            return vk::Format::eR32G32B32Sfloat;
+
+        case Format::R8G8B8A8Sint:
+            return vk::Format::eR8G8B8A8Sint;
+        case Format::R8G8B8A8Uint:
+            return vk::Format::eR8G8B8A8Uint;
+        case Format::R16G16B16A16Sint:
+            return vk::Format::eR16G16B16A16Sint;
+        case Format::R16G16B16A16Uint:
+            return vk::Format::eR16G16B16A16Uint;
+        case Format::R32G32B32A32Uint:
+            return vk::Format::eR32G32B32A32Uint;
+        case Format::R32G32B32A32Sfloat:
+            return vk::Format::eR32G32B32A32Sfloat;
+
         default:
             HUSKY_ASSERT(false, "Unknown format");
         }

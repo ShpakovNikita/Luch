@@ -18,6 +18,7 @@ namespace Husky::Render
 
     struct TextureUploaderResult
     {
+        RefPtrVector<Vulkan::Buffer> stagingBuffers;
         RefPtrVector<Vulkan::CommandBuffer> commandBuffers;
     };
 

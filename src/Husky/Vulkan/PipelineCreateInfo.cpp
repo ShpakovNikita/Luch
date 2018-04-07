@@ -25,13 +25,6 @@ namespace Husky::Vulkan
         result->bindingDescriptions = ci.vertexInputState.bindingDescriptions;
         result->attributeDescriptions = ci.vertexInputState.attributeDescriptions;
 
-        // TODO
-        //result.bindingDescriptions.reserve(ci.vertexInputState.bindingDescriptions.size());
-        //for (auto& bindingDescription : ci.vertexInputState.bindingDescriptions)
-        //{
-        //    auto& vulkanBindingDescription = result.bindingDescriptions.
-        //}
-
         result->vertexInputState.setVertexBindingDescriptionCount((int32)result->bindingDescriptions.size());
         result->vertexInputState.setPVertexBindingDescriptions(result->bindingDescriptions.data());
 

@@ -35,6 +35,8 @@ namespace Husky::SceneV1
         Mat4x4,
     };
 
+    Format AttribuiteToFormat(AttributeType attributeType, ComponentType componentType);
+
     struct PrimitiveAttribute
     {
         AttributeSemantic semantic;

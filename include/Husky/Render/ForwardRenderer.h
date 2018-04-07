@@ -126,7 +126,6 @@ namespace Husky::Render
         bool Initialize();
         bool Deinitialize();
 
-        void Draw(const RefPtr<SceneV1::Node>& node);
         void DrawScene(const RefPtr<SceneV1::Scene>& scene);
 
         ResultValue<bool, PreparedScene> PrepareScene(const RefPtr<SceneV1::Scene>& scene);
@@ -136,8 +135,9 @@ namespace Husky::Render
         void PrepareMesh(const RefPtr<SceneV1::Mesh>& mesh, PreparedScene& scene);
         void PrepareMaterial(const RefPtr<SceneV1::PbrMaterial>& mesh, PreparedScene& scene);
 
-        void DrawMesh(const RefPtr<SceneV1::Mesh>& mesh, GlobalDrawContext* drawContext, CommandBuffer* cmdBuffer);
-        void DrawPrimitive(const RefPtr<SceneV1::Primitive>& primitive, GlobalDrawContext* drawContext, CommandBuffer* cmdBuffer);
+        void DrawNode(const RefPtr<SceneV1::Node>& node, const PreparedScene& scene, CommandBuffer* cmdBuffer);
+        void DrawMesh(const RefPtr<SceneV1::Mesh>& mesh, const PreparedScene& scene, CommandBuffer* cmdBuffer);
+        void DrawPrimitive(const RefPtr<SceneV1::Primitive>& primitive, const PreparedScene& scene, CommandBuffer* cmdBuffer);
 
         RefPtr<Pipeline> CreatePipeline(const RefPtr<SceneV1::Primitive>& primitive, PreparedScene& scene);
 

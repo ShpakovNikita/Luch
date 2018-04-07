@@ -84,4 +84,12 @@ namespace Husky::Vulkan
 
         return *this;
     }
+
+    DescriptorSetWrites& DescriptorSetWrites::WriteSamplerDescriptors(
+        DescriptorSet* descriptorSet,
+        DescriptorSetBinding* binding,
+        const Vector<Sampler*>& samplers)
+    {
+        return *this;
+    }
 }
