@@ -4,10 +4,11 @@
 namespace Husky
 {
 
-FileStream::FileStream(const String& filename, FileOpenModes aMode)
+FileStream::FileStream(const FilePath& filename, FileOpenModes aMode)
     : mode(aMode)
 {
-    fstream.open(filename, ToStdOpenMode(mode));
+    canonicalPath = std::experimental::filesystem::canonical(filename);
+    fstream.open(canonicalPath, ToStdOpenMode(mode));
 }
 
 int64 FileStream::Read(void* buffer, int64 count, int64 elementSize)
@@ -29,6 +30,7 @@ int64 FileStream::GetSize() const
     fstream.seekg(0, std::ios::end);
     auto result = fstream.tellg();
     fstream.seekg(positionBefore, std::ios::beg);
+    HUSKY_ASSERT(result >= 0);
     return result;
 }
 

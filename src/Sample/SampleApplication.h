@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Husky/BaseApplication.h>
-#include <Husky/GeometryGenerator.h>
 #include <Husky/glTF2/glTFParser.h>
 #include <Husky/glTF2/glTF.h>
 #include <Husky/Vulkan.h>

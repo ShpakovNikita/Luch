@@ -13,6 +13,7 @@
 #include <unordered_set>
 #include <variant>
 #include <vector>
+#include <experimental/filesystem>
 
 namespace Husky
 {
@@ -42,7 +43,7 @@ using Array = std::array<T, Size>;
 template<typename T>
 using Vector = std::vector<T>;
 
-using ByteArray = std::vector<char8>;
+using Byte = std::byte;
 
 template<typename T>
 using Set = std::set<T>;
@@ -67,5 +68,7 @@ using Map = std::map<TKey, TValue>;
 
 template<typename TKey, typename TValue>
 using UnorderedMap = std::unordered_map<TKey, TValue>;
+
+using FilePath = std::experimental::filesystem::path;
 
 }

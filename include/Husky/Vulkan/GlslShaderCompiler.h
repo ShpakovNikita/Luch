@@ -11,6 +11,6 @@ namespace Husky::Vulkan
         using Bytecode = Vector<uint32>;
         static void Initialize();
         static void Deinitialize();
-        bool TryCompileShader(ShaderStage shaderStage, const char8* glslSource, Bytecode& spirvBytecode);
+        bool TryCompileShader(ShaderStage shaderStage, const Vector<Byte>& glslSource, Bytecode& spirvBytecode);
     };
 }

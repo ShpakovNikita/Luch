@@ -3,6 +3,8 @@
 
 #include <Husky/PrimitiveTopology.h>
 
+#include <Husky/FileStream.h>
+
 #include <Husky/SceneV1/Scene.h>
 #include <Husky/SceneV1/Node.h>
 #include <Husky/SceneV1/Mesh.h>
@@ -48,58 +50,6 @@ namespace Husky::Render
         { SceneV1::AttributeSemantic::Texcoord_1, 4 },
         { SceneV1::AttributeSemantic::Color_0, 5 },
     };
-
-    static const char8* vertexShaderSource =
-        "#version 450\n"
-        "#extension GL_ARB_shading_language_420pack : enable\n"
-        "#extension GL_ARB_separate_shader_objects : enable\n"
-        "layout (set = 0, binding = 0) uniform CameraUniformBufferObject\n"
-        "{\n"
-        "    mat4x4 view;\n"
-        "    mat4x4 projection;\n"
-        "} camera;\n"
-        "layout (set = 1, binding = 0) uniform MeshUniformBufferObject\n"
-        "{\n"
-        "    mat4x4 model;\n"
-        "} mesh;\n"
-        
-        "layout (location = 0) in vec3 position;\n"
-        "layout (location = 1) in vec3 normal;\n"
-        "//layout (location = 2) in vec3 tangent;\n"
-        "layout (location = 3) in vec2 inTexCoord;\n"
-        "layout (location = 1) out vec3 outNormal;\n"
-        "layout (location = 3) out vec2 outTexCoord;\n"
-        "void main()\n"
-        "{\n"
-        "   outTexCoord = inTexCoord;\n"
-        "   outTexCoord = inTexCoord;\n"
-        "   outNormal = vec3(normal.x, -normal.y, normal.z);\n"
-        "   vec4 intermediate = camera.projection * camera.view * mesh.model * vec4(position, 1.0);\n"
-        "   gl_Position = vec4(intermediate.x, -intermediate.y, intermediate.zw);\n"
-        "}\n";
-
-    static const char8* fragmentShaderSource =
-        "#version 450\n"
-        "#extension GL_ARB_shading_language_420pack : enable\n"
-        "#extension GL_ARB_separate_shader_objects : enable\n"
-        "layout (set = 2, binding = 0) uniform texture2D baseColorMap;\n"
-        "layout (set = 2, binding = 1) uniform texture2D roughnessMap;\n"
-        "layout (set = 2, binding = 2) uniform texture2D normalMap;\n"
-        "layout (set = 2, binding = 3) uniform texture2D occlusionMap;\n"
-        "layout (set = 2, binding = 4) uniform texture2D emissiveMap;\n"
-        "layout (set = 2, binding = 5) uniform sampler baseColorSampler;\n"
-        "layout (set = 2, binding = 6) uniform sampler roughnessSampler;\n"
-        "layout (set = 2, binding = 7) uniform sampler normalSampler;\n"
-        "layout (set = 2, binding = 8) uniform sampler occlusionSampler;\n"
-        "layout (set = 2, binding = 9) uniform sampler emissiveSampler;\n"
-        "layout (location = 1) in vec3 normal;\n"
-        "layout (location = 3) in vec2 texCoord;\n"
-        "layout (location = 0) out vec4 outColor;\n"
-        "void main()\n"
-        "{\n"
-        "   vec4 baseColor = texture(sampler2D(baseColorMap, baseColorSampler), texCoord);\n"
-        "   outColor = vec4(baseColor.xyz, 1.0);\n"
-        "}\n";
 
     ForwardRenderer::ForwardRenderer(
         PhysicalDevice* physicalDevice,
@@ -200,6 +150,9 @@ namespace Husky::Render
             { vk::DescriptorType::eSampler, samplerDescriptorCount + 1 },
             { vk::DescriptorType::eUniformBuffer, perMeshUBOCount + perCameraUBOCount + 1}
         };
+
+        auto vertexShaderSource = LoadShaderSource(".\\Shaders\\pbr.vert");
+        auto fragmentShaderSource = LoadShaderSource(".\\Shaders\\pbr.frag");
 
         auto vertexShaderCompiled = context->shaderCompiler.TryCompileShader(ShaderStage::Vertex, vertexShaderSource, preparedScene.vertexShaderBytecode);
         HUSKY_ASSERT(vertexShaderCompiled, "Vertex shader failed to compile");
@@ -822,6 +775,17 @@ namespace Husky::Render
                 ToVulkanIndexType(indexBuffer->GetIndexType()),
                 0)
             ->DrawIndexed(indexBuffer->GetIndexCount(), 1, 0, 0, 0);
+    }
+
+    Vector<Byte> Husky::Render::ForwardRenderer::LoadShaderSource(const FilePath& path)
+    {
+        FileStream fileStream{ path, FileOpenModes::Read };
+        auto fileSize = fileStream.GetSize();
+        Vector<Byte> result;
+        result.resize(fileSize + 1); // +1 for null termination
+        auto bytesRead = fileStream.Read(result.data(), fileSize, sizeof(Byte));
+        HUSKY_ASSERT(bytesRead == fileSize);
+        return result;
     }
 
     // Assume that all primitives have the same vertex layout

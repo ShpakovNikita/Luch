@@ -122,6 +122,10 @@ set_target_properties(SPVRemapper PROPERTIES
     IMPORTED_LOCATION ${SPIRV_REMAPPER_LIB}
     IMPORTED_LOCATION_DEBUG ${SPIRV_REMAPPER_DLIB})
 
+set(HUSKY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/_build)
+set(HUSKY_OUTPUT_DIRECTORY_DEBUG ${HUSKY_OUTPUT_DIRECTORY}/Debug)
+set(HUSKY_OUTPUT_DIRECTORY_RELEASE ${HUSKY_OUTPUT_DIRECTORY}/Release)
+
 add_library(HuskyEngine ${ENGINE_CPP_FILES} ${ENGINE_HEADER_FILES})
 add_executable(HuskyEngineSample ${SAMPLE_CPP_FILES} ${SAMPLE_HEADER_FILES})
 
@@ -137,3 +141,17 @@ target_link_libraries(HuskyEngine SPIRV-Tools-opt)
 target_link_libraries(HuskyEngine SPVRemapper)
 
 target_link_libraries(HuskyEngineSample HuskyEngine)
+
+set_target_properties(HuskyEngine PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY_DEBUG HUSKY_OUTPUT_DIRECTORY_DEBUG)
+set_target_properties(HuskyEngineSample PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE HUSKY_OUTPUT_DIRECTORY_RELEASE)
+
+set_target_properties(HuskyEngineSample PROPERTIES
+    VS_DEBUGGER_WORKING_DIRECTORY ${HUSKY_OUTPUT_DIRECTORY}/$(Configuration)) #fuck cmake for making me do this shit
+
+add_custom_command(
+        TARGET HuskyEngine POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                ${CMAKE_SOURCE_DIR}/src/Husky/Render/Shaders
+                $<$<CONFIG:debug>:${HUSKY_OUTPUT_DIRECTORY_DEBUG}>$<$<CONFIG:release>:${HUSKY_OUTPUT_DIRECTORY_RELEASE}>/Shaders)

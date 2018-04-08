@@ -148,6 +148,8 @@ namespace Husky::Render
         void DrawMesh(const RefPtr<SceneV1::Mesh>& mesh, const PreparedScene& scene, CommandBuffer* cmdBuffer);
         void DrawPrimitive(const RefPtr<SceneV1::Primitive>& primitive, const PreparedScene& scene, CommandBuffer* cmdBuffer);
 
+        Vector<Byte> LoadShaderSource(const FilePath& path);
+
         RefPtr<Pipeline> CreatePipeline(const RefPtr<SceneV1::Primitive>& primitive, PreparedScene& scene);
 
         Vector<const char8*> GetRequiredDeviceExtensionNames() const;

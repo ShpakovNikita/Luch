@@ -136,8 +136,14 @@ void GLSLShaderCompiler::Deinitialize()
     glslang::FinalizeProcess();
 }
 
-bool GLSLShaderCompiler::TryCompileShader(ShaderStage shaderStage, const char8* glslSource, Bytecode& spirvBytecode)
+bool GLSLShaderCompiler::TryCompileShader(ShaderStage shaderStage, const Vector<Byte>& glslSource, Bytecode& spirvBytecode)
 {
+    if (glslSource.empty())
+    {
+        return false;
+    }
+
+    HUSKY_ASSERT(glslSource.back() == Byte{ 0 });
     // TODO logging
     EShLanguage language = ToLanguage(shaderStage);
     glslang::TShader shader(language);
@@ -147,7 +153,7 @@ bool GLSLShaderCompiler::TryCompileShader(ShaderStage shaderStage, const char8* 
 
     EShMessages messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
 
-    Array<const char8*, 1> sources = { glslSource };
+    Array<const char8*, 1> sources = { reinterpret_cast<const char8*>(glslSource.data()) };
     shader.setStrings(sources.data(), (int32)sources.size());
 
     if (!shader.parse(&resources, 100, false, messages))
