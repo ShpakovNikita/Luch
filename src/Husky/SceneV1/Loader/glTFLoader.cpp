@@ -199,7 +199,7 @@ namespace Husky::SceneV1::Loader
         }
         else
         {
-            transform = Transform
+            transform = TransformProperties
             {
                 node.rotation.value_or(Quaternion{}),
                 node.scale.value_or(Vec3{1.0f, 1.0f, 1.0f}),

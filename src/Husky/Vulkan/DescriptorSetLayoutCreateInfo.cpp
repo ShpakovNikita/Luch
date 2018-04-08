@@ -15,7 +15,7 @@ namespace Husky::Vulkan
             vulkanBinding.setBinding(currentBindingCount);
             vulkanBinding.setDescriptorCount(binding->count);
             vulkanBinding.setDescriptorType(binding->type);
-            vulkanBinding.setStageFlags(ToVulkanShaderStage(binding->stages));
+            vulkanBinding.setStageFlags(ToVulkanShaderStages(binding->stages));
 
             if (!binding->immutableSamplers.empty())
             {

@@ -19,10 +19,10 @@ namespace Husky::Render
 #pragma pack(1)
     struct CameraUniformBuffer
     {
-        Mat4x4 model;
         Mat4x4 view;
         Mat4x4 projection;
         Vec3 cameraPosition;
+        Vec3 cameraDirection;
         float32 _padding0;
     };
 
@@ -98,6 +98,8 @@ namespace Husky::Render
     struct PreparedScene
     {
         RefPtr<SceneV1::Scene> scene;
+        RefPtr<SceneV1::Node> cameraNode;
+
         RefPtr<DescriptorPool> descriptorPool;
         RefPtr<RenderPass> renderPass;
         RefPtr<PipelineLayout> pipelineLayout;
@@ -129,11 +131,18 @@ namespace Husky::Render
         void DrawScene(const RefPtr<SceneV1::Scene>& scene);
 
         ResultValue<bool, PreparedScene> PrepareScene(const RefPtr<SceneV1::Scene>& scene);
+        void UpdateScene(PreparedScene& scene);
         void DrawScene(const PreparedScene& scene);
     private:
-        void PrepareNode(const RefPtr<SceneV1::Node>& node, PreparedScene& scene);
+        void PrepareCameraNode(const RefPtr<SceneV1::Node>& node, PreparedScene& scene);
+        void PrepareMeshNode(const RefPtr<SceneV1::Node>& node, PreparedScene& scene);
         void PrepareMesh(const RefPtr<SceneV1::Mesh>& mesh, PreparedScene& scene);
         void PrepareMaterial(const RefPtr<SceneV1::PbrMaterial>& mesh, PreparedScene& scene);
+
+        void UpdateNode(const RefPtr<SceneV1::Node>& node, const Mat4x4& parentTransform, PreparedScene& scene);
+        void UpdateMesh(const RefPtr<SceneV1::Mesh>& mesh, const Mat4x4& transform, PreparedScene& scene);
+        void UpdateCamera(const RefPtr<SceneV1::Camera>& camera, const Mat4x4& transform, PreparedScene& scene);
+        //void UpdateMaterial(const RefPtr<SceneV1::PbrMaterial>& material, PreparedScene& scene);
 
         void DrawNode(const RefPtr<SceneV1::Node>& node, const PreparedScene& scene, CommandBuffer* cmdBuffer);
         void DrawMesh(const RefPtr<SceneV1::Mesh>& mesh, const PreparedScene& scene, CommandBuffer* cmdBuffer);

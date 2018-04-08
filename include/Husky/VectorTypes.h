@@ -16,7 +16,11 @@
 #include <glm/mat4x3.hpp>
 #include <glm/mat4x4.hpp>
 
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/transform.hpp>
+#include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/matrix_operation.hpp>
 
 namespace Husky
 {

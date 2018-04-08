@@ -8,7 +8,7 @@
 
 namespace Husky::SceneV1
 {
-    struct Transform
+    struct TransformProperties
     {
         Quaternion rotation;
         Vec3 scale = { 1.0f, 1.0f, 1.0f };
@@ -18,7 +18,7 @@ namespace Husky::SceneV1
     class Node : public BaseObject
     {
     public:
-        using TransformType = Variant<Mat4x4, Transform>;
+        using TransformType = Variant<Mat4x4, TransformProperties>;
 
         /*Node(
             const RefPtrVector<Mesh>& children,

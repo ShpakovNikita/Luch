@@ -1,6 +1,7 @@
 #include <Husky/Vulkan/DescriptorSetWrites.h>
 #include <Husky/Vulkan/Buffer.h>
 #include <Husky/Vulkan/Image.h>
+#include <Husky/Vulkan/Sampler.h>
 #include <Husky/Vulkan/ImageView.h>
 #include <Husky/Vulkan/DescriptorSet.h>
 #include <Husky/Vulkan/DescriptorSetBinding.h>
@@ -90,6 +91,35 @@ namespace Husky::Vulkan
         DescriptorSetBinding* binding,
         const Vector<Sampler*>& samplers)
     {
+        if (samplers.empty())
+        {
+            return *this;
+        }
+
+        if (device == nullptr)
+        {
+            device = samplers.front()->GetDevice();
+        }
+
+        auto& descriptorWrite = writes.emplace_back();
+        descriptorWrite.setDstSet(descriptorSet->GetDescriptorSet());
+        descriptorWrite.setDstBinding(binding->GetBinding());
+        descriptorWrite.setDstArrayElement(0);
+        descriptorWrite.setDescriptorCount(samplers.size());
+        descriptorWrite.setDescriptorType(vk::DescriptorType::eSampler);
+
+        auto& infos = imageInfos.emplace_back();
+
+        for (auto& sampler : samplers)
+        {
+            HUSKY_ASSERT(sampler->GetDevice() == device);
+
+            auto& imageInfo = infos.emplace_back();
+            imageInfo.setSampler(sampler->GetSampler());
+        }
+
+        descriptorWrite.setPImageInfo(infos.data());
+
         return *this;
     }
 }

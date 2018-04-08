@@ -152,6 +152,9 @@ bool GLSLShaderCompiler::TryCompileShader(ShaderStage shaderStage, const char8* 
 
     if (!shader.parse(&resources, 100, false, messages))
     {
+        const auto& log = shader.getInfoLog();
+        const auto& debugLog = shader.getInfoLog();
+        HUSKY_ASSERT(false);
         return false;
     }
 
@@ -159,6 +162,9 @@ bool GLSLShaderCompiler::TryCompileShader(ShaderStage shaderStage, const char8* 
 
     if (!program.link(messages))
     {
+        const auto& log = program.getInfoLog();
+        const auto& debugLog = program.getInfoLog();
+        HUSKY_ASSERT(false);
         return false;
     }
 

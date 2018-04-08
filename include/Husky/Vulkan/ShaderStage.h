@@ -43,23 +43,23 @@ namespace Husky
         {
             return vk::ShaderStageFlagBits::eFragment;
         }
-        else if ((stages & ShaderStage::Geometry) == ShaderStage::Geometry)
+        if ((stages & ShaderStage::Geometry) == ShaderStage::Geometry)
         {
             return vk::ShaderStageFlagBits::eGeometry;
         }
-        else if ((stages & ShaderStage::TessellationControl) == ShaderStage::TessellationControl)
+        if ((stages & ShaderStage::TessellationControl) == ShaderStage::TessellationControl)
         {
             return vk::ShaderStageFlagBits::eTessellationControl;
         }
-        else if ((stages & ShaderStage::TessellationEvaluation) == ShaderStage::TessellationEvaluation)
+        if ((stages & ShaderStage::TessellationEvaluation) == ShaderStage::TessellationEvaluation)
         {
             return vk::ShaderStageFlagBits::eTessellationEvaluation;
         }
-        else if ((stages & ShaderStage::Vertex) == ShaderStage::Vertex)
+        if ((stages & ShaderStage::Vertex) == ShaderStage::Vertex)
         {
             return vk::ShaderStageFlagBits::eVertex;
         }
-        else if ((stages & ShaderStage::Compute) == ShaderStage::Compute)
+        if ((stages & ShaderStage::Compute) == ShaderStage::Compute)
         {
             return vk::ShaderStageFlagBits::eCompute;
         }

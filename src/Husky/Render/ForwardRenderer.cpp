@@ -11,6 +11,7 @@
 #include <Husky/SceneV1/AlphaMode.h>
 #include <Husky/SceneV1/PbrMaterial.h>
 #include <Husky/SceneV1/Texture.h>
+#include <Husky/SceneV1/Sampler.h>
 #include <Husky/SceneV1/VertexBuffer.h>
 #include <Husky/SceneV1/IndexBuffer.h>
 #include <Husky/SceneV1/AttributeSemantic.h>
@@ -54,24 +55,27 @@ namespace Husky::Render
         "#extension GL_ARB_separate_shader_objects : enable\n"
         "layout (set = 0, binding = 0) uniform CameraUniformBufferObject\n"
         "{\n"
-        "    mat4 view;\n"
-        "    mat4 projection;\n"
+        "    mat4x4 view;\n"
+        "    mat4x4 projection;\n"
         "} camera;\n"
         "layout (set = 1, binding = 0) uniform MeshUniformBufferObject\n"
         "{\n"
-        "    mat4 model;\n"
+        "    mat4x4 model;\n"
         "} mesh;\n"
         
         "layout (location = 0) in vec3 position;\n"
         "layout (location = 1) in vec3 normal;\n"
         "//layout (location = 2) in vec3 tangent;\n"
         "layout (location = 3) in vec2 inTexCoord;\n"
-        "layout (location = 1) out vec2 outNormal;\n"
+        "layout (location = 1) out vec3 outNormal;\n"
         "layout (location = 3) out vec2 outTexCoord;\n"
         "void main()\n"
         "{\n"
         "   outTexCoord = inTexCoord;\n"
-        "   gl_Position = vec4(position, 1.0);\n"
+        "   outTexCoord = inTexCoord;\n"
+        "   outNormal = vec3(normal.x, -normal.y, normal.z);\n"
+        "   vec4 intermediate = camera.projection * camera.view * mesh.model * vec4(position, 1.0);\n"
+        "   gl_Position = vec4(intermediate.x, -intermediate.y, intermediate.zw);\n"
         "}\n";
 
     static const char8* fragmentShaderSource =
@@ -83,17 +87,18 @@ namespace Husky::Render
         "layout (set = 2, binding = 2) uniform texture2D normalMap;\n"
         "layout (set = 2, binding = 3) uniform texture2D occlusionMap;\n"
         "layout (set = 2, binding = 4) uniform texture2D emissiveMap;\n"
-        "layout (set = 2, binding = 5) uniform sampler2D baseColorSampler;\n"
-        "layout (set = 2, binding = 6) uniform sampler2D roughnessSampler;\n"
-        "layout (set = 2, binding = 7) uniform sampler2D normalSampler;\n"
-        "layout (set = 2, binding = 8) uniform sampler2D occlusionSampler;\n"
-        "layout (set = 2, binding = 9) uniform sampler2D emissiveSampler;\n"
-        "layout (location = 1) in vec2 normal;\n"
+        "layout (set = 2, binding = 5) uniform sampler baseColorSampler;\n"
+        "layout (set = 2, binding = 6) uniform sampler roughnessSampler;\n"
+        "layout (set = 2, binding = 7) uniform sampler normalSampler;\n"
+        "layout (set = 2, binding = 8) uniform sampler occlusionSampler;\n"
+        "layout (set = 2, binding = 9) uniform sampler emissiveSampler;\n"
+        "layout (location = 1) in vec3 normal;\n"
         "layout (location = 3) in vec2 texCoord;\n"
         "layout (location = 0) out vec4 outColor;\n"
         "void main()\n"
         "{\n"
-        "   outColor = vec4(normal, 0.0, 1.0);\n"
+        "   vec4 baseColor = texture(sampler2D(baseColorMap, baseColorSampler), texCoord);\n"
+        "   outColor = vec4(baseColor.xyz, 1.0);\n"
         "}\n";
 
     ForwardRenderer::ForwardRenderer(
@@ -442,32 +447,6 @@ namespace Husky::Render
             }
             
             preparedScene.descriptorPool = std::move(createdDescriptorPool);
-
-            auto[createCameraDescriptorSetResult , createdCameraDescriptorSet] = preparedScene.descriptorPool->AllocateDescriptorSet(preparedScene.cameraDescriptorSetLayout);
-            if (createCameraDescriptorSetResult != vk::Result::eSuccess)
-            {
-                return { false };
-            }
-
-            frameResources.cameraDescriptorSet = std::move(createdCameraDescriptorSet);
-
-            auto[createUniformBufferResult, createdUniformBuffer] = context->device->CreateBuffer(
-                sizeof(CameraUniformBuffer),
-                indices->graphicsQueueFamilyIndex,
-                vk::BufferUsageFlagBits::eUniformBuffer,
-                true);
-
-            if (createUniformBufferResult != vk::Result::eSuccess)
-            {
-                return { false };
-            }
-
-            frameResources.cameraUniformBuffer = std::move(createdUniformBuffer);
-
-            DescriptorSetWrites descriptorSetWrites;
-            descriptorSetWrites.WriteUniformBufferDescriptors(frameResources.cameraDescriptorSet, &preparedScene.cameraUniformBufferBinding, { frameResources.cameraUniformBuffer });
-            
-            DescriptorSet::Update(descriptorSetWrites);
         }
 
         const auto& textures = sceneProperties.textures;
@@ -498,7 +477,15 @@ namespace Husky::Render
 
         for (const auto& node : nodes)
         {
-            PrepareNode(node, preparedScene);
+            if (node->GetCamera() != nullptr)
+            {
+                preparedScene.cameraNode = node;
+                PrepareCameraNode(node, preparedScene);
+            }
+            else
+            {
+                PrepareMeshNode(node, preparedScene);
+            }
         }
 
         for (const auto& material : sceneProperties.materials)
@@ -507,6 +494,15 @@ namespace Husky::Render
         }
 
         return { true, preparedScene };
+    }
+
+    void ForwardRenderer::UpdateScene(PreparedScene& scene)
+    {
+        Mat4x4 identity = glm::mat4(1.0f);
+        for (const auto& node : scene.scene->GetNodes())
+        {
+            UpdateNode(node, identity, scene);
+        }
     }
 
     void ForwardRenderer::DrawScene(const PreparedScene& scene)
@@ -534,6 +530,7 @@ namespace Husky::Render
             ->Begin()
             ->SetViewport({ 0, 0, (float32)framebufferWidth, (float32)framebufferHeight, 0.0f, 1.0f })
             ->SetScissor({ {0, 0}, {(uint32)framebufferWidth, (uint32)framebufferHeight} })
+            ->BindDescriptorSet(scene.pipelineLayout, 0, scene.cameraNode->GetCamera()->GetDescriptorSet())
             ->BeginInlineRenderPass(
                 scene.renderPass,
                 frameResource.framebuffer,
@@ -570,7 +567,32 @@ namespace Husky::Render
         context->device->GetPresentQueue()->Present(presentSubmission);
     }
 
-    void ForwardRenderer::PrepareNode(const RefPtr<SceneV1::Node>& node, PreparedScene& scene)
+    void Husky::Render::ForwardRenderer::PrepareCameraNode(const RefPtr<SceneV1::Node>& node, PreparedScene & scene)
+    {
+        const auto& camera = node->GetCamera();
+
+        auto [createBufferResult, createdBuffer] = context->device->CreateBuffer(
+            sizeof(CameraUniformBuffer),
+            context->device->GetQueueIndices()->graphicsQueueFamilyIndex,
+            vk::BufferUsageFlagBits::eUniformBuffer,
+            true);
+        HUSKY_ASSERT(createBufferResult == vk::Result::eSuccess);
+
+        auto[mapMemoryResult, mappedMemory] = createdBuffer->MapMemory(sizeof(CameraUniformBuffer), 0);
+        HUSKY_ASSERT(mapMemoryResult == vk::Result::eSuccess);
+
+        auto[createDescriptorSetResult, createdDescriptorSet] = scene.descriptorPool->AllocateDescriptorSet(scene.cameraDescriptorSetLayout);
+        HUSKY_ASSERT(createDescriptorSetResult == vk::Result::eSuccess);
+
+        camera->SetUniformBuffer(createdBuffer);
+        camera->SetDescriptorSet(createdDescriptorSet);
+
+        DescriptorSetWrites descriptorSetWrites;
+        descriptorSetWrites.WriteUniformBufferDescriptors(createdDescriptorSet, &scene.cameraUniformBufferBinding, { createdBuffer });
+        DescriptorSet::Update(descriptorSetWrites);
+    }
+
+    void ForwardRenderer::PrepareMeshNode(const RefPtr<SceneV1::Node>& node, PreparedScene& scene)
     {
         const auto& mesh = node->GetMesh();
 
@@ -579,9 +601,10 @@ namespace Husky::Render
             PrepareMesh(mesh, scene);
         }
 
+        // TODO sort out node hierarchy
         for (const auto& child : node->GetChildren())
         {
-            PrepareNode(node, scene);
+            PrepareMeshNode(node, scene);
         }
     }
 
@@ -615,11 +638,13 @@ namespace Husky::Render
 
             HUSKY_ASSERT(createUniformBufferResult == vk::Result::eSuccess);
 
-            mesh->SetUniformBuffer(createdUniformBuffer);
+            auto[mapMemoryResult, mappedMemory] = createdUniformBuffer->MapMemory(sizeof(MeshUniformBuffer), 0);
+            HUSKY_ASSERT(mapMemoryResult == vk::Result::eSuccess);
 
             auto [allocateDescriptorSetResult, allocatedDescriptorSet] = scene.descriptorPool->AllocateDescriptorSet(scene.meshDescriptorSetLayout);
             HUSKY_ASSERT(allocateDescriptorSetResult == vk::Result::eSuccess);
 
+            mesh->SetUniformBuffer(createdUniformBuffer);
             mesh->SetDescriptorSet(allocatedDescriptorSet);
 
             DescriptorSetWrites descriptorSetWrites;
@@ -648,10 +673,90 @@ namespace Husky::Render
         imageDescriptors.push_back(ImageDescriptorInfo{ material->occlusionTexture.texture->GetDeviceImageView(), vk::ImageLayout::eShaderReadOnlyOptimal });
         imageDescriptors.push_back(ImageDescriptorInfo{ material->emissiveTexture.texture->GetDeviceImageView(), vk::ImageLayout::eShaderReadOnlyOptimal });
 
-        descriptorSetWrites.WriteImageDescriptors(allocatedDescriptorSet, &scene.meshUniformBufferBinding, imageDescriptors);
+        Vector<Sampler*> samplers;
+        samplers.push_back(material->metallicRoughness.baseColorTexture.texture->GetSampler()->GetDeviceSampler());
+        samplers.push_back(material->metallicRoughness.metallicRoughnessTexture.texture->GetSampler()->GetDeviceSampler());
+        samplers.push_back(material->normalTexture.texture->GetSampler()->GetDeviceSampler());
+        samplers.push_back(material->occlusionTexture.texture->GetSampler()->GetDeviceSampler());
+        samplers.push_back(material->emissiveTexture.texture->GetSampler()->GetDeviceSampler());
+
+        descriptorSetWrites.WriteImageDescriptors(allocatedDescriptorSet, &scene.materialImageBinding, imageDescriptors);
+        descriptorSetWrites.WriteSamplerDescriptors(allocatedDescriptorSet, &scene.materialSamplerBinding, samplers);
 
         DescriptorSet::Update(descriptorSetWrites);
     }
+
+    void Husky::Render::ForwardRenderer::UpdateNode(const RefPtr<SceneV1::Node>& node, const Mat4x4& parentTransform, PreparedScene & scene)
+    {
+        const auto& mesh = node->GetMesh();
+
+        Mat4x4 localTransformMatrix;
+        const auto& localTransform = node->GetTransform();
+        if (std::holds_alternative<Mat4x4>(localTransform))
+        {
+            localTransformMatrix = std::get<Mat4x4>(localTransform);
+        }
+        else
+        {
+            const auto& transformProperties = std::get<SceneV1::TransformProperties>(localTransform);
+
+            localTransformMatrix
+                = glm::translate(transformProperties.translation)
+                * glm::toMat4(transformProperties.rotation)
+                * glm::scale(transformProperties.scale);
+        }
+
+        Mat4x4 transform = parentTransform * localTransformMatrix;
+
+        if (mesh != nullptr)
+        {
+            UpdateMesh(mesh, transform, scene);
+        }
+
+        const auto& camera = node->GetCamera();
+
+        if (camera != nullptr)
+        {
+            UpdateCamera(camera, transform, scene);
+        }
+
+        for (const auto& child : node->GetChildren())
+        {
+            UpdateNode(child, transform, scene);
+        }
+    }
+
+    void Husky::Render::ForwardRenderer::UpdateMesh(const RefPtr<SceneV1::Mesh>& mesh, const Mat4x4& transform, PreparedScene & scene)
+    {
+        const auto& buffer = mesh->GetUniformBuffer();
+
+        MeshUniformBuffer meshUniformBuffer;
+        //meshUniformBuffer.transform = glm::transpose(transform);
+        meshUniformBuffer.transform = (transform);
+
+        // TODO template function member in buffer to write updates
+        memcpy(buffer->GetMappedMemory(), &meshUniformBuffer, sizeof(MeshUniformBuffer));
+    }
+
+    void Husky::Render::ForwardRenderer::UpdateCamera(const RefPtr<SceneV1::Camera>& camera, const Mat4x4& transform, PreparedScene & scene)
+    {
+        const auto& buffer = camera->GetUniformBuffer();
+
+        camera->SetCameraViewMatrix(transform);
+
+        CameraUniformBuffer cameraUniformBuffer;
+        //cameraUniformBuffer.view = glm::transpose(camera->GetCameraViewMatrix());
+        //cameraUniformBuffer.projection = glm::transpose(camera->GetCameraProjectionMatrix());
+        cameraUniformBuffer.view = (camera->GetCameraViewMatrix());
+        cameraUniformBuffer.projection = (camera->GetCameraProjectionMatrix());
+
+        // TODO
+        memcpy(buffer->GetMappedMemory(), &cameraUniformBuffer, sizeof(CameraUniformBuffer));
+    }
+
+    //void Husky::Render::ForwardRenderer::UpdateMaterial(const RefPtr<SceneV1::Material>& material, PreparedScene & scene)
+    //{
+    //}
 
     void Husky::Render::ForwardRenderer::DrawNode(const RefPtr<SceneV1::Node>& node, const PreparedScene & scene, CommandBuffer * cmdBuffer)
     {
@@ -769,6 +874,9 @@ namespace Husky::Render
         {
             pipelineState.rasterizationState.cullMode = vk::CullModeFlagBits::eBack;
         }
+
+        // TEST CODE
+        pipelineState.rasterizationState.cullMode = vk::CullModeFlagBits::eNone;
 
         pipelineState.depthStencilState.depthTestEnable = true;
         pipelineState.depthStencilState.depthWriteEnable = true;

@@ -131,11 +131,12 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     renderer = MakeUnique<Render::ForwardRenderer>(&physicalDevice, &surface, width, height);
 
-
     renderer->Initialize();
 
     auto [prepareSceneResult, preparedScene] = renderer->PrepareScene(scenes[0]);
     HUSKY_ASSERT(prepareSceneResult);
+
+    renderer->UpdateScene(preparedScene);
 
     scene = std::move(preparedScene);
 

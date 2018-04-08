@@ -21,6 +21,7 @@ namespace Husky::Vulkan
         ~Sampler();
 
         inline vk::Sampler GetSampler() { return sampler; }
+        inline GraphicsDevice* GetDevice() const { return device; }
     private:
         void Destroy();
 
