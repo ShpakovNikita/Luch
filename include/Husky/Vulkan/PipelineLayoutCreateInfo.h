@@ -21,6 +21,7 @@ namespace Husky::Vulkan
 
             vk::PipelineLayoutCreateInfo createInfo;
             Vector<vk::DescriptorSetLayout> setLayouts;
+            Vector<vk::PushConstantRange> pushConstantRanges;
         };
 
         static VulkanPipelineLayoutCreateInfo ToVulkanCreateInfo(const PipelineLayoutCreateInfo& ci);

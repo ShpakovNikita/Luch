@@ -2,9 +2,11 @@
 
 #include <Husky/ArrayProxy.h>
 #include <Husky/Vulkan.h>
+#include <Husky/ShaderStage.h>
 #include <Husky/Vulkan/Buffer.h>
 #include <Husky/Vulkan/DescriptorSet.h>
 #include <Husky/Vulkan/Framebuffer.h>
+#include <Husky/Vulkan/ShaderStage.h>
 #include <Husky/Vulkan/GraphicsDevice.h>
 #include <Husky/Vulkan/IndexType.h>
 #include <Husky/Vulkan/Pipeline.h>
@@ -33,6 +35,8 @@ namespace Husky::Vulkan
         friend class GraphicsDevice;
         friend class CommandPool;
     public:
+        static constexpr int32 MaxVertexBuffers = 7;
+
         CommandBuffer(GraphicsDevice* device, vk::CommandBuffer commandBuffer);
 
         CommandBuffer(CommandBuffer&& other) = delete;
@@ -211,6 +215,19 @@ namespace Husky::Vulkan
         inline CommandBuffer* SetScissor(const vk::Rect2D& scissor)
         {
             commandBuffer.setScissor(0, { scissor });
+            return this;
+        }
+
+        template<typename T>
+        inline CommandBuffer* PushConstants(PipelineLayout* layout, ShaderStage stages, int32 offset, const T& value)
+        {
+            commandBuffer.pushConstants(
+                layout->GetPipelineLayout(),
+                ToVulkanShaderStages(stages),
+                offset,
+                sizeof(T),
+                &value);
+
             return this;
         }
     private:

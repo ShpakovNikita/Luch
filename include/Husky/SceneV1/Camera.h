@@ -18,6 +18,9 @@ namespace Husky::SceneV1
 
         virtual Mat4x4 GetCameraViewMatrix() const;
         virtual void SetCameraViewMatrix(const Mat4x4& view);
+
+        virtual Vec3 GetCameraPosition();
+
         virtual Mat4x4 GetCameraProjectionMatrix() const = 0;
 
         inline const RefPtr<Vulkan::Buffer>& GetUniformBuffer() const { return uniformBuffer; }

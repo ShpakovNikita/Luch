@@ -13,6 +13,7 @@
 #include <Husky/SceneV1/AlphaMode.h>
 #include <Husky/SceneV1/PbrMaterial.h>
 #include <Husky/SceneV1/Texture.h>
+#include <Husky/SceneV1/Light.h>
 #include <Husky/SceneV1/Sampler.h>
 #include <Husky/SceneV1/VertexBuffer.h>
 #include <Husky/SceneV1/IndexBuffer.h>
@@ -119,12 +120,7 @@ namespace Husky::Render
         GLSLShaderCompiler::Deinitialize();
         return true;
     }
-
-    void ForwardRenderer::DrawScene(const RefPtr<SceneV1::Scene>& scene)
-    {
-
-    }
-
+    
     ResultValue<bool, PreparedScene> ForwardRenderer::PrepareScene(const RefPtr<SceneV1::Scene>& scene)
     {
         PreparedScene preparedScene;
@@ -137,18 +133,18 @@ namespace Husky::Render
         const int32 samplersPerMaterial = 5;
 
         int32 textureDescriptorCount = sceneProperties.materials.size() * texturesPerMaterial;
-        int32 samplerDescriptorCount = sceneProperties.materials.size() * samplersPerMaterial;
         int32 perMeshUBOCount = sceneProperties.meshes.size();
         int32 perCameraUBOCount = 1;
+        int32 lightsBufferCount = 1;
 
-        // one set per material, one set per mesh, one set for camera
-        int32 maxDescriptorSets = sceneProperties.materials.size() + sceneProperties.meshes.size() + 1;
+        // one set per material, one set per mesh, one set for camera, one set for lights
+        int32 maxDescriptorSets = sceneProperties.materials.size() + sceneProperties.meshes.size() + 1 + 1;
 
         UnorderedMap<vk::DescriptorType, int32> descriptorCount = 
         {
-            { vk::DescriptorType::eSampledImage, textureDescriptorCount + 1},
-            { vk::DescriptorType::eSampler, samplerDescriptorCount + 1 },
-            { vk::DescriptorType::eUniformBuffer, perMeshUBOCount + perCameraUBOCount + 1}
+            { vk::DescriptorType::eCombinedImageSampler, textureDescriptorCount + 1},
+            { vk::DescriptorType::eUniformBuffer, perMeshUBOCount + perCameraUBOCount + 1},
+            { vk::DescriptorType::eStorageBuffer, lightsBufferCount}
         };
 
         auto vertexShaderSource = LoadShaderSource(".\\Shaders\\pbr.vert");
@@ -226,23 +222,41 @@ namespace Husky::Render
             .OfType(vk::DescriptorType::eUniformBuffer)
             .AtStages(ShaderStage::Vertex | ShaderStage::Fragment);
 
+        preparedScene.lightsStorageBufferBinding
+            .OfType(vk::DescriptorType::eStorageBuffer)
+            .AtStages(ShaderStage::Vertex | ShaderStage::Fragment);
+
         preparedScene.meshUniformBufferBinding
             .OfType(vk::DescriptorType::eUniformBuffer)
             .AtStages(ShaderStage::Vertex);
 
-        preparedScene.materialImageBinding
-            .OfType(vk::DescriptorType::eSampledImage)
-            .AtStages(ShaderStage::Fragment)
-            .WithNBindings(texturesPerMaterial);
+        preparedScene.baseColorTextureBinding
+            .OfType(vk::DescriptorType::eCombinedImageSampler)
+            .AtStages(ShaderStage::Fragment);
 
-        preparedScene.materialSamplerBinding
-            .OfType(vk::DescriptorType::eSampler)
-            .AtStages(ShaderStage::Fragment)
-            .WithNBindings(samplersPerMaterial);
+        preparedScene.metallicRoughnessTextureBinding
+            .OfType(vk::DescriptorType::eCombinedImageSampler)
+            .AtStages(ShaderStage::Fragment);
+
+        preparedScene.normalTextureBinding
+            .OfType(vk::DescriptorType::eCombinedImageSampler)
+            .AtStages(ShaderStage::Fragment);
+
+        preparedScene.occlusionTextureBinding
+            .OfType(vk::DescriptorType::eCombinedImageSampler)
+            .AtStages(ShaderStage::Fragment);
+
+        preparedScene.emissiveTextureBinding
+            .OfType(vk::DescriptorType::eCombinedImageSampler)
+            .AtStages(ShaderStage::Fragment);
 
         DescriptorSetLayoutCreateInfo cameraDescriptorSetLayoutCreateInfo;
         cameraDescriptorSetLayoutCreateInfo
             .AddBinding(&preparedScene.cameraUniformBufferBinding);
+
+        DescriptorSetLayoutCreateInfo lightsDescriptorSetLayoutCreateInfo;
+        lightsDescriptorSetLayoutCreateInfo
+            .AddBinding(&preparedScene.lightsStorageBufferBinding);
 
         DescriptorSetLayoutCreateInfo meshDescriptorSetLayoutCreateInfo;
         meshDescriptorSetLayoutCreateInfo
@@ -250,8 +264,11 @@ namespace Husky::Render
 
         DescriptorSetLayoutCreateInfo materialDescriptorSetLayoutCreateInfo;
         materialDescriptorSetLayoutCreateInfo
-            .AddBinding(&preparedScene.materialImageBinding)
-            .AddBinding(&preparedScene.materialSamplerBinding);
+            .AddBinding(&preparedScene.baseColorTextureBinding)
+            .AddBinding(&preparedScene.metallicRoughnessTextureBinding)
+            .AddBinding(&preparedScene.normalTextureBinding)
+            .AddBinding(&preparedScene.occlusionTextureBinding)
+            .AddBinding(&preparedScene.emissiveTextureBinding);
 
         auto[createCameraDescriptorSetLayoutResult, createdCameraDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(cameraDescriptorSetLayoutCreateInfo);
         if (createCameraDescriptorSetLayoutResult != vk::Result::eSuccess)
@@ -261,6 +278,14 @@ namespace Husky::Render
 
         preparedScene.cameraDescriptorSetLayout = std::move(createdCameraDescriptorSetLayout);
 
+        auto[createLightsDescriptorSetLayoutResult, createdLightsDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(lightsDescriptorSetLayoutCreateInfo);
+        if (createLightsDescriptorSetLayoutResult != vk::Result::eSuccess)
+        {
+            return { false };
+        }
+        
+        preparedScene.lightsDescriptorSetLayout = std::move(createdLightsDescriptorSetLayout);
+
         auto[createMeshDescriptorSetLayoutResult, createdMeshDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(meshDescriptorSetLayoutCreateInfo);
         if (createMeshDescriptorSetLayoutResult != vk::Result::eSuccess)
         {
@@ -269,7 +294,6 @@ namespace Husky::Render
 
         preparedScene.meshDescriptorSetLayout = std::move(createdMeshDescriptorSetLayout);
 
-        
         auto[createMaterialDescriptorSetLayoutResult, createdMaterialDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(materialDescriptorSetLayoutCreateInfo);
         if (createMaterialDescriptorSetLayoutResult != vk::Result::eSuccess)
         {
@@ -283,7 +307,8 @@ namespace Husky::Render
 
         PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
         pipelineLayoutCreateInfo
-            .WithNSetLayouts(3)
+            .WithNSetLayouts(4)
+            .AddSetLayout(preparedScene.lightsDescriptorSetLayout)
             .AddSetLayout(preparedScene.cameraDescriptorSetLayout)
             .AddSetLayout(preparedScene.meshDescriptorSetLayout)
             .AddSetLayout(preparedScene.materialDescriptorSetLayout)
@@ -432,12 +457,21 @@ namespace Husky::Render
         {
             if (node->GetCamera() != nullptr)
             {
+                HUSKY_ASSERT(preparedScene.cameraNode == nullptr, "Only one camera node is allowed");
                 preparedScene.cameraNode = node;
                 PrepareCameraNode(node, preparedScene);
             }
-            else
+            else if(node->GetMesh() != nullptr)
             {
                 PrepareMeshNode(node, preparedScene);
+            }
+            else if (node->GetLight() != nullptr)
+            {
+                PrepareLightNode(node, preparedScene);
+            }
+            else
+            {
+                HUSKY_ASSERT(false);
             }
         }
 
@@ -445,6 +479,8 @@ namespace Husky::Render
         {
             PrepareMaterial(material, preparedScene);
         }
+
+        PrepareLights(preparedScene);
 
         return { true, preparedScene };
     }
@@ -483,7 +519,8 @@ namespace Husky::Render
             ->Begin()
             ->SetViewport({ 0, 0, (float32)framebufferWidth, (float32)framebufferHeight, 0.0f, 1.0f })
             ->SetScissor({ {0, 0}, {(uint32)framebufferWidth, (uint32)framebufferHeight} })
-            ->BindDescriptorSet(scene.pipelineLayout, 0, scene.cameraNode->GetCamera()->GetDescriptorSet())
+            ->BindDescriptorSet(scene.pipelineLayout, 0, scene.lightsDescriptorSet)
+            ->BindDescriptorSet(scene.pipelineLayout, 1, scene.cameraNode->GetCamera()->GetDescriptorSet())
             ->BeginInlineRenderPass(
                 scene.renderPass,
                 frameResource.framebuffer,
@@ -561,6 +598,22 @@ namespace Husky::Render
         }
     }
 
+    void Husky::Render::ForwardRenderer::PrepareLightNode(const RefPtr<SceneV1::Node>& node, PreparedScene& scene)
+    {
+        const auto& light = node->GetLight();
+
+        if (light!= nullptr)
+        {
+            PrepareLight(light, scene);
+        }
+
+        HUSKY_ASSERT(node->GetChildren().empty(), "Don't add children to light nodes");
+    }
+
+    void Husky::Render::ForwardRenderer::PrepareNode(const RefPtr<SceneV1::Node>& node, PreparedScene& scene)
+    {
+    }
+
     void ForwardRenderer::PrepareMesh(const RefPtr<SceneV1::Mesh>& mesh, PreparedScene& scene)
     {
         for (const auto& primitive : mesh->GetPrimitives())
@@ -607,6 +660,11 @@ namespace Husky::Render
         }
     }
 
+    void Husky::Render::ForwardRenderer::PrepareLight(const RefPtr<SceneV1::Light>& light, PreparedScene& scene)
+    {
+        scene.lights.push_back(light);
+    }
+
     void ForwardRenderer::PrepareMaterial(const RefPtr<SceneV1::PbrMaterial>& material, PreparedScene& scene)
     {
         auto[allocateDescriptorSetResult, allocatedDescriptorSet] = scene.descriptorPool->AllocateDescriptorSet(scene.materialDescriptorSetLayout);
@@ -620,21 +678,49 @@ namespace Husky::Render
 
         // TODO replace null textures with empty texture descriptors
 
-        imageDescriptors.push_back(ImageDescriptorInfo{ material->metallicRoughness.baseColorTexture.texture->GetDeviceImageView(), vk::ImageLayout::eShaderReadOnlyOptimal });
-        imageDescriptors.push_back(ImageDescriptorInfo{ material->metallicRoughness.metallicRoughnessTexture.texture->GetDeviceImageView(), vk::ImageLayout::eShaderReadOnlyOptimal });
-        imageDescriptors.push_back(ImageDescriptorInfo{ material->normalTexture.texture->GetDeviceImageView(), vk::ImageLayout::eShaderReadOnlyOptimal });
-        imageDescriptors.push_back(ImageDescriptorInfo{ material->occlusionTexture.texture->GetDeviceImageView(), vk::ImageLayout::eShaderReadOnlyOptimal });
-        imageDescriptors.push_back(ImageDescriptorInfo{ material->emissiveTexture.texture->GetDeviceImageView(), vk::ImageLayout::eShaderReadOnlyOptimal });
+        const auto& baseColorTexture = material->metallicRoughness.baseColorTexture;
+        const auto& metallicRoughnessTexture = material->metallicRoughness.metallicRoughnessTexture;
+        const auto& normalTexture = material->normalTexture;
+        const auto& occlusionTexture = material->occlusionTexture;
+        const auto& emissiveTexture = material->emissiveTexture;
 
-        Vector<Sampler*> samplers;
-        samplers.push_back(material->metallicRoughness.baseColorTexture.texture->GetSampler()->GetDeviceSampler());
-        samplers.push_back(material->metallicRoughness.metallicRoughnessTexture.texture->GetSampler()->GetDeviceSampler());
-        samplers.push_back(material->normalTexture.texture->GetSampler()->GetDeviceSampler());
-        samplers.push_back(material->occlusionTexture.texture->GetSampler()->GetDeviceSampler());
-        samplers.push_back(material->emissiveTexture.texture->GetSampler()->GetDeviceSampler());
+        
+        ImageDescriptorInfo{ metallicRoughnessTexture.texture->GetDeviceImageView(), metallicRoughnessTexture.texture->GetDeviceSampler(), vk::ImageLayout::eShaderReadOnlyOptimal };
+        ImageDescriptorInfo{ normalTexture.texture->GetDeviceImageView(), normalTexture.texture->GetDeviceSampler(), vk::ImageLayout::eShaderReadOnlyOptimal };
+        ImageDescriptorInfo{ occlusionTexture.texture->GetDeviceImageView(), occlusionTexture.texture->GetDeviceSampler(), vk::ImageLayout::eShaderReadOnlyOptimal };
+        ImageDescriptorInfo{ emissiveTexture.texture->GetDeviceImageView(), emissiveTexture.texture->GetDeviceSampler(), vk::ImageLayout::eShaderReadOnlyOptimal };
 
-        descriptorSetWrites.WriteImageDescriptors(allocatedDescriptorSet, &scene.materialImageBinding, imageDescriptors);
-        descriptorSetWrites.WriteSamplerDescriptors(allocatedDescriptorSet, &scene.materialSamplerBinding, samplers);
+        descriptorSetWrites.WriteCombinedImageDescriptors(material->GetDescriptorSet(), &scene.baseColorTextureBinding, { ToVulkanImageDescriptorInfo(material->metallicRoughness.baseColorTexture) });
+        descriptorSetWrites.WriteCombinedImageDescriptors(material->GetDescriptorSet(), &scene.metallicRoughnessTextureBinding, { ToVulkanImageDescriptorInfo(material->metallicRoughness.metallicRoughnessTexture) });
+        descriptorSetWrites.WriteCombinedImageDescriptors(material->GetDescriptorSet(), &scene.normalTextureBinding, { ToVulkanImageDescriptorInfo(material->normalTexture) });
+        descriptorSetWrites.WriteCombinedImageDescriptors(material->GetDescriptorSet(), &scene.occlusionTextureBinding, { ToVulkanImageDescriptorInfo(material->occlusionTexture) });
+        descriptorSetWrites.WriteCombinedImageDescriptors(material->GetDescriptorSet(), &scene.emissiveTextureBinding, { ToVulkanImageDescriptorInfo(material->emissiveTexture) });
+
+        DescriptorSet::Update(descriptorSetWrites);
+    }
+
+    void Husky::Render::ForwardRenderer::PrepareLights(PreparedScene& scene)
+    {
+        int32 lightsBufferSize = sizeof(int32) + sizeof(LightUniform) * scene.lights.size();
+
+        auto[createLightsBufferResult, createdLightsBuffer] = context->device->CreateBuffer(
+            lightsBufferSize,
+            context->device->GetQueueIndices()->graphicsQueueFamilyIndex,
+            vk::BufferUsageFlagBits::eStorageBuffer, true);
+
+        auto[mapMemoryResult, mappedMemory] = createdLightsBuffer->MapMemory(lightsBufferSize, 0);
+        HUSKY_ASSERT(mapMemoryResult == vk::Result::eSuccess);
+
+        HUSKY_ASSERT(createLightsBufferResult == vk::Result::eSuccess);
+        scene.lightsBuffer = createdLightsBuffer;
+
+        auto[createDescriptorSetResult, createdDescriptorSet] = scene.descriptorPool->AllocateDescriptorSet(scene.lightsDescriptorSetLayout);
+        HUSKY_ASSERT(createDescriptorSetResult == vk::Result::eSuccess);
+        scene.lightsDescriptorSet = createdDescriptorSet;
+
+        DescriptorSetWrites descriptorSetWrites;
+
+        descriptorSetWrites.WriteStorageBufferDescriptors(createdDescriptorSet, &scene.lightsStorageBufferBinding, { createdLightsBuffer });
 
         DescriptorSet::Update(descriptorSetWrites);
     }
@@ -673,6 +759,12 @@ namespace Husky::Render
             UpdateCamera(camera, transform, scene);
         }
 
+        const auto& light = node->GetLight();
+        if (light != nullptr)
+        {
+            UpdateLight(light, transform, scene);
+        }
+
         for (const auto& child : node->GetChildren())
         {
             UpdateNode(child, transform, scene);
@@ -698,13 +790,29 @@ namespace Husky::Render
         camera->SetCameraViewMatrix(transform);
 
         CameraUniformBuffer cameraUniformBuffer;
-        //cameraUniformBuffer.view = glm::transpose(camera->GetCameraViewMatrix());
-        //cameraUniformBuffer.projection = glm::transpose(camera->GetCameraProjectionMatrix());
-        cameraUniformBuffer.view = (camera->GetCameraViewMatrix());
-        cameraUniformBuffer.projection = (camera->GetCameraProjectionMatrix());
-
+        cameraUniformBuffer.view = camera->GetCameraViewMatrix();
+        cameraUniformBuffer.projection = camera->GetCameraProjectionMatrix();
+        cameraUniformBuffer.position = camera->GetCameraPosition();
         // TODO
         memcpy(buffer->GetMappedMemory(), &cameraUniformBuffer, sizeof(CameraUniformBuffer));
+    }
+
+    void Husky::Render::ForwardRenderer::UpdateLight(const RefPtr<SceneV1::Light>& light, const Mat4x4& transform, PreparedScene& scene)
+    {
+        LightUniform lightUniform;
+        // TODO viespace vectors
+        lightUniform.positionWS = transform * Vec4{ 0.0, 0.0, 0.0, 1.0 };
+        lightUniform.directionWS = transform * Vec4{ light->GetDirection().value_or(Vec3{0, 0, 1}), 0.0 };
+        lightUniform.color = Vec4{ light->GetColor().value_or(Vec3{1.0, 1.0, 1.0}), 1.0 };
+        lightUniform.enabled = light->IsEnabled() ? 1 : 0;
+        lightUniform.type = static_cast<int32>(light->GetType());
+        lightUniform.spotlightAngle = light->GetSpotlightAngle().value_or(0.0);
+        lightUniform.range = light->GetRange().value_or(0.0);
+        lightUniform.intensity = light->GetIntensity();
+
+        //int32 offset = sizeof(int32) + sizeof(LightUniform)*light->GetIndex();
+        int32 offset = sizeof(LightUniform)*light->GetIndex();
+        memcpy((Byte*)scene.lightsBuffer->GetMappedMemory() + offset, &lightUniform, sizeof(LightUniform));
     }
 
     //void Husky::Render::ForwardRenderer::UpdateMaterial(const RefPtr<SceneV1::Material>& material, PreparedScene & scene)
@@ -727,7 +835,7 @@ namespace Husky::Render
 
     void ForwardRenderer::DrawMesh(const RefPtr<SceneV1::Mesh>& mesh, const PreparedScene& scene, CommandBuffer* cmdBuffer)
     {
-        cmdBuffer->BindDescriptorSet(scene.pipelineLayout, 1, mesh->GetDescriptorSet());
+        cmdBuffer->BindDescriptorSet(scene.pipelineLayout, 2, mesh->GetDescriptorSet());
 
         for (const auto& primitive : mesh->GetPrimitives())
         {
@@ -766,15 +874,44 @@ namespace Husky::Render
 
         const auto& indexBuffer = primitive->GetIndexBuffer();
 
+        const auto& material = primitive->GetMaterial();
+
+        MaterialPushConstants materialPushConstants = GetMaterialPushConstants(material);
+
         cmdBuffer
             ->BindGraphicsPipeline(pipeline.Get())
             ->BindVertexBuffers(vulkanVertexBuffers, offsets, 0)
-            ->BindDescriptorSet(scene.pipelineLayout, 2, primitive->GetMaterial()->GetDescriptorSet())
+            ->BindDescriptorSet(scene.pipelineLayout, 3, primitive->GetMaterial()->GetDescriptorSet())
             ->BindIndexBuffer(
                 indexBuffer->GetDeviceBuffer().Get(),
                 ToVulkanIndexType(indexBuffer->GetIndexType()),
                 0)
+            ->PushConstants(scene.pipelineLayout, ShaderStage::Fragment, 0, materialPushConstants)
             ->DrawIndexed(indexBuffer->GetIndexCount(), 1, 0, 0, 0);
+    }
+
+    ImageDescriptorInfo ForwardRenderer::ToVulkanImageDescriptorInfo(const SceneV1::TextureInfo& textureInfo)
+    {
+        return ImageDescriptorInfo{ textureInfo.texture->GetDeviceImageView(), textureInfo.texture->GetDeviceSampler(), vk::ImageLayout::eShaderReadOnlyOptimal };
+    }
+
+    MaterialPushConstants ForwardRenderer::GetMaterialPushConstants(SceneV1::PbrMaterial * material)
+    {
+        MaterialPushConstants materialPushConstants;
+        materialPushConstants.baseColorFactor = material->metallicRoughness.baseColorFactor;
+        materialPushConstants.hasBaseColorTexture = material->HasBaseColorTexture();
+        materialPushConstants.metallicFactor = material->metallicRoughness.metallicFactor;
+        materialPushConstants.roughnessFactor = material->metallicRoughness.roughnessFactor;
+        materialPushConstants.hasMetallicRoughnessTexture = material->HasMetallicRoughnessTexture();
+        materialPushConstants.normalScale = material->normalTexture.scale;
+        materialPushConstants.hasNormalTexture = material->HasNormalTexture();
+        materialPushConstants.occlusionStrength = material->occlusionTexture.strength;
+        materialPushConstants.hasOcclusionTexture = material->HasOcclusionTexture();
+        materialPushConstants.emissiveFactor = material->emissiveFactor;
+        materialPushConstants.hasEmissiveTexture = material->HasEmissiveTexture();
+        materialPushConstants.isAlphaMask = material->alphaMode == SceneV1::AlphaMode::Mask;
+        materialPushConstants.alphaCutoff = material->alphaCutoff;
+        return materialPushConstants;
     }
 
     Vector<Byte> Husky::Render::ForwardRenderer::LoadShaderSource(const FilePath& path)

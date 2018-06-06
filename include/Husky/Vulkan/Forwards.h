@@ -16,6 +16,7 @@ namespace Husky::Vulkan
     class GlslShaderCompiler;
     class GraphicsDevice;
     class Image;
+    class ImageDescriptorInfo;
     class ImageView;
     class IndexBuffer;
     class PhysicalDevice;

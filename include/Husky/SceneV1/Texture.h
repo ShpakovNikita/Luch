@@ -5,6 +5,7 @@
 #include <Husky/Vulkan/Forwards.h>
 #include <Husky/Vulkan/CommandBuffer.h>
 #include <Husky/SceneV1/Forwards.h>
+#include <Husky/SceneV1/Sampler.h>
 
 namespace Husky::SceneV1
 {
@@ -31,6 +32,7 @@ namespace Husky::SceneV1
         inline void SetDeviceImageView(const RefPtr<Vulkan::ImageView>& aDeviceImageView) { deviceImageView = aDeviceImageView; }
 
         inline const RefPtr<Sampler>& GetSampler() const { return sampler; }
+        inline const RefPtr<Vulkan::Sampler>& GetDeviceSampler() const { return sampler->GetDeviceSampler(); }
     private:
         String name;
 

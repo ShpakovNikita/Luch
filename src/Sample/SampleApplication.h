@@ -108,7 +108,7 @@ private:
     vk::AllocationCallbacks allocationCallbacks;
     vk::Instance instance;
     vk::DebugReportCallbackEXT debugCallback;
-    Husky::Render::PreparedScene scene;
+    Husky::Render::PreparedScene preparedScene;
 
     Husky::UniquePtr<Husky::Render::ForwardRenderer> renderer;
 };

@@ -21,6 +21,11 @@ namespace Husky::SceneV1
         viewMatrix = view;
     }
 
+    Vec3 Camera::GetCameraPosition()
+    {
+        return viewMatrix[3];
+    }
+
     PerspectiveCamera::PerspectiveCamera(
         float32 aYfov,
         float32 aZnear,

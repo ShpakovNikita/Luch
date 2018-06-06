@@ -45,14 +45,19 @@ namespace Husky::SceneV1
         PbrMetallicRoughness metallicRoughness;
         NormalTextureInfo normalTexture;
         OcclusionTextureInfo occlusionTexture;
+        Vec3 emissiveFactor = { 0, 0, 0 };
         TextureInfo emissiveTexture;
         AlphaMode alphaMode = AlphaMode::Opaque;
-        Vec3 emissiveFactor = { 0, 0, 0 };
         float32 alphaCutoff = 0.5f;
         bool doubleSided = false;
 
         inline const RefPtr<Vulkan::DescriptorSet>& GetDescriptorSet() const { return descriptorSet; }
         inline void SetDescriptorSet(const RefPtr<Vulkan::DescriptorSet>& aDescriptorSet) { descriptorSet = aDescriptorSet; }
+        inline bool HasBaseColorTexture() const { return metallicRoughness.baseColorTexture.texture != nullptr; }
+        inline bool HasMetallicRoughnessTexture() const { return metallicRoughness.metallicRoughnessTexture.texture != nullptr; }
+        inline bool HasNormalTexture() const { return normalTexture.texture != nullptr; }
+        inline bool HasOcclusionTexture() const { return occlusionTexture.texture != nullptr; }
+        inline bool HasEmissiveTexture() const { return emissiveTexture.texture != nullptr; }
     private:
         RefPtr<Vulkan::DescriptorSet> descriptorSet;
     };

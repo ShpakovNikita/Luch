@@ -21,18 +21,23 @@ namespace Husky::Render
     {
         Mat4x4 view;
         Mat4x4 projection;
-        Vec3 cameraPosition;
-        Vec3 cameraDirection;
+        Vec3 position;
         float32 _padding0;
     };
+
+    static_assert(sizeof(CameraUniformBuffer) % 4 == 0);
 
     struct MeshUniformBuffer
     {
         Mat4x4 transform;
     };
+
+    static_assert(sizeof(MeshUniformBuffer) % 4 == 0);
     
     struct MaterialPushConstants
     {
+        Vec4 baseColorFactor;
+        Vec3 emissiveFactor;
         int32 hasBaseColorTexture;
         int32 hasMetallicRoughnessTexture;
         int32 hasNormalTexture;
@@ -42,11 +47,30 @@ namespace Husky::Render
         float32 alphaCutoff;
         float32 metallicFactor;
         float32 roughnessFactor;
-        float32 emissiveFactor;
         float32 normalScale;
         float32 occlusionStrength;
-        Vec4 baseColorFactor;
     };
+
+    static_assert(sizeof(MaterialPushConstants) % 4 == 0);
+
+    struct LightUniform
+    {
+        Vec4 positionWS = { 0.0, 0.0, 0.0, 1.0 };
+        Vec4 directionWS = { 0.0, 0.0, 0.0, 0.0 };
+        Vec4 positionVS = { 0.0, 0.0, 0.0, 1.0 };
+        Vec4 directionVS = { 0.0, 0.0, 0.0, 0.01 };
+        Vec4 color = { 1.0, 1.0, 1.0, 1.0 };
+        int32 enabled = 0;
+        int32 type = 0;
+        float32 spotlightAngle = 0;
+        float32 range = 0;
+        float32 intensity = 1.0;
+        float32 __padding0;
+        float32 __padding1;
+        float32 __padding2;
+    };
+
+    static_assert(sizeof(LightUniform) % 4 == 0);
 #pragma pack(pop)
 
     struct CommandPoolCreateResult
@@ -100,16 +124,26 @@ namespace Husky::Render
         RefPtr<SceneV1::Scene> scene;
         RefPtr<SceneV1::Node> cameraNode;
 
+        RefPtrVector<SceneV1::Light> lights;
+
         RefPtr<DescriptorPool> descriptorPool;
         RefPtr<RenderPass> renderPass;
         RefPtr<PipelineLayout> pipelineLayout;
 
         DescriptorSetBinding cameraUniformBufferBinding;
+        DescriptorSetBinding lightsStorageBufferBinding;
         DescriptorSetBinding meshUniformBufferBinding;
-        DescriptorSetBinding materialImageBinding;
-        DescriptorSetBinding materialSamplerBinding;
+        DescriptorSetBinding baseColorTextureBinding;
+        DescriptorSetBinding metallicRoughnessTextureBinding;
+        DescriptorSetBinding normalTextureBinding;
+        DescriptorSetBinding occlusionTextureBinding;
+        DescriptorSetBinding emissiveTextureBinding;
+
+        RefPtr<Buffer> lightsBuffer;
+        RefPtr<DescriptorSet> lightsDescriptorSet;
 
         RefPtr<DescriptorSetLayout> cameraDescriptorSetLayout;
+        RefPtr<DescriptorSetLayout> lightsDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> meshDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> materialDescriptorSetLayout;
         RefPtr<CommandPool> commandPool;
@@ -128,25 +162,33 @@ namespace Husky::Render
         bool Initialize();
         bool Deinitialize();
 
-        void DrawScene(const RefPtr<SceneV1::Scene>& scene);
-
         ResultValue<bool, PreparedScene> PrepareScene(const RefPtr<SceneV1::Scene>& scene);
         void UpdateScene(PreparedScene& scene);
         void DrawScene(const PreparedScene& scene);
     private:
         void PrepareCameraNode(const RefPtr<SceneV1::Node>& node, PreparedScene& scene);
         void PrepareMeshNode(const RefPtr<SceneV1::Node>& node, PreparedScene& scene);
+        void PrepareLightNode(const RefPtr<SceneV1::Node>& node, PreparedScene& scene);
+        void PrepareNode(const RefPtr<SceneV1::Node>& node, PreparedScene& scene);
         void PrepareMesh(const RefPtr<SceneV1::Mesh>& mesh, PreparedScene& scene);
+        void PrepareLight(const RefPtr<SceneV1::Light>& light, PreparedScene& scene);
         void PrepareMaterial(const RefPtr<SceneV1::PbrMaterial>& mesh, PreparedScene& scene);
+
+        void PrepareLights(PreparedScene& scene);
 
         void UpdateNode(const RefPtr<SceneV1::Node>& node, const Mat4x4& parentTransform, PreparedScene& scene);
         void UpdateMesh(const RefPtr<SceneV1::Mesh>& mesh, const Mat4x4& transform, PreparedScene& scene);
         void UpdateCamera(const RefPtr<SceneV1::Camera>& camera, const Mat4x4& transform, PreparedScene& scene);
+        void UpdateLight(const RefPtr<SceneV1::Light>& light, const Mat4x4& transform, PreparedScene& scene);
         //void UpdateMaterial(const RefPtr<SceneV1::PbrMaterial>& material, PreparedScene& scene);
 
         void DrawNode(const RefPtr<SceneV1::Node>& node, const PreparedScene& scene, CommandBuffer* cmdBuffer);
         void DrawMesh(const RefPtr<SceneV1::Mesh>& mesh, const PreparedScene& scene, CommandBuffer* cmdBuffer);
         void DrawPrimitive(const RefPtr<SceneV1::Primitive>& primitive, const PreparedScene& scene, CommandBuffer* cmdBuffer);
+
+        ImageDescriptorInfo ToVulkanImageDescriptorInfo(const SceneV1::TextureInfo& textureInfo);
+
+        MaterialPushConstants GetMaterialPushConstants(SceneV1::PbrMaterial *material);
 
         Vector<Byte> LoadShaderSource(const FilePath& path);
 

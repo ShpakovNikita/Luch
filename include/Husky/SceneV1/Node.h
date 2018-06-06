@@ -30,8 +30,10 @@ namespace Husky::SceneV1
             const Transform& transform,
             const String& name);*/
 
+        Node() = default;
+
         Node(
-            RefPtrVector<Node>&& children,
+            RefPtrVector<Node> children,
             const RefPtr<Mesh>& mesh,
             const RefPtr<Camera>& camera,
             const TransformType& transform,
@@ -40,15 +42,28 @@ namespace Husky::SceneV1
         ~Node();
 
         inline const String& GetName() const { return name; }
+        inline void SetName(const String& aName) { name = aName; }
+
         inline const RefPtrVector<Node>& GetChildren() const { return children; }
+
         inline const RefPtr<Mesh>& GetMesh() const { return mesh; }
+        void SetMesh(const RefPtr<Mesh>& aMesh);
+
         inline const RefPtr<Camera>& GetCamera() const { return camera; }
+        void SetCamera(const RefPtr<Camera>& aCamera);
+
+        inline const RefPtr<Light>& GetLight() const { return light; }
+        void SetLight(const RefPtr<Light>& aLight);
+
         inline const TransformType& GetTransform() const { return transform; }
+        void SetTransform(const TransformProperties& transform);
+        void SetTransform(const Mat4x4& matrix);
     private:
         String name;
         RefPtrVector<Node> children;
         RefPtr<Mesh> mesh;
         RefPtr<Camera> camera;
-        TransformType transform;
+        RefPtr<Light> light;
+        TransformType transform = Mat4x4{1.0};
     };
 }

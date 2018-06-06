@@ -14,6 +14,7 @@
 #include <variant>
 #include <vector>
 #include <experimental/filesystem>
+//#include <Husky/vector_set.h>
 
 namespace Husky
 {
@@ -43,13 +44,22 @@ using Array = std::array<T, Size>;
 template<typename T>
 using Vector = std::vector<T>;
 
+//template<typename T, typename Equal = std::equal_to<T>>
+//using VectorSet = vector_set<T, Equal>;
+
+template<typename T, typename Less = std::less<T>>
+using Set = std::set<T, Less>;
+
+template<typename T, typename Hash = std::hash<T>, typename Equal = std::equal_to<T>>
+using UnorderedSet = std::unordered_set<T, Hash, Equal>;
+
+template<typename Key, typename Value>
+using Map = std::map<Key, Value>;
+
+template<typename Key, typename Value, typename Hash = std::hash<Key>, typename KeyEqual = std::equal_to<Key>>
+using UnorderedMap = std::unordered_map<Key, Value>;
+
 using Byte = std::byte;
-
-template<typename T>
-using Set = std::set<T>;
-
-template<typename T>
-using UnorderedSet = std::unordered_set<T>;
 
 template<typename T>
 using Limits = std::numeric_limits<T>;
@@ -62,12 +72,6 @@ using Tuple = std::tuple<Args...>;
 
 template<typename ... Args>
 using Variant = std::variant<Args...>;
-
-template<typename TKey, typename TValue>
-using Map = std::map<TKey, TValue>;
-
-template<typename TKey, typename TValue>
-using UnorderedMap = std::unordered_map<TKey, TValue>;
 
 using FilePath = std::experimental::filesystem::path;
 

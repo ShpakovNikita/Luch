@@ -8,6 +8,7 @@ namespace Husky::Vulkan
     class GraphicsDevice;
     class DescriptorSetLayoutCreateInfo;
 
+    // TODO propagate index from pipeline layout
     class DescriptorSetLayout : public BaseObject
     {
         friend class GraphicsDevice;

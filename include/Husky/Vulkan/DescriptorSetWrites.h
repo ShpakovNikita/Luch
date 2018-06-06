@@ -7,17 +7,8 @@ namespace Husky::Vulkan
 {
     struct ImageDescriptorInfo
     {
-        // ImageDescriptorInfo() = default;
-        // 
-        // ImageDescriptorInfo(
-        //     ImageView* aImageView,
-        //     vk::ImageLayout aLayout)
-        //     : imageView(aImageView)
-        //     , layout(aLayout)
-        // {
-        // }
-
-        ImageView* imageView;
+        ImageView* imageView = nullptr;
+        Sampler* sampler = nullptr;
         vk::ImageLayout layout;
     };
 
@@ -34,6 +25,11 @@ namespace Husky::Vulkan
             DescriptorSetBinding* binding,
             const Vector<Buffer*>& buffers);
 
+        DescriptorSetWrites& WriteStorageBufferDescriptors(
+            DescriptorSet* descriptorSet,
+            DescriptorSetBinding* binding,
+            const Vector<Buffer*>& buffers);
+
         DescriptorSetWrites& WriteImageDescriptors(
             DescriptorSet* descriptorSet,
             DescriptorSetBinding* binding,
@@ -43,6 +39,11 @@ namespace Husky::Vulkan
             DescriptorSet* descriptorSet,
             DescriptorSetBinding* binding,
             const Vector<Sampler*>& samplers);
+
+        DescriptorSetWrites& WriteCombinedImageDescriptors(
+            DescriptorSet* descriptorSet,
+            DescriptorSetBinding* binding,
+            const Vector<ImageDescriptorInfo>& images);
 
     private:
         GraphicsDevice* device = nullptr;

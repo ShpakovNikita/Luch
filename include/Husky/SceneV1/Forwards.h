@@ -1,12 +1,14 @@
 #pragma once
 
+#include <Husky/ID.h>
+
 namespace Husky::SceneV1
 {
     class Buffer;
     class Camera;
     class Image;
     class IndexBuffer;
-    class PbrMaterial;
+    class Light;
     class Mesh;
     class Node;
     class OrthographicCamera;
@@ -17,8 +19,17 @@ namespace Husky::SceneV1
     class Scene;
     class SceneProperties;
     class Texture;
+    class TextureInfo;
     class VertexBuffer;
 
     struct BufferSource;
     struct TextureSource;
+
+    using MeshID = ID<Mesh>;
+    using PrimitiveID = ID<Primitive>;
+    using CameraID = ID<Camera>;
+    using PbrMaterialID = ID<PbrMaterial>;
+    using SamplerID = ID<Sampler>;
+    using TextureID = ID<Texture>;
+
 }

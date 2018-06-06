@@ -86,14 +86,19 @@ namespace Husky
             return *this;
         }
 
-        friend bool operator==(const RefPtr& left, RefPtr& right)
+        bool operator==(const RefPtr& right) const
         {
-            return left.ptr == right.ptr;
+            return ptr == right.ptr;
         }
 
-        friend bool operator!=(const RefPtr& left, RefPtr& right)
+        //friend bool operator!=(const RefPtr& left, RefPtr& right)
+        //{
+        //    return left.ptr != right.ptr;
+        //}
+
+        bool operator!=(RefPtr& right) const
         {
-            return left.ptr != right.ptr;
+            return ptr != right.ptr;
         }
 
         bool operator<(const RefPtr& right) const
@@ -101,9 +106,9 @@ namespace Husky
             return ptr < right.ptr;
         }
 
-        friend bool operator==(const RefPtr& ptr, nullptr_t np)
+        bool operator==(nullptr_t np) const
         {
-            return ptr.ptr == np;
+            return ptr == np;
         }
 
         friend bool operator==(nullptr_t np, const RefPtr& ptr)
@@ -111,9 +116,9 @@ namespace Husky
             return ptr.ptr == np;
         }
 
-        friend bool operator!=(const RefPtr& ptr, nullptr_t np)
+        bool operator!=(nullptr_t np) const
         {
-            return ptr.ptr != np;
+            return ptr != np;
         }
 
         friend bool operator!=(nullptr_t np, const RefPtr& ptr)
@@ -161,7 +166,17 @@ namespace Husky
     }
 
     template<typename T>
-    class Less
+    class RefPtrEqualTo
+    {
+    public:
+        bool operator()(const RefPtr<T>& left, const RefPtr<T>& right) const
+        {
+            return left.operator==(right);
+        }
+    };
+
+    template<typename T>
+    class RefPtrLess
     {
     public:
         bool operator()(const RefPtr<T>& left, const RefPtr<T>& right) const
@@ -171,9 +186,24 @@ namespace Husky
     };
 
     template<typename T>
-    using RefPtrVector = Vector<RefPtr<T>>;
+    class RefPtrHash
+    {
+    public:
+        bool operator()(const RefPtr<T>& ptr) const
+        {
+            return std::hash<T*>{}(ptr);
+        }
+    };
 
     template<typename T>
-    using RefPtrSet = std::set<RefPtr<T>, Less<T>>;
-}
+    using RefPtrVector = Vector<RefPtr<T>>;
 
+    //template<typename T>
+    //using RefPtrVectorSet = VectorSet<RefPtr<T>>;
+
+    template<typename T>
+    using RefPtrSet = Set<RefPtr<T>, RefPtrLess<T>>;
+
+    template<typename T>
+    using RefPtrUnorderedSet = UnorderedSet<RefPtr<T>, RefPtrHash<T>>;
+}

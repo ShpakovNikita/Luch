@@ -14,6 +14,7 @@
 #include <Husky/SceneV1/Camera.h>
 #include <Husky/SceneV1/Primitive.h>
 #include <Husky/SceneV1/Texture.h>
+#include <Husky/SceneV1/Light.h>
 #include <Husky/SceneV1/BufferSource.h>
 #include <Husky/SceneV1/IndexBuffer.h>
 #include <Husky/SceneV1/VertexBuffer.h>
@@ -133,12 +134,23 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     renderer->Initialize();
 
-    auto [prepareSceneResult, preparedScene] = renderer->PrepareScene(scenes[0]);
+    auto& scene = scenes[0];
+
+    auto lightNode = MakeRef<SceneV1::Node>();
+    auto light = MakeRef<SceneV1::Light>();
+
+    light->SetDirection({ 0, 0, 1 });
+    light->SetType(SceneV1::LightType::Directional);
+
+    lightNode->SetLight(light);
+
+    scene->AddNode(lightNode);
+
+    auto [prepareSceneResult, prepScene] = renderer->PrepareScene(scene);
     HUSKY_ASSERT(prepareSceneResult);
+    preparedScene = std::move(prepScene);
 
     renderer->UpdateScene(preparedScene);
-
-    scene = std::move(preparedScene);
 
     return true;
 }
@@ -163,7 +175,7 @@ void SampleApplication::Run()
         }
         else
         {
-            renderer->DrawScene(scene);
+            renderer->DrawScene(preparedScene);
         }
     }
 }
