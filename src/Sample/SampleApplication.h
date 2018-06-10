@@ -99,8 +99,8 @@ private:
     HINSTANCE hInstance = nullptr;
 #endif
 
-    Husky::int32 width = 800;
-    Husky::int32 height = 600;
+    Husky::int32 width = 1200;
+    Husky::int32 height = 900;
 
     Husky::Vulkan::PhysicalDevice physicalDevice;
     Husky::Vulkan::Surface surface;

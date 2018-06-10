@@ -65,9 +65,9 @@ namespace Husky::Render
         float32 spotlightAngle = 0;
         float32 range = 0;
         float32 intensity = 1.0;
-        float32 __padding0;
-        float32 __padding1;
-        float32 __padding2;
+        float32 __padding0 = 0.0;
+        float32 __padding1 = 0.0;
+        float32 __padding2 = 0.0;
     };
 
     static_assert(sizeof(LightUniform) % 4 == 0);

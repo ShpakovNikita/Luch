@@ -50,9 +50,21 @@ namespace Husky::Vulkan
             return *this;
         }
 
+        inline PipelineLayoutCreateInfo& AddPushConstantRange(ShaderStage stages, int32 size)
+        {
+            PushConstantRange range;
+            range.stages = stages;
+            range.offset = currentPushConstantOffset;
+            range.size = size;
+            pushConstantRanges.push_back(range);
+            currentPushConstantOffset += size;
+            return *this;
+        }
+
         // TODO push constants
     private:
         Vector<DescriptorSetLayout*> setLayouts;
         Vector<PushConstantRange> pushConstantRanges;
+        int32 currentPushConstantOffset = 0;
     };
 }

@@ -223,7 +223,7 @@ namespace Husky::Render
             .AtStages(ShaderStage::Vertex | ShaderStage::Fragment);
 
         preparedScene.lightsStorageBufferBinding
-            .OfType(vk::DescriptorType::eStorageBuffer)
+            .OfType(vk::DescriptorType::eUniformBuffer)
             .AtStages(ShaderStage::Vertex | ShaderStage::Fragment);
 
         preparedScene.meshUniformBufferBinding
@@ -313,7 +313,7 @@ namespace Husky::Render
             .AddSetLayout(preparedScene.meshDescriptorSetLayout)
             .AddSetLayout(preparedScene.materialDescriptorSetLayout)
             .WithNPushConstantRanges(1)
-            .AddPushConstantRange({ ShaderStage::Fragment, 0, sizeof(MaterialPushConstants) });
+            .AddPushConstantRange(ShaderStage::Fragment, sizeof(MaterialPushConstants));
 
         auto[createPipelineLayoutResult, createdPipelineLayout] = context->device->CreatePipelineLayout(pipelineLayoutCreateInfo);
         if (createPipelineLayoutResult != vk::Result::eSuccess)
@@ -471,7 +471,7 @@ namespace Husky::Render
             }
             else
             {
-                HUSKY_ASSERT(false);
+                //HUSKY_ASSERT(false);
             }
         }
 
@@ -701,15 +701,18 @@ namespace Husky::Render
 
     void Husky::Render::ForwardRenderer::PrepareLights(PreparedScene& scene)
     {
-        int32 lightsBufferSize = sizeof(int32) + sizeof(LightUniform) * scene.lights.size();
+        int32 lightsCount = scene.lights.size();
+        int32 lightsBufferSize = sizeof(LightUniform) * lightsCount;
 
         auto[createLightsBufferResult, createdLightsBuffer] = context->device->CreateBuffer(
             lightsBufferSize,
             context->device->GetQueueIndices()->graphicsQueueFamilyIndex,
-            vk::BufferUsageFlagBits::eStorageBuffer, true);
+            vk::BufferUsageFlagBits::eUniformBuffer, true);
 
         auto[mapMemoryResult, mappedMemory] = createdLightsBuffer->MapMemory(lightsBufferSize, 0);
         HUSKY_ASSERT(mapMemoryResult == vk::Result::eSuccess);
+
+        memset(mappedMemory, 0, lightsBufferSize);
 
         HUSKY_ASSERT(createLightsBufferResult == vk::Result::eSuccess);
         scene.lightsBuffer = createdLightsBuffer;
@@ -720,12 +723,12 @@ namespace Husky::Render
 
         DescriptorSetWrites descriptorSetWrites;
 
-        descriptorSetWrites.WriteStorageBufferDescriptors(createdDescriptorSet, &scene.lightsStorageBufferBinding, { createdLightsBuffer });
+        descriptorSetWrites.WriteUniformBufferDescriptors(createdDescriptorSet, &scene.lightsStorageBufferBinding, { createdLightsBuffer });
 
         DescriptorSet::Update(descriptorSetWrites);
     }
 
-    void Husky::Render::ForwardRenderer::UpdateNode(const RefPtr<SceneV1::Node>& node, const Mat4x4& parentTransform, PreparedScene & scene)
+    void Husky::Render::ForwardRenderer::UpdateNode(const RefPtr<SceneV1::Node>& node, const Mat4x4& parentTransform, PreparedScene& scene)
     {
         const auto& mesh = node->GetMesh();
 
@@ -799,25 +802,25 @@ namespace Husky::Render
 
     void Husky::Render::ForwardRenderer::UpdateLight(const RefPtr<SceneV1::Light>& light, const Mat4x4& transform, PreparedScene& scene)
     {
+        auto viewTransform = scene.cameraNode->GetCamera()->GetCameraViewMatrix();
+
         LightUniform lightUniform;
-        // TODO viespace vectors
+
         lightUniform.positionWS = transform * Vec4{ 0.0, 0.0, 0.0, 1.0 };
         lightUniform.directionWS = transform * Vec4{ light->GetDirection().value_or(Vec3{0, 0, 1}), 0.0 };
+        lightUniform.positionVS = viewTransform * lightUniform.positionWS;
+        lightUniform.directionVS = viewTransform * lightUniform.directionWS;
         lightUniform.color = Vec4{ light->GetColor().value_or(Vec3{1.0, 1.0, 1.0}), 1.0 };
         lightUniform.enabled = light->IsEnabled() ? 1 : 0;
         lightUniform.type = static_cast<int32>(light->GetType());
         lightUniform.spotlightAngle = light->GetSpotlightAngle().value_or(0.0);
         lightUniform.range = light->GetRange().value_or(0.0);
         lightUniform.intensity = light->GetIntensity();
+        lightUniform.enabled = true ;
 
-        //int32 offset = sizeof(int32) + sizeof(LightUniform)*light->GetIndex();
         int32 offset = sizeof(LightUniform)*light->GetIndex();
         memcpy((Byte*)scene.lightsBuffer->GetMappedMemory() + offset, &lightUniform, sizeof(LightUniform));
     }
-
-    //void Husky::Render::ForwardRenderer::UpdateMaterial(const RefPtr<SceneV1::Material>& material, PreparedScene & scene)
-    //{
-    //}
 
     void Husky::Render::ForwardRenderer::DrawNode(const RefPtr<SceneV1::Node>& node, const PreparedScene & scene, CommandBuffer * cmdBuffer)
     {

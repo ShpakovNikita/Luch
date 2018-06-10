@@ -368,8 +368,6 @@ namespace Husky::SceneV1::Loader
             HUSKY_ASSERT(false, "Unsupported index type");
         }
 
-        HUSKY_ASSERT(indices.byteOffset == 0, "wtf");
-
         return MakeRef<IndexBuffer>(
             std::move(hostBuffer),
             indexType,

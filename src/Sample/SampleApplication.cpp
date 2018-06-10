@@ -335,7 +335,11 @@ Vector<const char8*> SampleApplication::GetRequiredInstanceExtensionNames() cons
 
 Vector<const char8*> SampleApplication::GetValidationLayerNames() const
 {
-    return {"VK_LAYER_LUNARG_standard_validation"};
+    return
+    {
+        "VK_LAYER_LUNARG_standard_validation",
+        "VK_LAYER_LUNARG_assistant_layer"
+    };
 }
 
 VkBool32 SampleApplication::DebugCallback(
