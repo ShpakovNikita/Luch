@@ -59,7 +59,7 @@ namespace Husky::Vulkan
         SwapchainCreateInfo createInfo;
         // TODO use static vector
         Vector<SwapchainImage> swapchainImages;
-        int32 swapchainImageCount;
+        int32 swapchainImageCount = 0;
         GraphicsDevice* device = nullptr;
         vk::SwapchainKHR swapchain;
     };

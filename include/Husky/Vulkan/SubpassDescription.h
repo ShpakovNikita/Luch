@@ -78,7 +78,7 @@ namespace Husky::Vulkan
     private:
         struct SubpassAttachmentReference
         {
-            const Attachment* attachment;
+            const Attachment* attachment = nullptr;
             vk::ImageLayout layout = vk::ImageLayout::eUndefined;
         };
 

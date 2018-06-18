@@ -31,7 +31,7 @@ namespace Husky::SceneV1
     protected:
         Mat4x4 viewMatrix;
     private:
-        CameraType type;
+        CameraType type = CameraType::Perspective;
         String name;
 
         RefPtr<Vulkan::DescriptorSet> descriptorSet;

@@ -44,6 +44,10 @@ namespace Husky::SceneV1
         inline const String& GetName() const { return name; }
         inline void SetName(const String& aName) { name = aName; }
 
+        inline Node* GetParent() const { return parent; }
+        inline bool HasParent() const { return parent != nullptr; }
+        inline void SetParent(Node *aParent) { parent = aParent; }
+
         inline const RefPtrVector<Node>& GetChildren() const { return children; }
 
         inline const RefPtr<Mesh>& GetMesh() const { return mesh; }
@@ -60,10 +64,13 @@ namespace Husky::SceneV1
         void SetTransform(const Mat4x4& matrix);
     private:
         String name;
+        Node *parent = nullptr;
         RefPtrVector<Node> children;
+
         RefPtr<Mesh> mesh;
         RefPtr<Camera> camera;
         RefPtr<Light> light;
+
         TransformType transform = Mat4x4{1.0};
     };
 }

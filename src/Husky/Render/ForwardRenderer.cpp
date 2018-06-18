@@ -130,7 +130,6 @@ namespace Husky::Render
         const auto& sceneProperties = scene->GetSceneProperties();
 
         const int32 texturesPerMaterial = 5;
-        const int32 samplersPerMaterial = 5;
 
         int32 textureDescriptorCount = sceneProperties.materials.size() * texturesPerMaterial;
         int32 perMeshUBOCount = sceneProperties.meshes.size();
@@ -143,9 +142,16 @@ namespace Husky::Render
         UnorderedMap<vk::DescriptorType, int32> descriptorCount = 
         {
             { vk::DescriptorType::eCombinedImageSampler, textureDescriptorCount + 1},
-            { vk::DescriptorType::eUniformBuffer, perMeshUBOCount + perCameraUBOCount + 1},
-            { vk::DescriptorType::eStorageBuffer, lightsBufferCount}
+            { vk::DescriptorType::eUniformBuffer, perMeshUBOCount + perCameraUBOCount + lightsBufferCount + 1},
         };
+
+        auto[createDescriptorPoolResult, createdDescriptorPool] = context->device->CreateDescriptorPool(maxDescriptorSets, descriptorCount);
+        if (createDescriptorPoolResult != vk::Result::eSuccess)
+        {
+            return { false };
+        }
+
+        preparedScene.descriptorPool = std::move(createdDescriptorPool);
 
         auto vertexShaderSource = LoadShaderSource(".\\Shaders\\pbr.vert");
         auto fragmentShaderSource = LoadShaderSource(".\\Shaders\\pbr.frag");
@@ -417,14 +423,6 @@ namespace Husky::Render
             }
 
             frameResources.semaphore = std::move(createdSemaphore);
-
-            auto[createDescriptorPoolResult, createdDescriptorPool] = context->device->CreateDescriptorPool(maxDescriptorSets, descriptorCount);
-            if (createDescriptorPoolResult != vk::Result::eSuccess)
-            {
-                return { false };
-            }
-            
-            preparedScene.descriptorPool = std::move(createdDescriptorPool);
         }
 
         const auto& textures = sceneProperties.textures;
@@ -676,25 +674,45 @@ namespace Husky::Render
 
         Vector<ImageDescriptorInfo> imageDescriptors;
 
-        // TODO replace null textures with empty texture descriptors
+        if (material->HasBaseColorTexture())
+        {
+            descriptorSetWrites.WriteCombinedImageDescriptors(
+                material->GetDescriptorSet(),
+                &scene.baseColorTextureBinding,
+                { ToVulkanImageDescriptorInfo(material->metallicRoughness.baseColorTexture) });
+        }
 
-        const auto& baseColorTexture = material->metallicRoughness.baseColorTexture;
-        const auto& metallicRoughnessTexture = material->metallicRoughness.metallicRoughnessTexture;
-        const auto& normalTexture = material->normalTexture;
-        const auto& occlusionTexture = material->occlusionTexture;
-        const auto& emissiveTexture = material->emissiveTexture;
+        if (material->HasMetallicRoughnessTexture())
+        {
+            descriptorSetWrites.WriteCombinedImageDescriptors(
+                material->GetDescriptorSet(),
+                &scene.metallicRoughnessTextureBinding,
+                { ToVulkanImageDescriptorInfo(material->metallicRoughness.metallicRoughnessTexture) });
+        }
 
+        if (material->HasNormalTexture())
+        {
+            descriptorSetWrites.WriteCombinedImageDescriptors(
+                material->GetDescriptorSet(),
+                &scene.normalTextureBinding,
+                { ToVulkanImageDescriptorInfo(material->normalTexture) });
+        }
         
-        ImageDescriptorInfo{ metallicRoughnessTexture.texture->GetDeviceImageView(), metallicRoughnessTexture.texture->GetDeviceSampler(), vk::ImageLayout::eShaderReadOnlyOptimal };
-        ImageDescriptorInfo{ normalTexture.texture->GetDeviceImageView(), normalTexture.texture->GetDeviceSampler(), vk::ImageLayout::eShaderReadOnlyOptimal };
-        ImageDescriptorInfo{ occlusionTexture.texture->GetDeviceImageView(), occlusionTexture.texture->GetDeviceSampler(), vk::ImageLayout::eShaderReadOnlyOptimal };
-        ImageDescriptorInfo{ emissiveTexture.texture->GetDeviceImageView(), emissiveTexture.texture->GetDeviceSampler(), vk::ImageLayout::eShaderReadOnlyOptimal };
-
-        descriptorSetWrites.WriteCombinedImageDescriptors(material->GetDescriptorSet(), &scene.baseColorTextureBinding, { ToVulkanImageDescriptorInfo(material->metallicRoughness.baseColorTexture) });
-        descriptorSetWrites.WriteCombinedImageDescriptors(material->GetDescriptorSet(), &scene.metallicRoughnessTextureBinding, { ToVulkanImageDescriptorInfo(material->metallicRoughness.metallicRoughnessTexture) });
-        descriptorSetWrites.WriteCombinedImageDescriptors(material->GetDescriptorSet(), &scene.normalTextureBinding, { ToVulkanImageDescriptorInfo(material->normalTexture) });
-        descriptorSetWrites.WriteCombinedImageDescriptors(material->GetDescriptorSet(), &scene.occlusionTextureBinding, { ToVulkanImageDescriptorInfo(material->occlusionTexture) });
-        descriptorSetWrites.WriteCombinedImageDescriptors(material->GetDescriptorSet(), &scene.emissiveTextureBinding, { ToVulkanImageDescriptorInfo(material->emissiveTexture) });
+        if (material->HasOcclusionTexture())
+        {
+            descriptorSetWrites.WriteCombinedImageDescriptors(
+                material->GetDescriptorSet(),
+                &scene.occlusionTextureBinding,
+                { ToVulkanImageDescriptorInfo(material->occlusionTexture) });
+        }
+        
+        if (material->HasEmissiveTexture())
+        {
+            descriptorSetWrites.WriteCombinedImageDescriptors(
+                material->GetDescriptorSet(),
+                &scene.emissiveTextureBinding,
+                { ToVulkanImageDescriptorInfo(material->emissiveTexture) });
+        }
 
         DescriptorSet::Update(descriptorSetWrites);
     }
@@ -822,7 +840,7 @@ namespace Husky::Render
         memcpy((Byte*)scene.lightsBuffer->GetMappedMemory() + offset, &lightUniform, sizeof(LightUniform));
     }
 
-    void Husky::Render::ForwardRenderer::DrawNode(const RefPtr<SceneV1::Node>& node, const PreparedScene & scene, CommandBuffer * cmdBuffer)
+    void Husky::Render::ForwardRenderer::DrawNode(const RefPtr<SceneV1::Node>& node, const PreparedScene& scene, CommandBuffer* cmdBuffer)
     {
         const auto& mesh = node->GetMesh();
         if (mesh != nullptr)

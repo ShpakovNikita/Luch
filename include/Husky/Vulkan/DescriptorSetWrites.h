@@ -9,7 +9,7 @@ namespace Husky::Vulkan
     {
         ImageView* imageView = nullptr;
         Sampler* sampler = nullptr;
-        vk::ImageLayout layout;
+        vk::ImageLayout layout = vk::ImageLayout::eGeneral;
     };
 
     class DescriptorSetWrites

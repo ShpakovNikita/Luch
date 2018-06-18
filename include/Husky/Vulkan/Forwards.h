@@ -6,6 +6,7 @@ namespace Husky::Vulkan
     class BufferView;
     class CommandBuffer;
     class CommandPool;
+    class CubeTexture;
     class DescriptorPool;
     class DescriptorSet;
     class DescriptorSetBinding;

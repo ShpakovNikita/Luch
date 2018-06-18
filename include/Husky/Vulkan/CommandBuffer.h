@@ -160,6 +160,12 @@ namespace Husky::Vulkan
             return this;
         }
 
+        inline CommandBuffer* Draw(int32 vertexCount, int32 instanceCount, int32 firstVertex, int32 firstInstance)
+        {
+            commandBuffer.draw(vertexCount, instanceCount, firstVertex, firstInstance);
+            return this;
+        }
+
         inline CommandBuffer* PipelineBarrier(const PipelineBarrier& barrier)
         {
             auto vulkanBarrier = PipelineBarrier::ToVulkanPipelineBarrier(barrier);
