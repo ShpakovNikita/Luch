@@ -11,6 +11,7 @@
 #include <Husky/Vulkan/Swapchain.h>
 
 #include <Husky/Render/ForwardRenderer.h>
+#include <Husky/Render/DeferredRenderer.h>
 
 #include "VulkanAllocator.h"
 
@@ -108,7 +109,8 @@ private:
     vk::AllocationCallbacks allocationCallbacks;
     vk::Instance instance;
     vk::DebugReportCallbackEXT debugCallback;
-    Husky::Render::PreparedScene preparedScene;
+    Husky::Render::DeferredPreparedScene preparedScene;
 
-    Husky::UniquePtr<Husky::Render::ForwardRenderer> renderer;
+    Husky::UniquePtr<Husky::Render::ForwardRenderer> forwardRenderer;
+    Husky::UniquePtr<Husky::Render::DeferredRenderer> deferredRenderer;
 };

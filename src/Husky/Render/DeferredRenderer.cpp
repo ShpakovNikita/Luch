@@ -297,7 +297,7 @@ namespace Husky::Render
             }
 
             frameResources.gBufferCommandBuffer= std::move(allocatedBuffers[0]);
-            frameResources.gBufferCommandBuffer = std::move(allocatedBuffers[1]);
+            frameResources.lightingCommandBuffer = std::move(allocatedBuffers[1]);
 
             frameResources.fence = std::move(createdFence);
 
@@ -315,7 +315,7 @@ namespace Husky::Render
                 return { false };
             }
 
-            frameResources.offscreenSemaphore = std::move(createdSemaphore);
+            frameResources.offscreenSemaphore = std::move(createdOffscreenSemaphore);
         }
 
         const auto& textures = sceneProperties.textures;
@@ -411,7 +411,7 @@ namespace Husky::Render
             ->Begin()
             ->SetViewport({ 0, 0, (float32)framebufferWidth, (float32)framebufferHeight, 0.0f, 1.0f })
             ->SetScissor({ {0, 0}, {(uint32)framebufferWidth, (uint32)framebufferHeight} })
-            ->BindDescriptorSet(scene.pipelineLayout, 0, scene.cameraNode->GetCamera()->GetDescriptorSet())
+            ->BindDescriptorSet(scene.gBuffer.pipelineLayout, 0, scene.cameraNode->GetCamera()->GetDescriptorSet())
             ->BeginInlineRenderPass(
                 scene.gBuffer.renderPass,
                 frameResource.offscreenFramebuffer,
@@ -440,7 +440,9 @@ namespace Husky::Render
             ->BindGraphicsPipeline(scene.lighting.pipeline)
             ->SetViewport({ 0, 0, (float32)framebufferWidth, (float32)framebufferHeight, 0.0f, 1.0f })
             ->SetScissor({ { 0, 0 },{ (uint32)framebufferWidth, (uint32)framebufferHeight } })
+            ->BindDescriptorSet(scene.lighting.pipelineLayout, 0, scene.cameraNode->GetCamera()->GetDescriptorSet())
             ->BindDescriptorSet(scene.lighting.pipelineLayout, 1, scene.lighting.lightsDescriptorSet)
+            ->BindDescriptorSet(scene.lighting.pipelineLayout, 2, frameResource.gbufferDescriptorSet)
             ->BeginInlineRenderPass(
                 scene.lighting.renderPass,
                 frameResource.framebuffer,
@@ -454,7 +456,13 @@ namespace Husky::Render
         Submission lightingSubmission;
         lightingSubmission.commandBuffers = { lightingCmdBuffer };
         lightingSubmission.fence = frameResource.fence;
-        lightingSubmission.waitOperations = { { imageAcquiredSemaphore, vk::PipelineStageFlagBits::eColorAttachmentOutput } };
+
+        lightingSubmission.waitOperations =
+        {
+            { imageAcquiredSemaphore, vk::PipelineStageFlagBits::eColorAttachmentOutput },
+            { frameResource.offscreenSemaphore, vk::PipelineStageFlagBits::eVertexShader }
+        };
+
         lightingSubmission.signalSemaphores = { frameResource.drawSemaphore };
 
         context->device->GetGraphicsQueue()->Submit(lightingSubmission);
@@ -772,7 +780,8 @@ namespace Husky::Render
 
     void DeferredRenderer::DrawMesh(const RefPtr<SceneV1::Mesh>& mesh, const DeferredPreparedScene& scene, CommandBuffer* cmdBuffer)
     {
-        cmdBuffer->BindDescriptorSet(scene.gBuffer.pipelineLayout, 2, mesh->GetDescriptorSet());
+        // TODO descriptor set indices
+        cmdBuffer->BindDescriptorSet(scene.gBuffer.pipelineLayout, 1, mesh->GetDescriptorSet());
 
         for (const auto& primitive : mesh->GetPrimitives())
         {
@@ -818,7 +827,7 @@ namespace Husky::Render
         cmdBuffer
             ->BindGraphicsPipeline(pipeline)
             ->BindVertexBuffers(vulkanVertexBuffers, offsets, 0)
-            ->BindDescriptorSet(scene.gBuffer.pipelineLayout, 3, primitive->GetMaterial()->GetDescriptorSet())
+            ->BindDescriptorSet(scene.gBuffer.pipelineLayout, 2, primitive->GetMaterial()->GetDescriptorSet())
             ->BindIndexBuffer(
                 indexBuffer->GetDeviceBuffer(),
                 ToVulkanIndexType(indexBuffer->GetIndexType()),
@@ -953,18 +962,18 @@ namespace Husky::Render
         return createdPipeline;
     }
 
-    RefPtr<Pipeline> Husky::Render::DeferredRenderer::CreateLightingPipeline(DeferredPreparedScene& scene)
+    RefPtr<Pipeline> Husky::Render::DeferredRenderer::CreateLightingPipeline(const LightingPassResources& lighting)
     {
         GraphicsPipelineCreateInfo pipelineState;
 
         auto& vertexShaderStage = pipelineState.shaderStages.emplace_back();
         vertexShaderStage.name = "main";
-        vertexShaderStage.shaderModule = scene.lighting.vertexShader.module;
+        vertexShaderStage.shaderModule = lighting.vertexShader.module;
         vertexShaderStage.stage = ShaderStage::Vertex;
 
         auto& fragmentShaderStage = pipelineState.shaderStages.emplace_back();
         fragmentShaderStage.name = "main";
-        fragmentShaderStage.shaderModule = scene.lighting.fragmentShader.module;
+        fragmentShaderStage.shaderModule = lighting.fragmentShader.module;
         fragmentShaderStage.stage = ShaderStage::Fragment;
 
         auto& bindingDescription = pipelineState.vertexInputState.bindingDescriptions.emplace_back();
@@ -994,8 +1003,8 @@ namespace Husky::Render
         auto& attachmentBlendState = pipelineState.colorBlendState.attachments.emplace_back();
         attachmentBlendState.blendEnable = false;
 
-        pipelineState.renderPass = scene.lighting.renderPass;
-        pipelineState.layout = scene.lighting.pipelineLayout;
+        pipelineState.renderPass = lighting.renderPass;
+        pipelineState.layout = lighting.pipelineLayout;
 
         pipelineState.viewportState.viewports.emplace_back();
         pipelineState.viewportState.scissors.emplace_back();
@@ -1323,7 +1332,7 @@ namespace Husky::Render
         resources.renderPass = std::move(createdLightingPass);
 
         // TODO result
-        resources.pipeline = CreateLightingPipeline(scene);
+        resources.pipeline = CreateLightingPipeline(resources);
 
         int32 quadBufferSize = fullscreenQuadVertices.size() * sizeof(QuadVertex);
 

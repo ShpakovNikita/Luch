@@ -130,9 +130,11 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     SceneV1::Loader::glTFLoader loader{ rootDir, root };
     auto scenes = loader.LoadScenes();
 
-    renderer = MakeUnique<Render::ForwardRenderer>(&physicalDevice, &surface, width, height);
+    //forwardRenderer = MakeUnique<Render::ForwardRenderer>(&physicalDevice, &surface, width, height);
+    deferredRenderer = MakeUnique<Render::DeferredRenderer>(&physicalDevice, &surface, width, height);
 
-    renderer->Initialize();
+    //forwardRenderer->Initialize();
+    deferredRenderer->Initialize();
 
     auto& scene = scenes[0];
 
@@ -146,11 +148,11 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     scene->AddNode(lightNode);
 
-    auto [prepareSceneResult, prepScene] = renderer->PrepareScene(scene);
+    auto [prepareSceneResult, prepScene] = deferredRenderer->PrepareScene(scene);
     HUSKY_ASSERT(prepareSceneResult);
     preparedScene = std::move(prepScene);
 
-    renderer->UpdateScene(preparedScene);
+    deferredRenderer->UpdateScene(preparedScene);
 
     return true;
 }
@@ -175,7 +177,7 @@ void SampleApplication::Run()
         }
         else
         {
-            renderer->DrawScene(preparedScene);
+            deferredRenderer->DrawScene(preparedScene);
         }
     }
 }

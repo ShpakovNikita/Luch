@@ -195,7 +195,7 @@ namespace Husky::Render
         Vector<Byte> LoadShaderSource(const FilePath& path);
 
         RefPtr<Pipeline> CreateGBufferPipeline(const RefPtr<SceneV1::Primitive>& primitive, DeferredPreparedScene& scene);
-        RefPtr<Pipeline> CreateLightingPipeline(DeferredPreparedScene& scene);
+        RefPtr<Pipeline> CreateLightingPipeline(const LightingPassResources& lighting);
 
         Vector<const char8*> GetRequiredDeviceExtensionNames() const;
 
