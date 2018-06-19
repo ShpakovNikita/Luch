@@ -401,7 +401,7 @@ namespace Husky::Render
         vk::ClearColorValue colorClearValue{ clearColor };
         vk::ClearDepthStencilValue depthStencilClearValue{ maxDepth, 0 };
 
-        Vector<vk::ClearValue> offscreenClearValues = { colorClearValue, colorClearValue, colorClearValue, depthStencilClearValue };
+        Vector<vk::ClearValue> offscreenClearValues = { colorClearValue, colorClearValue, depthStencilClearValue };
         Vector<vk::ClearValue> clearValues = { colorClearValue, depthStencilClearValue };
 
         int32 framebufferWidth = context->swapchain->GetSwapchainCreateInfo().width;
