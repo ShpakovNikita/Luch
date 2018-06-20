@@ -42,13 +42,16 @@ namespace Husky::Render
 {
     using namespace Vulkan;
 
-    // Fullscreen quad for triangle strip
+    // Fullscreen quad for triangle list
     static const Vector<QuadVertex> fullscreenQuadVertices =
     {
-        {{-1.0f, +1.0f, 0.0f}, {0.0f, 1.0f}}, //bottom left
-        {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}}, // top left
+        {{-1.0f, +1.0f, 0.0f}, {0.0f, 1.0f}}, // bottom left
         {{+1.0f, +1.0f, 0.0f}, {1.0f, 1.0f}}, // bottom right
-        {{+1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}},  // top right
+        {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}}, // top left
+
+        {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}},  // top left
+        {{+1.0f, +1.0f, 0.0f}, {1.0f, 1.0f}},  // bottom right
+        {{+1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}}, // top right
     };
 
     static const Map<SceneV1::AttributeSemantic, int32> SemanticToLocation =
@@ -449,7 +452,7 @@ namespace Husky::Render
                 clearValues,
                 { { 0, 0 },{ (uint32)framebufferWidth, (uint32)framebufferHeight } })
             ->BindVertexBuffers({ scene.lighting.fullscreenQuadBuffer }, {0}, 0)
-            ->Draw(4, 1, 0, 0)
+            ->Draw(fullscreenQuadVertices.size(), 1, 0, 0)
             ->EndRenderPass()
             ->End();
 
@@ -460,7 +463,7 @@ namespace Husky::Render
         lightingSubmission.waitOperations =
         {
             { imageAcquiredSemaphore, vk::PipelineStageFlagBits::eColorAttachmentOutput },
-            { frameResource.offscreenSemaphore, vk::PipelineStageFlagBits::eVertexShader }
+            { frameResource.offscreenSemaphore, vk::PipelineStageFlagBits::eFragmentShader }
         };
 
         lightingSubmission.signalSemaphores = { frameResource.drawSemaphore };
@@ -993,9 +996,9 @@ namespace Husky::Render
         texCoordAttributeDescription.format = vk::Format::eR32G32Sfloat;
         texCoordAttributeDescription.offset = offsetof(QuadVertex, texCoord);
 
-        pipelineState.inputAssemblyState.topology = vk::PrimitiveTopology::eTriangleStrip;
-        pipelineState.rasterizationState.cullMode = vk::CullModeFlagBits::eNone;
-        pipelineState.rasterizationState.frontFace = vk::FrontFace::eClockwise;
+        pipelineState.inputAssemblyState.topology = vk::PrimitiveTopology::eTriangleList;
+        pipelineState.rasterizationState.cullMode = vk::CullModeFlagBits::eBack;
+        pipelineState.rasterizationState.frontFace = vk::FrontFace::eCounterClockwise;
 
         pipelineState.depthStencilState.depthTestEnable = false;
         pipelineState.depthStencilState.depthWriteEnable = false;
@@ -1365,12 +1368,14 @@ namespace Husky::Render
         OffscreenImages images;
 
         auto indices = context->device->GetQueueIndices();
+        const auto& swapchainCreateInfo = context->swapchain->GetSwapchainCreateInfo();
+        vk::Extent3D imageExtent = { (uint32)swapchainCreateInfo.width, (uint32)swapchainCreateInfo.height, 1 };
 
         vk::ImageCreateInfo baseColorImageCreateInfo;
         baseColorImageCreateInfo.setFormat(vk::Format::eB8G8R8A8Unorm);
         baseColorImageCreateInfo.setArrayLayers(1);
         baseColorImageCreateInfo.setImageType(vk::ImageType::e2D);
-        baseColorImageCreateInfo.setExtent({ (uint32)width, (uint32)height, 1 });
+        baseColorImageCreateInfo.setExtent(imageExtent);
         baseColorImageCreateInfo.setInitialLayout(vk::ImageLayout::eUndefined);
         baseColorImageCreateInfo.setMipLevels(1);
         baseColorImageCreateInfo.setQueueFamilyIndexCount(1);
@@ -1401,7 +1406,7 @@ namespace Husky::Render
         normalMapImageCreateInfo.setFormat(vk::Format::eB8G8R8A8Unorm);
         normalMapImageCreateInfo.setArrayLayers(1);
         normalMapImageCreateInfo.setImageType(vk::ImageType::e2D);
-        normalMapImageCreateInfo.setExtent({ (uint32)width, (uint32)height, 1 });
+        normalMapImageCreateInfo.setExtent(imageExtent);
         normalMapImageCreateInfo.setInitialLayout(vk::ImageLayout::eUndefined);
         normalMapImageCreateInfo.setMipLevels(1);
         normalMapImageCreateInfo.setQueueFamilyIndexCount(1);
@@ -1432,7 +1437,7 @@ namespace Husky::Render
         depthBufferCreateInfo.setFormat(ToVulkanFormat(depthStencilFormat));
         depthBufferCreateInfo.setArrayLayers(1);
         depthBufferCreateInfo.setImageType(vk::ImageType::e2D);
-        depthBufferCreateInfo.setExtent({ (uint32)width, (uint32)height, 1 });
+        depthBufferCreateInfo.setExtent(imageExtent);
         depthBufferCreateInfo.setInitialLayout(vk::ImageLayout::eUndefined);
         depthBufferCreateInfo.setMipLevels(1);
         depthBufferCreateInfo.setQueueFamilyIndexCount(1);
