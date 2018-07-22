@@ -66,6 +66,91 @@ namespace Husky::Vulkan
         return -1;
     }
 
+    vk::ImageViewCreateInfo GraphicsDevice::GetDefaultImageViewCreateInfo(Image * image)
+    {
+        const vk::ImageCreateInfo& imageCi = image->createInfo;
+
+        vk::ImageSubresourceRange subresourceRange;
+        vk::ImageViewCreateInfo ci;
+
+        ci.setFormat(imageCi.format);
+        ci.setImage(image->image);
+
+        switch (imageCi.imageType)
+        {
+        case vk::ImageType::e1D:
+            if (imageCi.arrayLayers > 1)
+            {
+                ci.setViewType(vk::ImageViewType::e1DArray);
+            }
+            else
+            {
+                ci.setViewType(vk::ImageViewType::e1D);
+            }
+            break;
+        case vk::ImageType::e2D:
+            if (imageCi.arrayLayers > 1)
+            {
+                if ((imageCi.flags & vk::ImageCreateFlagBits::eCubeCompatible) == vk::ImageCreateFlagBits::eCubeCompatible)
+                {
+                    auto cubeCount = imageCi.arrayLayers / 6;
+                    if (cubeCount >= 2)
+                    {
+                        ci.setViewType(vk::ImageViewType::eCubeArray);
+                        subresourceRange.setLayerCount(6 * cubeCount);
+                    }
+                    else
+                    {
+                        ci.setViewType(vk::ImageViewType::eCube);
+                        subresourceRange.setLayerCount(6);
+                    }
+                }
+                else
+                {
+                    ci.setViewType(vk::ImageViewType::e2DArray);
+                }
+            }
+            else
+            {
+                ci.setViewType(vk::ImageViewType::e2D);
+            }
+            break;
+        case vk::ImageType::e3D:
+            ci.setViewType(vk::ImageViewType::e3D);
+            break;
+        }
+
+        auto imageAspects = image->GetImageAspects();
+
+        vk::ImageAspectFlags vulkanAspects;
+
+        if ((imageAspects & ImageAspects::Color) == ImageAspects::Color)
+        {
+            vulkanAspects |= vk::ImageAspectFlagBits::eColor;
+        }
+        else
+        {
+            if ((imageAspects & ImageAspects::Depth) == ImageAspects::Depth)
+            {
+                vulkanAspects |= vk::ImageAspectFlagBits::eDepth;
+            }
+
+            if ((imageAspects & ImageAspects::Stencil) == ImageAspects::Stencil)
+            {
+                vulkanAspects |= vk::ImageAspectFlagBits::eStencil;
+            }
+        }
+
+        subresourceRange.setAspectMask(vulkanAspects);
+        subresourceRange.setBaseArrayLayer(0);
+        subresourceRange.setBaseMipLevel(0);
+        subresourceRange.setLevelCount(imageCi.mipLevels);
+        subresourceRange.setLayerCount(imageCi.arrayLayers);
+
+        ci.setSubresourceRange(subresourceRange);
+        return ci;
+    }
+
     VulkanRefResultValue<Swapchain> GraphicsDevice::CreateSwapchain(const SwapchainCreateInfo& swapchainCreateInfo, Surface* surface)
     {
         vk::SwapchainCreateInfoKHR ci;
@@ -273,87 +358,7 @@ namespace Husky::Vulkan
 
     VulkanRefResultValue<ImageView> GraphicsDevice::CreateImageView(Image* image)
     {
-        const vk::ImageCreateInfo& imageCi = image->createInfo;
-
-        vk::ImageSubresourceRange subresourceRange;
-        vk::ImageViewCreateInfo ci;
-
-        ci.setFormat(imageCi.format);
-        ci.setImage(image->image);
-
-        switch (imageCi.imageType)
-        {
-        case vk::ImageType::e1D:
-            if (imageCi.arrayLayers > 1)
-            {
-                ci.setViewType(vk::ImageViewType::e1DArray);
-            }
-            else
-            {
-                ci.setViewType(vk::ImageViewType::e1D);
-            }
-            break;
-        case vk::ImageType::e2D:
-            if (imageCi.arrayLayers > 1)
-            {
-                if((imageCi.flags & vk::ImageCreateFlagBits::eCubeCompatible) == vk::ImageCreateFlagBits::eCubeCompatible)
-                {
-                    auto cubeCount = imageCi.arrayLayers / 6;
-                    if (cubeCount >= 2)
-                    {
-                        ci.setViewType(vk::ImageViewType::eCubeArray);
-                        subresourceRange.setLayerCount(6 * cubeCount);
-                    }
-                    else
-                    {
-                        ci.setViewType(vk::ImageViewType::eCube);
-                        subresourceRange.setLayerCount(6);
-                    }
-                }
-                else
-                {
-                    ci.setViewType(vk::ImageViewType::e2DArray);
-                }
-            }
-            else
-            {
-                ci.setViewType(vk::ImageViewType::e2D);
-            }
-            break;
-        case vk::ImageType::e3D:
-            ci.setViewType(vk::ImageViewType::e3D);
-            break;
-        }
-
-        auto imageAspects = image->GetImageAspects();
-
-        vk::ImageAspectFlags vulkanAspects;
-
-        if ((imageAspects & ImageAspects::Color) == ImageAspects::Color)
-        {
-            vulkanAspects |= vk::ImageAspectFlagBits::eColor;
-        }
-        else
-        {
-            if ((imageAspects & ImageAspects::Depth) == ImageAspects::Depth)
-            {
-                vulkanAspects |= vk::ImageAspectFlagBits::eDepth;
-            }
-
-            if ((imageAspects & ImageAspects::Stencil) == ImageAspects::Stencil)
-            {
-                vulkanAspects |= vk::ImageAspectFlagBits::eStencil;
-            }
-        }
-
-        subresourceRange.setAspectMask(vulkanAspects);
-        subresourceRange.setBaseArrayLayer(0);
-        subresourceRange.setBaseMipLevel(0);
-        subresourceRange.setLevelCount(imageCi.mipLevels);
-        subresourceRange.setLayerCount(imageCi.arrayLayers);
-
-        ci.setSubresourceRange(subresourceRange);
-
+        auto ci = GetDefaultImageViewCreateInfo(image);
         return CreateImageView(image, ci);
     }
 

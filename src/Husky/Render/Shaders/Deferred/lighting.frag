@@ -45,6 +45,7 @@ layout (set = 1, binding = 0) uniform LightBufferObject
 
 layout (set = 2, binding = 0) uniform sampler2D baseColorMap;
 layout (set = 2, binding = 1) uniform sampler2D normalMap;
+layout (set = 2, binding = 2) uniform sampler2D depthBuffer;
 
 layout (location = 0) in vec2 inTexCoord;
 layout (location = 0) out vec4 outColor;
@@ -190,18 +191,21 @@ void main()
     vec2 texCoord = inTexCoord;
 
     vec4 normalMapSample = texture(normalMap, texCoord);
-    float normalZ = sqrt(1 - normalMapSample.x * normalMapSample.x - normalMapSample.y * normalMapSample.y);
-    vec3 N = vec3(normalMapSample.x, normalMapSample.y, normalZ);
+    vec2 compressedNormal = normalMapSample.xy * 2 - vec2(1.0);
+    float normalZ = sqrt(1 - compressedNormal.x * compressedNormal.x - compressedNormal.y * compressedNormal.y);
+    vec3 N = vec3(compressedNormal.x, compressedNormal.y, -normalZ);
 
     vec4 baseColorSample = texture(baseColorMap, texCoord);
 
-    float metallic = 0.0; // TODO
-    float roughness = 0.0; // TODO
+    float metallic = normalMapSample.z; // TODO
+    float roughness = normalMapSample.w; // TODO
 
     vec3 F0 = vec3(0.04);
     // If material is dielectrict, it's reflection coefficient can be approximated by 0.04
     // Otherwise (for metals), take base color to "tint" reflections
     F0 = mix(F0, baseColorSample.rgb, metallic);
+
+    float depth = texture(depthBuffer, texCoord).r;
 
     LightingResult lightingResult = { vec3(0), vec3(0) };
 
@@ -237,7 +241,8 @@ void main()
     //vec3 resultColor = baseColor.xyz * (lightingResult.diffuse + lightingResult.specular);
     //vec3 resultColor = baseColorSample.xyz;
     //vec3 resultColor = 0.5 * (vec3(1, 1, 1) +  normalMapSample.xyz);
-    vec3 resultColor = N;
+    vec3 resultColor = vec3(0);
+    resultColor.x = depth;
 
-    outColor = vec4(resultColor, 1.0);
+    outColor = vec4(depth, depth, depth, 1.0);
 }

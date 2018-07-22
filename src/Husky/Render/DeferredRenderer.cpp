@@ -83,6 +83,7 @@ namespace Husky::Render
         { ShaderDefine::HasTexCoord0, "HAS_TEXCOORD_0" },
         { ShaderDefine::HasTexCoord1, "HAS_TEXCOORD_0" },
         { ShaderDefine::HasColor, "HAS_COLOR" },
+        { ShaderDefine::HasBitangentDirection , "HAS_BITANGENT_DIRECTION"},
         { ShaderDefine::HasBaseColorTexture, "HAS_BASE_COLOR_TEXTURE" },
         { ShaderDefine::HasMetallicRoughnessTexture, "HAS_METALLIC_ROUGHNESS_TEXTURE" },
         { ShaderDefine::HasNormalTexture, "HAS_NORMAL_TEXTURE" },
@@ -299,11 +300,16 @@ namespace Husky::Render
                 &preparedScene.lighting.normalMapImageBinding,
                 { { frameResources.offscreen.normalMapImageView, preparedScene.lighting.normalMapSampler, vk::ImageLayout::eShaderReadOnlyOptimal } });
 
+            gbufferDescriptorSetWrites.WriteCombinedImageDescriptors(
+                frameResources.gbufferDescriptorSet,
+                &preparedScene.lighting.depthStencilBufferBinding,
+                { { frameResources.offscreen.depthBufferView, preparedScene.lighting.depthStencilSampler, vk::ImageLayout::eShaderReadOnlyOptimal } });
+
             DescriptorSet::Update(gbufferDescriptorSetWrites);
 
             FramebufferCreateInfo framebufferCreateInfo(preparedScene.lighting.renderPass, swapchainWidth, swapchainHeight, 1);
             framebufferCreateInfo
-                .AddAtachment(&preparedScene.lighting.colorAttachment, context->swapchain->GetImageView(i));
+                .AddAttachment(&preparedScene.lighting.colorAttachment, context->swapchain->GetImageView(i));
 
             auto[createFramebufferResult, createdFramebuffer] = context->device->CreateFramebuffer(framebufferCreateInfo);
             if (createFramebufferResult != vk::Result::eSuccess)
@@ -315,9 +321,9 @@ namespace Husky::Render
 
             FramebufferCreateInfo offscreenFramebufferCreateInfo(preparedScene.gBuffer.renderPass, swapchainWidth, swapchainHeight, 1);
             offscreenFramebufferCreateInfo
-                .AddAtachment(&preparedScene.gBuffer.baseColorAttachment, frameResources.offscreen.baseColorImageView)
-                .AddAtachment(&preparedScene.gBuffer.normalMapAttachment, frameResources.offscreen.normalMapImageView)
-                .AddAtachment(&preparedScene.gBuffer.depthStencilAttachment, frameResources.offscreen.depthStencilBufferView);
+                .AddAttachment(&preparedScene.gBuffer.baseColorAttachment, frameResources.offscreen.baseColorImageView)
+                .AddAttachment(&preparedScene.gBuffer.normalMapAttachment, frameResources.offscreen.normalMapImageView)
+                .AddAttachment(&preparedScene.gBuffer.depthStencilAttachment, frameResources.offscreen.depthStencilBufferView);
 
             auto[createOffscreenFramebufferResult, createdOffscreenFramebuffer] = context->device->CreateFramebuffer(offscreenFramebufferCreateInfo);
             if (createOffscreenFramebufferResult != vk::Result::eSuccess)
@@ -781,7 +787,25 @@ namespace Husky::Render
         CameraUniformBuffer cameraUniformBuffer;
         cameraUniformBuffer.view = camera->GetCameraViewMatrix();
         cameraUniformBuffer.projection = camera->GetCameraProjectionMatrix();
-        cameraUniformBuffer.position = camera->GetCameraPosition();
+        cameraUniformBuffer.position = Vec4{ camera->GetCameraPosition(), 1.0 };
+
+        Vec2 zMinMax;
+        auto cameraType = camera->GetCameraType();
+        if (cameraType == SceneV1::CameraType::Orthographic)
+        {
+            auto orthographicCamera = (SceneV1::OrthographicCamera*)camera.Get();
+            zMinMax.x = orthographicCamera->GetZNear();
+            zMinMax.y = orthographicCamera->GetZFar();
+        }
+        else if(cameraType == SceneV1::CameraType::Perspective)
+        {
+            auto perspectiveCamera = (SceneV1::PerspectiveCamera*)camera.Get();
+            zMinMax.x = perspectiveCamera->GetZNear();
+            zMinMax.y = perspectiveCamera->GetZFar().value_or(Limits<float>::infinity());
+        }
+        
+        cameraUniformBuffer.zMinMax = zMinMax;
+
         // TODO
         memcpy(buffer->GetMappedMemory(), &cameraUniformBuffer, sizeof(CameraUniformBuffer));
     }
@@ -941,14 +965,16 @@ namespace Husky::Render
             {
                 if (attribute.format == Format::R32G32B32A32Sfloat)
                 {
-                    shaderDefines.defines["TANGENT_TYPE"] = "vec4";
+                    shaderDefines.AddFlag(ShaderDefine::HasBitangentDirection);
+                }
+                else if(attribute.format == Format::R32G32B32Sfloat)
+                {
                 }
                 else
                 {
-                    shaderDefines.defines["TANGENT_TYPE"] = "vec3";
+                    HUSKY_ASSERT_MSG(false, "Wtf is this tangent");
                 }
             }
-
 
             shaderDefines.AddFlag(SemanticToFlag.at(attribute.semantic));
         }
@@ -1266,7 +1292,7 @@ namespace Husky::Render
             .SetLoadOp(vk::AttachmentLoadOp::eClear)
             .SetStoreOp(vk::AttachmentStoreOp::eStore)
             .SetStencilLoadOp(vk::AttachmentLoadOp::eClear)
-            .SetStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+            .SetStencilStoreOp(vk::AttachmentStoreOp::eStore)
             .SetSampleCount(SampleCount::e1)
             .SetFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
@@ -1365,10 +1391,15 @@ namespace Husky::Render
             .OfType(vk::DescriptorType::eCombinedImageSampler)
             .AtStages(ShaderStage::Fragment);
 
+        resources.depthStencilBufferBinding
+            .OfType(vk::DescriptorType::eCombinedImageSampler)
+            .AtStages(ShaderStage::Fragment);
+
         DescriptorSetLayoutCreateInfo gbufferDescriptorSetLayoutCreateInfo;
         gbufferDescriptorSetLayoutCreateInfo
             .AddBinding(&resources.baseColorImageBinding)
-            .AddBinding(&resources.normalMapImageBinding);
+            .AddBinding(&resources.normalMapImageBinding)
+            .AddBinding(&resources.depthStencilBufferBinding);
 
         auto[createGBufferDescriptorSetLayoutResult, createdGBufferDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(gbufferDescriptorSetLayoutCreateInfo);
         if (createGBufferDescriptorSetLayoutResult != vk::Result::eSuccess)
@@ -1396,9 +1427,17 @@ namespace Husky::Render
 
         resources.normalMapSampler = std::move(createdNormalMapSampler);
 
+        auto[createDepthSamplerResult, createdDepthSampler] = context->device->CreateSampler(samplerCreateInfo);
+        if (createDepthSamplerResult != vk::Result::eSuccess)
+        {
+            return { false };
+        }
+
+        resources.depthBufferSampler = std::move(createdDepthSampler);
+
         PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
         pipelineLayoutCreateInfo
-            .WithNSetLayouts(2)
+            .WithNSetLayouts(3)
             .AddSetLayout(scene.cameraDescriptorSetLayout)
             .AddSetLayout(resources.lightsDescriptorSetLayout)
             .AddSetLayout(resources.gbufferDescriptorSetLayout);
@@ -1548,7 +1587,7 @@ namespace Husky::Render
         depthBufferCreateInfo.setSamples(vk::SampleCountFlagBits::e1);
         depthBufferCreateInfo.setSharingMode(vk::SharingMode::eExclusive);
         depthBufferCreateInfo.setTiling(vk::ImageTiling::eOptimal);
-        depthBufferCreateInfo.setUsage(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransferSrc);
+        depthBufferCreateInfo.setUsage(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferSrc);
 
         auto[createDepthStencilBufferResult, createdDepthStencilBuffer] = context->device->CreateImage(depthBufferCreateInfo);
         if (createDepthStencilBufferResult != vk::Result::eSuccess)
@@ -1558,13 +1597,25 @@ namespace Husky::Render
 
         images.depthStencilBuffer = std::move(createdDepthStencilBuffer);
 
-        auto[createDepthStencilBufferViewResult, createdDepthStencilBufferView] = context->device->CreateImageView(images.depthStencilBuffer.Get());
+        auto depthStencilBufferViewCreateInfo = context->device->GetDefaultImageViewCreateInfo(images.depthStencilBuffer);
+
+        auto[createDepthStencilBufferViewResult, createdDepthStencilBufferView] = context->device->CreateImageView(images.depthStencilBuffer, depthStencilBufferViewCreateInfo);
         if (createDepthStencilBufferViewResult != vk::Result::eSuccess)
         {
             return { false };
         }
 
         images.depthStencilBufferView = std::move(createdDepthStencilBufferView);
+
+        depthStencilBufferViewCreateInfo.subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eDepth);
+
+        auto[createDepthBufferViewResult, createdDepthBufferView] = context->device->CreateImageView(images.depthStencilBuffer, depthStencilBufferViewCreateInfo);
+        if (createDepthBufferViewResult != vk::Result::eSuccess)
+        {
+            return { false };
+        }
+
+        images.depthBufferView = std::move(createdDepthBufferView);
 
         return { true, images };
     }

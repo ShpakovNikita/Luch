@@ -56,6 +56,7 @@ namespace Husky::Vulkan
         vk::Result WaitIdle();
 
         int32 ChooseMemoryType(Husky::uint32 memoryTypeBits, vk::MemoryPropertyFlags memoryProperties);
+        vk::ImageViewCreateInfo GetDefaultImageViewCreateInfo(Image* image);
 
         VulkanRefResultValue<Swapchain> CreateSwapchain(const SwapchainCreateInfo& swapchainCreateInfo, Surface* surface);
 

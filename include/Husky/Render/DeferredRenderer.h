@@ -27,6 +27,8 @@ namespace Husky::Render
         HasTexCoord1,
         HasColor,
 
+        HasBitangentDirection,
+
         HasBaseColorTexture,
         HasMetallicRoughnessTexture,
         HasNormalTexture,
@@ -54,6 +56,7 @@ namespace Husky::Render
     {
         RefPtr<Image> depthStencilBuffer;
         RefPtr<ImageView> depthStencilBufferView;
+        RefPtr<ImageView> depthBufferView;
 
         RefPtr<Image> baseColorImage;
         RefPtr<ImageView> baseColorImageView;
@@ -141,10 +144,11 @@ namespace Husky::Render
 
         DescriptorSetBinding baseColorImageBinding;
         DescriptorSetBinding normalMapImageBinding;
-        //DescriptorSetBinding depthStencilBufferBinding;
+        DescriptorSetBinding depthStencilBufferBinding;
 
         RefPtr<Vulkan::Sampler> baseColorSampler;
         RefPtr<Vulkan::Sampler> normalMapSampler;
+        RefPtr<Vulkan::Sampler> depthBufferSampler;
 
         RefPtr<DescriptorSetLayout> gbufferDescriptorSetLayout;
 

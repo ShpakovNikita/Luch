@@ -21,8 +21,8 @@ namespace Husky::Render
     {
         Mat4x4 view;
         Mat4x4 projection;
-        Vec3 position;
-        float32 _padding0;
+        Vec4 position;
+        Vec2 zMinMax;
     };
 
     static_assert(sizeof(CameraUniformBuffer) % 4 == 0);

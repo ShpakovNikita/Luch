@@ -389,8 +389,8 @@ namespace Husky::Render
 
             FramebufferCreateInfo framebufferCreateInfo(preparedScene.renderPass.Get(), swapchainCreateInfo.width, swapchainCreateInfo.height, 1);
             framebufferCreateInfo
-                .AddAtachment(&colorAttachment, context->swapchain->GetImageView(i))
-                .AddAtachment(&depthAttachment, frameResources.depthStencilBufferView.Get());
+                .AddAttachment(&colorAttachment, context->swapchain->GetImageView(i))
+                .AddAttachment(&depthAttachment, frameResources.depthStencilBufferView.Get());
 
             auto[createFramebufferResult, createdFramebuffer] = context->device->CreateFramebuffer(framebufferCreateInfo);
             if (createFramebufferResult != vk::Result::eSuccess)
@@ -813,7 +813,7 @@ namespace Husky::Render
         CameraUniformBuffer cameraUniformBuffer;
         cameraUniformBuffer.view = camera->GetCameraViewMatrix();
         cameraUniformBuffer.projection = camera->GetCameraProjectionMatrix();
-        cameraUniformBuffer.position = camera->GetCameraPosition();
+        cameraUniformBuffer.position = Vec4{ camera->GetCameraPosition(), 1.0 };
         // TODO
         memcpy(buffer->GetMappedMemory(), &cameraUniformBuffer, sizeof(CameraUniformBuffer));
     }

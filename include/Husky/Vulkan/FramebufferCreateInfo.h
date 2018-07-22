@@ -13,7 +13,7 @@ namespace Husky::Vulkan
 
         FramebufferCreateInfo(RenderPass* aRenderPass, int32 aWidth, int32 aHeight, int32 aLayers);
 
-        inline FramebufferCreateInfo& AddAtachment(Attachment* attachment, ImageView* imageView)
+        inline FramebufferCreateInfo& AddAttachment(Attachment* attachment, ImageView* imageView)
         {
             attachments[attachment->GetIndex()] = imageView->GetImageView();
             return *this;

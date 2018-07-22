@@ -8,7 +8,8 @@ layout (set = 0, binding = 0) uniform CameraUniformBufferObject
 {
     mat4x4 view;
     mat4x4 projection;
-    vec3 positionWS;
+    vec4 positionWS;
+    vec2 zMinMax;
 } camera;
 
 layout (set = 2, binding = 0) uniform sampler2D baseColorMap;         // RGB - color, A - opacity
@@ -36,7 +37,7 @@ layout (location = 0) in vec3 inPositionVS;
 #endif
 
 #if HAS_TANGENT
-    layout (location = 2) in vec3 inTangentVS;
+    layout (location = 2) in vec4 inTangentVS;
 #endif
 
 #if HAS_TEXCOORD_0
@@ -67,25 +68,37 @@ mat3 TangentFrame(vec3 dp1, vec3 dp2, vec3 N, vec2 uv)
  
     // construct a scale-invariant frame 
     float invmax = inversesqrt(max(dot(T, T), dot(B,B)));
-    return mat3(T * invmax, -B * invmax, N);
+    return mat3(T * invmax, B * invmax, N);
 }
 
+// Figure out coordinate system
 void main()
 {
     vec3 positionVS = inPositionVS;
 
-    vec3 dp1 = dFdx(positionVS);
-    vec3 dp2 = dFdy(positionVS);
+    #if !HAS_NORMAL && !HAS_TANGENT
+        discard;
+    #endif
 
     #if HAS_TEXCOORD_0
         vec2 texCoord = inTexCoord;
-        #if HAS_NORMAL && HAS_TANGENT
-            vec3 bitangentVS = normalize(cross(inNormalVS, inTangentVS));
-            mat3 TBN = mat3(inTangentVS, bitangentVS, inNormalVS);
-        #else
-            mat3 TBN = TangentFrame(dp1, dp2, inNormalVS, texCoord);
-        #endif
     #endif
+
+    #if HAS_BASE_COLOR_TEXTURE && HAS_TEXCOORD_0
+        vec4 baseColor = texture(baseColorMap, texCoord);
+    #else
+        vec4 baseColor = vec4(1.0, 1.0, 1.0, 1.0);
+    #endif
+
+    #if ALPHA_MASK
+        if(baseColor.a < material.alphaCutoff)
+        {
+            discard;
+        }
+    #endif
+
+    vec3 dp1 = dFdx(positionVS);
+    vec3 dp2 = dFdy(positionVS);
 
     #if HAS_NORMAL
         vec3 normalVS = normalize(inNormalVS);
@@ -93,9 +106,15 @@ void main()
         vec3 normalVS = normalize(cross(dp1, dp2));
     #endif
 
-    #if HAS_TANGENT
-        vec3 tangentVS = normalize(inTangentVS);
+    #if HAS_NORMAL && HAS_TANGENT
+        vec3 tangentVS = normalize(inTangentVS.xyz);
+        vec3 bitangentVS = normalize(cross(normalVS, tangentVS)) * inTangentVS.w;
+        mat3 TBN = mat3(tangentVS, bitangentVS, normalVS);
     #elif HAS_TEXCOORD_0
+        mat3 TBN = TangentFrame(dp1, dp2, normalVS, texCoord);
+    #endif
+
+    #if !HAS_TANGENT && HAS_TEXCOORD_0
         vec3 tangentVS = TBN[0];
     #endif
 
@@ -107,19 +126,13 @@ void main()
         N = normalize(normalVS);
     #endif
 
-    #if HAS_BASE_COLOR_TEXTURE && HAS_TEXCOORD_0
-        vec4 baseColor = texture(baseColorMap, texCoord);
-    #else
-        vec4 baseColor = vec4(1.0, 1.0, 1.0, 1.0);
-    #endif
-
-    float metallic = material.metallicFactor;
-    float roughness = material.roughnessFactor;
-
     #if HAS_METALLIC_ROUGHNESS_TEXTURE && HAS_TEXCOORD_0
         vec4 metallicRoughness = texture(metallicRoughnessMap, texCoord);
-        metallic *= metallicRoughness.b;
-        roughness *= clamp(metallicRoughness.g, 0.04, 1.0);
+        float metallic = material.metallicFactor * metallicRoughness.b;
+        float roughness = material.roughnessFactor * clamp(metallicRoughness.g, 0.04, 1.0);
+    #else
+        float metallic = material.metallicFactor;
+        float roughness = material.roughnessFactor;
     #endif
 
     outBaseColor = baseColor;

@@ -24,7 +24,11 @@ layout (location = 0) in vec3 positionLS;
 #endif
 
 #if HAS_TANGENT
-    layout (location = 2) in TANGENT_TYPE tangentLS;
+    #if HAS_BITANGENT_DIRECTION
+        layout (location = 2) in vec4 tangentLS;
+    #else
+        layout (location = 2) in vec3 tangentLS;
+    #endif
 #endif
 
 #if HAS_TEXCOORD_0
@@ -38,7 +42,7 @@ layout (location = 0) out vec3 outPositionVS;
 #endif
 
 #if HAS_TANGENT
-    layout (location = 2) out vec3 outTangentVS;
+    layout (location = 2) out vec4 outTangentVS;
 #endif
 
 #if HAS_TEXCOORD_0
@@ -52,13 +56,14 @@ void main()
     vec3 truePositionLS = vec3(positionLS.x, -positionLS.y, positionLS.z);
     vec4 positionWS = mesh.model * vec4(truePositionLS, 1.0);
     vec4 positionVS = viewModel * vec4(truePositionLS, 1.0);
-
-    // TODO proper normal transform
-
     outPositionVS = positionVS.xyz;
+
+    mat4x4 normalMatrix = transpose(inverse(viewModel));
+
     #if HAS_NORMAL
-        //outNormalVS = (viewModel * vec4(normalLS, 0.0)).xyz;
-        outNormalVS = normalLS;
+        vec3 trueNormal = vec3(normalLS.x, -normalLS.y, normalLS.z);
+        outNormalVS = (normalMatrix * vec4(trueNormal, 0.0)).xyz;
+        outNormalVS.y = -outNormalVS.y;
     #endif
 
     #if HAS_TEXCOORD_0
@@ -66,7 +71,12 @@ void main()
     #endif
 
     #if HAS_TANGENT
-        outTangentVS = (viewModel * vec4(tangentLS.xyz, 0.0)).xyz;
+        outTangentVS.xyz = (normalMatrix * vec4(tangentLS.xyz, 0.0)).xyz;
+        #if HAS_BITANGENT_DIRECTION
+            outTangentVS.w = tangentLS.w;
+        #else
+            outTangentVS.w = 1.0;
+        #endif
     #endif
 
     gl_Position = camera.projection * positionVS;
