@@ -2,6 +2,8 @@
 #include <Husky/Assert.h>
 #include <SPIRV/GlslangToSpv.h>
 
+#include <sstream>
+
 namespace Husky::Vulkan
 {
 
@@ -136,7 +138,19 @@ void GLSLShaderCompiler::Deinitialize()
     glslang::FinalizeProcess();
 }
 
-bool GLSLShaderCompiler::TryCompileShader(ShaderStage shaderStage, const Vector<Byte>& glslSource, Bytecode& spirvBytecode)
+String GLSLShaderCompiler::GeneratePreamble(const UnorderedMap<String, String>& flags)
+{
+    std::stringstream ss;
+
+    for (const auto &kv : flags)
+    {
+        ss << "#define " << kv.first << " " << kv.second << "\n";
+    }
+
+    return ss.str();
+}
+
+bool GLSLShaderCompiler::TryCompileShader(ShaderStage shaderStage, const Vector<Byte>& glslSource, Bytecode& spirvBytecode, const UnorderedMap<String, String>& flags)
 {
     if (glslSource.empty())
     {
@@ -153,8 +167,10 @@ bool GLSLShaderCompiler::TryCompileShader(ShaderStage shaderStage, const Vector<
 
     EShMessages messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
 
+    String preamble = GeneratePreamble(flags);
     Array<const char8*, 1> sources = { reinterpret_cast<const char8*>(glslSource.data()) };
     shader.setStrings(sources.data(), (int32)sources.size());
+    shader.setPreamble(preamble.c_str());
 
     if (!shader.parse(&resources, 100, false, messages))
     {

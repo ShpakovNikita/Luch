@@ -31,7 +31,7 @@ namespace Husky::SceneV1::Loader
         RefPtr<Texture> MakeTexture(const glTF::Texture& texture);
         RefPtr<Sampler> MakeSampler(const glTF::Sampler& sampler);
 
-        Vector<uint8> ReadHostBuffer(const BufferSource& source);
+        SharedPtr<Vector<uint8>> ReadHostBuffer(const BufferSource& source);
         RefPtr<Image> ReadHostImage(const TextureSource& source);
 
         String rootFolder;
@@ -40,7 +40,7 @@ namespace Husky::SceneV1::Loader
         bool loaded = false;
         RefPtrVector<Mesh> loadedMeshes;
         RefPtrVector<Camera> loadedCameras;
-        Vector<BufferSource> loadedBuffers;
+        Vector<SharedPtr<Vector<uint8>>> loadedBuffers;
         RefPtrVector<PbrMaterial> loadedMaterials;
         RefPtrVector<Sampler> loadedSamplers;
         RefPtrVector<Texture> loadedTextures;

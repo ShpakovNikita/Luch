@@ -121,9 +121,9 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     glTF::glTFParser glTFparser;
 
-    String rootDir{ "C:\\Development\\HuskyResources\\glTF-Sample-Models\\2.0\\DamagedHelmet\\glTF\\" };
+    String rootDir{ "C:\\Development\\HuskyResources\\glTF-Sample-Models\\2.0\\Sponza\\glTF\\" };
 
-    FileStream fileStream{ rootDir + "DamagedHelmet.gltf", FileOpenModes::Read };
+    FileStream fileStream{ rootDir + "Sponza.gltf", FileOpenModes::Read };
 
     auto root = glTFparser.ParseJSON(&fileStream);
     
@@ -141,8 +141,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     auto lightNode = MakeRef<SceneV1::Node>();
     auto light = MakeRef<SceneV1::Light>();
 
-    light->SetDirection({ 0, 0, 1 });
-    light->SetType(SceneV1::LightType::Directional);
+    light->SetType(SceneV1::LightType::Point);
 
     lightNode->SetLight(light);
 

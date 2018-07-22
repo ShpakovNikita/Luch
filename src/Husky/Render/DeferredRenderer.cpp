@@ -54,6 +54,7 @@ namespace Husky::Render
         {{+1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}}, // top right
     };
 
+    // Think about passing these numbers through shader defines
     static const Map<SceneV1::AttributeSemantic, int32> SemanticToLocation =
     {
         { SceneV1::AttributeSemantic::Position, 0 },
@@ -63,6 +64,45 @@ namespace Husky::Render
         { SceneV1::AttributeSemantic::Texcoord_1, 4 },
         { SceneV1::AttributeSemantic::Color_0, 5 },
     };
+
+    static const Map<SceneV1::AttributeSemantic, ShaderDefine> SemanticToFlag =
+    {
+        { SceneV1::AttributeSemantic::Position, ShaderDefine::Empty },
+        { SceneV1::AttributeSemantic::Normal, ShaderDefine::HasNormal},
+        { SceneV1::AttributeSemantic::Tangent, ShaderDefine::HasTangent },
+        { SceneV1::AttributeSemantic::Texcoord_0, ShaderDefine::HasTexCoord0 },
+        { SceneV1::AttributeSemantic::Texcoord_1, ShaderDefine::HasTexCoord1 },
+        { SceneV1::AttributeSemantic::Color_0, ShaderDefine::HasColor},
+    };
+
+    static UnorderedMap<ShaderDefine, String> FlagToString =
+    {
+        //{ ShaderDefine::HasPosition, "HAS_POSITION" },
+        { ShaderDefine::HasNormal, "HAS_NORMAL" },
+        { ShaderDefine::HasTangent, "HAS_TANGENT" },
+        { ShaderDefine::HasTexCoord0, "HAS_TEXCOORD_0" },
+        { ShaderDefine::HasTexCoord1, "HAS_TEXCOORD_0" },
+        { ShaderDefine::HasColor, "HAS_COLOR" },
+        { ShaderDefine::HasBaseColorTexture, "HAS_BASE_COLOR_TEXTURE" },
+        { ShaderDefine::HasMetallicRoughnessTexture, "HAS_METALLIC_ROUGHNESS_TEXTURE" },
+        { ShaderDefine::HasNormalTexture, "HAS_NORMAL_TEXTURE" },
+        { ShaderDefine::HasOcclusionTexture, "HAS_OCCLUSION_TEXTURE" },
+        { ShaderDefine::HasEmissiveTexture, "HAS_EMISSIVE_TEXTURE" },
+        { ShaderDefine::AlphaMask, "ALPHA_MASK" },
+    };
+
+    void ShaderDefines::AddFlag(ShaderDefine flag)
+    {
+        AddDefine(flag, "1");
+    }
+
+    void ShaderDefines::AddDefine(ShaderDefine define, const String& value)
+    {
+        if (define != ShaderDefine::Empty)
+        {
+            defines[FlagToString.at(define)] = value;
+        }
+    }
 
     DeferredRenderer::DeferredRenderer(
         PhysicalDevice* physicalDevice,
@@ -491,6 +531,7 @@ namespace Husky::Render
             context->device->GetQueueIndices()->graphicsQueueFamilyIndex,
             vk::BufferUsageFlagBits::eUniformBuffer,
             true);
+
         HUSKY_ASSERT(createBufferResult == vk::Result::eSuccess);
 
         auto[mapMemoryResult, mappedMemory] = createdBuffer->MapMemory(sizeof(CameraUniformBuffer), 0);
@@ -560,29 +601,29 @@ namespace Husky::Render
                 bool vertexBufferUploaded = vertexBuffer->UploadToDevice(context->device);
                 HUSKY_ASSERT(vertexBufferUploaded);
             }
-
-            auto[createUniformBufferResult, createdUniformBuffer] = context->device->CreateBuffer(
-                sizeof(MeshUniformBuffer),
-                context->device->GetQueueIndices()->graphicsQueueFamilyIndex,
-                vk::BufferUsageFlagBits::eUniformBuffer,
-                true);
-
-            HUSKY_ASSERT(createUniformBufferResult == vk::Result::eSuccess);
-
-            auto[mapMemoryResult, mappedMemory] = createdUniformBuffer->MapMemory(sizeof(MeshUniformBuffer), 0);
-            HUSKY_ASSERT(mapMemoryResult == vk::Result::eSuccess);
-
-            auto [allocateDescriptorSetResult, allocatedDescriptorSet] = scene.gBuffer.descriptorPool->AllocateDescriptorSet(scene.gBuffer.meshDescriptorSetLayout);
-            HUSKY_ASSERT(allocateDescriptorSetResult == vk::Result::eSuccess);
-
-            mesh->SetUniformBuffer(createdUniformBuffer);
-            mesh->SetDescriptorSet(allocatedDescriptorSet);
-
-            DescriptorSetWrites descriptorSetWrites;
-            descriptorSetWrites.WriteUniformBufferDescriptors(allocatedDescriptorSet, &scene.gBuffer.meshUniformBufferBinding, { createdUniformBuffer });
-
-            DescriptorSet::Update(descriptorSetWrites);
         }
+
+        auto[createUniformBufferResult, createdUniformBuffer] = context->device->CreateBuffer(
+            sizeof(MeshUniformBuffer),
+            context->device->GetQueueIndices()->graphicsQueueFamilyIndex,
+            vk::BufferUsageFlagBits::eUniformBuffer,
+            true);
+
+        HUSKY_ASSERT(createUniformBufferResult == vk::Result::eSuccess);
+
+        auto[mapMemoryResult, mappedMemory] = createdUniformBuffer->MapMemory(sizeof(MeshUniformBuffer), 0);
+        HUSKY_ASSERT(mapMemoryResult == vk::Result::eSuccess);
+
+        auto[allocateDescriptorSetResult, allocatedDescriptorSet] = scene.gBuffer.descriptorPool->AllocateDescriptorSet(scene.gBuffer.meshDescriptorSetLayout);
+        HUSKY_ASSERT(allocateDescriptorSetResult == vk::Result::eSuccess);
+
+        mesh->SetUniformBuffer(createdUniformBuffer);
+        mesh->SetDescriptorSet(allocatedDescriptorSet);
+
+        DescriptorSetWrites descriptorSetWrites;
+        descriptorSetWrites.WriteUniformBufferDescriptors(allocatedDescriptorSet, &scene.gBuffer.meshUniformBufferBinding, { createdUniformBuffer });
+
+        DescriptorSet::Update(descriptorSetWrites);
     }
 
     void DeferredRenderer::PrepareLight(const RefPtr<SceneV1::Light>& light, DeferredPreparedScene& scene)
@@ -848,17 +889,11 @@ namespace Husky::Render
     {
         MaterialPushConstants materialPushConstants;
         materialPushConstants.baseColorFactor = material->metallicRoughness.baseColorFactor;
-        materialPushConstants.hasBaseColorTexture = material->HasBaseColorTexture();
         materialPushConstants.metallicFactor = material->metallicRoughness.metallicFactor;
         materialPushConstants.roughnessFactor = material->metallicRoughness.roughnessFactor;
-        materialPushConstants.hasMetallicRoughnessTexture = material->HasMetallicRoughnessTexture();
         materialPushConstants.normalScale = material->normalTexture.scale;
-        materialPushConstants.hasNormalTexture = material->HasNormalTexture();
         materialPushConstants.occlusionStrength = material->occlusionTexture.strength;
-        materialPushConstants.hasOcclusionTexture = material->HasOcclusionTexture();
         materialPushConstants.emissiveFactor = material->emissiveFactor;
-        materialPushConstants.hasEmissiveTexture = material->HasEmissiveTexture();
-        materialPushConstants.isAlphaMask = material->alphaMode == SceneV1::AlphaMode::Mask;
         materialPushConstants.alphaCutoff = material->alphaCutoff;
         return materialPushConstants;
     }
@@ -874,20 +909,11 @@ namespace Husky::Render
         return result;
     }
 
-    // Assume that all primitives have the same vertex layout
     RefPtr<Pipeline> DeferredRenderer::CreateGBufferPipeline(const RefPtr<SceneV1::Primitive>& primitive, DeferredPreparedScene& scene)
     {
         GraphicsPipelineCreateInfo pipelineState;
 
-        auto& vertexShaderStage = pipelineState.shaderStages.emplace_back();
-        vertexShaderStage.name = "main";
-        vertexShaderStage.shaderModule = scene.gBuffer.vertexShader.module;
-        vertexShaderStage.stage = ShaderStage::Vertex;
-
-        auto& fragmentShaderStage = pipelineState.shaderStages.emplace_back();
-        fragmentShaderStage.name = "main";
-        fragmentShaderStage.shaderModule = scene.gBuffer.fragmentShader.module;
-        fragmentShaderStage.stage = ShaderStage::Fragment;
+        ShaderDefines shaderDefines;
 
         const auto& vertexBuffers = primitive->GetVertexBuffers();
         pipelineState.vertexInputState.bindingDescriptions.resize(vertexBuffers.size());
@@ -909,9 +935,24 @@ namespace Husky::Render
             attributeDescription.binding = attribute.vertexBufferIndex;
             attributeDescription.format = ToVulkanFormat(attribute.format);
             attributeDescription.offset = attribute.offset;
+
+            // Wtf is this shit
+            if (attribute.semantic == SceneV1::AttributeSemantic::Tangent)
+            {
+                if (attribute.format == Format::R32G32B32A32Sfloat)
+                {
+                    shaderDefines.defines["TANGENT_TYPE"] = "vec4";
+                }
+                else
+                {
+                    shaderDefines.defines["TANGENT_TYPE"] = "vec3";
+                }
+            }
+
+
+            shaderDefines.AddFlag(SemanticToFlag.at(attribute.semantic));
         }
 
-        // TODO
         pipelineState.inputAssemblyState.topology = vk::PrimitiveTopology::eTriangleList;
 
         const auto& material = primitive->GetMaterial();
@@ -955,6 +996,74 @@ namespace Husky::Render
 
         pipelineState.dynamicState.dynamicStates.push_back(vk::DynamicState::eScissor);
         pipelineState.dynamicState.dynamicStates.push_back(vk::DynamicState::eViewport);
+
+        if (material->HasBaseColorTexture())
+        {
+            shaderDefines.AddFlag(ShaderDefine::HasBaseColorTexture);
+        }
+
+        if (material->HasMetallicRoughnessTexture())
+        {
+            shaderDefines.AddFlag(ShaderDefine::HasMetallicRoughnessTexture);
+        }
+
+        if (material->HasNormalTexture())
+        {
+            shaderDefines.AddFlag(ShaderDefine::HasNormalTexture);
+        }
+
+        if (material->HasOcclusionTexture())
+        {
+            shaderDefines.AddFlag(ShaderDefine::HasOcclusionTexture);
+        }
+
+        if (material->HasEmissiveTexture())
+        {
+            shaderDefines.AddFlag(ShaderDefine::HasEmissiveTexture);
+        }
+
+        if (material->alphaMode == SceneV1::AlphaMode::Mask)
+        {
+            shaderDefines.AddFlag(ShaderDefine::AlphaMask);
+        }
+
+        auto[vertexShaderCreated, createdVertexShader] = CreateShader(
+            ShaderStage::Vertex,
+            "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\gbuffer.vert",
+            shaderDefines);
+
+        if (!vertexShaderCreated)
+        {
+            return { false };
+        }
+
+        auto vertexShader = std::move(createdVertexShader);
+
+        auto[fragmentShaderCreated, createdFragmentShader] = CreateShader(
+            ShaderStage::Fragment,
+            "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\gbuffer.frag",
+            shaderDefines);
+
+        if (!fragmentShaderCreated)
+        {
+            return { false };
+        }
+
+        auto fragmentShader = std::move(createdFragmentShader);
+
+        auto& vertexShaderStage = pipelineState.shaderStages.emplace_back();
+        vertexShaderStage.name = "main";
+        vertexShaderStage.shaderModule = vertexShader.module;
+        vertexShaderStage.stage = ShaderStage::Vertex;
+
+        auto& fragmentShaderStage = pipelineState.shaderStages.emplace_back();
+        fragmentShaderStage.name = "main";
+        fragmentShaderStage.shaderModule = fragmentShader.module;
+        fragmentShaderStage.stage = ShaderStage::Fragment;
+
+        // Retain shader modules
+        primitive->AddShaderModule(vertexShader.module);
+        primitive->AddShaderModule(fragmentShader.module);
 
         auto[createPipelineResult, createdPipeline] = context->device->CreateGraphicsPipeline(pipelineState);
         if (createPipelineResult != vk::Result::eSuccess)
@@ -1060,22 +1169,6 @@ namespace Husky::Render
         }
 
         resources.descriptorPool = std::move(createdDescriptorPool);
-
-        auto[vertexShaderCreated, createdVertexShader] = CreateShader(ShaderStage::Vertex, ".\\Shaders\\Deferred\\gbuffer.vert");
-        if (!vertexShaderCreated)
-        {
-            return { false };
-        }
-
-        resources.vertexShader = std::move(createdVertexShader);
-
-        auto[fragmentShaderCreated, createdFragmentShader] = CreateShader(ShaderStage::Fragment, ".\\Shaders\\Deferred\\gbuffer.frag");
-        if (!fragmentShaderCreated)
-        {
-            return { false };
-        }
-
-        resources.fragmentShader = std::move(createdFragmentShader);
 
         resources.meshUniformBufferBinding
             .OfType(vk::DescriptorType::eUniformBuffer)
@@ -1214,6 +1307,8 @@ namespace Husky::Render
             { vk::DescriptorType::eCombinedImageSampler, OffscreenImagesCount + 1 },
         };
 
+        ShaderDefines shaderDefines;
+
         auto[createDescriptorPoolResult, createdDescriptorPool] = context->device->CreateDescriptorPool(maxDescriptorSets, descriptorCount);
         if (createDescriptorPoolResult != vk::Result::eSuccess)
         {
@@ -1222,7 +1317,11 @@ namespace Husky::Render
 
         resources.descriptorPool = std::move(createdDescriptorPool);
 
-        auto[vertexShaderCreated, createdVertexShader] = CreateShader(ShaderStage::Vertex, ".\\Shaders\\Deferred\\lighting.vert");
+        auto[vertexShaderCreated, createdVertexShader] = CreateShader(
+            ShaderStage::Vertex,
+            "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\lighting.vert",
+            shaderDefines);
+
         if (!vertexShaderCreated)
         {
             return { false };
@@ -1230,7 +1329,11 @@ namespace Husky::Render
 
         resources.vertexShader = std::move(createdVertexShader);
 
-        auto[fragmentShaderCreated, createdFragmentShader] = CreateShader(ShaderStage::Fragment, ".\\Shaders\\Deferred\\lighting.frag");
+        auto[fragmentShaderCreated, createdFragmentShader] = CreateShader(
+            ShaderStage::Fragment,
+            "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\lighting.frag",
+            shaderDefines);
+
         if (!fragmentShaderCreated)
         {
             return { false };
@@ -1466,7 +1569,7 @@ namespace Husky::Render
         return { true, images };
     }
 
-    ResultValue<bool, Shader> DeferredRenderer::CreateShader(ShaderStage stage, const String& path)
+    ResultValue<bool, Shader> DeferredRenderer::CreateShader(ShaderStage stage, const String& path, const ShaderDefines& defines)
     {
         Shader shader;
 
@@ -1475,7 +1578,8 @@ namespace Husky::Render
         auto shaderCompiled = context->shaderCompiler.TryCompileShader(
             stage,
             shaderSource,
-            shader.bytecode);
+            shader.bytecode,
+            defines.defines);
 
         if (!shaderCompiled)
         {
@@ -1486,7 +1590,6 @@ namespace Husky::Render
             shader.bytecode.data(),
             shader.bytecode.size() * sizeof(uint32)
         );
-
 
         shader.module = std::move(createdShaderModule);
 

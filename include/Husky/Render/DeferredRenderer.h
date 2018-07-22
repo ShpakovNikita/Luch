@@ -17,6 +17,33 @@ namespace Husky::Render
 {
     using namespace Husky::Vulkan;
 
+    enum class ShaderDefine
+    {
+        Empty, // special value for no define
+        //HasPosition,
+        HasNormal,
+        HasTangent,
+        HasTexCoord0,
+        HasTexCoord1,
+        HasColor,
+
+        HasBaseColorTexture,
+        HasMetallicRoughnessTexture,
+        HasNormalTexture,
+        HasOcclusionTexture,
+        HasEmissiveTexture,
+
+        AlphaMask,
+    };
+
+    struct ShaderDefines
+    {
+        UnorderedMap<String, String> defines;
+
+        void AddFlag(ShaderDefine flag);
+        void AddDefine(ShaderDefine define, const String& value);
+    };
+
     struct QuadVertex
     {
         Vec3 position;
@@ -98,9 +125,6 @@ namespace Husky::Render
 
         RefPtr<DescriptorSetLayout> meshDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> materialDescriptorSetLayout;
-
-        Shader vertexShader;
-        Shader fragmentShader;
     };
 
     struct LightingPassResources
@@ -202,7 +226,7 @@ namespace Husky::Render
         ResultValue<bool, GBufferPassResources> PrepareGBufferPassResources(DeferredPreparedScene& scene);
         ResultValue<bool, LightingPassResources> PrepareLightingPassResources(DeferredPreparedScene& scene);
         ResultValue<bool, OffscreenImages> CreateOffscreenImages();
-        ResultValue<bool, Shader> CreateShader(ShaderStage stage, const String& path);
+        ResultValue<bool, Shader> CreateShader(ShaderStage stage, const String& path, const ShaderDefines& defines);
 
         UniquePtr<DeferredRendererContext> context;
 

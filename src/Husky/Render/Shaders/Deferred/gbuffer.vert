@@ -18,39 +18,56 @@ layout (set = 1, binding = 0) uniform MeshUniformBufferObject
 // VS - view space
 // LS - local space
 layout (location = 0) in vec3 positionLS;
-layout (location = 1) in vec3 normalLS;
 
-#ifdef HAS_TANGENT
-layout (location = 2) in vec3 tangentLS;
+#if HAS_NORMAL
+    layout (location = 1) in vec3 normalLS;
 #endif
 
-layout (location = 3) in vec2 inTexCoord;
+#if HAS_TANGENT
+    layout (location = 2) in TANGENT_TYPE tangentLS;
+#endif
+
+#if HAS_TEXCOORD_0
+    layout (location = 3) in vec2 inTexCoord;
+#endif
 
 layout (location = 0) out vec3 outPositionVS;
-layout (location = 1) out vec3 outNormalVS;
-#ifdef HAS_TANGENT
-layout (location = 2) out vec3 outTangentVS;
+
+#if HAS_NORMAL
+    layout (location = 1) out vec3 outNormalVS;
 #endif
-layout (location = 3) out vec2 outTexCoord;
+
+#if HAS_TANGENT
+    layout (location = 2) out vec3 outTangentVS;
+#endif
+
+#if HAS_TEXCOORD_0
+    layout (location = 3) out vec2 outTexCoord;
+#endif
 
 void main()
 {
     mat4 viewModel = camera.view * mesh.model;
-    
-    vec4 positionWS = mesh.model * vec4(positionLS, 1.0);
-    vec4 positionVS = viewModel * vec4(positionLS, 1.0);
 
-    vec4 intermediate = camera.projection * positionVS;
+    vec3 truePositionLS = vec3(positionLS.x, -positionLS.y, positionLS.z);
+    vec4 positionWS = mesh.model * vec4(truePositionLS, 1.0);
+    vec4 positionVS = viewModel * vec4(truePositionLS, 1.0);
 
     // TODO proper normal transform
 
     outPositionVS = positionVS.xyz;
-    outNormalVS = (viewModel * vec4(normalLS, 0.0)).xyz;
-    outTexCoord = inTexCoord;
-#ifdef HAS_TANGENT
-    outTangentVS = (viewModel * vec4(tangentLS, 0.0)).xyz;
-#endif
-    // TODO figure out handedness
-    //gl_Position = vec4(intermediate.x, -intermediate.y, intermediate.zw);
-    gl_Position = intermediate;
+    #if HAS_NORMAL
+        //outNormalVS = (viewModel * vec4(normalLS, 0.0)).xyz;
+        outNormalVS = normalLS;
+    #endif
+
+    #if HAS_TEXCOORD_0
+        outTexCoord = inTexCoord;
+    #endif
+
+    #if HAS_TANGENT
+        outTangentVS = (viewModel * vec4(tangentLS.xyz, 0.0)).xyz;
+    #endif
+
+    gl_Position = camera.projection * positionVS;
 }

@@ -67,13 +67,14 @@ namespace Husky::SceneV1
         inline PrimitiveTopology GetTopology() const { return topology; }
         inline const RefPtr<Vulkan::Pipeline>& GetPipeline() const { return pipeline; }
         inline void SetPipeline(const RefPtr<Vulkan::Pipeline>& aPipeline) { pipeline = aPipeline; }
+        inline void AddShaderModule(const RefPtr<Vulkan::ShaderModule>& shaderModule) { shaderModules.push_back(shaderModule); }
     private:
         Vector<PrimitiveAttribute> attributes;
         RefPtrVector<VertexBuffer> vertexBuffers;
         RefPtr<IndexBuffer> indexBuffer;
         RefPtr<PbrMaterial> material;
         PrimitiveTopology topology = PrimitiveTopology::TriangleList;
-
+        RefPtrVector<Vulkan::ShaderModule> shaderModules;
         RefPtr<Vulkan::Pipeline> pipeline;
     };
 }

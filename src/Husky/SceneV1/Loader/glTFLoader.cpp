@@ -70,7 +70,8 @@ namespace Husky::SceneV1::Loader
             bufferSource.root = rootFolder;
             bufferSource.byteLength = buffer.byteLength;
             bufferSource.filename = buffer.uri;
-            loadedBuffers.emplace_back(bufferSource);
+
+            loadedBuffers.emplace_back(ReadHostBuffer(bufferSource));
         }
 
         loadedSamplers.reserve(root->samplers.size());
@@ -84,7 +85,6 @@ namespace Husky::SceneV1::Loader
         {
             loadedTextures.emplace_back(MakeTexture(texture));
         }
-
 
         loadedMaterials.reserve(root->materials.size());
         for (const auto& material : root->materials)
@@ -298,10 +298,10 @@ namespace Husky::SceneV1::Loader
                 }
                 else
                 {
-                    const auto& bufferSource = loadedBuffers[bufferView.buffer];
-                    auto hostBuffer = ReadHostBuffer(bufferSource);
+                    const auto& hostBuffer = loadedBuffers[bufferView.buffer];
+
                     vb = MakeRef<VertexBuffer>(
-                        move(hostBuffer),
+                        hostBuffer,
                         stride,
                         bufferView.byteOffset,
                         bufferView.byteLength);
@@ -351,8 +351,7 @@ namespace Husky::SceneV1::Loader
         const auto& bufferView = root->bufferViews[indices.bufferView.value()];
         HUSKY_ASSERT(!bufferView.byteStride.has_value(), "index accessor buffer views should not have stride");
 
-        const auto& bufferSource = loadedBuffers[bufferView.buffer];
-        auto hostBuffer = ReadHostBuffer(bufferSource);
+        auto buffer = loadedBuffers[bufferView.buffer];
 
         IndexType indexType;
 
@@ -369,7 +368,7 @@ namespace Husky::SceneV1::Loader
         }
 
         return MakeRef<IndexBuffer>(
-            std::move(hostBuffer),
+            buffer,
             indexType,
             indices.count,
             bufferView.byteOffset,
@@ -480,15 +479,16 @@ namespace Husky::SceneV1::Loader
 
         return MakeRef<Sampler>(samplerCreateInfo, name);
     }
-    Vector<uint8> glTFLoader::ReadHostBuffer(const BufferSource& source)
+
+    SharedPtr<Vector<uint8>> glTFLoader::ReadHostBuffer(const BufferSource& source)
     {
         UniquePtr<FileStream> stream = MakeUnique<FileStream>(source.root + "/" + source.filename, FileOpenModes::Read);
-        Vector<uint8> buffer;
-        buffer.resize(source.byteLength);
+        SharedPtr<Vector<uint8>> buffer = MakeShared<Vector<uint8>>();
+        buffer->resize(source.byteLength);
 
-        stream->Read(buffer.data(), source.byteLength, 1);
+        stream->Read(buffer->data(), source.byteLength, 1);
 
-        return move(buffer);
+        return buffer;
     }
 
     RefPtr<Image> glTFLoader::ReadHostImage(const TextureSource& source)

@@ -156,10 +156,10 @@ namespace Husky::Render
         auto vertexShaderSource = LoadShaderSource(".\\Shaders\\pbr.vert");
         auto fragmentShaderSource = LoadShaderSource(".\\Shaders\\pbr.frag");
 
-        auto vertexShaderCompiled = context->shaderCompiler.TryCompileShader(ShaderStage::Vertex, vertexShaderSource, preparedScene.vertexShaderBytecode);
+        auto vertexShaderCompiled = context->shaderCompiler.TryCompileShader(ShaderStage::Vertex, vertexShaderSource, preparedScene.vertexShaderBytecode, {});
         HUSKY_ASSERT(vertexShaderCompiled, "Vertex shader failed to compile");
 
-        auto fragmentShaderCompiled = context->shaderCompiler.TryCompileShader(ShaderStage::Fragment, fragmentShaderSource, preparedScene.fragmentShaderBytecode);
+        auto fragmentShaderCompiled = context->shaderCompiler.TryCompileShader(ShaderStage::Fragment, fragmentShaderSource, preparedScene.fragmentShaderBytecode, {});
         HUSKY_ASSERT(fragmentShaderCompiled, "Fragment shader failed to compile");
 
         auto[createVertexShaderModuleResult, createdVertexShaderModule] = context->device->CreateShaderModule(
@@ -920,17 +920,11 @@ namespace Husky::Render
     {
         MaterialPushConstants materialPushConstants;
         materialPushConstants.baseColorFactor = material->metallicRoughness.baseColorFactor;
-        materialPushConstants.hasBaseColorTexture = material->HasBaseColorTexture();
         materialPushConstants.metallicFactor = material->metallicRoughness.metallicFactor;
         materialPushConstants.roughnessFactor = material->metallicRoughness.roughnessFactor;
-        materialPushConstants.hasMetallicRoughnessTexture = material->HasMetallicRoughnessTexture();
         materialPushConstants.normalScale = material->normalTexture.scale;
-        materialPushConstants.hasNormalTexture = material->HasNormalTexture();
         materialPushConstants.occlusionStrength = material->occlusionTexture.strength;
-        materialPushConstants.hasOcclusionTexture = material->HasOcclusionTexture();
         materialPushConstants.emissiveFactor = material->emissiveFactor;
-        materialPushConstants.hasEmissiveTexture = material->HasEmissiveTexture();
-        materialPushConstants.isAlphaMask = material->alphaMode == SceneV1::AlphaMode::Mask;
         materialPushConstants.alphaCutoff = material->alphaCutoff;
         return materialPushConstants;
     }

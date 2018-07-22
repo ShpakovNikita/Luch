@@ -38,12 +38,6 @@ namespace Husky::Render
     {
         Vec4 baseColorFactor;
         Vec3 emissiveFactor;
-        int32 hasBaseColorTexture;
-        int32 hasMetallicRoughnessTexture;
-        int32 hasNormalTexture;
-        int32 hasOcclusionTexture;
-        int32 hasEmissiveTexture;
-        int32 isAlphaMask;
         float32 alphaCutoff;
         float32 metallicFactor;
         float32 roughnessFactor;

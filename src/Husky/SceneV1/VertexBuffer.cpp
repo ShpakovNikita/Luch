@@ -5,7 +5,7 @@
 namespace Husky::SceneV1
 {
     VertexBuffer::VertexBuffer(
-        Vector<uint8>&& aHostBuffer,
+        SharedPtr<Vector<uint8>> aHostBuffer,
         int32 aStride,
         int32 aByteOffset,
         int32 aByteLength)
@@ -39,7 +39,7 @@ namespace Husky::SceneV1
                 return false;
             }
 
-            memcpy(verticesMemory, hostBuffer.data() + byteOffset, byteLength);
+            memcpy(verticesMemory, hostBuffer->data() + byteOffset, byteLength);
 
             createdVertexBuffer->UnmapMemory();
         }

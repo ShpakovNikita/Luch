@@ -235,7 +235,9 @@ void main()
     }
 
     //vec3 resultColor = baseColor.xyz * (lightingResult.diffuse + lightingResult.specular);
-    vec3 resultColor = baseColorSample.xyz;
+    //vec3 resultColor = baseColorSample.xyz;
+    //vec3 resultColor = 0.5 * (vec3(1, 1, 1) +  normalMapSample.xyz);
+    vec3 resultColor = N;
 
     outColor = vec4(resultColor, 1.0);
 }

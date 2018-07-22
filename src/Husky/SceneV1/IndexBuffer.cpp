@@ -5,7 +5,7 @@
 namespace Husky::SceneV1
 {
     IndexBuffer::IndexBuffer(
-        Vector<uint8>&& aHostBuffer,
+        SharedPtr<Vector<uint8>> aHostBuffer,
         IndexType aIndexType,
         int32 aCount,
         int32 aByteOffset,
@@ -41,7 +41,7 @@ namespace Husky::SceneV1
                 return false;
             }
 
-            memcpy(indicesMemory, hostBuffer.data() + byteOffset, byteLength);
+            memcpy(indicesMemory, hostBuffer->data() + byteOffset, byteLength);
 
             createdIndexBuffer->UnmapMemory();
         }

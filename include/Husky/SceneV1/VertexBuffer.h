@@ -2,6 +2,7 @@
 
 #include <Husky/RefPtr.h>
 #include <Husky/BaseObject.h>
+#include <Husky/SharedPtr.h>
 #include <Husky/SceneV1/Forwards.h>
 #include <Husky/SceneV1/BufferSource.h>
 #include <Husky/Vulkan/Forwards.h>
@@ -12,7 +13,7 @@ namespace Husky::SceneV1
     {
     public:
         VertexBuffer(
-            Vector<uint8>&& aHostBuffer,
+            SharedPtr<Vector<uint8>> aHostBuffer,
             int32 aStride,
             int32 aByteOffset,
             int32 aByteLength);
@@ -21,7 +22,7 @@ namespace Husky::SceneV1
 
         inline int32 GetStride() const { return stride; }
         inline int32 GetByteOffset() const { return byteOffset; }
-        inline const Vector<uint8>& GetHostBuffer() const { return hostBuffer; }
+        inline const SharedPtr<Vector<uint8>>& GetHostBuffer() const { return hostBuffer; }
         inline const RefPtr<Vulkan::Buffer>& GetDeviceBuffer() const { return deviceBuffer; }
 
         bool UploadToDevice(const RefPtr<Vulkan::GraphicsDevice>& device);
@@ -30,7 +31,7 @@ namespace Husky::SceneV1
         int32 byteOffset = 0;
         int32 byteLength = 0;
 
-        Vector<uint8> hostBuffer;
+        SharedPtr<Vector<uint8>> hostBuffer;
         RefPtr<Vulkan::Buffer> deviceBuffer;
     };
 }

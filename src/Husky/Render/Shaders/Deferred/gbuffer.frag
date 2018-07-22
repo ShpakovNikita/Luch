@@ -22,12 +22,6 @@ uniform MaterialPushConstants
 {
     vec4 baseColorFactor;
     vec3 emissiveFactor;
-    bool hasBaseColorTexture;
-    bool hasMetallicRoughnessTexture;
-    bool hasNormalTexture;
-    bool hasOcclusionTexture;
-    bool hasEmissiveTexture;
-    bool isAlphaMask;
     float alphaCutoff;
     float metallicFactor;
     float roughnessFactor;
@@ -36,67 +30,99 @@ uniform MaterialPushConstants
 } material;
 
 layout (location = 0) in vec3 inPositionVS;
-layout (location = 1) in vec3 inNormalVS;
-#ifdef HAS_TANGENT
-layout (location = 2) in vec3 inTangentVS;
+
+#if HAS_NORMAL
+    layout (location = 1) in vec3 inNormalVS;
 #endif
-layout (location = 3) in vec2 inTexCoord;
+
+#if HAS_TANGENT
+    layout (location = 2) in vec3 inTangentVS;
+#endif
+
+#if HAS_TEXCOORD_0
+    layout (location = 3) in vec2 inTexCoord;
+#endif
 
 layout (location = 0) out vec4 outBaseColor;
 layout (location = 1) out vec4 outNormal;
 
-vec3 ExtractNormal(vec3 normalTS, vec3 T, vec3 N)
+vec3 ExtractNormal(vec3 normalTS, mat3 TBN)
 {
     vec3 result = normalTS * 2 - vec3(1.0);
-    vec3 B = -normalize(cross(N, T));
-    mat3 TBN = mat3(T, B, N);
 
     return normalize(TBN * normalTS);
+}
+
+mat3 TangentFrame(vec3 dp1, vec3 dp2, vec3 N, vec2 uv)
+{
+    // get edge vectors of the pixel triangle
+    vec2 duv1 = dFdx(uv);
+    vec2 duv2 = dFdy(uv);
+ 
+    // solve the linear system
+    vec3 dp2perp = cross(dp2, N);
+    vec3 dp1perp = cross(N, dp1);
+    vec3 T = dp2perp * duv1.x + dp1perp * duv2.x;
+    vec3 B = dp2perp * duv1.y + dp1perp * duv2.y;
+ 
+    // construct a scale-invariant frame 
+    float invmax = inversesqrt(max(dot(T, T), dot(B,B)));
+    return mat3(T * invmax, -B * invmax, N);
 }
 
 void main()
 {
     vec3 positionVS = inPositionVS;
-    vec3 normalVS = inNormalVS;
-#ifdef HAS_TANGENT
-    vec3 tangentVS = inTangentVS;
-#else
-    vec3 q1 = dFdx(inPositionVS);
-    vec3 q2 = dFdy(inPositionVS);
-    vec2 st1 = dFdx(inTexCoord);
-    vec2 st2 = dFdy(inTexCoord);
-    vec3 tangentVS = normalize(q1 * st2.t - q2 * st1.t);
-#endif
-    vec2 texCoord = inTexCoord;
 
-    // TODO normal mapping
+    vec3 dp1 = dFdx(positionVS);
+    vec3 dp2 = dFdy(positionVS);
+
+    #if HAS_TEXCOORD_0
+        vec2 texCoord = inTexCoord;
+        #if HAS_NORMAL && HAS_TANGENT
+            vec3 bitangentVS = normalize(cross(inNormalVS, inTangentVS));
+            mat3 TBN = mat3(inTangentVS, bitangentVS, inNormalVS);
+        #else
+            mat3 TBN = TangentFrame(dp1, dp2, inNormalVS, texCoord);
+        #endif
+    #endif
+
+    #if HAS_NORMAL
+        vec3 normalVS = normalize(inNormalVS);
+    #else
+        vec3 normalVS = normalize(cross(dp1, dp2));
+    #endif
+
+    #if HAS_TANGENT
+        vec3 tangentVS = normalize(inTangentVS);
+    #elif HAS_TEXCOORD_0
+        vec3 tangentVS = TBN[0];
+    #endif
+
     vec3 N;
-    if(material.hasNormalTexture)
-    {
-        vec3 normalTS = texture(normalMap, texCoord).xyz;
-        N = ExtractNormal(normalTS, tangentVS, normalVS);
-    }
-    else
-    {
+    #if HAS_NORMAL_TEXTURE && HAS_TEXCOORD_0
+        vec3 normalSample = texture(normalMap, texCoord).xyz;
+        N = ExtractNormal(normalSample, TBN);
+    #else
         N = normalize(normalVS);
-    }
+    #endif
 
-    // Test code
-    N = normalize(normalVS);
-
-    vec4 baseColor = texture(baseColorMap, texCoord);
+    #if HAS_BASE_COLOR_TEXTURE && HAS_TEXCOORD_0
+        vec4 baseColor = texture(baseColorMap, texCoord);
+    #else
+        vec4 baseColor = vec4(1.0, 1.0, 1.0, 1.0);
+    #endif
 
     float metallic = material.metallicFactor;
     float roughness = material.roughnessFactor;
 
-    if(material.hasMetallicRoughnessTexture)
-    {
+    #if HAS_METALLIC_ROUGHNESS_TEXTURE && HAS_TEXCOORD_0
         vec4 metallicRoughness = texture(metallicRoughnessMap, texCoord);
         metallic *= metallicRoughness.b;
         roughness *= clamp(metallicRoughness.g, 0.04, 1.0);
-    }
+    #endif
 
     outBaseColor = baseColor;
-    outNormal.xyz = N;
-    outNormal.a = 1.0;
+    outNormal.xy = N.xy * 0.5 + vec2(0.5);
+    outNormal.zw = vec2(metallic, roughness);
 }
