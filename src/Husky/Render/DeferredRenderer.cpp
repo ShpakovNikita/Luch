@@ -303,7 +303,7 @@ namespace Husky::Render
             gbufferDescriptorSetWrites.WriteCombinedImageDescriptors(
                 frameResources.gbufferDescriptorSet,
                 &preparedScene.lighting.depthStencilBufferBinding,
-                { { frameResources.offscreen.depthBufferView, preparedScene.lighting.depthStencilSampler, vk::ImageLayout::eShaderReadOnlyOptimal } });
+                { { frameResources.offscreen.depthBufferView, preparedScene.lighting.depthBufferSampler, vk::ImageLayout::eShaderReadOnlyOptimal } });
 
             DescriptorSet::Update(gbufferDescriptorSetWrites);
 
@@ -826,7 +826,7 @@ namespace Husky::Render
         lightUniform.spotlightAngle = light->GetSpotlightAngle().value_or(0.0);
         lightUniform.range = light->GetRange().value_or(0.0);
         lightUniform.intensity = light->GetIntensity();
-        lightUniform.enabled = true ;
+        lightUniform.enabled = true;
 
         int32 offset = sizeof(LightUniform)*light->GetIndex();
         memcpy((Byte*)scene.lighting.lightsBuffer->GetMappedMemory() + offset, &lightUniform, sizeof(LightUniform));

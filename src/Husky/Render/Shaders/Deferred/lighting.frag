@@ -35,7 +35,8 @@ layout (set = 0, binding = 0) uniform CameraUniformBufferObject
 {
     mat4x4 view;
     mat4x4 projection;
-    vec3 positionWS;
+    vec4 positionWS;
+    vec2 zMinMax;
 } camera;
 
 layout (set = 1, binding = 0) uniform LightBufferObject
@@ -186,6 +187,33 @@ vec3 ExtractNormal(vec3 normalTS, vec3 T, vec3 N)
     return normalize(TBN * normalTS);
 }
 
+// This functions are for perspectiveRH_ZO matrix from glm
+float LinearDepth(float zNear, float zFar, float depth)
+{
+    float result = zNear - zFar;
+    result /= zFar * (zNear*depth - 1);
+    return result;
+}
+
+// https://www.khronos.org/registry/vulkan/specs/1.1-khr-extensions/html/vkspec.html#vertexpostproc-coord-transform
+vec3 ScreenToNDC(vec2 fragCoord, float depth, vec2 size)
+{
+    vec2 pd = 2 * fragCoord / size - vec2(1.0);
+    return vec3(pd, depth);
+}
+
+vec4 NDCToView(vec3 ndc, mat4 invProj)
+{
+    vec4 result = invProj * vec4(ndc, 1.0);
+    result.xyz /= result.w;
+    return result;
+}
+
+vec3 PackNormalizedVector(vec3 v)
+{
+    return v * 0.5 + vec3(0.5);
+}
+
 void main()
 {
     vec2 texCoord = inTexCoord;
@@ -205,44 +233,75 @@ void main()
     // Otherwise (for metals), take base color to "tint" reflections
     F0 = mix(F0, baseColorSample.rgb, metallic);
 
+    // Depth buffer MUST BE the same size as MRTs
+    vec2 framebufferSize = textureSize(depthBuffer, 0);
+    vec2 fragCoord = gl_FragCoord.xy;
     float depth = texture(depthBuffer, texCoord).r;
+
+    vec3 ndc = ScreenToNDC(fragCoord, depth, framebufferSize);
+    mat4 inverseProjection = inverse(camera.projection);
+    vec3 P = NDCToView(ndc, inverseProjection).xyz;
+
+    vec4 eyePosVS = vec4(vec3(0), 1);
 
     LightingResult lightingResult = { vec3(0), vec3(0) };
 
-    for(int i = 0; i < MAX_LIGHTS_COUNT; i++)
-    {
-        // Light light = lights.lights[i];
-        // if(!light.enabled)
-        // {
-        //     continue;
-        // }
+    //for(int i = 0; i < MAX_LIGHTS_COUNT; i++)
+    // for(int i = 0; i < 1; i++)
+    // {
+    //     Light light = lights.lights[i];
+    //     if(!light.enabled)
+    //     {
+    //         continue;
+    //     }
 
-        // LightingResult intermediateResult = { vec3(0), vec3(0) };
+    //     LightingResult intermediateResult = { vec3(0), vec3(0) };
 
-        // switch(light.type)
-        // {
-        // case LIGHT_DIRECTIONAL:
-        //     intermediateResult = ApplyDirectionalLight(light, V, N, F0, metallic, roughness);
-        //     break;
-        // case LIGHT_POINT:
-        //     intermediateResult = ApplyPointlLight(light, V, positionVS, N, F0, metallic, roughness);
-        //     break;
-        // case LIGHT_SPOT:
-        //     intermediateResult = ApplyPointlLight(light, V, positionVS, N, F0, metallic, roughness);
-        //     break;
-        // default:
-        //     discard;
-        // }
+    //     vec3 V = normalize((eyePosVS - light.positionVS).xyz);
 
-        // lightingResult.diffuse += intermediateResult.diffuse;
-        // lightingResult.specular += intermediateResult.specular;
-    }
+    //     switch(light.type)
+    //     {
+    //     case LIGHT_DIRECTIONAL:
+    //         intermediateResult = ApplyDirectionalLight(light, V, N, F0, metallic, roughness);
+    //         break;
+    //     case LIGHT_POINT:
+    //         intermediateResult = ApplyPointlLight(light, V, P, N, F0, metallic, roughness);
+    //         break;
+    //     // case LIGHT_SPOT:
+    //     //     intermediateResult = ApplyPointlLight(light, V, positionVS, N, F0, metallic, roughness);
+    //     //     break;
+    //     default:
+    //         discard;
+    //     }
 
-    //vec3 resultColor = baseColor.xyz * (lightingResult.diffuse + lightingResult.specular);
+    //     lightingResult.diffuse += intermediateResult.diffuse;
+    //     lightingResult.specular += intermediateResult.specular;
+    // }
+
+    //vec3 resultColor = baseColorSample.xyz * (lightingResult.diffuse + lightingResult.specular);
     //vec3 resultColor = baseColorSample.xyz;
     //vec3 resultColor = 0.5 * (vec3(1, 1, 1) +  normalMapSample.xyz);
-    vec3 resultColor = vec3(0);
-    resultColor.x = depth;
+    //vec3 resultColor = vec3(0);
+    //resultColor.x = depth;
 
-    outColor = vec4(depth, depth, depth, 1.0);
+    Light light = lights.lights[0];
+
+    vec3 V = normalize((eyePosVS - light.positionVS).xyz);
+
+    vec3 color = light.color.xyz;
+
+    vec3 L = light.positionVS.xyz - P;
+    float dist = length(L);
+    L = L/dist;
+    float attenuation = Attenuation(light, dist);
+
+    float NdotL = clamp(dot(N, L), 0.0, 1.0);
+
+    vec3 F = F_Schlick(NdotL, F0);
+    vec3 kD = (1 - metallic)*(vec3(1.0) - F);
+
+    vec3 diffuse = kD * DiffuseLighting(color, L, N) * light.intensity * attenuation;
+    vec3 specular = SpecularLighting(color, V, L, N, F, roughness) * light.intensity * attenuation;
+
+    outColor = vec4(vec3(dist)/1000, 1.0);
 }
