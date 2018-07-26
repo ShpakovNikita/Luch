@@ -145,6 +145,10 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     lightNode->SetLight(light);
 
+    SceneV1::TransformProperties lightTransform;
+    lightTransform.translation = Vec3{ -0.5, 2, 0 };
+    lightNode->SetTransform(lightTransform);
+
     scene->AddNode(lightNode);
 
     auto [prepareSceneResult, prepScene] = deferredRenderer->PrepareScene(scene);

@@ -187,29 +187,47 @@ vec3 ExtractNormal(vec3 normalTS, vec3 T, vec3 N)
     return normalize(TBN * normalTS);
 }
 
-// This functions are for perspectiveRH_ZO matrix from glm
-float LinearDepth(float zNear, float zFar, float depth)
+// These functions are for projection matrices that look like
+// ??  ??  ??  ??
+// ??  ??  ??  ??
+//  0   0   A   B
+//  0   0   C   0
+
+// VS - view space
+// CS - clip space
+// NDC - normalized device coordinates
+float DepthToNDC(float depth, float minDepth, float maxDepth)
 {
-    float result = zNear - zFar;
-    result /= zFar * (zNear*depth - 1);
+    float result = depth - minDepth;
+    result /= maxDepth - minDepth;
+    return result;
+}
+
+float HomogenousCS(float depthNDC, float A, float B, float C)
+{
+    float result = B;
+    result /= (depthNDC - A / C);
     return result;
 }
 
 // https://www.khronos.org/registry/vulkan/specs/1.1-khr-extensions/html/vkspec.html#vertexpostproc-coord-transform
-vec3 ScreenToNDC(vec2 fragCoord, float depth, vec2 size)
+vec2 FragCoordToNDC(vec2 fragCoord, vec2 size)
 {
     vec2 pd = 2 * fragCoord / size - vec2(1.0);
-    return vec3(pd, depth);
+    return pd;
 }
 
-vec4 NDCToView(vec3 ndc, mat4 invProj)
+vec4 PositionNDCtoCS(vec2 positionNDC, float depthNDC, float wCS)
 {
-    vec4 result = invProj * vec4(ndc, 1.0);
-    result.xyz /= result.w;
-    return result;
+    return vec4(vec3(positionNDC, depthNDC) * wCS, wCS);
 }
 
-vec3 PackNormalizedVector(vec3 v)
+vec4 PositionCStoVS(vec4 positionCS, mat4x4 inverseProjection)
+{
+    return inverseProjection * positionCS;
+}
+
+vec3 PackVector(vec3 v)
 {
     return v * 0.5 + vec3(0.5);
 }
@@ -221,7 +239,7 @@ void main()
     vec4 normalMapSample = texture(normalMap, texCoord);
     vec2 compressedNormal = normalMapSample.xy * 2 - vec2(1.0);
     float normalZ = sqrt(1 - compressedNormal.x * compressedNormal.x - compressedNormal.y * compressedNormal.y);
-    vec3 N = vec3(compressedNormal.x, compressedNormal.y, -normalZ);
+    vec3 N = vec3(compressedNormal.x, compressedNormal.y, normalZ);
 
     vec4 baseColorSample = texture(baseColorMap, texCoord);
 
@@ -238,9 +256,17 @@ void main()
     vec2 fragCoord = gl_FragCoord.xy;
     float depth = texture(depthBuffer, texCoord).r;
 
-    vec3 ndc = ScreenToNDC(fragCoord, depth, framebufferSize);
+    float A = camera.projection[2][2];
+    float B = camera.projection[3][2];
+    float C = camera.projection[2][3];
     mat4 inverseProjection = inverse(camera.projection);
-    vec3 P = NDCToView(ndc, inverseProjection).xyz;
+
+    float depthNDC = DepthToNDC(depth, 0, 1);
+    float wCS = HomogenousCS(depthNDC, A, B, C);
+    vec2 xyNDC = FragCoordToNDC(gl_FragCoord.xy, framebufferSize);
+    vec4 positionCS = PositionNDCtoCS(xyNDC, depthNDC, wCS);
+
+    vec4 P = PositionCStoVS(positionCS, inverseProjection);
 
     vec4 eyePosVS = vec4(vec3(0), 1);
 
@@ -286,11 +312,11 @@ void main()
 
     Light light = lights.lights[0];
 
-    vec3 V = normalize((eyePosVS - light.positionVS).xyz);
+    vec3 V = normalize(eyePosVS.xyz - P.xyz);
 
     vec3 color = light.color.xyz;
 
-    vec3 L = light.positionVS.xyz - P;
+    vec3 L = light.positionVS.xyz - P.xyz;
     float dist = length(L);
     L = L/dist;
     float attenuation = Attenuation(light, dist);
@@ -300,8 +326,9 @@ void main()
     vec3 F = F_Schlick(NdotL, F0);
     vec3 kD = (1 - metallic)*(vec3(1.0) - F);
 
-    vec3 diffuse = kD * DiffuseLighting(color, L, N) * light.intensity * attenuation;
+    vec3 diffuse = kD * DiffuseLighting(color, L, N) * light.intensity;// * attenuation;
     vec3 specular = SpecularLighting(color, V, L, N, F, roughness) * light.intensity * attenuation;
 
-    outColor = vec4(vec3(dist)/1000, 1.0);
+    outColor = vec4(P.xyz / vec3(20, 20, 20) + vec3(0.5), 1.0);
+    //outColor = vec4(baseColorSample.xyz * DiffuseLighting(color, L, N), 1.0);
 }
