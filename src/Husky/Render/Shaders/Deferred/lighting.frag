@@ -65,7 +65,7 @@ float G_CookTorranceGGX(vec3 V, vec3 N, vec3 H, vec3 L)
     float NdotH = dot(N, N);
     float NdotV = dot(N, V);
     float NdotL = dot(N, L);
-    
+
     float intermediate = min(NdotV, NdotL);
 
     float g = 2 * NdotH * intermediate / VdotH;
@@ -113,9 +113,9 @@ LightingResult ApplyDirectionalLight(Light light, vec3 V, vec3 N, vec3 F0, float
 
     vec3 L = normalize(camera.view*light.directionWS).xyz;
 
-    float NdotL = clamp(dot(N, L), 0.0, 1.0);
+    float NdotV = clamp(dot(N, V), 0.0, 1.0);
 
-    vec3 F = F_Schlick(NdotL, F0);
+    vec3 F = F_Schlick(NdotV, F0);
     vec3 kD = (1 - metallic)*(vec3(1.0) - F);
 
     result.diffuse = kD * DiffuseLighting(color, L, N) * light.intensity;
@@ -135,9 +135,9 @@ LightingResult ApplyPointlLight(Light light, vec3 V, vec3 P, vec3 N, vec3 F0, fl
     L = L/dist;
     float attenuation = Attenuation(light, dist);
 
-    float NdotL = clamp(dot(N, L), 0.0, 1.0);
+    float NdotV = clamp(dot(N, V), 0.0, 1.0);
 
-    vec3 F = F_Schlick(NdotL, F0);
+    vec3 F = F_Schlick(NdotV, F0);
     vec3 kD = (1 - metallic)*(vec3(1.0) - F);
 
     result.diffuse = kD * DiffuseLighting(color, L, N) * light.intensity * attenuation;
@@ -243,8 +243,8 @@ void main()
 
     vec4 baseColorSample = texture(baseColorMap, texCoord);
 
-    float metallic = normalMapSample.z; // TODO
-    float roughness = normalMapSample.w; // TODO
+    float metallic = normalMapSample.z;
+    float roughness = 0.5;//normalMapSample.w;
 
     vec3 F0 = vec3(0.04);
     // If material is dielectrict, it's reflection coefficient can be approximated by 0.04
@@ -316,19 +316,32 @@ void main()
 
     vec3 color = light.color.xyz;
 
-    vec3 L = light.positionVS.xyz - P.xyz;
+    vec3 L = vec3(light.positionVS.x, -light.positionVS.y, light.positionVS.z) - P.xyz;
     float dist = length(L);
     L = L/dist;
     float attenuation = Attenuation(light, dist);
 
     float NdotL = clamp(dot(N, L), 0.0, 1.0);
 
-    vec3 F = F_Schlick(NdotL, F0);
+    vec3 H = normalize(V + L);
+
+    float NdotV = clamp(dot(N, V), 0.0, 1.0);
+    float NdotH = clamp(dot(N, H), 0.0, 1.0);
+
+    float D = D_GGX(NdotH, roughness);
+    vec3 F = F_Schlick(NdotV, F0);
+    float G = G_CookTorranceGGX(V, N, H, L);
+    float den = 4 * NdotV * NdotL + 0.001;
+
+    vec3 specular = color * D * F * G / den;
+
     vec3 kD = (1 - metallic)*(vec3(1.0) - F);
 
     vec3 diffuse = kD * DiffuseLighting(color, L, N) * light.intensity;// * attenuation;
-    vec3 specular = SpecularLighting(color, V, L, N, F, roughness) * light.intensity * attenuation;
+    //vec3 specular = SpecularLighting(color, V, L, N, F, roughness) * light.intensity * attenuation;
 
-    outColor = vec4(P.xyz / vec3(20, 20, 20) + vec3(0.5), 1.0);
+    outColor = vec4(baseColorSample.xyz * (diffuse + specular), 1.0);
+    //outColor = vec4(D, G/4, D * G / den, 1.0);
+
     //outColor = vec4(baseColorSample.xyz * DiffuseLighting(color, L, N), 1.0);
 }

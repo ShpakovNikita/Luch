@@ -53,16 +53,14 @@ void main()
 {
     mat4 viewModel = camera.view * mesh.model;
 
-    vec3 truePositionLS = vec3(positionLS.x, -positionLS.y, positionLS.z);
-    vec4 positionWS = mesh.model * vec4(truePositionLS, 1.0);
-    vec4 positionVS = viewModel * vec4(truePositionLS, 1.0);
+    vec4 positionVS = viewModel * vec4(positionLS.x, -positionLS.y, positionLS.z, 1.0);
+
     outPositionVS = positionVS.xyz;
 
     mat4x4 normalMatrix = transpose(inverse(viewModel));
 
     #if HAS_NORMAL
-        vec3 trueNormal = vec3(normalLS.x, -normalLS.y, normalLS.z);
-        outNormalVS = (normalMatrix * vec4(trueNormal, 0.0)).xyz;
+        outNormalVS = (normalMatrix * vec4(normalLS, 0.0)).xyz;
         outNormalVS.y = -outNormalVS.y;
     #endif
 
@@ -71,6 +69,7 @@ void main()
     #endif
 
     #if HAS_TANGENT
+        // Normal matrix or viewmodel matrix?
         outTangentVS.xyz = (normalMatrix * vec4(tangentLS.xyz, 0.0)).xyz;
         #if HAS_BITANGENT_DIRECTION
             outTangentVS.w = tangentLS.w;
