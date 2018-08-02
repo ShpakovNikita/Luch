@@ -693,8 +693,8 @@ namespace Husky::Render
 
     void DeferredRenderer::PrepareLights(DeferredPreparedScene& scene)
     {
-        int32 lightsCount = scene.lights.size();
-        int32 lightsBufferSize = sizeof(LightUniform) * lightsCount;
+        constexpr int MAX_LIGHTS_COUNT = 8;
+        int32 lightsBufferSize = sizeof(LightUniform) * MAX_LIGHTS_COUNT;
 
         auto[createLightsBufferResult, createdLightsBuffer] = context->device->CreateBuffer(
             lightsBufferSize,
@@ -817,6 +817,9 @@ namespace Husky::Render
         LightUniform lightUniform;
 
         lightUniform.positionWS = transform * Vec4{ 0.0, 0.0, 0.0, 1.0 };
+        // TODO get rid of this workaround
+        lightUniform.positionWS.y = -lightUniform.positionWS.y;
+
         lightUniform.directionWS = transform * Vec4{ light->GetDirection().value_or(Vec3{0, 0, 1}), 0.0 };
         lightUniform.positionVS = viewTransform * lightUniform.positionWS;
         lightUniform.directionVS = viewTransform * lightUniform.directionWS;

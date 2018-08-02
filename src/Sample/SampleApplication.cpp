@@ -138,18 +138,56 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     auto& scene = scenes[0];
 
-    auto lightNode = MakeRef<SceneV1::Node>();
-    auto light = MakeRef<SceneV1::Light>();
+    auto lightNode1 = MakeRef<SceneV1::Node>();
+    lightNode1->SetName("ln1");
+    auto light1 = MakeRef<SceneV1::Light>();
 
-    light->SetType(SceneV1::LightType::Point);
+    light1->SetType(SceneV1::LightType::Spot);
+    light1->SetRange(15);
+    light1->SetIndex(0);
+    light1->SetColor({1.0, 0.0, 0.0});
+    light1->SetDirection({ 0.995037, -0.0995037, 0 });
+    light1->SetSpotlightAngle(0.3);
+    lightNode1->SetLight(light1);
 
-    lightNode->SetLight(light);
+    auto lightNode2 = MakeRef<SceneV1::Node>();
+    lightNode2->SetName("ln2");
+    auto light2 = MakeRef<SceneV1::Light>();
 
-    SceneV1::TransformProperties lightTransform;
-    lightTransform.translation = Vec3{ -0.5, 2, 0 };
-    lightNode->SetTransform(lightTransform);
+    light2->SetType(SceneV1::LightType::Spot);
+    light2->SetRange(15);
+    light2->SetIndex(1);
+    light2->SetColor({ 0.0, 0.0, 1.0 });
+    light2->SetDirection({ 0.995037, 0.0995037, 0 });
+    light2->SetSpotlightAngle(0.3);
 
-    scene->AddNode(lightNode);
+    lightNode2->SetLight(light2);
+
+    auto lightNode3 = MakeRef<SceneV1::Node>();
+    lightNode3->SetName("ln3");
+    auto light3 = MakeRef<SceneV1::Light>();
+
+    light3->SetType(SceneV1::LightType::Point);
+    light3->SetRange(15);
+    light3->SetIndex(2);
+
+    lightNode3->SetLight(light3);
+
+    SceneV1::TransformProperties light1Transform;
+    light1Transform.translation = Vec3{ 0, 2, 0 };
+    lightNode1->SetTransform(light1Transform);
+
+    SceneV1::TransformProperties light2Transform;
+    light2Transform.translation = Vec3{ 0, 2, 0 };
+    lightNode2->SetTransform(light2Transform);
+
+    SceneV1::TransformProperties light3Transform;
+    light3Transform.translation = Vec3{ 0, 2, 0 };
+    lightNode3->SetTransform(light3Transform);
+
+    scene->AddNode(lightNode1);
+    scene->AddNode(lightNode2);
+    scene->AddNode(lightNode3);
 
     auto [prepareSceneResult, prepScene] = deferredRenderer->PrepareScene(scene);
     HUSKY_ASSERT(prepareSceneResult);

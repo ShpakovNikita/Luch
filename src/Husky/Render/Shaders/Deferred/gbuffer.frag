@@ -4,7 +4,7 @@
 
 #define PI 3.1415926538
 
-layout (set = 0, binding = 0) uniform CameraUniformBufferObject
+layout (std140, set = 0, binding = 0) uniform CameraUniformBufferObject
 {
     mat4x4 view;
     mat4x4 projection;

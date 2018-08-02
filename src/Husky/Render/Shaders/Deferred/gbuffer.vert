@@ -2,14 +2,14 @@
 #extension GL_ARB_shading_language_420pack : enable
 #extension GL_ARB_separate_shader_objects : enable
 
-layout (set = 0, binding = 0) uniform CameraUniformBufferObject
+layout (std140, set = 0, binding = 0) uniform CameraUniformBufferObject
 {
     mat4x4 view;
     mat4x4 projection;
     vec3 positionWS;
 } camera;
 
-layout (set = 1, binding = 0) uniform MeshUniformBufferObject
+layout (std140, set = 1, binding = 0) uniform MeshUniformBufferObject
 {
     mat4x4 model;
 } mesh;

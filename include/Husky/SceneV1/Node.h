@@ -10,9 +10,9 @@ namespace Husky::SceneV1
 {
     struct TransformProperties
     {
-        Quaternion rotation;
+        Quaternion rotation = { 1.0f, 0.0f, 0.0f, 0.0f };
         Vec3 scale = { 1.0f, 1.0f, 1.0f };
-        Vec3 translation = { 0, 0, 0 };
+        Vec3 translation = { 0.0f, 0.0f, 0.0f };
     };
 
     class Node : public BaseObject
