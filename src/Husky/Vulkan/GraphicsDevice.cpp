@@ -33,12 +33,17 @@ namespace Husky::Vulkan
         PhysicalDevice* aPhysicalDevice,
         vk::Device aDevice,
         QueueInfo&& aQueueInfo,
-        vk::AllocationCallbacks aAllocationCallbacks)
+        Husky::Optional<vk::AllocationCallbacks> aAllocationCallbacks)
         : physicalDevice(aPhysicalDevice)
         , device(aDevice)
         , queueInfo(std::move(aQueueInfo))
-        , allocationCallbacks(aAllocationCallbacks)
+        , callbacks(aAllocationCallbacks)
+        , allocationCallbacks(nullptr)
     {
+        if(callbacks.has_value())
+        {
+            allocationCallbacks = *callbacks;
+        }
     }
 
     GraphicsDevice::~GraphicsDevice()

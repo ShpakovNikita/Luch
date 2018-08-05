@@ -1,6 +1,6 @@
 #include "VulkanAllocator.h"
 
-#ifdef _WIN32
+#if _WIN32
 #include <malloc.h>
 #endif
 

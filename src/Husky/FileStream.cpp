@@ -7,7 +7,7 @@ namespace Husky
 FileStream::FileStream(const FilePath& filename, FileOpenModes aMode)
     : mode(aMode)
 {
-    canonicalPath = std::experimental::filesystem::canonical(filename);
+    canonicalPath = filename;//std::experimental::filesystem::canonical(filename);
     fstream.open(canonicalPath, ToStdOpenMode(mode));
 }
 

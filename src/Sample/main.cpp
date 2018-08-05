@@ -14,12 +14,12 @@ int32 main(int32 argc, char8** argv)
     }
 
     bool initialized = application.Initialize(args);
-    HUSKY_ASSERT(initialized, "Application failed to initialize");
+    HUSKY_ASSERT_MSG(initialized, "Application failed to initialize");
 
     application.Run();
 
     bool deinitialized = application.Deinitialize();
-    HUSKY_ASSERT(deinitialized, "Application failed to deinitialize");
+    HUSKY_ASSERT_MSG(deinitialized, "Application failed to deinitialize");
 
     return 0;
 }

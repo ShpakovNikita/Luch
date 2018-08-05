@@ -4,7 +4,7 @@
 #include <Husky/glTF2/glTFParser.h>
 #include <Husky/glTF2/glTF.h>
 #include <Husky/Vulkan.h>
-#include <Husky/Vulkan/GLSLShaderCompiler.h>
+#include <Husky/Vulkan/GlslShaderCompiler.h>
 #include <Husky/Vulkan/GraphicsDevice.h>
 #include <Husky/Vulkan/PhysicalDevice.h>
 #include <Husky/Vulkan/Surface.h>
@@ -28,31 +28,36 @@ class SampleApplication
 {
 public:
     SampleApplication() = default;
+    
     bool Initialize(const Husky::Vector<Husky::String>& args) override;
     bool Deinitialize() override;
     void Run() override;
 
-    const Husky::String& GetApplicationName() const
+    const Husky::String& GetApplicationName() const override
     {
         static Husky::String applicationName = "Sample";
         return applicationName;
     }
 
-    const Husky::Version& GetApplicationVersion() const
+    const Husky::Version& GetApplicationVersion() const override
     {
         static Husky::Version applicationVersion{0, 1, 0};
         return applicationVersion;
     }
 
-    const Husky::String& GetMainWindowTitle() const
+    const Husky::String& GetMainWindowTitle() const override
     {
         static Husky::String windowTitle = "Sample";
         return windowTitle;
     }
 private:
-    vk::ResultValue<vk::Instance> CreateVulkanInstance(const vk::AllocationCallbacks& allocationCallbacks);
-    vk::ResultValue<vk::DebugReportCallbackEXT> CreateDebugCallback(vk::Instance& instance, const vk::AllocationCallbacks& allocationCallbacks);
-    void DestroyDebugCallback(vk::Instance& instance, vk::DebugReportCallbackEXT& callback, const vk::AllocationCallbacks& allocationCallbacks);
+    vk::ResultValue<vk::Instance> CreateVulkanInstance();
+
+    vk::ResultValue<vk::DebugReportCallbackEXT> CreateDebugCallback(vk::Instance& instance);
+
+    void DestroyDebugCallback(
+        vk::Instance& instance,
+        vk::DebugReportCallbackEXT& callback);
 
     vk::PhysicalDevice ChoosePhysicalDevice(const Husky::Vector<vk::PhysicalDevice>& devices);
 
@@ -66,22 +71,6 @@ private:
 
     std::tuple<HINSTANCE, HWND> CreateMainWindow(const Husky::String& title, Husky::int32 width, Husky::int32 height);
 #endif
-
-    vk::ResultValue<vk::Image> CreateDepthStencilBufferForSwapchain(
-        vk::Device& device,
-        vk::Format format,
-        Husky::uint32 graphicsQueueFamilyIndex,
-        const vk::PhysicalDeviceMemoryProperties& physicalDeviceMemoryProperties,
-        const Husky::Vulkan::SwapchainCreateInfo& swapchainCreateInfo,
-        const vk::AllocationCallbacks& allocationCallbacks
-    );
-
-    vk::ResultValue<vk::ImageView> CreateDepthStencilBufferViewForSwapchain(
-        vk::Device& device,
-        vk::Format format,
-        vk::Image& depthStencilBuffer,
-        const vk::AllocationCallbacks& allocationCallbacks
-    );
 
     Husky::Vector<const Husky::char8*> GetRequiredInstanceExtensionNames() const;
     Husky::Vector<const Husky::char8*> GetValidationLayerNames() const;
@@ -106,10 +95,11 @@ private:
     Husky::Vulkan::PhysicalDevice physicalDevice;
     Husky::Vulkan::Surface surface;
     VulkanAllocator allocator;
-    vk::AllocationCallbacks allocationCallbacks;
     vk::Instance instance;
     vk::DebugReportCallbackEXT debugCallback;
     Husky::Render::DeferredPreparedScene preparedScene;
+
+    Husky::Optional<vk::AllocationCallbacks> allocationCallbacks;
 
     Husky::UniquePtr<Husky::Render::ForwardRenderer> forwardRenderer;
     Husky::UniquePtr<Husky::Render::DeferredRenderer> deferredRenderer;

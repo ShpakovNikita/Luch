@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstdint>
+#include <cstddef>
 #include <map>
 #include <memory>
 #include <optional>
@@ -13,8 +14,6 @@
 #include <unordered_set>
 #include <variant>
 #include <vector>
-#include <experimental/filesystem>
-//#include <Husky/vector_set.h>
 
 namespace Husky
 {
@@ -73,6 +72,6 @@ using Tuple = std::tuple<Args...>;
 template<typename ... Args>
 using Variant = std::variant<Args...>;
 
-using FilePath = std::experimental::filesystem::path;
+using FilePath = String;//std::experimental::filesystem::path;
 
 }

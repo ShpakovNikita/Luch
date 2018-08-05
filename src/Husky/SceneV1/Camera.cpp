@@ -46,7 +46,7 @@ namespace Husky::SceneV1
 
         if (zfar.has_value())
         {
-            return glm::perspective(yfov, aspect, znear, zfar.value());
+            return glm::perspective(yfov, aspect, znear, *zfar);
         }
         else
         {

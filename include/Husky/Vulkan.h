@@ -21,7 +21,7 @@ inline uint64 ToVulkanTimeout(Optional<Timeout> timeout)
 {
     if (timeout.has_value())
     {
-        return timeout.value().count();
+        return timeout->count();
     }
     else
     {
@@ -33,7 +33,7 @@ inline uint32 ToVulkanSize(size_t size)
 {
     if(size > std::numeric_limits<uint32>::max())
     {
-        HUSKY_ASSERT(false, "Too big");
+        HUSKY_ASSERT_MSG(false, "Too big");
     }
 
     return static_cast<uint32>(size);

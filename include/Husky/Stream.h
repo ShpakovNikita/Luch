@@ -51,7 +51,7 @@ public:
     virtual bool IsWriteable() const = 0;
     virtual void Close() = 0;
 
-    virtual ~Stream() = 0 {};
+    virtual ~Stream() {};
 protected:
     Stream() = default;
 private:

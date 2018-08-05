@@ -112,6 +112,7 @@ namespace Husky::Render
         }
 
         context->swapchain = std::move(createdSwapchain);
+        return true;
     }
 
     bool ForwardRenderer::Deinitialize()
@@ -157,10 +158,10 @@ namespace Husky::Render
         auto fragmentShaderSource = LoadShaderSource(".\\Shaders\\pbr.frag");
 
         auto vertexShaderCompiled = context->shaderCompiler.TryCompileShader(ShaderStage::Vertex, vertexShaderSource, preparedScene.vertexShaderBytecode, {});
-        HUSKY_ASSERT(vertexShaderCompiled, "Vertex shader failed to compile");
+        HUSKY_ASSERT_MSG(vertexShaderCompiled, "Vertex shader failed to compile");
 
         auto fragmentShaderCompiled = context->shaderCompiler.TryCompileShader(ShaderStage::Fragment, fragmentShaderSource, preparedScene.fragmentShaderBytecode, {});
-        HUSKY_ASSERT(fragmentShaderCompiled, "Fragment shader failed to compile");
+        HUSKY_ASSERT_MSG(fragmentShaderCompiled, "Fragment shader failed to compile");
 
         auto[createVertexShaderModuleResult, createdVertexShaderModule] = context->device->CreateShaderModule(
             preparedScene.vertexShaderBytecode.data(),
@@ -455,7 +456,7 @@ namespace Husky::Render
         {
             if (node->GetCamera() != nullptr)
             {
-                HUSKY_ASSERT(preparedScene.cameraNode == nullptr, "Only one camera node is allowed");
+                HUSKY_ASSERT_MSG(preparedScene.cameraNode == nullptr, "Only one camera node is allowed");
                 preparedScene.cameraNode = node;
                 PrepareCameraNode(node, preparedScene);
             }
@@ -605,7 +606,7 @@ namespace Husky::Render
             PrepareLight(light, scene);
         }
 
-        HUSKY_ASSERT(node->GetChildren().empty(), "Don't add children to light nodes");
+        HUSKY_ASSERT_MSG(node->GetChildren().empty(), "Don't add children to light nodes");
     }
 
     void Husky::Render::ForwardRenderer::PrepareNode(const RefPtr<SceneV1::Node>& node, PreparedScene& scene)
@@ -752,13 +753,27 @@ namespace Husky::Render
 
         Mat4x4 localTransformMatrix;
         const auto& localTransform = node->GetTransform();
-        if (std::holds_alternative<Mat4x4>(localTransform))
+//        if (std::holds_alternative<Mat4x4>(localTransform))
+//        {
+//            localTransformMatrix = std::get<Mat4x4>(localTransform);
+//        }
+//        else
+//        {
+//            const auto& transformProperties = std::get<SceneV1::TransformProperties>(localTransform);
+//
+//            localTransformMatrix
+//                = glm::translate(transformProperties.translation)
+//                * glm::toMat4(transformProperties.rotation)
+//                * glm::scale(transformProperties.scale);
+//        }
+
+        if (localTransform.hasMatrix)
         {
-            localTransformMatrix = std::get<Mat4x4>(localTransform);
+            localTransformMatrix = localTransform.matrix;
         }
         else
         {
-            const auto& transformProperties = std::get<SceneV1::TransformProperties>(localTransform);
+            const auto& transformProperties = localTransform.properties;
 
             localTransformMatrix
                 = glm::translate(transformProperties.translation)

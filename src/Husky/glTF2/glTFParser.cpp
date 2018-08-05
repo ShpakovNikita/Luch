@@ -168,6 +168,18 @@ Vector<T> ParseArray(const json& j)
     return result;
 }
 
+template<typename T>
+T ParseBuiltin(const json& j, const char8* key)
+{
+    return j[key].get<T>();
+}
+
+template<typename T>
+T ParseBuiltin(const json& j)
+{
+    return j.get<T>();
+}
+
 template<typename T, T(*Function)(const json&)>
 Vector<T> ParseArrayOrEmpty(const json& j, const char8* key)
 {
@@ -226,18 +238,6 @@ template<typename T>
 Optional<T> ParseBuiltinOptional(const json& j, const char8* key)
 {
     return ParseOptional<T, ParseBuiltin<T>>(j, key);
-}
-
-template<typename T>
-T ParseBuiltin(const json& j, const char8* key)
-{
-    return j[key].get<T>();
-}
-
-template<typename T>
-T ParseBuiltin(const json& j)
-{
-    return j.get<T>();
 }
 
 template<typename T>
@@ -348,7 +348,7 @@ BufferView ParseBufferView(const json& j)
     Optional<uint32> target = ParseBuiltinOptional<uint32>(j, "target");
     if (target.has_value())
     {
-        bufferView.target = (BufferType)target.value();
+        bufferView.target = (BufferType)*target;
     }
 
     bufferView.name = ParseName(j);

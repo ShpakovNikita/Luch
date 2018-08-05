@@ -132,9 +132,9 @@ namespace Husky::SceneV1::Loader
         RefPtr<Mesh> mesh;
         if (node.mesh.has_value())
         {
-            HUSKY_ASSERT(!node.camera.has_value(), "Node should have either mesh or camera, not both");
+            HUSKY_ASSERT_MSG(!node.camera.has_value(), "Node should have either mesh or camera, not both");
 
-            mesh = loadedMeshes[node.mesh.value()];
+            mesh = loadedMeshes[*node.mesh];
             sceneProperties->meshes.insert(mesh);
 
             for (const auto& primitive : mesh->GetPrimitives())
@@ -183,8 +183,8 @@ namespace Husky::SceneV1::Loader
         RefPtr<Camera> camera;
         if (node.camera.has_value())
         {
-            HUSKY_ASSERT(!node.mesh.has_value(), "Node should have either mesh or camera, not both");
-            auto cameraIndex = node.camera.value();
+            HUSKY_ASSERT_MSG(!node.mesh.has_value(), "Node should have either mesh or camera, not both");
+            auto cameraIndex = *node.camera;
             camera = loadedCameras[cameraIndex];
             sceneProperties->cameras.insert(camera);
         }
@@ -195,7 +195,7 @@ namespace Husky::SceneV1::Loader
 
         if(node.matrix.has_value())
         {
-            transform = node.matrix.value();
+            transform = *node.matrix;
         }
         else
         {
@@ -278,19 +278,19 @@ namespace Husky::SceneV1::Loader
 
             if (bufferViewIndex.has_value())
             {
-                const auto& bufferView = root->bufferViews[bufferViewIndex.value()];
+                const auto& bufferView = root->bufferViews[*bufferViewIndex];
 
                 int32 stride;
                 if (bufferView.byteStride.has_value())
                 {
-                    stride = bufferView.byteStride.value();
+                    stride = *bufferView.byteStride;
                 }
                 else
                 {
                     stride = CalculateStride(attribute.componentType, attribute.attributeType);
                 }
 
-                auto it = vertexBuffersMap.find(bufferViewIndex.value());
+                auto it = vertexBuffersMap.find(*bufferViewIndex);
                 if (it != vertexBuffersMap.end())
                 {
                     vb = it->second.buffer;
@@ -306,7 +306,7 @@ namespace Husky::SceneV1::Loader
                         bufferView.byteOffset,
                         bufferView.byteLength);
 
-                    vertexBuffersMap[bufferViewIndex.value()] = BufferWithIndex{ vb, currentVertexBufferIndex };
+                    vertexBuffersMap[*bufferViewIndex] = BufferWithIndex{ vb, currentVertexBufferIndex };
                     attribute.vertexBufferIndex = currentVertexBufferIndex;
 
                     currentVertexBufferIndex++;
@@ -324,13 +324,13 @@ namespace Husky::SceneV1::Loader
         RefPtr<IndexBuffer> indexBuffer;
         if (primitive.indices.has_value())
         {
-            indexBuffer = MakeIndexBuffer(root->accessors[primitive.indices.value()]);
+            indexBuffer = MakeIndexBuffer(root->accessors[*primitive.indices]);
         }
 
         RefPtr<PbrMaterial> pbrMaterial;
         if (primitive.material.has_value())
         {
-            pbrMaterial = loadedMaterials[primitive.material.value()];
+            pbrMaterial = loadedMaterials[*primitive.material];
         }
 
         return MakeRef<Primitive>(
@@ -348,8 +348,8 @@ namespace Husky::SceneV1::Loader
             return RefPtr<IndexBuffer>();
         }
 
-        const auto& bufferView = root->bufferViews[indices.bufferView.value()];
-        HUSKY_ASSERT(!bufferView.byteStride.has_value(), "index accessor buffer views should not have stride");
+        const auto& bufferView = root->bufferViews[*indices.bufferView];
+        HUSKY_ASSERT_MSG(!bufferView.byteStride.has_value(), "index accessor buffer views should not have stride");
 
         auto buffer = loadedBuffers[bufferView.buffer];
 
@@ -364,7 +364,7 @@ namespace Husky::SceneV1::Loader
             indexType = IndexType::UInt32;
             break;
         default:
-            HUSKY_ASSERT(false, "Unsupported index type");
+            HUSKY_ASSERT_MSG(false, "Unsupported index type");
         }
 
         return MakeRef<IndexBuffer>(
@@ -388,21 +388,21 @@ namespace Husky::SceneV1::Loader
         
         if (glTFMaterial.pbrMetallicRoughness.baseColorTexture.has_value())
         {
-            const auto& textureInfo = glTFMaterial.pbrMetallicRoughness.baseColorTexture.value();
+            const auto& textureInfo = *glTFMaterial.pbrMetallicRoughness.baseColorTexture;
             material->metallicRoughness.baseColorTexture.texCoord = textureInfo.texCoord;
             material->metallicRoughness.baseColorTexture.texture = loadedTextures[textureInfo.index];
         }
 
         if (glTFMaterial.pbrMetallicRoughness.metallicRoughnessTexture.has_value())
         {
-            const auto& textureInfo = glTFMaterial.pbrMetallicRoughness.metallicRoughnessTexture.value();
+            const auto& textureInfo = *glTFMaterial.pbrMetallicRoughness.metallicRoughnessTexture;
             material->metallicRoughness.metallicRoughnessTexture.texCoord = textureInfo.texCoord;
             material->metallicRoughness.metallicRoughnessTexture.texture = loadedTextures[textureInfo.index];
         }
 
         if (glTFMaterial.normalTexture.has_value())
         {
-            const auto& textureInfo = glTFMaterial.normalTexture.value();
+            const auto& textureInfo = *glTFMaterial.normalTexture;
             material->normalTexture.texCoord = textureInfo.texCoord;
             material->normalTexture.texture = loadedTextures[textureInfo.index];
             material->normalTexture.scale = textureInfo.scale;
@@ -410,7 +410,7 @@ namespace Husky::SceneV1::Loader
 
         if (glTFMaterial.occlusionTexture.has_value())
         {
-            const auto& textureInfo = glTFMaterial.occlusionTexture.value();
+            const auto& textureInfo = *glTFMaterial.occlusionTexture;
             material->occlusionTexture.texCoord = textureInfo.texCoord;
             material->occlusionTexture.texture = loadedTextures[textureInfo.index];
             material->occlusionTexture.strength = textureInfo.strength;
@@ -418,7 +418,7 @@ namespace Husky::SceneV1::Loader
 
         if (glTFMaterial.emissiveTexture.has_value())
         {
-            const auto& textureInfo = glTFMaterial.emissiveTexture.value();
+            const auto& textureInfo = *glTFMaterial.emissiveTexture;
             material->emissiveTexture.texCoord = textureInfo.texCoord;
             material->emissiveTexture.texture = loadedTextures[textureInfo.index];
         }
@@ -438,13 +438,13 @@ namespace Husky::SceneV1::Loader
         RefPtr<Sampler> sampler;
         if (texture.sampler.has_value())
         {
-            sampler = loadedSamplers[texture.sampler.value()];
+            sampler = loadedSamplers[*texture.sampler];
         }
 
         TextureSource source;
         if (texture.source.has_value())
         {
-            const auto& image = root->images[texture.source.value()];
+            const auto& image = root->images[*texture.source];
             source.root = rootFolder;
             source.filename = image.uri;
         }
@@ -465,7 +465,7 @@ namespace Husky::SceneV1::Loader
 
         if (sampler.minFilter.has_value())
         {
-            MinFilter minFilter = ToVkMinFilter(sampler.minFilter.value());
+            MinFilter minFilter = ToVkMinFilter(*sampler.minFilter);
             samplerCreateInfo.minFilter = minFilter.minFilter;
             samplerCreateInfo.mipmapMode = minFilter.mipmapMode;
             samplerCreateInfo.minLod = minFilter.minLod;
@@ -474,7 +474,7 @@ namespace Husky::SceneV1::Loader
         
         if (sampler.magFilter.has_value())
         {
-            samplerCreateInfo.magFilter = ToVkMagFilter(sampler.magFilter.value());
+            samplerCreateInfo.magFilter = ToVkMagFilter(*sampler.magFilter);
         }
 
         return MakeRef<Sampler>(samplerCreateInfo, name);

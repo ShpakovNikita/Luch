@@ -40,12 +40,12 @@ namespace Husky::Vulkan
             PhysicalDevice* physicalDevice,
             vk::Device device,
             QueueInfo&& queueInfo,
-            vk::AllocationCallbacks allocationCallbacks);
+            Husky::Optional<vk::AllocationCallbacks> allocationCallbacks);
 
         ~GraphicsDevice() override;
 
         inline vk::Device GetDevice() { return device; }
-        inline const vk::AllocationCallbacks& GetAllocationCallbacks() const { return allocationCallbacks; }
+        inline const vk::Optional<const vk::AllocationCallbacks>& GetAllocationCallbacks() const { return allocationCallbacks; }
 
         inline PhysicalDevice* GetPhysicalDevice() const { return physicalDevice; }
         inline const QueueIndices* GetQueueIndices() { return &queueInfo.indices; }
@@ -105,6 +105,9 @@ namespace Husky::Vulkan
         PhysicalDevice* physicalDevice = nullptr;
         vk::Device device;
         QueueInfo queueInfo;
-        vk::AllocationCallbacks allocationCallbacks;
+
+        // Workaround for vk::Optional not holding to the value itself
+        Husky::Optional<vk::AllocationCallbacks> callbacks;
+        vk::Optional<const vk::AllocationCallbacks> allocationCallbacks = nullptr;
     };
 }

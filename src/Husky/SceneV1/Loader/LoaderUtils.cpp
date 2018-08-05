@@ -13,7 +13,7 @@ namespace Husky::SceneV1::Loader
         case glTF::WrapMode::MirroredRepeat:
             return vk::SamplerAddressMode::eMirroredRepeat;
         default:
-            HUSKY_ASSERT(false, "Unknown sampler addres mode");
+            HUSKY_ASSERT_MSG(false, "Unknown sampler addres mode");
         }
     }
 
@@ -26,7 +26,7 @@ namespace Husky::SceneV1::Loader
         case glTF::MagFilter::Linear:
             return vk::Filter::eLinear;
         default:
-            HUSKY_ASSERT(false, "Unknown mag filter");
+            HUSKY_ASSERT_MSG(false, "Unknown mag filter");
         }
     }
 

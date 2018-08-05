@@ -106,22 +106,22 @@ namespace Husky
             return ptr < right.ptr;
         }
 
-        bool operator==(nullptr_t np) const
+        bool operator==(std::nullptr_t np) const
         {
             return ptr == np;
         }
 
-        friend bool operator==(nullptr_t np, const RefPtr& ptr)
+        friend bool operator==(std::nullptr_t np, const RefPtr& ptr)
         {
             return ptr.ptr == np;
         }
 
-        bool operator!=(nullptr_t np) const
+        bool operator!=(std::nullptr_t np) const
         {
             return ptr != np;
         }
 
-        friend bool operator!=(nullptr_t np, const RefPtr& ptr)
+        friend bool operator!=(std::nullptr_t np, const RefPtr& ptr)
         {
             return ptr.ptr != np;
         }

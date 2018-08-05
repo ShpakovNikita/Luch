@@ -7,9 +7,6 @@ namespace Husky::SceneV1
 {
     struct SceneProperties
     {
-        template<typename T>
-        using PropertiesMap = UnorderedMap<ID<T>, RefPtr<T>>;
-
         RefPtrUnorderedSet<Mesh> meshes;
         RefPtrUnorderedSet<Primitive> primitives;
         RefPtrUnorderedSet<Camera> cameras;

@@ -6,11 +6,16 @@ namespace Husky::Vulkan
 {
     PhysicalDevice::PhysicalDevice(
         vk::PhysicalDevice aPhysicalDevice,
-        vk::AllocationCallbacks aAllocationCallbacks)
+        Husky::Optional<vk::AllocationCallbacks> aAllocationCallbacks)
         : physicalDevice(aPhysicalDevice)
-        , allocationCallbacks(aAllocationCallbacks)
+        , callbacks(aAllocationCallbacks)
         , physicalDeviceMemoryProperties(aPhysicalDevice.getMemoryProperties())
+        , allocationCallbacks(nullptr)
     {
+        if(callbacks.has_value())
+        {
+            allocationCallbacks = *callbacks;
+        }
     }
 
     VulkanResultValue<QueueIndices> PhysicalDevice::ChooseDeviceQueues(Surface * surface)
@@ -155,7 +160,7 @@ namespace Husky::Vulkan
         if (result == vk::Result::eSuccess)
         {
             auto queueInfo = ObtainQueueInfo(vulkanDevice, std::move(queueIndices));
-            auto device = MakeRef<GraphicsDevice>(this, vulkanDevice, std::move(queueInfo), allocationCallbacks);
+            auto device = MakeRef<GraphicsDevice>(this, vulkanDevice, std::move(queueInfo), callbacks);
             return { result, std::move(device) };
         }
         else

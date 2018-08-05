@@ -56,12 +56,13 @@ namespace Husky::Vulkan
             const Attachment* resolveAttachment,
             vk::ImageLayout resolveAttachmentLayout)
         {
-            HUSKY_ASSERT(resolveAttachment != nullptr, "Null resolve attachment");
+            HUSKY_ASSERT_MSG(resolveAttachment != nullptr, "Null resolve attachment");
 
             SubpassAttachmentReference subpassColorAttachment = { colorAttachment, colorAttachmentLayout };
             SubpassAttachmentReference subpassResolveAttachment = { resolveAttachment, resolveAttachmentLayout };
 
             colorAttachments.push_back({ subpassColorAttachment, subpassResolveAttachment });
+            return *this;
         }
 
         inline SubpassDescription& AddPreserveAttachment(const Attachment* attachment)

@@ -43,7 +43,7 @@ namespace Husky
         {
             // TODO
             auto newRefCount = --refCount;
-            HUSKY_ASSERT(newRefCount >= 0, "Negative refcount");
+            HUSKY_ASSERT_MSG(newRefCount >= 0, "Negative refcount");
             if (newRefCount == 0)
             {
                 delete this;

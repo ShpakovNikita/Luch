@@ -11,13 +11,14 @@ namespace Husky::Vulkan
     class DescriptorSet;
     class DescriptorSetBinding;
     class DescriptorSetLayout;
+    class DescriptorSetLayoutCreateInfo;
     class DescriptorSetWrites;
     class Fence;
     class Framebuffer;
+    class FramebufferCreateInfo;
     class GlslShaderCompiler;
     class GraphicsDevice;
     class Image;
-    class ImageDescriptorInfo;
     class ImageView;
     class IndexBuffer;
     class PhysicalDevice;
@@ -25,10 +26,11 @@ namespace Husky::Vulkan
     class PipelineBarrier;
     class PipelineCache;
     class PipelineLayout;
+    class PipelineLayoutCreateInfo;
     class PresentQueue;
     class Queue;
-    class QueueInfo;
     class RenderPass;
+    class RenderPassCreateInfo;
     class Sampler;
     class SamplerObject;
     class Semaphore;
@@ -39,11 +41,9 @@ namespace Husky::Vulkan
     class Swapchain;
     class VertexBuffer;
 
-    struct DescriptorSetLayoutCreateInfo;
-    struct FramebufferCreateInfo;
     struct GraphicsPipelineCreateInfo;
-    struct RenderPassCreateInfo;
-    struct PipelineLayoutCreateInfo;
+    struct ImageDescriptorInfo;
     struct SubpassCreateInfo;
     struct SwapchainCreateInfo;
+    struct QueueInfo;
 }

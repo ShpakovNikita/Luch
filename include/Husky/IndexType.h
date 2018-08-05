@@ -20,7 +20,7 @@ namespace Husky
         case IndexType::UInt32:
             return sizeof(uint32);
         default:
-            HUSKY_ASSERT(false, "Unknown index type");
+            HUSKY_ASSERT_MSG(false, "Unknown index type");
         }
     }
 }

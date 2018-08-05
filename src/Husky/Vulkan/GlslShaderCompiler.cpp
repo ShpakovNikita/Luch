@@ -121,7 +121,7 @@ EShLanguage ToLanguage(ShaderStage shaderStage)
     case ShaderStage::Compute:
         return EShLangCompute;
     default:
-        HUSKY_ASSERT(false, "Unknown shader stage");
+        HUSKY_ASSERT_MSG(false, "Unknown shader stage");
         return EShLangVertex;
     }
 }

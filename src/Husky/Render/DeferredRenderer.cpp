@@ -165,6 +165,7 @@ namespace Husky::Render
         }
 
         context->swapchain = std::move(createdSwapchain);
+        return true;
     }
 
     bool DeferredRenderer::Deinitialize()
@@ -397,7 +398,7 @@ namespace Husky::Render
         {
             if (node->GetCamera() != nullptr)
             {
-                HUSKY_ASSERT(preparedScene.cameraNode == nullptr, "Only one camera node is allowed");
+                HUSKY_ASSERT_MSG(preparedScene.cameraNode == nullptr, "Only one camera node is allowed");
                 preparedScene.cameraNode = node;
                 PrepareCameraNode(node, preparedScene);
             }
@@ -579,7 +580,7 @@ namespace Husky::Render
             PrepareLight(light, scene);
         }
 
-        HUSKY_ASSERT(node->GetChildren().empty(), "Don't add children to light nodes");
+        HUSKY_ASSERT_MSG(node->GetChildren().empty(), "Don't add children to light nodes");
     }
 
     void DeferredRenderer::PrepareNode(const RefPtr<SceneV1::Node>& node, DeferredPreparedScene& scene)
@@ -726,13 +727,27 @@ namespace Husky::Render
 
         Mat4x4 localTransformMatrix;
         const auto& localTransform = node->GetTransform();
-        if (std::holds_alternative<Mat4x4>(localTransform))
+//        if (std::holds_alternative<Mat4x4>(localTransform))
+//        {
+//            localTransformMatrix = std::get<Mat4x4>(localTransform);
+//        }
+//        else
+//        {
+//            const auto& transformProperties = std::get<SceneV1::TransformProperties>(localTransform);
+//
+//            localTransformMatrix
+//                = glm::translate(transformProperties.translation)
+//                * glm::toMat4(transformProperties.rotation)
+//                * glm::scale(transformProperties.scale);
+//        }
+
+        if (localTransform.hasMatrix)
         {
-            localTransformMatrix = std::get<Mat4x4>(localTransform);
+            localTransformMatrix = localTransform.matrix;
         }
         else
         {
-            const auto& transformProperties = std::get<SceneV1::TransformProperties>(localTransform);
+            const auto& transformProperties = localTransform.properties;
 
             localTransformMatrix
                 = glm::translate(transformProperties.translation)
@@ -1063,7 +1078,7 @@ namespace Husky::Render
 
         if (!vertexShaderCreated)
         {
-            return { false };
+            HUSKY_ASSERT(false);
         }
 
         auto vertexShader = std::move(createdVertexShader);
@@ -1075,7 +1090,7 @@ namespace Husky::Render
 
         if (!fragmentShaderCreated)
         {
-            return { false };
+            HUSKY_ASSERT(false);
         }
 
         auto fragmentShader = std::move(createdFragmentShader);
@@ -1270,7 +1285,6 @@ namespace Husky::Render
 
         resources.pipelineLayout = std::move(createdPipelineLayout);
 
-        resources.baseColorAttachment;
         resources.baseColorAttachment
             .SetFormat(Format::B8G8R8A8Unorm)
             .SetInitialLayout(vk::ImageLayout::eUndefined)
@@ -1279,7 +1293,6 @@ namespace Husky::Render
             .SetSampleCount(SampleCount::e1)
             .SetFinalLayout(vk::ImageLayout::eColorAttachmentOptimal);
 
-        resources.normalMapAttachment;
         resources.normalMapAttachment
             .SetFormat(Format::B8G8R8A8Unorm)
             .SetInitialLayout(vk::ImageLayout::eUndefined)
@@ -1288,7 +1301,6 @@ namespace Husky::Render
             .SetSampleCount(SampleCount::e1)
             .SetFinalLayout(vk::ImageLayout::eColorAttachmentOptimal);
 
-        resources.depthStencilAttachment;
         resources.depthStencilAttachment
             .SetFormat(depthStencilFormat)
             .SetInitialLayout(vk::ImageLayout::eUndefined)
@@ -1453,7 +1465,6 @@ namespace Husky::Render
 
         resources.pipelineLayout = std::move(createdPipelineLayout);
 
-        resources.colorAttachment;
         resources.colorAttachment
             .SetFormat(context->swapchain->GetFormat())
             .SetInitialLayout(vk::ImageLayout::eUndefined)

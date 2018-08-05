@@ -48,12 +48,6 @@ class VulkanAllocationDelegate
 public:
     VulkanAllocationDelegate() = default;
 
-    template<class ... Args>
-    VulkanAllocationDelegate(AllocatorUserData allocatorUserData, Args... allocatorArgs)
-        : userData{ {std::forward(args)...}, allocatorUserData }
-    {
-    }
-
     static void* VKAPI_PTR StaticVulkanAllocationCallback(
         void* pUserData,
         size_t size,
@@ -120,7 +114,7 @@ private:
         Allocator* allocator;
         AllocatorUserData allocatorUserData;
     };
-    
+
     UserData userData;
 };
 

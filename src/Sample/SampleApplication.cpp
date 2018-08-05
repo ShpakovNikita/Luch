@@ -68,9 +68,11 @@ static LRESULT CALLBACK StaticWindowProc(
 
 bool SampleApplication::Initialize(const Vector<String>& args)
 {
+#if _WIN32
     allocationCallbacks = allocator.GetAllocationCallbacks();
+#endif
 
-    auto [createInstanceResult, createdInstance] = CreateVulkanInstance(allocationCallbacks);
+    auto [createInstanceResult, createdInstance] = CreateVulkanInstance();
     if (createInstanceResult != vk::Result::eSuccess)
     {
         // TODO
@@ -200,13 +202,21 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
 bool SampleApplication::Deinitialize()
 {
-    DestroyDebugCallback(instance, debugCallback, allocationCallbacks);
-    instance.destroy(allocationCallbacks);
+    DestroyDebugCallback(instance, debugCallback);
+
+    vk::Optional<const vk::AllocationCallbacks> ac = nullptr;
+    if(allocationCallbacks.has_value())
+    {
+        ac = *allocationCallbacks;
+    }
+
+    instance.destroy(ac);
     return true;
 }
 
 void SampleApplication::Run()
 {
+#if _WIN32
     MSG msg{};
 
     while (msg.message != WM_QUIT)
@@ -221,9 +231,10 @@ void SampleApplication::Run()
             deferredRenderer->DrawScene(preparedScene);
         }
     }
+#endif
 }
 
-vk::ResultValue<vk::Instance> SampleApplication::CreateVulkanInstance(const vk::AllocationCallbacks& allocationCallbacks)
+vk::ResultValue<vk::Instance> SampleApplication::CreateVulkanInstance()
 {
     auto requiredExtensions = GetRequiredInstanceExtensionNames();
     auto validationLayers = GetValidationLayerNames();
@@ -244,12 +255,17 @@ vk::ResultValue<vk::Instance> SampleApplication::CreateVulkanInstance(const vk::
     ci.setEnabledExtensionCount((int32)requiredExtensions.size());
     ci.setPpEnabledExtensionNames(requiredExtensions.data());
 
-    return vk::createInstance(ci, allocationCallbacks);
+    vk::Optional<const vk::AllocationCallbacks> ac = nullptr;
+    if(allocationCallbacks.has_value())
+    {
+        ac = *allocationCallbacks;
+    }
+
+    return vk::createInstance(ci, ac);
 }
 
 vk::ResultValue<vk::DebugReportCallbackEXT> SampleApplication::CreateDebugCallback(
-    vk::Instance& instance,
-    const vk::AllocationCallbacks& allocationCallbacks)
+    vk::Instance& instance)
 {
     VkDebugReportCallbackCreateInfoEXT ci;
     ci.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
@@ -265,11 +281,15 @@ vk::ResultValue<vk::DebugReportCallbackEXT> SampleApplication::CreateDebugCallba
     ci.pfnCallback = StaticDebugCallback;
     ci.pUserData = static_cast<VulkanDebugDelegate*>(this);
 
-    const VkAllocationCallbacks& callbacks = allocationCallbacks;
+    const VkAllocationCallbacks* callbacks = nullptr;
+    if(allocationCallbacks.has_value())
+    {
+        callbacks = reinterpret_cast<const VkAllocationCallbacks*>(&*allocationCallbacks);
+    }
 
     PFN_vkCreateDebugReportCallbackEXT procAddr = reinterpret_cast<PFN_vkCreateDebugReportCallbackEXT>(instance.getProcAddr("vkCreateDebugReportCallbackEXT"));
     VkDebugReportCallbackEXT callback;
-    vk::Result result = static_cast<vk::Result>(procAddr(instance, &ci, &callbacks, &callback));
+    vk::Result result = static_cast<vk::Result>(procAddr(instance, &ci, callbacks, &callback));
 
     vk::DebugReportCallbackEXT debugReportCallback{ callback };
     return { result, debugReportCallback };
@@ -277,12 +297,16 @@ vk::ResultValue<vk::DebugReportCallbackEXT> SampleApplication::CreateDebugCallba
 
 void SampleApplication::DestroyDebugCallback(
     vk::Instance& instance,
-    vk::DebugReportCallbackEXT& callback,
-    const vk::AllocationCallbacks& allocationCallbacks)
+    vk::DebugReportCallbackEXT& callback)
 {
-    const VkAllocationCallbacks& callbacks = allocationCallbacks;
+    const VkAllocationCallbacks* callbacks = nullptr;
+    if(allocationCallbacks.has_value())
+    {
+        callbacks = reinterpret_cast<const VkAllocationCallbacks*>(&*allocationCallbacks);
+    }
+
     PFN_vkDestroyDebugReportCallbackEXT procAddr = reinterpret_cast<PFN_vkDestroyDebugReportCallbackEXT>(instance.getProcAddr("vkDestroyDebugReportCallbackEXT"));
-    procAddr(instance, callback, &callbacks);
+    procAddr(instance, callback, callbacks);
 }
 
 vk::PhysicalDevice SampleApplication::ChoosePhysicalDevice(const Husky::Vector<vk::PhysicalDevice>& devices)
@@ -371,6 +395,8 @@ Vector<const char8*> SampleApplication::GetRequiredInstanceExtensionNames() cons
     requiredExtensionNames.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
 #if _WIN32
     requiredExtensionNames.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+#elif __APPLE__
+    requiredExtensionNames.push_back(VK_MVK_MACOS_SURFACE_EXTENSION_NAME);
 #endif
 
     return requiredExtensionNames;
@@ -380,8 +406,10 @@ Vector<const char8*> SampleApplication::GetValidationLayerNames() const
 {
     return
     {
+#if _WIN32
         "VK_LAYER_LUNARG_standard_validation",
         "VK_LAYER_LUNARG_assistant_layer"
+#endif
     };
 }
 

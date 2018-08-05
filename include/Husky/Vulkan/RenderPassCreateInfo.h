@@ -63,7 +63,7 @@ namespace Husky::Vulkan
                 attachments.resize(attachment->index + 1);
             }
 
-            HUSKY_ASSERT(attachments[attachment->index] == nullptr, "Two attachments are using same index");
+            HUSKY_ASSERT_MSG(attachments[attachment->index] == nullptr, "Two attachments are using same index");
 
             attachments[attachment->index] = attachment;
 
@@ -72,7 +72,7 @@ namespace Husky::Vulkan
 
         inline RenderPassCreateInfo& AddSubpass(SubpassDescription&& subpassDescription)
         {
-            HUSKY_ASSERT(subpassDescription.index < 0, "Can't use subpass description multiple times");
+            HUSKY_ASSERT_MSG(subpassDescription.index < 0, "Can't use subpass description multiple times");
             subpassDescription.index = nextSubpassIndex;
             nextSubpassIndex++;
 
