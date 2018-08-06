@@ -3,6 +3,16 @@
         "generator": "Granite glTF 2.0 exporter",
         "version": "2.0"
     },
+    "cameras":[
+        {
+            "type":"perspective",
+            "perspective":{
+                "yfov": 1,
+                "znear": 0.1,
+                "zfar": 100
+            }
+        }
+    ],
     "nodes": [
         {
             "mesh": 0,
@@ -11,6 +21,10 @@
                 0.00800000037997961,
                 0.00800000037997961
             ]
+        },
+        {
+            "camera": 0,
+            "rotation": [ 0, 0.7071068, 0, 0.7071068 ]
         }
     ],
     "buffers": [
@@ -8421,7 +8435,7 @@
     "scenes": [
         {
             "nodes": [
-                0
+                0, 1
             ]
         }
     ]

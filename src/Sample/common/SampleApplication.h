@@ -13,9 +13,8 @@
 #include <Husky/Render/ForwardRenderer.h>
 #include <Husky/Render/DeferredRenderer.h>
 
-#include "VulkanAllocator.h"
-
 #ifdef _WIN32
+#include "VulkanAllocator.h"
 #include <Husky/Platform/Win32/WndProcDelegate.h>
 #endif
 
@@ -94,7 +93,9 @@ private:
 
     Husky::Vulkan::PhysicalDevice physicalDevice;
     Husky::Vulkan::Surface surface;
+#if WIN32
     VulkanAllocator allocator;
+#endif
     vk::Instance instance;
     vk::DebugReportCallbackEXT debugCallback;
     Husky::Render::DeferredPreparedScene preparedScene;

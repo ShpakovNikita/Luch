@@ -37,8 +37,6 @@ static VkBool32 StaticDebugCallback(
     return static_cast<VulkanDebugDelegate*>(userData)->DebugCallback(flags, objectType, object, location, messageCode, pLayerPrefix, pMessage);
 }
 
-
-
 #ifdef _WIN32
 
 static LRESULT CALLBACK StaticWindowProc(
@@ -123,7 +121,8 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     glTF::glTFParser glTFparser;
 
-    String rootDir{ "C:\\Development\\HuskyResources\\glTF-Sample-Models\\2.0\\Sponza\\glTF\\" };
+    //String rootDir{ "C:\\Development\\HuskyResources\\glTF-Sample-Models\\2.0\\Sponza\\glTF\\" };
+    String rootDir{ "/Users/spo1ler/Development/glTF-Sample-Models-master/2.0/Sponza/glTF/" };
 
     FileStream fileStream{ rootDir + "Sponza.gltf", FileOpenModes::Read };
 

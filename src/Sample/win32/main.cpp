@@ -1,3 +1,5 @@
+#if _WIN32
+
 #include "SampleApplication.h"
 
 using namespace Husky;
@@ -23,3 +25,5 @@ int32 main(int32 argc, char8** argv)
 
     return 0;
 }
+
+#endif
