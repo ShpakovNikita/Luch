@@ -1,6 +1,6 @@
 #import <QuartzCore/CAMetalLayer.h>
 #include "SampleViewController.h"
-//#include "../common/SampleApplication.h"
+#include "../common/SampleApplication.h"
 
 //#include <MoltenVK/mvk_vulkan.h>
 
@@ -10,7 +10,7 @@
 @implementation SampleViewController
 {
     CVDisplayLinkRef displayLink;
-    //SampleApplication app;
+    SampleApplication app;
 }
 
 -(void) dealloc
@@ -26,9 +26,12 @@
     self.view.wantsLayer = YES;
 
     CVDisplayLinkCreateWithActiveCGDisplays(&displayLink);
-    // CVDisplayLinkSetOutputCallback(displayLink, &DisplayLinkCallback, &app);
-    CVDisplayLinkSetOutputCallback(displayLink, &DisplayLinkCallback, nil);
+    CVDisplayLinkSetOutputCallback(displayLink, &DisplayLinkCallback, &app);
     CVDisplayLinkStart(displayLink);
+
+    app.SetView(self.view);
+    bool result = app.Initialize({});
+    HUSKY_ASSERT(result);
 }
 
 

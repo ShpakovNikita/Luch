@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.9.0)
 
-project(Husky VERSION 0.1 LANGUAGES C CXX)
+project(Husky VERSION 0.1 LANGUAGES CXX)
 set(CXX_STANDARD 17)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS On) 
@@ -164,7 +164,7 @@ if(WIN32)
         ${SAMPLE_COMMON_HEADER_FILES}
         ${SAMPLE_WIN32_HEADER_FILES})
 elseif(APPLE)
-    file(GLOB_RECURSE SAMPLE_MACOS_OBJC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Sample/macOS/*.m)
+    file(GLOB_RECURSE SAMPLE_MACOS_OBJC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Sample/macOS/*.mm)
     file(GLOB_RECURSE SAMPLE_MACOS_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Sample/macOS/*.cpp)
     file(GLOB_RECURSE SAMPLE_MACOS_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Sample/macOS/*.h)
     set(SAMPLE_MACOS_RESOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/res/macOS/Main.storyboard)
@@ -182,7 +182,7 @@ elseif(APPLE)
         HuskyEngineSample
         PROPERTIES
         MACOSX_BUNDLE TRUE
-        MACOSX_BUNDLE_BUNDLE_NAME "HuskyEngineSample"
+        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/res/macOS/Info.plist.in
         RESOURCE "${SAMPLE_MACOS_RESOURCE_FILES}")
 
     target_link_libraries(HuskyEngineSample "-framework Foundation")

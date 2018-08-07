@@ -2,7 +2,10 @@
 
 namespace Husky::Vulkan
 {
-    Surface::Surface(vk::Instance aInstance, vk::SurfaceKHR aSurface, vk::AllocationCallbacks aAllocationCallbacks)
+    Surface::Surface(
+        vk::Instance aInstance,
+        vk::SurfaceKHR aSurface,
+        Husky::Optional<vk::AllocationCallbacks> aAllocationCallbacks)
         : allocationCallbacks(aAllocationCallbacks)
         , instance(aInstance)
         , surface(aSurface)
@@ -39,7 +42,14 @@ namespace Husky::Vulkan
     {
         if (instance)
         {
-            instance.destroySurfaceKHR(surface, allocationCallbacks);
+            if(allocationCallbacks.has_value())
+            {
+                instance.destroySurfaceKHR(surface, *allocationCallbacks);
+            }
+            else
+            {
+                instance.destroySurfaceKHR(surface);
+            }
         }
     }
 
@@ -68,4 +78,25 @@ namespace Husky::Vulkan
     }
 #endif
 
+#if __APPLE__
+    VulkanResultValue<Surface> Surface::CreateMacOSSurface(
+            vk::Instance instance,
+            void* view)
+    {
+        vk::MacOSSurfaceCreateInfoMVK ci;
+        ci.setPView(view);
+
+        auto [result, vulkanSurface] = instance.createMacOSSurfaceMVK(ci);
+        if(result == vk::Result::eSuccess)
+        {
+            auto surface = Surface { instance, vulkanSurface };
+            return { result, std::move(surface) };
+        }
+        else
+        {
+            instance.destroySurfaceKHR(vulkanSurface);
+            return { result };
+        }
+    }
+#endif
 }

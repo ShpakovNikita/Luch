@@ -49,6 +49,12 @@ public:
         static Husky::String windowTitle = "Sample";
         return windowTitle;
     }
+#if __APPLE__
+    void SetView(void* aView)
+    {
+        view = aView;
+    }
+#endif
 private:
     vk::ResultValue<vk::Instance> CreateVulkanInstance();
 
@@ -86,6 +92,10 @@ private:
 #if _WIN32
     HWND hWnd = nullptr;
     HINSTANCE hInstance = nullptr;
+#endif
+
+#if __APPLE__
+    void* view = nullptr;
 #endif
 
     Husky::int32 width = 1200;

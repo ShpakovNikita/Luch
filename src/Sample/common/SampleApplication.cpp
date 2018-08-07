@@ -119,6 +119,22 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     ShowWindow(hWnd, SW_SHOW);
 #endif
 
+#if __APPLE__
+    if(view == nullptr)
+    {
+        return false;
+    }
+
+    auto [createSurfaceResult, createdSurface] = Surface::CreateMacOSSurface(instance, view);
+    if (createSurfaceResult != vk::Result::eSuccess)
+    {
+        // TODO
+        return false;
+    }
+
+    surface = std::move(createdSurface);
+#endif
+
     glTF::glTFParser glTFparser;
 
     //String rootDir{ "C:\\Development\\HuskyResources\\glTF-Sample-Models\\2.0\\Sponza\\glTF\\" };
