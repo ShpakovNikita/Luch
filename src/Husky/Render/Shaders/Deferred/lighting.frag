@@ -305,5 +305,5 @@ void main()
 
     vec3 resultColor = baseColorSample.xyz * (lightingResult.diffuse + lightingResult.specular);
 
-    outColor = vec4(resultColor, spotIntensity);
+    outColor = vec4(resultColor, 1.0);
 }

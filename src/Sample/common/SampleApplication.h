@@ -31,6 +31,7 @@ public:
     bool Initialize(const Husky::Vector<Husky::String>& args) override;
     bool Deinitialize() override;
     void Run() override;
+    void Process();
 
     const Husky::String& GetApplicationName() const override
     {
@@ -48,6 +49,12 @@ public:
     {
         static Husky::String windowTitle = "Sample";
         return windowTitle;
+    }
+
+    void SetViewSize(Husky::int32 aWidth, Husky::int32 aHeight)
+    {
+        width = aWidth;
+        height = aHeight;
     }
 #if __APPLE__
     void SetView(void* aView)

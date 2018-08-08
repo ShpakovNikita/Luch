@@ -79,15 +79,13 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     instance = createdInstance;
 
-#ifdef _DEBUG
-    auto [createDebugCallbackResult, createdDebugCallback] = CreateDebugCallback(instance, allocationCallbacks);
+    auto [createDebugCallbackResult, createdDebugCallback] = CreateDebugCallback(instance);
     if(createDebugCallbackResult != vk::Result::eSuccess)
     {
-        // TODO
+        return false;
     }
 
     debugCallback = createdDebugCallback;
-#endif
 
     auto [enumeratePhysicalDevicesResult, physicalDevices] = instance.enumeratePhysicalDevices();
     if (enumeratePhysicalDevicesResult != vk::Result::eSuccess || physicalDevices.empty())
@@ -138,12 +136,12 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     glTF::glTFParser glTFparser;
 
     //String rootDir{ "C:\\Development\\HuskyResources\\glTF-Sample-Models\\2.0\\Sponza\\glTF\\" };
-    String rootDir{ "/Users/spo1ler/Development/glTF-Sample-Models-master/2.0/Sponza/glTF/" };
+    String rootDir{ "/Users/spo1ler/Development/HuskyEngine/res/gltf2/sponza/" };
 
     FileStream fileStream{ rootDir + "Sponza.gltf", FileOpenModes::Read };
 
     auto root = glTFparser.ParseJSON(&fileStream);
-    
+
     SceneV1::Loader::glTFLoader loader{ rootDir, root };
     auto scenes = loader.LoadScenes();
 
@@ -247,6 +245,11 @@ void SampleApplication::Run()
         }
     }
 #endif
+}
+
+void SampleApplication::Process()
+{
+    deferredRenderer->DrawScene(preparedScene);
 }
 
 vk::ResultValue<vk::Instance> SampleApplication::CreateVulkanInstance()
@@ -421,10 +424,8 @@ Vector<const char8*> SampleApplication::GetValidationLayerNames() const
 {
     return
     {
-#if _WIN32
         "VK_LAYER_LUNARG_standard_validation",
-        "VK_LAYER_LUNARG_assistant_layer"
-#endif
+        //"VK_LAYER_LUNARG_assistant_layer"
     };
 }
 

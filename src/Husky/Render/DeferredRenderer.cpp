@@ -1073,7 +1073,8 @@ namespace Husky::Render
 
         auto[vertexShaderCreated, createdVertexShader] = CreateShader(
             ShaderStage::Vertex,
-            "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\gbuffer.vert",
+            //"C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\gbuffer.vert",
+            "/Users/spo1ler/Development/HuskyEngine/src/Husky/Render/Shaders/Deferred/gbuffer.vert",
             shaderDefines);
 
         if (!vertexShaderCreated)
@@ -1085,7 +1086,8 @@ namespace Husky::Render
 
         auto[fragmentShaderCreated, createdFragmentShader] = CreateShader(
             ShaderStage::Fragment,
-            "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\gbuffer.frag",
+            //"C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\gbuffer.frag",
+            "/Users/spo1ler/Development/HuskyEngine/src/Husky/Render/Shaders/Deferred/gbuffer.frag",
             shaderDefines);
 
         if (!fragmentShaderCreated)
@@ -1360,7 +1362,8 @@ namespace Husky::Render
 
         auto[vertexShaderCreated, createdVertexShader] = CreateShader(
             ShaderStage::Vertex,
-            "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\lighting.vert",
+            //C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\lighting.vert",
+            "/Users/spo1ler/Development/HuskyEngine/src/Husky/Render/Shaders/Deferred/lighting.vert",
             shaderDefines);
 
         if (!vertexShaderCreated)
@@ -1372,7 +1375,8 @@ namespace Husky::Render
 
         auto[fragmentShaderCreated, createdFragmentShader] = CreateShader(
             ShaderStage::Fragment,
-            "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\lighting.frag",
+            //"C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\lighting.frag",
+            "/Users/spo1ler/Development/HuskyEngine/src/Husky/Render/Shaders/Deferred/lighting.frag",
             shaderDefines);
 
         if (!fragmentShaderCreated)

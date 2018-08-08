@@ -2,20 +2,19 @@
 #include "SampleViewController.h"
 #include "../common/SampleApplication.h"
 
-//#include <MoltenVK/mvk_vulkan.h>
-
 #pragma mark -
 #pragma mark SampleViewController
 
 @implementation SampleViewController
 {
     CVDisplayLinkRef displayLink;
-    SampleApplication app;
+    SampleApplication* app;
 }
 
 -(void) dealloc
 {
     CVDisplayLinkRelease(displayLink);
+    delete app;
     [super dealloc];
 }
 
@@ -25,13 +24,17 @@
 
     self.view.wantsLayer = YES;
 
-    CVDisplayLinkCreateWithActiveCGDisplays(&displayLink);
-    CVDisplayLinkSetOutputCallback(displayLink, &DisplayLinkCallback, &app);
-    CVDisplayLinkStart(displayLink);
+    NSRect bounds = self.view.bounds;
 
-    app.SetView(self.view);
-    bool result = app.Initialize({});
+    app = new SampleApplication();
+    app->SetViewSize(static_cast<Husky::int32>(bounds.size.width), static_cast<Husky::int32>(bounds.size.height));
+    app->SetView(self.view);
+    bool result = app->Initialize({});
     HUSKY_ASSERT(result);
+
+    CVDisplayLinkCreateWithActiveCGDisplays(&displayLink);
+    CVDisplayLinkSetOutputCallback(displayLink, &DisplayLinkCallback, app);
+    CVDisplayLinkStart(displayLink);
 }
 
 
@@ -45,6 +48,11 @@ static CVReturn DisplayLinkCallback(CVDisplayLinkRef displayLink,
     CVOptionFlags* flagsOut,
     void* target)
 {
+    SampleApplication* application = static_cast<SampleApplication*>(target);
+    if(application)
+    {
+        application->Process();
+    }
 	return kCVReturnSuccess;
 }
 
