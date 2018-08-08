@@ -614,8 +614,8 @@ namespace Husky::Vulkan
     }
     void GraphicsDevice::DestroyBuffer(Buffer* buffer)
     {
-        device.freeMemory(buffer->memory, allocationCallbacks);
         device.destroyBuffer(buffer->buffer, allocationCallbacks);
+        device.freeMemory(buffer->memory, allocationCallbacks);
     }
 
     void GraphicsDevice::DestroyBufferView(BufferView* bufferView)
@@ -625,8 +625,8 @@ namespace Husky::Vulkan
 
     void GraphicsDevice::DestroyImage(Image* image)
     {
-        device.freeMemory(image->memory, allocationCallbacks);
         device.destroyImage(image->image, allocationCallbacks);
+        device.freeMemory(image->memory, allocationCallbacks);
     }
 
     void GraphicsDevice::DestroyImageView(ImageView* imageView)

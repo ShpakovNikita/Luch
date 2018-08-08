@@ -96,6 +96,7 @@ namespace Husky::Render
         RefPtr<GraphicsDevice> device;
         RefPtr<Swapchain> swapchain;
         RefPtr<CommandPool> presentCommandPool;
+        RefPtr<Semaphore> presentSemaphore;
         GLSLShaderCompiler shaderCompiler;
     };
 

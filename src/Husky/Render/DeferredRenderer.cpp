@@ -177,6 +177,14 @@ namespace Husky::Render
         HUSKY_ASSERT_MSG(!depthFormats.empty(), "No supported depth formats");
         depthStencilFormat = depthFormats.front();
 
+        auto[createSemaphoreResult, imageAcquiredSemaphore] = context->device->CreateSemaphore();
+        if(createSemaphoreResult != vk::Result::eSuccess)
+        {
+            return false;
+        }
+
+        context->presentSemaphore = std::move(imageAcquiredSemaphore);
+
         return true;
     }
 
@@ -449,10 +457,7 @@ namespace Husky::Render
 
     void DeferredRenderer::DrawScene(const DeferredPreparedScene& scene)
     {
-        auto[createSemaphoreResult, imageAcquiredSemaphore] = context->device->CreateSemaphore();
-        HUSKY_ASSERT(createSemaphoreResult == vk::Result::eSuccess);
-
-        auto[acquireResult, index] = context->swapchain->AcquireNextImage(nullptr, imageAcquiredSemaphore);
+        auto[acquireResult, index] = context->swapchain->AcquireNextImage(nullptr, context->presentSemaphore);
         HUSKY_ASSERT(acquireResult == vk::Result::eSuccess);
 
         auto& frameResource = scene.frameResources[index];
@@ -521,7 +526,6 @@ namespace Husky::Render
 
         lightingSubmission.waitOperations =
         {
-            { imageAcquiredSemaphore, vk::PipelineStageFlagBits::eColorAttachmentOutput },
             { frameResource.offscreenSemaphore, vk::PipelineStageFlagBits::eFragmentShader }
         };
 
@@ -536,7 +540,7 @@ namespace Husky::Render
         PresentSubmission presentSubmission;
         presentSubmission.index = index;
         presentSubmission.swapchain = context->swapchain;
-        presentSubmission.waitSemaphores = { frameResource.drawSemaphore };
+        presentSubmission.waitSemaphores = { context->presentSemaphore, frameResource.drawSemaphore };
 
         context->device->GetPresentQueue()->Present(presentSubmission);
     }
