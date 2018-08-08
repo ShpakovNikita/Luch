@@ -109,7 +109,7 @@ private:
     Husky::int32 height = 900;
 
     Husky::Vulkan::PhysicalDevice physicalDevice;
-    Husky::Vulkan::Surface surface;
+    Husky::RefPtr<Husky::Vulkan::Surface> surface;
 #if WIN32
     VulkanAllocator allocator;
 #endif

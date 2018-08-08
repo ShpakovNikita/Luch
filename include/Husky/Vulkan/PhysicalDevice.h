@@ -1,8 +1,10 @@
 #pragma once
 
 #include <Husky/BaseObject.h>
+#include <Husky/RefPtr.h>
 #include <Husky/Vulkan.h>
 #include <Husky/Vulkan/QueueInfo.h>
+#include <Husky/Format.h>
 
 namespace Husky::Vulkan
 {
@@ -29,6 +31,8 @@ namespace Husky::Vulkan
         VulkanRefResultValue<GraphicsDevice> CreateDevice(
             QueueIndices&& queueIndices,
             const Husky::Vector<const char8*>& requiredDeviceExtensionNames);
+
+        Vector<Format> GetSupportedDepthStencilFormats(const Vector<Format>& formats);
     private:
         QueueInfo ObtainQueueInfo(vk::Device & device, QueueIndices&& indices);
 

@@ -213,7 +213,7 @@ namespace Husky::Vulkan
                 imageViewCi.setViewType(vk::ImageViewType::e2D);
                 imageViewCi.setFormat(ToVulkanFormat(swapchainCreateInfo.format));
                 imageViewCi.setSubresourceRange(subresourceRange);
-                auto [imageViewCreateResult, imageView] = CreateImageView(image.Get(), imageViewCi);
+                auto [imageViewCreateResult, imageView] = CreateImageView(image, imageViewCi);
                 if (imageViewCreateResult != vk::Result::eSuccess)
                 {
                     // TODO

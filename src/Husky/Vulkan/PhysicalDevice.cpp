@@ -1,6 +1,7 @@
 #include <Husky/Vulkan/PhysicalDevice.h>
 #include <Husky/Vulkan/GraphicsDevice.h>
 #include <Husky/Vulkan/Surface.h>
+#include <Husky/Vulkan/Format.h>
 
 namespace Husky::Vulkan
 {
@@ -18,9 +19,8 @@ namespace Husky::Vulkan
         }
     }
 
-    VulkanResultValue<QueueIndices> PhysicalDevice::ChooseDeviceQueues(Surface * surface)
+    VulkanResultValue<QueueIndices> PhysicalDevice::ChooseDeviceQueues(Surface* surface)
     {
-        static float32 priorities[] = { 1.0f };
         auto queueProperties = physicalDevice.getQueueFamilyProperties();
         Vector<VkBool32> supportsPresent;
         supportsPresent.resize(queueProperties.size());
@@ -191,5 +191,24 @@ namespace Husky::Vulkan
         std::copy(uniqueQueues.begin(), uniqueQueues.end(), std::back_inserter(queueInfo.uniqueQueues));
 
         return queueInfo;
+    }
+
+    Vector<Format> PhysicalDevice::GetSupportedDepthStencilFormats(const Vector<Format>& formats)
+    {
+        const vk::FormatFeatureFlags requiredBits =
+              vk::FormatFeatureFlagBits::eSampledImage
+            | vk::FormatFeatureFlagBits::eTransferSrc
+            | vk::FormatFeatureFlagBits::eDepthStencilAttachment;
+
+        Vector<Format> supportedFormats;
+        for(Format format : formats)
+        {
+            auto formatProperties = physicalDevice.getFormatProperties(ToVulkanFormat(format));
+            if((formatProperties.optimalTilingFeatures & requiredBits) == requiredBits)
+            {
+                supportedFormats.push_back(format);
+            }
+        }
+        return supportedFormats;
     }
 }

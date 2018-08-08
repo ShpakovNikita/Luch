@@ -51,7 +51,7 @@ namespace Husky::Vulkan
 
         inline SwapchainCreateInfo GetSwapchainCreateInfo() const { return createInfo; }
         inline Format GetFormat() const { return createInfo.format; }
-        inline ImageView* GetImageView(int index) { return swapchainImages[index].imageView.Get(); }
+        inline ImageView* GetImageView(int index) { return swapchainImages[index].imageView; }
         inline vk::SwapchainKHR GetSwapchain() { return swapchain; }
     private:
         void Destroy();

@@ -186,7 +186,11 @@ namespace Husky::Render
     public:
         static constexpr int32 OffscreenImagesCount = 3;
 
-        DeferredRenderer(PhysicalDevice* physicalDevice, Surface* surface, int32 width, int32 height);
+        DeferredRenderer(
+            PhysicalDevice* physicalDevice,
+            const RefPtr<Surface>& surface,
+            int32 width,
+            int32 height);
 
         bool Initialize();
         bool Deinitialize();

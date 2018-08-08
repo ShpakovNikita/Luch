@@ -107,7 +107,7 @@ namespace Husky::Render
 
     DeferredRenderer::DeferredRenderer(
         PhysicalDevice* physicalDevice,
-        Surface* surface,
+        const RefPtr<Surface>& surface,
         int32 aWidth,
         int32 aHeight)
         : width(aWidth)
@@ -122,7 +122,7 @@ namespace Husky::Render
     {
         GLSLShaderCompiler::Initialize();
 
-        auto[chooseQueuesResult, queueIndices] = context->physicalDevice->ChooseDeviceQueues(context->surface.Get());
+        auto[chooseQueuesResult, queueIndices] = context->physicalDevice->ChooseDeviceQueues(context->surface);
         if (chooseQueuesResult != vk::Result::eSuccess)
         {
             // TODO
@@ -150,14 +150,14 @@ namespace Husky::Render
 
         context->presentCommandPool = std::move(createdPresentCommandPool);
 
-        auto[swapchainChooseCreateInfoResult, swapchainCreateInfo] = Swapchain::ChooseSwapchainCreateInfo(width, height, context->physicalDevice.Get(), context->surface.Get());
+        auto[swapchainChooseCreateInfoResult, swapchainCreateInfo] = Swapchain::ChooseSwapchainCreateInfo(width, height, context->physicalDevice, context->surface);
         if (swapchainChooseCreateInfoResult != vk::Result::eSuccess)
         {
             // TODO
             return false;
         }
 
-        auto[createSwapchainResult, createdSwapchain] = device->CreateSwapchain(swapchainCreateInfo, context->surface.Get());
+        auto[createSwapchainResult, createdSwapchain] = device->CreateSwapchain(swapchainCreateInfo, context->surface);
         if (createSwapchainResult != vk::Result::eSuccess)
         {
             // TODO
@@ -165,6 +165,18 @@ namespace Husky::Render
         }
 
         context->swapchain = std::move(createdSwapchain);
+
+        Vector<Format> depthFormats =
+        {
+            Format::D32SfloatS8Uint,
+            Format::D24UnormS8Uint,
+            Format::D16UnormS8Uint,
+        };
+
+        auto supportedDepthFormats = context->physicalDevice->GetSupportedDepthStencilFormats(depthFormats);
+        HUSKY_ASSERT_MSG(!depthFormats.empty(), "No supported depth formats");
+        depthStencilFormat = depthFormats.front();
+
         return true;
     }
 
@@ -523,7 +535,7 @@ namespace Husky::Render
 
         PresentSubmission presentSubmission;
         presentSubmission.index = index;
-        presentSubmission.swapchain = context->swapchain.Get();
+        presentSubmission.swapchain = context->swapchain;
         presentSubmission.waitSemaphores = { frameResource.drawSemaphore };
 
         context->device->GetPresentQueue()->Present(presentSubmission);
@@ -1341,13 +1353,14 @@ namespace Husky::Render
     ResultValue<bool, LightingPassResources> DeferredRenderer::PrepareLightingPassResources(DeferredPreparedScene& scene)
     {
         LightingPassResources resources;
+        int32 swapchainLength = context->swapchain->GetSwapchainCreateInfo().imageCount;
 
-        int32 maxDescriptorSets = 1 + context->swapchain->GetSwapchainCreateInfo().imageCount;
+        int32 maxDescriptorSets = 1 + swapchainLength + 1;
 
         UnorderedMap<vk::DescriptorType, int32> descriptorCount =
         {
             { vk::DescriptorType::eUniformBuffer, 1 },
-            { vk::DescriptorType::eCombinedImageSampler, OffscreenImagesCount + 1 },
+            { vk::DescriptorType::eCombinedImageSampler, swapchainLength * OffscreenImagesCount + 1 },
         };
 
         ShaderDefines shaderDefines;

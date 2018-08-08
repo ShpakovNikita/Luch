@@ -49,9 +49,9 @@ namespace Husky::Vulkan
 
         inline PhysicalDevice* GetPhysicalDevice() const { return physicalDevice; }
         inline const QueueIndices* GetQueueIndices() { return &queueInfo.indices; }
-        inline Queue* GetGraphicsQueue() { return queueInfo.graphicsQueue.Get(); }
-        inline PresentQueue* GetPresentQueue() { return queueInfo.presentQueue.Get(); }
-        inline Queue* GetComputeQueue() { return queueInfo.computeQueue.Get(); }
+        inline Queue* GetGraphicsQueue() { return queueInfo.graphicsQueue; }
+        inline PresentQueue* GetPresentQueue() { return queueInfo.presentQueue; }
+        inline Queue* GetComputeQueue() { return queueInfo.computeQueue; }
 
         vk::Result WaitIdle();
 

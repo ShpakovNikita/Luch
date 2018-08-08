@@ -12,27 +12,6 @@ namespace Husky::Vulkan
     {
     }
 
-    Surface::Surface(Surface && other)
-        : allocationCallbacks(other.allocationCallbacks)
-        , instance(other.instance)
-        , surface(other.surface)
-    {
-        other.instance = nullptr;
-        other.surface = nullptr;
-    }
-
-    Surface& Surface::operator=(Surface&& other)
-    {
-        allocationCallbacks = other.allocationCallbacks;
-        instance = other.instance;
-        surface = other.surface;
-
-        other.instance = nullptr;
-        other.surface = nullptr;
-
-        return *this;
-    }
-
     Surface::~Surface()
     {
         Destroy();
@@ -54,7 +33,7 @@ namespace Husky::Vulkan
     }
 
 #ifdef _WIN32
-    VulkanResultValue<Surface> Surface::CreateWin32Surface(
+    VulkanRefResultValue<Surface> Surface::CreateWin32Surface(
         vk::Instance instance,
         HINSTANCE hInstance,
         HWND hWnd,
@@ -67,7 +46,7 @@ namespace Husky::Vulkan
 
         if (result == vk::Result::eSuccess)
         {
-            auto surface = Surface{ instance, vulkanSurface, allocationCallbacks };
+            auto surface = MakeRef<Surface>(instance, vulkanSurface, allocationCallbacks);
             return { result, std::move(surface) };
         }
         else
@@ -79,7 +58,7 @@ namespace Husky::Vulkan
 #endif
 
 #if __APPLE__
-    VulkanResultValue<Surface> Surface::CreateMacOSSurface(
+    VulkanRefResultValue<Surface> Surface::CreateMacOSSurface(
             vk::Instance instance,
             void* view)
     {
@@ -89,7 +68,7 @@ namespace Husky::Vulkan
         auto [result, vulkanSurface] = instance.createMacOSSurfaceMVK(ci);
         if(result == vk::Result::eSuccess)
         {
-            auto surface = Surface { instance, vulkanSurface };
+            auto surface = MakeRef<Surface>(instance, vulkanSurface);
             return { result, std::move(surface) };
         }
         else

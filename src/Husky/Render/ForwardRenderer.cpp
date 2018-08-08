@@ -69,7 +69,7 @@ namespace Husky::Render
     {
         GLSLShaderCompiler::Initialize();
 
-        auto[chooseQueuesResult, queueIndices] = context->physicalDevice->ChooseDeviceQueues(context->surface.Get());
+        auto[chooseQueuesResult, queueIndices] = context->physicalDevice->ChooseDeviceQueues(context->surface);
         if (chooseQueuesResult != vk::Result::eSuccess)
         {
             // TODO
@@ -97,14 +97,14 @@ namespace Husky::Render
 
         context->presentCommandPool = std::move(createdPresentCommandPool);
 
-        auto[swapchainChooseCreateInfoResult, swapchainCreateInfo] = Swapchain::ChooseSwapchainCreateInfo(width, height, context->physicalDevice.Get(), context->surface.Get());
+        auto[swapchainChooseCreateInfoResult, swapchainCreateInfo] = Swapchain::ChooseSwapchainCreateInfo(width, height, context->physicalDevice, context->surface);
         if (swapchainChooseCreateInfoResult != vk::Result::eSuccess)
         {
             // TODO
             return false;
         }
 
-        auto[createSwapchainResult, createdSwapchain] = device->CreateSwapchain(swapchainCreateInfo, context->surface.Get());
+        auto[createSwapchainResult, createdSwapchain] = device->CreateSwapchain(swapchainCreateInfo, context->surface);
         if (createSwapchainResult != vk::Result::eSuccess)
         {
             // TODO
@@ -380,7 +380,7 @@ namespace Husky::Render
 
             frameResources.depthStencilBuffer = std::move(createdDepthStencilBuffer);
 
-            auto[createDepthStencilBufferViewResult, createdDepthStencilBufferView] = context->device->CreateImageView(frameResources.depthStencilBuffer.Get());
+            auto[createDepthStencilBufferViewResult, createdDepthStencilBufferView] = context->device->CreateImageView(frameResources.depthStencilBuffer);
             if (createDepthStencilBufferViewResult != vk::Result::eSuccess)
             {
                 return { false };
@@ -388,10 +388,10 @@ namespace Husky::Render
 
             frameResources.depthStencilBufferView = std::move(createdDepthStencilBufferView);
 
-            FramebufferCreateInfo framebufferCreateInfo(preparedScene.renderPass.Get(), swapchainCreateInfo.width, swapchainCreateInfo.height, 1);
+            FramebufferCreateInfo framebufferCreateInfo(preparedScene.renderPass, swapchainCreateInfo.width, swapchainCreateInfo.height, 1);
             framebufferCreateInfo
                 .AddAttachment(&colorAttachment, context->swapchain->GetImageView(i))
-                .AddAttachment(&depthAttachment, frameResources.depthStencilBufferView.Get());
+                .AddAttachment(&depthAttachment, frameResources.depthStencilBufferView);
 
             auto[createFramebufferResult, createdFramebuffer] = context->device->CreateFramebuffer(framebufferCreateInfo);
             if (createFramebufferResult != vk::Result::eSuccess)
@@ -498,7 +498,7 @@ namespace Husky::Render
         auto[createSemaphoreResult, imageAcquiredSemaphore] = context->device->CreateSemaphore();
         HUSKY_ASSERT(createSemaphoreResult == vk::Result::eSuccess);
 
-        auto[acquireResult, index] = context->swapchain->AcquireNextImage(nullptr, imageAcquiredSemaphore.Get());
+        auto[acquireResult, index] = context->swapchain->AcquireNextImage(nullptr, imageAcquiredSemaphore);
         HUSKY_ASSERT(acquireResult == vk::Result::eSuccess);
 
         auto& frameResource = scene.frameResources[index];
@@ -536,10 +536,10 @@ namespace Husky::Render
             ->End();
 
         Submission submission;
-        submission.commandBuffers = { cmdBuffer.Get() };
-        submission.fence = frameResource.fence.Get();
-        submission.waitOperations = { { imageAcquiredSemaphore.Get(), vk::PipelineStageFlagBits::eColorAttachmentOutput } };
-        submission.signalSemaphores = { frameResource.semaphore.Get() };
+        submission.commandBuffers = { cmdBuffer };
+        submission.fence = frameResource.fence;
+        submission.waitOperations = { { imageAcquiredSemaphore, vk::PipelineStageFlagBits::eColorAttachmentOutput } };
+        submission.signalSemaphores = { frameResource.semaphore };
 
         context->device->GetGraphicsQueue()->Submit(submission);
 
@@ -550,8 +550,8 @@ namespace Husky::Render
 
         PresentSubmission presentSubmission;
         presentSubmission.index = index;
-        presentSubmission.swapchain = context->swapchain.Get();
-        presentSubmission.waitSemaphores = { frameResource.semaphore.Get() };
+        presentSubmission.swapchain = context->swapchain;
+        presentSubmission.waitSemaphores = { frameResource.semaphore };
 
         context->device->GetPresentQueue()->Present(presentSubmission);
     }
@@ -904,7 +904,7 @@ namespace Husky::Render
 
         for (const auto& vertexBuffer : vertexBuffers)
         {
-            vulkanVertexBuffers.push_back(vertexBuffer->GetDeviceBuffer().Get());
+            vulkanVertexBuffers.push_back(vertexBuffer->GetDeviceBuffer());
             offsets.push_back(0);
         }
 
@@ -915,11 +915,11 @@ namespace Husky::Render
         MaterialPushConstants materialPushConstants = GetMaterialPushConstants(material);
 
         cmdBuffer
-            ->BindGraphicsPipeline(pipeline.Get())
+            ->BindGraphicsPipeline(pipeline)
             ->BindVertexBuffers(vulkanVertexBuffers, offsets, 0)
             ->BindDescriptorSet(scene.pipelineLayout, 3, primitive->GetMaterial()->GetDescriptorSet())
             ->BindIndexBuffer(
-                indexBuffer->GetDeviceBuffer().Get(),
+                indexBuffer->GetDeviceBuffer(),
                 ToVulkanIndexType(indexBuffer->GetIndexType()),
                 0)
             ->PushConstants(scene.pipelineLayout, ShaderStage::Fragment, 0, materialPushConstants)
@@ -962,12 +962,12 @@ namespace Husky::Render
 
         auto& vertexShaderStage = pipelineState.shaderStages.emplace_back();
         vertexShaderStage.name = "main";
-        vertexShaderStage.shaderModule = scene.vertexShaderModule.Get();
+        vertexShaderStage.shaderModule = scene.vertexShaderModule;
         vertexShaderStage.stage = ShaderStage::Vertex;
 
         auto& fragmentShaderStage = pipelineState.shaderStages.emplace_back();
         fragmentShaderStage.name = "main";
-        fragmentShaderStage.shaderModule = scene.fragmentShaderModule.Get();
+        fragmentShaderStage.shaderModule = scene.fragmentShaderModule;
         fragmentShaderStage.stage = ShaderStage::Fragment;
 
         const auto& vertexBuffers = primitive->GetVertexBuffers();
@@ -1025,8 +1025,8 @@ namespace Husky::Render
             attachmentBlendState.alphaBlendOp = vk::BlendOp::eAdd;
         }
 
-        pipelineState.renderPass = scene.renderPass.Get();
-        pipelineState.layout = scene.pipelineLayout.Get();
+        pipelineState.renderPass = scene.renderPass;
+        pipelineState.layout = scene.pipelineLayout;
 
         pipelineState.viewportState.viewports.emplace_back();
         pipelineState.viewportState.scissors.emplace_back();

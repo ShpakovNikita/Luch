@@ -145,8 +145,8 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     SceneV1::Loader::glTFLoader loader{ rootDir, root };
     auto scenes = loader.LoadScenes();
 
-    //forwardRenderer = MakeUnique<Render::ForwardRenderer>(&physicalDevice, &surface, width, height);
-    deferredRenderer = MakeUnique<Render::DeferredRenderer>(&physicalDevice, &surface, width, height);
+    //forwardRenderer = MakeUnique<Render::ForwardRenderer>(&physicalDevice, surface, width, height);
+    deferredRenderer = MakeUnique<Render::DeferredRenderer>(&physicalDevice, surface, width, height);
 
     //forwardRenderer->Initialize();
     deferredRenderer->Initialize();
