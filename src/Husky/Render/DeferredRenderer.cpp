@@ -936,7 +936,7 @@ namespace Husky::Render
             ->BindIndexBuffer(
                 indexBuffer.backingBuffer->GetDeviceBuffer(),
                 ToVulkanIndexType(indexBuffer.indexType),
-                0)
+                indexBuffer.byteOffset)
             ->PushConstants(scene.gBuffer.pipelineLayout, ShaderStage::Fragment, 0, materialPushConstants)
             ->DrawIndexed(indexBuffer.count, 1, 0, 0, 0);
     }
