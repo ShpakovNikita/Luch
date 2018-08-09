@@ -4,6 +4,7 @@
 #include <Husky/Vulkan.h>
 #include <Husky/UniquePtr.h>
 #include <Husky/FileStream.h>
+#include <Husky/SceneV1/Buffer.h>
 #include <Husky/SceneV1/Scene.h>
 #include <Husky/SceneV1/SceneProperties.h>
 #include <Husky/SceneV1/Mesh.h>
@@ -140,6 +141,17 @@ namespace Husky::SceneV1::Loader
             for (const auto& primitive : mesh->GetPrimitives())
             {
                 sceneProperties->primitives.insert(primitive);
+
+                for(const auto& vertexBuffer : primitive->GetVertexBuffers())
+                {
+                    sceneProperties->buffers.insert(vertexBuffer.backingBuffer);
+                }
+
+                if(primitive->GetIndexBuffer().has_value())
+                {
+                    sceneProperties->buffers.insert(primitive->GetIndexBuffer()->backingBuffer);
+                }
+
                 const auto& material = primitive->GetMaterial();
                 if (material != nullptr)
                 {
@@ -253,7 +265,7 @@ namespace Husky::SceneV1::Loader
 
         struct BufferWithIndex
         {
-            RefPtr<VertexBuffer> buffer;
+            VertexBuffer buffer;
             int32 index;
         };
 
@@ -274,7 +286,7 @@ namespace Husky::SceneV1::Loader
 
             const auto& bufferViewIndex = accessor.bufferView;
 
-            RefPtr<VertexBuffer> vb;
+            VertexBuffer vb;
 
             if (bufferViewIndex.has_value())
             {
@@ -298,13 +310,12 @@ namespace Husky::SceneV1::Loader
                 }
                 else
                 {
-                    const auto& hostBuffer = loadedBuffers[bufferView.buffer];
+                    const auto& buffer = loadedBuffers[bufferView.buffer];
 
-                    vb = MakeRef<VertexBuffer>(
-                        hostBuffer,
-                        stride,
-                        bufferView.byteOffset,
-                        bufferView.byteLength);
+                    vb.backingBuffer = buffer;
+                    vb.stride = stride;
+                    vb.byteOffset = bufferView.byteOffset;
+                    vb.byteLength = bufferView.byteLength;
 
                     vertexBuffersMap[*bufferViewIndex] = BufferWithIndex{ vb, currentVertexBufferIndex };
                     attribute.vertexBufferIndex = currentVertexBufferIndex;
@@ -314,14 +325,14 @@ namespace Husky::SceneV1::Loader
             }
         }
 
-        RefPtrVector<VertexBuffer> vertexBuffers;
+        Vector<VertexBuffer> vertexBuffers;
         vertexBuffers.resize(vertexBuffersMap.size());
         for (const auto& kv : vertexBuffersMap)
         {
             vertexBuffers[kv.second.index] = kv.second.buffer;
         }
 
-        RefPtr<IndexBuffer> indexBuffer;
+        Optional<IndexBuffer> indexBuffer;
         if (primitive.indices.has_value())
         {
             indexBuffer = MakeIndexBuffer(root->accessors[*primitive.indices]);
@@ -341,11 +352,11 @@ namespace Husky::SceneV1::Loader
             PrimitiveTopology::TriangleList);
     }
 
-    RefPtr<IndexBuffer> glTFLoader::MakeIndexBuffer(const glTF::Accessor& indices)
+    Optional<IndexBuffer> glTFLoader::MakeIndexBuffer(const glTF::Accessor& indices)
     {
         if (!indices.bufferView.has_value())
         {
-            return RefPtr<IndexBuffer>();
+            return {};
         }
 
         const auto& bufferView = root->bufferViews[*indices.bufferView];
@@ -367,13 +378,14 @@ namespace Husky::SceneV1::Loader
             HUSKY_ASSERT_MSG(false, "Unsupported index type");
         }
 
-        return MakeRef<IndexBuffer>(
-            buffer,
-            indexType,
-            indices.count,
-            bufferView.byteOffset,
-            bufferView.byteLength
-            );
+        IndexBuffer ib;
+        ib.backingBuffer = buffer;
+        ib.indexType = indexType;
+        ib.count = indices.count;
+        ib.byteOffset = bufferView.byteOffset;
+        ib.byteLength = bufferView.byteLength;
+
+        return ib;
     }
 
     RefPtr<PbrMaterial> glTFLoader::MakePbrMaterial(const glTF::Material& glTFMaterial)
@@ -480,14 +492,10 @@ namespace Husky::SceneV1::Loader
         return MakeRef<Sampler>(samplerCreateInfo, name);
     }
 
-    SharedPtr<Vector<uint8>> glTFLoader::ReadHostBuffer(const BufferSource& source)
+    RefPtr<Buffer> glTFLoader::ReadHostBuffer(const BufferSource& source)
     {
-        UniquePtr<FileStream> stream = MakeUnique<FileStream>(source.root + "/" + source.filename, FileOpenModes::Read);
-        SharedPtr<Vector<uint8>> buffer = MakeShared<Vector<uint8>>();
-        buffer->resize(source.byteLength);
-
-        stream->Read(buffer->data(), source.byteLength, 1);
-
+        auto buffer = MakeRef<Buffer>(source);
+        buffer->ReadToHost();
         return buffer;
     }
 

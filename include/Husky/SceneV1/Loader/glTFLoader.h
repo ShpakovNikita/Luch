@@ -26,12 +26,12 @@ namespace Husky::SceneV1::Loader
         RefPtr<PerspectiveCamera> MakePerspectiveCamera(const String& name, const glTF::Perspective& camera);
         RefPtr<OrthographicCamera> MakeOrthographicCamera(const String& name, const glTF::Orthographic& camera);
         RefPtr<Primitive> MakePrimitive(const glTF::Primitive& primitive);
-        RefPtr<IndexBuffer> MakeIndexBuffer(const glTF::Accessor& indices);
+        Optional<IndexBuffer> MakeIndexBuffer(const glTF::Accessor& indices);
         RefPtr<PbrMaterial> MakePbrMaterial(const glTF::Material& material);
         RefPtr<Texture> MakeTexture(const glTF::Texture& texture);
         RefPtr<Sampler> MakeSampler(const glTF::Sampler& sampler);
 
-        SharedPtr<Vector<uint8>> ReadHostBuffer(const BufferSource& source);
+        RefPtr<Buffer> ReadHostBuffer(const BufferSource& source);
         RefPtr<Image> ReadHostImage(const TextureSource& source);
 
         String rootFolder;
@@ -40,7 +40,7 @@ namespace Husky::SceneV1::Loader
         bool loaded = false;
         RefPtrVector<Mesh> loadedMeshes;
         RefPtrVector<Camera> loadedCameras;
-        Vector<SharedPtr<Vector<uint8>>> loadedBuffers;
+        RefPtrVector<Buffer> loadedBuffers;
         RefPtrVector<PbrMaterial> loadedMaterials;
         RefPtrVector<Sampler> loadedSamplers;
         RefPtrVector<Texture> loadedTextures;

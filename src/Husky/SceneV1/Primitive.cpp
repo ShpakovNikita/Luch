@@ -1,7 +1,5 @@
 #include <Husky/SceneV1/Primitive.h>
 #include <Husky/SceneV1/PbrMaterial.h>
-#include <Husky/SceneV1/IndexBuffer.h>
-#include <Husky/SceneV1/VertexBuffer.h>
 #include <Husky/Vulkan/Pipeline.h>
 
 namespace Husky::SceneV1
@@ -41,8 +39,8 @@ namespace Husky::SceneV1
 
     Primitive::Primitive(
         Vector<PrimitiveAttribute>&& aAttributes,
-        RefPtrVector<VertexBuffer>&& aVertexBuffers,
-        const RefPtr<IndexBuffer>& aIndexBuffer,
+        Vector<VertexBuffer>&& aVertexBuffers,
+        const Optional<IndexBuffer>& aIndexBuffer,
         const RefPtr<PbrMaterial>& aMaterial,
         PrimitiveTopology aTopology)
         : attributes(std::move(aAttributes))

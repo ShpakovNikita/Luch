@@ -136,9 +136,14 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     glTF::glTFParser glTFparser;
 
     //String rootDir{ "C:\\Development\\HuskyResources\\glTF-Sample-Models\\2.0\\Sponza\\glTF\\" };
-    String rootDir{ "/Users/spo1ler/Development/HuskyEngine/res/gltf2/sponza/" };
 
-    FileStream fileStream{ rootDir + "Sponza.gltf", FileOpenModes::Read };
+    //String rootDir{ "/Users/spo1ler/Development/HuskyEngine/res/gltf2/sponza/" };
+    //String filename { "Sponza.gltf" };
+
+    String rootDir{ "/Users/spo1ler/Development/HuskyEngine/res/gltf2/Box/" };
+    String filename{ "Box.gltf" };
+
+    FileStream fileStream{ rootDir + filename, FileOpenModes::Read };
 
     auto root = glTFparser.ParseJSON(&fileStream);
 

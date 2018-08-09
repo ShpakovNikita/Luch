@@ -5,15 +5,14 @@
 #include <Husky/Format.h>
 #include <Husky/RefPtr.h>
 #include <Husky/BaseObject.h>
-#include <Husky/SceneV1/AttributeSemantic.h>
 #include <Husky/Vulkan/Forwards.h>
 #include <Husky/SceneV1/Forwards.h>
+#include <Husky/SceneV1/AttributeSemantic.h>
+#include <Husky/SceneV1/IndexBuffer.h>
+#include <Husky/SceneV1/VertexBuffer.h>
 
 namespace Husky::SceneV1
 {
-    class IndexBuffer;
-    class PbrMaterial;
-
     enum class ComponentType
     {
         Int8,
@@ -52,8 +51,8 @@ namespace Husky::SceneV1
     public:
         Primitive(
             Vector<PrimitiveAttribute>&& attributes,
-            RefPtrVector<VertexBuffer>&& vertexBuffers,
-            const RefPtr<IndexBuffer>& indexBuffer,
+            Vector<VertexBuffer>&& vertexBuffers,
+            const Optional<IndexBuffer>& indexBuffer,
             const RefPtr<PbrMaterial>& material,
             PrimitiveTopology topology
         );
@@ -61,8 +60,8 @@ namespace Husky::SceneV1
         ~Primitive();
 
         const Vector<PrimitiveAttribute>& GetAttributes() const { return attributes; }
-        const RefPtrVector<VertexBuffer>& GetVertexBuffers() const { return vertexBuffers; }
-        const RefPtr<IndexBuffer>& GetIndexBuffer() const { return indexBuffer; }
+        const Vector<VertexBuffer>& GetVertexBuffers() const { return vertexBuffers; }
+        const Optional<IndexBuffer>& GetIndexBuffer() const { return indexBuffer; }
         const RefPtr<PbrMaterial>& GetMaterial() const { return material; }
         inline PrimitiveTopology GetTopology() const { return topology; }
         inline const RefPtr<Vulkan::Pipeline>& GetPipeline() const { return pipeline; }
@@ -70,8 +69,8 @@ namespace Husky::SceneV1
         inline void AddShaderModule(const RefPtr<Vulkan::ShaderModule>& shaderModule) { shaderModules.push_back(shaderModule); }
     private:
         Vector<PrimitiveAttribute> attributes;
-        RefPtrVector<VertexBuffer> vertexBuffers;
-        RefPtr<IndexBuffer> indexBuffer;
+        Vector<VertexBuffer> vertexBuffers;
+        Optional<IndexBuffer> indexBuffer;
         RefPtr<PbrMaterial> material;
         PrimitiveTopology topology = PrimitiveTopology::TriangleList;
         RefPtrVector<Vulkan::ShaderModule> shaderModules;

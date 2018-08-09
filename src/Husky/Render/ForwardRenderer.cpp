@@ -624,17 +624,6 @@ namespace Husky::Render
                 primitive->SetPipeline(pipeline);
             }
 
-            const auto& indexBuffer = primitive->GetIndexBuffer();
-            bool indexBufferUploaded = indexBuffer->UploadToDevice(context->device);
-            HUSKY_ASSERT(indexBufferUploaded);
-
-            const auto& vertexBuffers = primitive->GetVertexBuffers();
-            for (const auto& vertexBuffer : vertexBuffers)
-            {
-                bool vertexBufferUploaded = vertexBuffer->UploadToDevice(context->device);
-                HUSKY_ASSERT(vertexBufferUploaded);
-            }
-
             auto[createUniformBufferResult, createdUniformBuffer] = context->device->CreateBuffer(
                 sizeof(MeshUniformBuffer),
                 context->device->GetQueueIndices()->graphicsQueueFamilyIndex,
@@ -904,11 +893,12 @@ namespace Husky::Render
 
         for (const auto& vertexBuffer : vertexBuffers)
         {
-            vulkanVertexBuffers.push_back(vertexBuffer->GetDeviceBuffer());
-            offsets.push_back(0);
+            vulkanVertexBuffers.push_back(vertexBuffer.backingBuffer->GetDeviceBuffer());
+            offsets.push_back(vertexBuffer.byteOffset);
         }
 
-        const auto& indexBuffer = primitive->GetIndexBuffer();
+        HUSKY_ASSERT(primitive->GetIndexBuffer().has_value());
+        const auto& indexBuffer = *primitive->GetIndexBuffer();
 
         const auto& material = primitive->GetMaterial();
 
@@ -919,11 +909,11 @@ namespace Husky::Render
             ->BindVertexBuffers(vulkanVertexBuffers, offsets, 0)
             ->BindDescriptorSet(scene.pipelineLayout, 3, primitive->GetMaterial()->GetDescriptorSet())
             ->BindIndexBuffer(
-                indexBuffer->GetDeviceBuffer(),
-                ToVulkanIndexType(indexBuffer->GetIndexType()),
+                indexBuffer.backingBuffer->GetDeviceBuffer(),
+                ToVulkanIndexType(indexBuffer.indexType),
                 0)
             ->PushConstants(scene.pipelineLayout, ShaderStage::Fragment, 0, materialPushConstants)
-            ->DrawIndexed(indexBuffer->GetIndexCount(), 1, 0, 0, 0);
+            ->DrawIndexed(indexBuffer.count, 1, 0, 0, 0);
     }
 
     ImageDescriptorInfo ForwardRenderer::ToVulkanImageDescriptorInfo(const SceneV1::TextureInfo& textureInfo)
@@ -977,7 +967,7 @@ namespace Husky::Render
             const auto& vertexBuffer = vertexBuffers[i];
             auto& bindingDescription = pipelineState.vertexInputState.bindingDescriptions[i];
             bindingDescription.binding = i;
-            bindingDescription.stride = vertexBuffer->GetStride();
+            bindingDescription.stride = vertexBuffer.stride;
             bindingDescription.inputRate = vk::VertexInputRate::eVertex;
         }
 
