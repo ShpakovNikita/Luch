@@ -1097,7 +1097,12 @@ namespace Husky::Render
 
         auto[vertexShaderCreated, createdVertexShader] = CreateShader(
             ShaderStage::Vertex,
+#if _WIN32
             "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\gbuffer.vert",
+#endif
+#if __APPLE__
+            "/Users/spo1ler/Development/HuskyEngine/src/Husky/Render/Shaders/Deferred/gbuffer.vert",
+#endif
             shaderDefines);
 
         if (!vertexShaderCreated)
@@ -1109,7 +1114,12 @@ namespace Husky::Render
 
         auto[fragmentShaderCreated, createdFragmentShader] = CreateShader(
             ShaderStage::Fragment,
+#if _WIN32
             "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\gbuffer.frag",
+#endif
+#if __APPLE__
+            "/Users/spo1ler/Development/HuskyEngine/src/Husky/Render/Shaders/Deferred/gbuffer.frag",
+#endif
             shaderDefines);
 
         if (!fragmentShaderCreated)
@@ -1385,7 +1395,12 @@ namespace Husky::Render
 
         auto[vertexShaderCreated, createdVertexShader] = CreateShader(
             ShaderStage::Vertex,
+#if _WIN32
             "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\lighting.vert",
+#endif
+#if __APPLE__
+            "/Users/spo1ler/Development/HuskyEngine/src/Husky/Render/Shaders/Deferred/lighting.vert",
+#endif
             shaderDefines);
 
         if (!vertexShaderCreated)
@@ -1397,7 +1412,12 @@ namespace Husky::Render
 
         auto[fragmentShaderCreated, createdFragmentShader] = CreateShader(
             ShaderStage::Fragment,
+#if _WIN32
             "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\lighting.frag",
+#endif
+#if __APPLE__
+            "/Users/spo1ler/Development/HuskyEngine/src/Husky/Render/Shaders/Deferred/lighting.frag",
+#endif
             shaderDefines);
 
         if (!fragmentShaderCreated)
