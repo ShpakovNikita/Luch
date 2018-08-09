@@ -12,7 +12,7 @@ namespace Husky::SceneV1
         RefPtrUnorderedSet<Primitive> primitives;
         RefPtrUnorderedSet<Camera> cameras;
         RefPtrUnorderedSet<PbrMaterial> materials;
-        RefPtrUnorderedSet<Sampler> samplers;
         RefPtrUnorderedSet<Texture> textures;
+        RefPtrUnorderedSet<Sampler> samplers;
     };
 }

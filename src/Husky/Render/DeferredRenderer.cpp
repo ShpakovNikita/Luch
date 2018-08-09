@@ -399,7 +399,19 @@ namespace Husky::Render
         TextureUploader textureUploader{ context->device, preparedScene.commandPool };
         auto [uploadTexturesSucceeded, uploadTexturesResult] = textureUploader.UploadTextures(texturesVector);
 
-        HUSKY_ASSERT(uploadTexturesSucceeded);
+        if(!uploadTexturesSucceeded)
+        {
+            return { false };
+        }
+
+        const auto& buffers = sceneProperties.buffers;
+        for(const auto& buffer : buffers)
+        {
+            if(!buffer->UploadToDevice(context->device))
+            {
+                return { false };
+            }
+        }
 
         // TODO semaphores
 
@@ -613,17 +625,6 @@ namespace Husky::Render
             {
                 pipeline = CreateGBufferPipeline(primitive, scene);
                 primitive->SetPipeline(pipeline);
-            }
-
-            const auto& indexBuffer = primitive->GetIndexBuffer();
-            bool indexBufferUploaded = indexBuffer->UploadToDevice(context->device);
-            HUSKY_ASSERT(indexBufferUploaded);
-
-            const auto& vertexBuffers = primitive->GetVertexBuffers();
-            for (const auto& vertexBuffer : vertexBuffers)
-            {
-                bool vertexBufferUploaded = vertexBuffer->UploadToDevice(context->device);
-                HUSKY_ASSERT(vertexBufferUploaded);
             }
         }
 
@@ -917,11 +918,12 @@ namespace Husky::Render
 
         for (const auto& vertexBuffer : vertexBuffers)
         {
-            vulkanVertexBuffers.push_back(vertexBuffer->GetDeviceBuffer());
-            offsets.push_back(0);
+            vulkanVertexBuffers.push_back(vertexBuffer.backingBuffer->GetDeviceBuffer());
+            offsets.push_back(vertexBuffer.byteOffset);
         }
 
-        const auto& indexBuffer = primitive->GetIndexBuffer();
+        HUSKY_ASSERT(primitive->GetIndexBuffer().has_value());
+        const auto& indexBuffer = *primitive->GetIndexBuffer();
 
         const auto& material = primitive->GetMaterial();
 
@@ -932,11 +934,11 @@ namespace Husky::Render
             ->BindVertexBuffers(vulkanVertexBuffers, offsets, 0)
             ->BindDescriptorSet(scene.gBuffer.pipelineLayout, 2, primitive->GetMaterial()->GetDescriptorSet())
             ->BindIndexBuffer(
-                indexBuffer->GetDeviceBuffer(),
-                ToVulkanIndexType(indexBuffer->GetIndexType()),
-                0)
+                indexBuffer.backingBuffer->GetDeviceBuffer(),
+                ToVulkanIndexType(indexBuffer.indexType),
+                indexBuffer.byteOffset)
             ->PushConstants(scene.gBuffer.pipelineLayout, ShaderStage::Fragment, 0, materialPushConstants)
-            ->DrawIndexed(indexBuffer->GetIndexCount(), 1, 0, 0, 0);
+            ->DrawIndexed(indexBuffer.count, 1, 0, 0, 0);
     }
 
     ImageDescriptorInfo DeferredRenderer::ToVulkanImageDescriptorInfo(const SceneV1::TextureInfo& textureInfo)
@@ -986,7 +988,7 @@ namespace Husky::Render
             const auto& vertexBuffer = vertexBuffers[i];
             auto& bindingDescription = pipelineState.vertexInputState.bindingDescriptions[i];
             bindingDescription.binding = i;
-            bindingDescription.stride = vertexBuffer->GetStride();
+            bindingDescription.stride = vertexBuffer.stride;
             bindingDescription.inputRate = vk::VertexInputRate::eVertex;
         }
 
@@ -1095,7 +1097,12 @@ namespace Husky::Render
 
         auto[vertexShaderCreated, createdVertexShader] = CreateShader(
             ShaderStage::Vertex,
+#if _WIN32
             "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\gbuffer.vert",
+#endif
+#if __APPLE__
+            "/Users/spo1ler/Development/HuskyEngine/src/Husky/Render/Shaders/Deferred/gbuffer.vert",
+#endif
             shaderDefines);
 
         if (!vertexShaderCreated)
@@ -1107,7 +1114,12 @@ namespace Husky::Render
 
         auto[fragmentShaderCreated, createdFragmentShader] = CreateShader(
             ShaderStage::Fragment,
+#if _WIN32
             "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\gbuffer.frag",
+#endif
+#if __APPLE__
+            "/Users/spo1ler/Development/HuskyEngine/src/Husky/Render/Shaders/Deferred/gbuffer.frag",
+#endif
             shaderDefines);
 
         if (!fragmentShaderCreated)
@@ -1383,7 +1395,12 @@ namespace Husky::Render
 
         auto[vertexShaderCreated, createdVertexShader] = CreateShader(
             ShaderStage::Vertex,
+#if _WIN32
             "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\lighting.vert",
+#endif
+#if __APPLE__
+            "/Users/spo1ler/Development/HuskyEngine/src/Husky/Render/Shaders/Deferred/lighting.vert",
+#endif
             shaderDefines);
 
         if (!vertexShaderCreated)
@@ -1395,7 +1412,12 @@ namespace Husky::Render
 
         auto[fragmentShaderCreated, createdFragmentShader] = CreateShader(
             ShaderStage::Fragment,
+#if _WIN32
             "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\lighting.frag",
+#endif
+#if __APPLE__
+            "/Users/spo1ler/Development/HuskyEngine/src/Husky/Render/Shaders/Deferred/lighting.frag",
+#endif
             shaderDefines);
 
         if (!fragmentShaderCreated)

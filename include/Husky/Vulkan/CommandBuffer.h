@@ -77,20 +77,18 @@ namespace Husky::Vulkan
 
         inline CommandBuffer* BindVertexBuffers(Vector<DeviceBuffer*> vertexBuffers, Vector<int64> offsets, int32 binding)
         {
+            HUSKY_ASSERT(vertexBuffers.size() == offsets.size());
+
             Vector<vk::Buffer> vulkanBuffers;
-            vulkanBuffers.reserve(vertexBuffers.size());
-
-            for (auto& vertexBuffer : vertexBuffers)
-            {
-                vulkanBuffers.push_back(vertexBuffer->GetBuffer());
-            }
-
             Vector<vk::DeviceSize> vulkanOffsets;
+
+            vulkanBuffers.reserve(vertexBuffers.size());
             vulkanOffsets.reserve(offsets.size());
 
-            for (auto& offset : offsets)
+            for (int32 i = 0; i < vertexBuffers.size(); i++)
             {
-                vulkanOffsets.push_back(offset);
+                vulkanBuffers.push_back(vertexBuffers[i]->GetBuffer());
+                vulkanOffsets.push_back(offsets[i]);
             }
 
             commandBuffer.bindVertexBuffers(binding, vulkanBuffers, vulkanOffsets);
