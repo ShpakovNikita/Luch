@@ -37,12 +37,19 @@ namespace Husky::Vulkan
         vk::Instance instance,
         HINSTANCE hInstance,
         HWND hWnd,
-        const vk::AllocationCallbacks& allocationCallbacks)
+        const Optional<vk::AllocationCallbacks>& allocationCallbacks)
     {
         vk::Win32SurfaceCreateInfoKHR ci;
         ci.setHinstance(hInstance);
         ci.setHwnd(hWnd);
-        auto [result, vulkanSurface] = instance.createWin32SurfaceKHR(ci, allocationCallbacks);
+
+        vk::Optional<const vk::AllocationCallbacks> callbacks = nullptr;
+        if (allocationCallbacks.has_value())
+        {
+            callbacks = *allocationCallbacks;
+        }
+
+        auto [result, vulkanSurface] = instance.createWin32SurfaceKHR(ci, callbacks);
 
         if (result == vk::Result::eSuccess)
         {
@@ -51,7 +58,7 @@ namespace Husky::Vulkan
         }
         else
         {
-            instance.destroySurfaceKHR(vulkanSurface, allocationCallbacks);
+            instance.destroySurfaceKHR(vulkanSurface, callbacks);
             return { result };
         }
     }

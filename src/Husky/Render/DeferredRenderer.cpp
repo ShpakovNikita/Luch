@@ -526,6 +526,7 @@ namespace Husky::Render
 
         lightingSubmission.waitOperations =
         {
+            { context->presentSemaphore, vk::PipelineStageFlagBits::eColorAttachmentOutput },
             { frameResource.offscreenSemaphore, vk::PipelineStageFlagBits::eFragmentShader }
         };
 
@@ -533,16 +534,16 @@ namespace Husky::Render
 
         context->device->GetGraphicsQueue()->Submit(lightingSubmission);
 
-        frameResource.fence->Wait();
-        frameResource.fence->Reset();
-        frameResource.graphicsCommandPool->Reset();
-
         PresentSubmission presentSubmission;
         presentSubmission.index = index;
         presentSubmission.swapchain = context->swapchain;
-        presentSubmission.waitSemaphores = { context->presentSemaphore, frameResource.drawSemaphore };
+        presentSubmission.waitSemaphores = { frameResource.drawSemaphore };
 
         context->device->GetPresentQueue()->Present(presentSubmission);
+
+        frameResource.fence->Wait();
+        frameResource.fence->Reset();
+        frameResource.graphicsCommandPool->Reset();
     }
 
     void DeferredRenderer::PrepareCameraNode(const RefPtr<SceneV1::Node>& node, DeferredPreparedScene& scene)
@@ -1094,8 +1095,7 @@ namespace Husky::Render
 
         auto[vertexShaderCreated, createdVertexShader] = CreateShader(
             ShaderStage::Vertex,
-            //"C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\gbuffer.vert",
-            "/Users/spo1ler/Development/HuskyEngine/src/Husky/Render/Shaders/Deferred/gbuffer.vert",
+            "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\gbuffer.vert",
             shaderDefines);
 
         if (!vertexShaderCreated)
@@ -1107,8 +1107,7 @@ namespace Husky::Render
 
         auto[fragmentShaderCreated, createdFragmentShader] = CreateShader(
             ShaderStage::Fragment,
-            //"C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\gbuffer.frag",
-            "/Users/spo1ler/Development/HuskyEngine/src/Husky/Render/Shaders/Deferred/gbuffer.frag",
+            "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\gbuffer.frag",
             shaderDefines);
 
         if (!fragmentShaderCreated)
@@ -1384,8 +1383,7 @@ namespace Husky::Render
 
         auto[vertexShaderCreated, createdVertexShader] = CreateShader(
             ShaderStage::Vertex,
-            //C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\lighting.vert",
-            "/Users/spo1ler/Development/HuskyEngine/src/Husky/Render/Shaders/Deferred/lighting.vert",
+            "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\lighting.vert",
             shaderDefines);
 
         if (!vertexShaderCreated)
@@ -1397,8 +1395,7 @@ namespace Husky::Render
 
         auto[fragmentShaderCreated, createdFragmentShader] = CreateShader(
             ShaderStage::Fragment,
-            //"C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\lighting.frag",
-            "/Users/spo1ler/Development/HuskyEngine/src/Husky/Render/Shaders/Deferred/lighting.frag",
+            "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\lighting.frag",
             shaderDefines);
 
         if (!fragmentShaderCreated)

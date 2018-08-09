@@ -7,6 +7,7 @@ namespace Husky::SceneV1
 {
     struct SceneProperties
     {
+        RefPtrUnorderedSet<Buffer> buffers;
         RefPtrUnorderedSet<Mesh> meshes;
         RefPtrUnorderedSet<Primitive> primitives;
         RefPtrUnorderedSet<Camera> cameras;

@@ -19,7 +19,7 @@ namespace Husky::Vulkan
             vk::Instance instance,
             HINSTANCE hInstance,
             HWND hWnd,
-            const vk::AllocationCallbacks& allocationCallbacks);
+            const Optional<vk::AllocationCallbacks>& allocationCallbacks);
 #endif
 
 #if __APPLE__
