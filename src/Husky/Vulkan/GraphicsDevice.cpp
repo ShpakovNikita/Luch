@@ -3,10 +3,10 @@
 #include <Husky/Vulkan/PhysicalDevice.h>
 #include <Husky/Vulkan/ShaderCompiler.h>
 #include <Husky/Vulkan/Surface.h>
-#include <Husky/Vulkan/Buffer.h>
-#include <Husky/Vulkan/BufferView.h>
 #include <Husky/Vulkan/CommandBuffer.h>
 #include <Husky/Vulkan/CommandPool.h>
+#include <Husky/Vulkan/DeviceBuffer.h>
+#include <Husky/Vulkan/DeviceBufferView.h>
 #include <Husky/Vulkan/DescriptorPool.h>
 #include <Husky/Vulkan/DescriptorSetLayout.h>
 #include <Husky/Vulkan/Fence.h>
@@ -261,7 +261,7 @@ namespace Husky::Vulkan
         }
     }
 
-    VulkanRefResultValue<Buffer> GraphicsDevice::CreateBuffer(int64 size, QueueIndex queueIndex, vk::BufferUsageFlags usage, bool mappable)
+    VulkanRefResultValue<DeviceBuffer> GraphicsDevice::CreateBuffer(int64 size, QueueIndex queueIndex, vk::BufferUsageFlags usage, bool mappable)
     {
         vk::BufferCreateInfo ci;
         ci.setPQueueFamilyIndices(&queueIndex);
@@ -296,11 +296,15 @@ namespace Husky::Vulkan
         }
         else
         {
-            return { createBufferResult, MakeRef<Buffer>(this, vulkanBuffer, vulkanMemory, ci) };
+            return { createBufferResult, MakeRef<DeviceBuffer>(this, vulkanBuffer, vulkanMemory, ci) };
         }
     }
 
-    VulkanRefResultValue<BufferView> GraphicsDevice::CreateBufferView(Buffer* buffer, Format format, int64 offset, int64 size)
+    VulkanRefResultValue<DeviceBufferView> GraphicsDevice::CreateBufferView(
+        DeviceBuffer* buffer,
+        Format format,
+        int64 offset,
+        int64 size)
     {
         vk::BufferViewCreateInfo createInfo;
         createInfo.setBuffer(buffer->buffer);
@@ -316,7 +320,7 @@ namespace Husky::Vulkan
         }
         else
         {
-            return { createResult, MakeRef<BufferView>(this, vulkanBufferView) };
+            return { createResult, MakeRef<DeviceBufferView>(this, vulkanBufferView) };
         }
     }
 
@@ -612,13 +616,13 @@ namespace Husky::Vulkan
     {
         device.destroyCommandPool(commandPool->commandPool, allocationCallbacks);
     }
-    void GraphicsDevice::DestroyBuffer(Buffer* buffer)
+    void GraphicsDevice::DestroyBuffer(DeviceBuffer* buffer)
     {
         device.destroyBuffer(buffer->buffer, allocationCallbacks);
         device.freeMemory(buffer->memory, allocationCallbacks);
     }
 
-    void GraphicsDevice::DestroyBufferView(BufferView* bufferView)
+    void GraphicsDevice::DestroyBufferView(DeviceBufferView* bufferView)
     {
         device.destroyBufferView(bufferView->bufferView, allocationCallbacks);
     }

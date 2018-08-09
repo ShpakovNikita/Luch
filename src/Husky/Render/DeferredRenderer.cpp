@@ -909,7 +909,7 @@ namespace Husky::Render
 
         const auto& vertexBuffers = primitive->GetVertexBuffers();
 
-        Vector<Buffer*> vulkanVertexBuffers;
+        Vector<DeviceBuffer*> vulkanVertexBuffers;
         Vector<int64> offsets;
         vulkanVertexBuffers.reserve(vertexBuffers.size());
         offsets.reserve(vertexBuffers.size());
@@ -940,7 +940,12 @@ namespace Husky::Render
 
     ImageDescriptorInfo DeferredRenderer::ToVulkanImageDescriptorInfo(const SceneV1::TextureInfo& textureInfo)
     {
-        return ImageDescriptorInfo{ textureInfo.texture->GetDeviceImageView(), textureInfo.texture->GetDeviceSampler(), vk::ImageLayout::eShaderReadOnlyOptimal };
+        return ImageDescriptorInfo
+        {
+            textureInfo.texture->GetDeviceImageView(),
+            textureInfo.texture->GetDeviceSampler(),
+            vk::ImageLayout::eShaderReadOnlyOptimal
+        };
     }
 
     MaterialPushConstants DeferredRenderer::GetMaterialPushConstants(SceneV1::PbrMaterial * material)

@@ -15,13 +15,13 @@ namespace Husky::Vulkan
 
     class GraphicsDevice : public BaseObject
     {
-        friend class Buffer;
-        friend class BufferView;
         friend class CommandBuffer;
         friend class CommandPool;
         friend class DescriptorPool;
         friend class DescriptorSet;
         friend class DescriptorSetLayout;
+        friend class DeviceBuffer;
+        friend class DeviceBufferView;
         friend class Fence;
         friend class Framebuffer;
         friend class Image;
@@ -61,8 +61,8 @@ namespace Husky::Vulkan
         VulkanRefResultValue<Swapchain> CreateSwapchain(const SwapchainCreateInfo& swapchainCreateInfo, Surface* surface);
 
         VulkanRefResultValue<CommandPool> CreateCommandPool(QueueIndex queueIndex, bool transient = false, bool canReset = false);
-        VulkanRefResultValue<Buffer> CreateBuffer(int64 size, QueueIndex queueIndex, vk::BufferUsageFlags usage, bool mappable);
-        VulkanRefResultValue<BufferView> CreateBufferView(Buffer* buffer, Format format, int64 offset, int64 size);
+        VulkanRefResultValue<DeviceBuffer> CreateBuffer(int64 size, QueueIndex queueIndex, vk::BufferUsageFlags usage, bool mappable);
+        VulkanRefResultValue<DeviceBufferView> CreateBufferView(DeviceBuffer* buffer, Format format, int64 offset, int64 size);
         VulkanRefResultValue<Image> CreateImage(const vk::ImageCreateInfo& imageCreateInfo);
         VulkanRefResultValue<ImageView> CreateImageView(Image* image, vk::ImageViewCreateInfo& imageViewCreateInfo);
         VulkanRefResultValue<ImageView> CreateImageView(Image* image);
@@ -86,8 +86,8 @@ namespace Husky::Vulkan
 
         void DestroySwapchain(Swapchain* swapchain);
         void DestroyCommandPool(CommandPool* commandPool);
-        void DestroyBuffer(Buffer* buffer);
-        void DestroyBufferView(BufferView* bufferView);
+        void DestroyBuffer(DeviceBuffer* buffer);
+        void DestroyBufferView(DeviceBufferView* bufferView);
         void DestroyImage(Image* image);
         void DestroyImageView(ImageView* imageView);
         void DestroyPipeline(Pipeline* pipeline);

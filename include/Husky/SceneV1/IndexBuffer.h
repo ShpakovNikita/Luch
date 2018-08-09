@@ -26,7 +26,7 @@ namespace Husky::SceneV1
         inline int32 GetIndexCount() const { return count; }
         inline int32 GetByteOffset() const { return byteOffset; }
         inline const SharedPtr<Vector<uint8>>& GetHostBuffer() const { return hostBuffer; }
-        inline const RefPtr<Vulkan::Buffer>& GetDeviceBuffer() const { return deviceBuffer; }
+        inline const RefPtr<Vulkan::DeviceBuffer>& GetDeviceBuffer() const { return deviceBuffer; }
 
         bool UploadToDevice(const RefPtr<Vulkan::GraphicsDevice>& device);
     private:
@@ -39,6 +39,6 @@ namespace Husky::SceneV1
         int32 byteLength = 0;
 
         SharedPtr<Vector<uint8>> hostBuffer;
-        RefPtr<Vulkan::Buffer> deviceBuffer;
+        RefPtr<Vulkan::DeviceBuffer> deviceBuffer;
     };
 }

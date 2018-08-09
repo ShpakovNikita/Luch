@@ -1,9 +1,9 @@
-#include <Husky/Vulkan/BufferView.h>
+#include <Husky/Vulkan/DeviceBufferView.h>
 #include <Husky/Vulkan/GraphicsDevice.h>
 
 namespace Husky::Vulkan
 {
-    BufferView::BufferView(
+    DeviceBufferView::DeviceBufferView(
         GraphicsDevice* aDevice,
         vk::BufferView aBufferView)
         : device(aDevice)
@@ -11,12 +11,12 @@ namespace Husky::Vulkan
     {
     }
 
-    BufferView::~BufferView()
+    DeviceBufferView::~DeviceBufferView()
     {
         Destroy();
     }
 
-    void BufferView::Destroy()
+    void DeviceBufferView::Destroy()
     {
         if (device)
         {

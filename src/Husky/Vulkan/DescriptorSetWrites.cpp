@@ -1,5 +1,5 @@
 #include <Husky/Vulkan/DescriptorSetWrites.h>
-#include <Husky/Vulkan/Buffer.h>
+#include <Husky/Vulkan/DeviceBuffer.h>
 #include <Husky/Vulkan/Image.h>
 #include <Husky/Vulkan/Sampler.h>
 #include <Husky/Vulkan/ImageView.h>
@@ -11,7 +11,7 @@ namespace Husky::Vulkan
     DescriptorSetWrites& DescriptorSetWrites::WriteUniformBufferDescriptors(
         DescriptorSet* descriptorSet,
         DescriptorSetBinding* binding,
-        const Vector<Buffer*>& buffers)
+        const Vector<DeviceBuffer*>& buffers)
     {
         if (buffers.empty())
         {
@@ -52,7 +52,7 @@ namespace Husky::Vulkan
     DescriptorSetWrites& DescriptorSetWrites::WriteStorageBufferDescriptors(
         DescriptorSet* descriptorSet,
         DescriptorSetBinding* binding,
-        const Vector<Buffer*>& buffers)
+        const Vector<DeviceBuffer*>& buffers)
     {
         if (buffers.empty())
         {

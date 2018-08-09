@@ -3,7 +3,7 @@
 #include <Husky/ArrayProxy.h>
 #include <Husky/Vulkan.h>
 #include <Husky/ShaderStage.h>
-#include <Husky/Vulkan/Buffer.h>
+#include <Husky/Vulkan/DeviceBuffer.h>
 #include <Husky/Vulkan/DescriptorSet.h>
 #include <Husky/Vulkan/Framebuffer.h>
 #include <Husky/Vulkan/ShaderStage.h>
@@ -38,11 +38,6 @@ namespace Husky::Vulkan
         static constexpr int32 MaxVertexBuffers = 7;
 
         CommandBuffer(GraphicsDevice* device, vk::CommandBuffer commandBuffer);
-
-        CommandBuffer(CommandBuffer&& other) = delete;
-        CommandBuffer(const CommandBuffer& other) = delete;
-        CommandBuffer& operator=(const CommandBuffer& other) = delete;
-        CommandBuffer& operator=(CommandBuffer&& other) = delete;
 
         inline vk::CommandBuffer GetCommandBuffer() { return commandBuffer; }
 
@@ -80,7 +75,7 @@ namespace Husky::Vulkan
             return this;
         }
 
-        inline CommandBuffer* BindVertexBuffers(Vector<Buffer*> vertexBuffers, Vector<int64> offsets, int32 binding)
+        inline CommandBuffer* BindVertexBuffers(Vector<DeviceBuffer*> vertexBuffers, Vector<int64> offsets, int32 binding)
         {
             Vector<vk::Buffer> vulkanBuffers;
             vulkanBuffers.reserve(vertexBuffers.size());
@@ -102,7 +97,7 @@ namespace Husky::Vulkan
             return this;
         }
 
-        inline CommandBuffer* BindIndexBuffer(Buffer* indexBuffer, vk::IndexType indexType, int64 offset)
+        inline CommandBuffer* BindIndexBuffer(DeviceBuffer* indexBuffer, vk::IndexType indexType, int64 offset)
         {
             commandBuffer.bindIndexBuffer(indexBuffer->GetBuffer(), offset, indexType);
             return this;
@@ -183,7 +178,7 @@ namespace Husky::Vulkan
         }
 
         inline CommandBuffer* CopyBufferToImage(
-            Buffer* buffer,
+            DeviceBuffer* buffer,
             Image* image,
             vk::ImageLayout dstLayout,
             const BufferToImageCopy& copy)

@@ -6,17 +6,17 @@
 
 namespace Husky::Vulkan
 {
-    class Buffer : public BaseObject
+    class DeviceBuffer : public BaseObject
     {
         friend class GraphicsDevice;
     public:
-        Buffer(
+        DeviceBuffer(
             GraphicsDevice* device,
             vk::Buffer buffer,
             vk::DeviceMemory memory,
             vk::BufferCreateInfo bufferCreateInfo);
 
-        ~Buffer() override;
+        ~DeviceBuffer() override;
 
         VulkanResultValue<void*> MapMemory(int64 size, int64 offset);
         void* GetMappedMemory() const { return mappedMemory; }

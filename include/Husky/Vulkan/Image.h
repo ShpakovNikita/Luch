@@ -1,15 +1,14 @@
 #pragma once
 
-#include <Husky/Vulkan.h>
+#include <Husky/BaseObject.h>
 #include <Husky/Format.h>
 #include <Husky/ImageAspects.h>
+#include <Husky/Vulkan.h>
+#include <Husky/Vulkan/Forwards.h>
 #include <Husky/Vulkan/Format.h>
-#include <Husky/BaseObject.h>
 
 namespace Husky::Vulkan
 {
-    class GraphicsDevice;
-
     class Image : public BaseObject
     {
         friend class GraphicsDevice;
@@ -21,11 +20,6 @@ namespace Husky::Vulkan
             vk::ImageCreateInfo createInfo,
             vk::MemoryRequirements memoryRequirements,
             bool owning = true);
-
-        Image(const Image& other) = delete;
-        Image(Image&& other) = delete;
-        Image& operator=(const Image& other) = delete;
-        Image& operator=(Image&& other) = delete;
 
         ~Image() override;
 

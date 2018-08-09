@@ -897,7 +897,7 @@ namespace Husky::Render
 
         const auto& vertexBuffers = primitive->GetVertexBuffers();
 
-        Vector<Buffer*> vulkanVertexBuffers;
+        Vector<DeviceBuffer*> vulkanVertexBuffers;
         Vector<int64> offsets;
         vulkanVertexBuffers.reserve(vertexBuffers.size());
         offsets.reserve(vertexBuffers.size());

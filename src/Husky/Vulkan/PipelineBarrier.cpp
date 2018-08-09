@@ -1,5 +1,5 @@
 #include <Husky/Vulkan/PipelineBarrier.h>
-#include <Husky/Vulkan/Buffer.h>
+#include <Husky/Vulkan/DeviceBuffer.h>
 #include <Husky/Vulkan/Image.h>
 #include <Husky/Vulkan/ImageAspects.h>
 

@@ -39,7 +39,7 @@ namespace Husky::Vulkan
             return *this;
         }
 
-        inline BufferMemoryBarrier& ForBuffer(Buffer* aBuffer, int32 aSize, int32 aOffset)
+        inline BufferMemoryBarrier& ForBuffer(DeviceBuffer* aBuffer, int32 aSize, int32 aOffset)
         {
             buffer = aBuffer;
             size = aSize;
@@ -47,7 +47,7 @@ namespace Husky::Vulkan
             return *this;
         }
     private:
-        Buffer* buffer;
+        DeviceBuffer* buffer;
         int32 size = 0;
         int32 offset = 0;
         vk::AccessFlags srcAccess;

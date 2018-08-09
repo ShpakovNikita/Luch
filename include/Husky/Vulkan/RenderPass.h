@@ -11,12 +11,6 @@ namespace Husky::Vulkan
         friend class GraphicsDevice;
     public:
         RenderPass(GraphicsDevice* device, vk::RenderPass renderPass, int32 attachmentCount);
-
-        RenderPass(const RenderPass& other) = delete;
-        RenderPass(RenderPass&& other) = delete;
-        RenderPass& operator=(const RenderPass& other) = delete;
-        RenderPass& operator=(RenderPass&& other) = delete;
-
         ~RenderPass() override;
 
         inline vk::RenderPass GetRenderPass() { return renderPass; }

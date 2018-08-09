@@ -1,14 +1,12 @@
 #pragma once
 
-#include <Husky/Vulkan.h>
 #include <Husky/BaseObject.h>
+#include <Husky/Vulkan.h>
+#include <Husky/Vulkan/Forwards.h>
 #include <Husky/Vulkan/CommandBuffer.h>
 
 namespace Husky::Vulkan
 {
-    class GraphicsDevice;
-    class CommandBuffer;
-
     enum class CommandBufferLevel
     {
         Primary,
@@ -20,12 +18,6 @@ namespace Husky::Vulkan
         friend class GraphicsDevice;
     public:
         CommandPool(GraphicsDevice* device, vk::CommandPool commandPool);
-
-        CommandPool(const CommandPool& other) = delete;
-        CommandPool(CommandPool&& other) = delete;
-        CommandPool& operator=(const CommandPool& other) = delete;
-        CommandPool& operator=(CommandPool&& other) = delete;
-
         ~CommandPool() override;
 
         inline vk::CommandPool GetCommandPool() { return commandPool; }

@@ -19,8 +19,8 @@ namespace Husky::SceneV1
         inline const String& GetName() const { return name; }
         inline const RefPtrVector<Primitive>& GetPrimitives() const { return primitives; }
 
-        inline const RefPtr<Vulkan::Buffer>& GetUniformBuffer() const { return uniformBuffer; }
-        inline void SetUniformBuffer(const RefPtr<Vulkan::Buffer>& aUniformBuffer) { uniformBuffer = aUniformBuffer; }
+        inline const RefPtr<Vulkan::DeviceBuffer>& GetUniformBuffer() const { return uniformBuffer; }
+        inline void SetUniformBuffer(const RefPtr<Vulkan::DeviceBuffer>& aUniformBuffer) { uniformBuffer = aUniformBuffer; }
 
         inline const RefPtr<Vulkan::DescriptorSet>& GetDescriptorSet() const { return descriptorSet; }
         inline void SetDescriptorSet(const RefPtr<Vulkan::DescriptorSet>& aDescriptorSet) { descriptorSet = aDescriptorSet; }
@@ -29,7 +29,7 @@ namespace Husky::SceneV1
 
         RefPtrVector<Primitive> primitives;
 
-        RefPtr<Vulkan::Buffer> uniformBuffer;
+        RefPtr<Vulkan::DeviceBuffer> uniformBuffer;
         RefPtr<Vulkan::DescriptorSet> descriptorSet;
     };
 }

@@ -2,11 +2,11 @@
 
 namespace Husky::Vulkan
 {
-    class Buffer;
-    class BufferView;
     class CommandBuffer;
     class CommandPool;
     class CubeTexture;
+    class DeviceBuffer;
+    class DeviceBufferView;
     class DescriptorPool;
     class DescriptorSet;
     class DescriptorSetBinding;

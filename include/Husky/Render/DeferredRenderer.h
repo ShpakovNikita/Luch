@@ -72,14 +72,14 @@ namespace Husky::Render
 
         RefPtr<DescriptorSet> cameraDescriptorSet;
         RefPtr<DescriptorSet> gbufferDescriptorSet;
-        RefPtr<Buffer> cameraUniformBuffer;
+        RefPtr<DeviceBuffer> cameraUniformBuffer;
 
         RefPtr<CommandPool> graphicsCommandPool;
 
         OffscreenImages offscreen;
 
-        RefPtr<Buffer> indexBuffer;
-        RefPtr<Buffer> vertexBuffer;
+        RefPtr<DeviceBuffer> indexBuffer;
+        RefPtr<DeviceBuffer> vertexBuffer;
 
         RefPtr<Fence> fence;
         RefPtr<Semaphore> drawSemaphore;
@@ -138,10 +138,10 @@ namespace Husky::Render
         RefPtr<PipelineLayout> pipelineLayout;
         RefPtr<DescriptorPool> descriptorPool;
 
-        RefPtr<Buffer> fullscreenQuadBuffer;
+        RefPtr<DeviceBuffer> fullscreenQuadBuffer;
 
         DescriptorSetBinding lightsUniformBufferBinding;
-        RefPtr<Buffer> lightsBuffer;
+        RefPtr<DeviceBuffer> lightsBuffer;
 
         DescriptorSetBinding baseColorImageBinding;
         DescriptorSetBinding normalMapImageBinding;

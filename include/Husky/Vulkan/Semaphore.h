@@ -2,6 +2,7 @@
 
 #include <Husky/BaseObject.h>
 #include <Husky/Vulkan.h>
+#include <Husky/Vulkan/Forwards.h>
 
 namespace Husky::Vulkan
 {
@@ -12,12 +13,6 @@ namespace Husky::Vulkan
         friend class GraphicsDevice;
     public:
         Semaphore(GraphicsDevice* device, vk::Semaphore semaphore);
-
-        Semaphore(Semaphore&& other) = delete;
-        Semaphore(const Semaphore& other) = delete;
-        Semaphore& operator=(const Semaphore& other) = delete;
-        Semaphore& operator=(Semaphore&& other) = delete;
-
         ~Semaphore() override;
 
         inline vk::Semaphore GetSemaphore() { return semaphore; }

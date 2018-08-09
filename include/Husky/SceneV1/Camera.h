@@ -23,8 +23,8 @@ namespace Husky::SceneV1
 
         virtual Mat4x4 GetCameraProjectionMatrix() const = 0;
 
-        inline const RefPtr<Vulkan::Buffer>& GetUniformBuffer() const { return uniformBuffer; }
-        inline void SetUniformBuffer(const RefPtr<Vulkan::Buffer>& aUniformBuffer) { uniformBuffer = aUniformBuffer; }
+        inline const RefPtr<Vulkan::DeviceBuffer>& GetUniformBuffer() const { return uniformBuffer; }
+        inline void SetUniformBuffer(const RefPtr<Vulkan::DeviceBuffer>& aUniformBuffer) { uniformBuffer = aUniformBuffer; }
 
         inline const RefPtr<Vulkan::DescriptorSet>& GetDescriptorSet() const { return descriptorSet; }
         inline void SetDescriptorSet(const RefPtr<Vulkan::DescriptorSet>& aDescriptorSet) { descriptorSet = aDescriptorSet; }
@@ -35,7 +35,7 @@ namespace Husky::SceneV1
         String name;
 
         RefPtr<Vulkan::DescriptorSet> descriptorSet;
-        RefPtr<Vulkan::Buffer> uniformBuffer;
+        RefPtr<Vulkan::DeviceBuffer> uniformBuffer;
     };
 
     class PerspectiveCamera : public Camera

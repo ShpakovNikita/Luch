@@ -10,7 +10,7 @@ namespace Husky::Render
     struct TextureUploadIntermediateResult
     {
         RefPtr<Vulkan::Image> image;
-        RefPtr<Vulkan::Buffer> stagingBuffer;
+        RefPtr<Vulkan::DeviceBuffer> stagingBuffer;
         Vulkan::ImageMemoryBarrier transferImageBarrier;
         Vulkan::ImageMemoryBarrier readImageBarrier;
         Vulkan::BufferToImageCopy copy;
@@ -18,7 +18,7 @@ namespace Husky::Render
 
     struct TextureUploaderResult
     {
-        RefPtrVector<Vulkan::Buffer> stagingBuffers;
+        RefPtrVector<Vulkan::DeviceBuffer> stagingBuffers;
         RefPtrVector<Vulkan::CommandBuffer> commandBuffers;
     };
 

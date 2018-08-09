@@ -6,18 +6,13 @@
 
 namespace Husky::Vulkan
 {
-    class BufferView : public BaseObject
+    class DeviceBufferView : public BaseObject
     {
         friend class GraphicsDevice;
     public:
-        BufferView(GraphicsDevice* device, vk::BufferView bufferView);
+        DeviceBufferView(GraphicsDevice* device, vk::BufferView bufferView);
 
-        BufferView(BufferView&& other) = delete;
-        BufferView(const BufferView& other) = delete;
-        BufferView& operator=(const BufferView& other) = delete;
-        BufferView& operator=(BufferView&& other) = delete;
-
-        ~BufferView() override;
+        ~DeviceBufferView() override;
 
         inline vk::BufferView GetBufferView() { return bufferView; }
     private:

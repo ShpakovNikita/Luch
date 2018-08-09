@@ -1,9 +1,9 @@
-#include <Husky/Vulkan/Buffer.h>
+#include <Husky/Vulkan/DeviceBuffer.h>
 #include <Husky/Vulkan/GraphicsDevice.h>
 
 namespace Husky::Vulkan
 {
-    Buffer::Buffer(
+    DeviceBuffer::DeviceBuffer(
         GraphicsDevice* aDevice,
         vk::Buffer aBuffer,
         vk::DeviceMemory aMemory,
@@ -15,19 +15,19 @@ namespace Husky::Vulkan
     {
     }
 
-    Buffer::~Buffer()
+    DeviceBuffer::~DeviceBuffer()
     {
         Destroy();
     }
 
-    VulkanResultValue<void*> Buffer::MapMemory(int64 size, int64 offset)
+    VulkanResultValue<void*> DeviceBuffer::MapMemory(int64 size, int64 offset)
     {
         auto [result, memoryPointer] = device->GetDevice().mapMemory(memory, offset, size);
         mappedMemory = memoryPointer;
         return { result, memoryPointer };
     }
 
-    void Buffer::UnmapMemory()
+    void DeviceBuffer::UnmapMemory()
     {
         mappedMemory = nullptr;
         device->GetDevice().unmapMemory(memory);
@@ -35,7 +35,7 @@ namespace Husky::Vulkan
 
     // TODO more control
 
-    vk::Result Buffer::FlushMemory()
+    vk::Result DeviceBuffer::FlushMemory()
     {
         vk::MappedMemoryRange memoryRange;
         memoryRange.setMemory(memory);
@@ -43,7 +43,7 @@ namespace Husky::Vulkan
         return device->GetDevice().flushMappedMemoryRanges({ memoryRange });
     }
 
-    vk::Result Buffer::InvalidateMemory()
+    vk::Result DeviceBuffer::InvalidateMemory()
     {
         vk::MappedMemoryRange memoryRange;
         memoryRange.setMemory(memory);
@@ -51,7 +51,7 @@ namespace Husky::Vulkan
         return device->GetDevice().invalidateMappedMemoryRanges({ memoryRange });
     }
 
-    void Buffer::Destroy()
+    void DeviceBuffer::Destroy()
     {
         if (device)
         {

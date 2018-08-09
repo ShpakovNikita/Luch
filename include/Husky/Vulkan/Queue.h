@@ -2,17 +2,10 @@
 
 #include <Husky/BaseObject.h>
 #include <Husky/Vulkan.h>
+#include <Husky/Vulkan/Forwards.h>
 
 namespace Husky::Vulkan
 {
-    class GraphicsDevice;
-    class PhysicalDevice;
-    class CommandBuffer;
-    class Fence;
-    class Semaphore;
-    class Swapchain;
-    struct QueueInfo;
-
     struct SemaphoreWaitOperation
     {
         Semaphore* semaphore = nullptr;
@@ -41,12 +34,6 @@ namespace Husky::Vulkan
         friend QueueInfo;
     public:
         explicit Queue(vk::Queue queue);
-
-        Queue(Queue&& other) = delete;
-        Queue(const Queue& other) = delete;
-        Queue& operator=(const Queue& other) = delete;
-        Queue& operator=(Queue&& other) = delete;
-
         ~Queue() = default; // Queues are owned by device, so we don't destroy them in destructor
 
         vk::Result WaitIdle();

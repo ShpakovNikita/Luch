@@ -25,12 +25,12 @@ namespace Husky::Render
         RefPtr<CommandBuffer> commandBuffer;
         RefPtr<Image> depthStencilBuffer;
         RefPtr<ImageView> depthStencilBufferView;
-        
-        RefPtr<Buffer> indexBuffer;
-        RefPtr<Buffer> vertexBuffer;
+
+        RefPtr<DeviceBuffer> indexBuffer;
+        RefPtr<DeviceBuffer> vertexBuffer;
         RefPtr<Fence> fence;
         RefPtr<Semaphore> semaphore;
-        RefPtr<Buffer> cameraUniformBuffer;
+        RefPtr<DeviceBuffer> cameraUniformBuffer;
     };
 
     struct ForwardRendererContext
@@ -73,7 +73,7 @@ namespace Husky::Render
         DescriptorSetBinding occlusionTextureBinding;
         DescriptorSetBinding emissiveTextureBinding;
 
-        RefPtr<Buffer> lightsBuffer;
+        RefPtr<DeviceBuffer> lightsBuffer;
         RefPtr<DescriptorSet> lightsDescriptorSet;
 
         RefPtr<DescriptorSetLayout> cameraDescriptorSetLayout;

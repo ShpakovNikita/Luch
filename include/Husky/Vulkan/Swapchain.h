@@ -1,21 +1,16 @@
 #pragma once
 
 #include <Husky/Types.h>
-#include <Husky/Vulkan.h>
 #include <Husky/Format.h>
 #include <Husky/RefPtr.h>
+#include <Husky/Vulkan.h>
+#include <Husky/Vulkan/Forwards.h>
 #include <Husky/Vulkan/Image.h>
 #include <Husky/Vulkan/ImageView.h>
 #include <Husky/Vulkan/SwapchainCreateInfo.h>
 
 namespace Husky::Vulkan
 {
-    class PhysicalDevice;
-    class GraphicsDevice;
-    class Surface;
-    class Fence;
-    class Semaphore;
-
     struct SwapchainImage
     {
         RefPtr<Image> image;
@@ -32,11 +27,6 @@ namespace Husky::Vulkan
             SwapchainCreateInfo createInfo,
             int32 swapchainImageCount,
             Vector<SwapchainImage>&& swapchainImages);
-
-        Swapchain(Swapchain&& other) = delete;
-        Swapchain(const Swapchain& other) = delete;
-        Swapchain& operator=(const Swapchain& other) = delete;
-        Swapchain& operator=(Swapchain&& other) = delete;
 
         ~Swapchain() override;
 

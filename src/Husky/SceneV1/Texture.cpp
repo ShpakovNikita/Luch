@@ -4,7 +4,7 @@
 #include <Husky/Vulkan/GraphicsDevice.h>
 #include <Husky/Vulkan/Image.h>
 #include <Husky/Vulkan/ImageView.h>
-#include <Husky/Vulkan/Buffer.h>
+#include <Husky/Vulkan/DeviceBuffer.h>
 #include <Husky/Vulkan/CommandPool.h>
 
 namespace Husky::SceneV1

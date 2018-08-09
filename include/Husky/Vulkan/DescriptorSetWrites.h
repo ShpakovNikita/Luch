@@ -23,12 +23,12 @@ namespace Husky::Vulkan
         DescriptorSetWrites& WriteUniformBufferDescriptors(
             DescriptorSet* descriptorSet,
             DescriptorSetBinding* binding,
-            const Vector<Buffer*>& buffers);
+            const Vector<DeviceBuffer*>& buffers);
 
         DescriptorSetWrites& WriteStorageBufferDescriptors(
             DescriptorSet* descriptorSet,
             DescriptorSetBinding* binding,
-            const Vector<Buffer*>& buffers);
+            const Vector<DeviceBuffer*>& buffers);
 
         DescriptorSetWrites& WriteImageDescriptors(
             DescriptorSet* descriptorSet,

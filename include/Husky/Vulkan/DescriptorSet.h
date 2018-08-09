@@ -6,21 +6,12 @@
 
 namespace Husky::Vulkan
 {
-    class GraphicsDevice;
-    class DescriptorSetBinding;
-    class Buffer;
-
     class DescriptorSet : public BaseObject
     {
         friend class GraphicsDevice;
         friend class DescriptorPool;
     public:
         DescriptorSet(GraphicsDevice* device, vk::DescriptorSet descriptorSet);
-
-        DescriptorSet(DescriptorSet&& other) = delete;
-        DescriptorSet(const DescriptorSet& other) = delete;
-        DescriptorSet& operator=(const DescriptorSet& other) = delete;
-        DescriptorSet& operator=(DescriptorSet&& other) = delete;
 
         vk::Result Free();
 
