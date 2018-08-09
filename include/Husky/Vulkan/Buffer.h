@@ -2,21 +2,19 @@
 
 #include <Husky/BaseObject.h>
 #include <Husky/Vulkan.h>
+#include <Husky/Vulkan/Forwards.h>
 
 namespace Husky::Vulkan
 {
-    class GraphicsDevice;
-
     class Buffer : public BaseObject
     {
         friend class GraphicsDevice;
     public:
-        Buffer(GraphicsDevice* device, vk::Buffer buffer, vk::DeviceMemory memory, vk::BufferCreateInfo bufferCreateInfo);
-
-        Buffer(const Buffer& other) = delete;
-        Buffer(Buffer&& other) = delete;
-        Buffer& operator=(const Buffer& other) = delete;
-        Buffer& operator=(Buffer&& other) = delete;
+        Buffer(
+            GraphicsDevice* device,
+            vk::Buffer buffer,
+            vk::DeviceMemory memory,
+            vk::BufferCreateInfo bufferCreateInfo);
 
         ~Buffer() override;
 
