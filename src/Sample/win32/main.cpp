@@ -1,6 +1,6 @@
 #if _WIN32
 
-#include "SampleApplication.h"
+#include "../common/SampleApplication.h"
 
 using namespace Husky;
 

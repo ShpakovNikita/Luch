@@ -135,13 +135,12 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     glTF::glTFParser glTFparser;
 
-    //String rootDir{ "C:\\Development\\HuskyResources\\glTF-Sample-Models\\2.0\\Sponza\\glTF\\" };
-
     //String rootDir{ "/Users/spo1ler/Development/HuskyEngine/res/gltf2/sponza/" };
     //String filename { "Sponza.gltf" };
 
-    String rootDir{ "/Users/spo1ler/Development/HuskyEngine/res/gltf2/Box/" };
-    String filename{ "Box.gltf" };
+    String rootDir{ "C:\\Development\\HuskyResources\\glTF-Sample-Models\\2.0\\Sponza\\glTF\\" };
+    String filename{ "Sponza.gltf" };
+
 
     FileStream fileStream{ rootDir + filename, FileOpenModes::Read };
 
@@ -430,7 +429,7 @@ Vector<const char8*> SampleApplication::GetValidationLayerNames() const
     return
     {
         "VK_LAYER_LUNARG_standard_validation",
-        //"VK_LAYER_LUNARG_assistant_layer"
+        "VK_LAYER_LUNARG_assistant_layer"
     };
 }
 

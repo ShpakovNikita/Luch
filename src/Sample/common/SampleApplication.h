@@ -14,7 +14,7 @@
 #include <Husky/Render/DeferredRenderer.h>
 
 #ifdef _WIN32
-#include "VulkanAllocator.h"
+#include "../win32/VulkanAllocator.h"
 #include <Husky/Platform/Win32/WndProcDelegate.h>
 #endif
 

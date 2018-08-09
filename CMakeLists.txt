@@ -90,7 +90,7 @@ include_directories(AFTER SYSTEM
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/glm/
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/json/src/
     ${CMAKE_CURRENT_SOURCE_DIR}/include/
-    ${GLSLANG_INCLUDE_DIR}
+    ${GLSLANG_DIR}
 )
 
 add_library(glslang STATIC IMPORTED)
@@ -158,7 +158,8 @@ if(WIN32)
     file(GLOB_RECURSE SAMPLE_WIN32_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Sample/win32/*.cpp)
     file(GLOB_RECURSE SAMPLE_WIN32_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Sample/win32/*.h)
 
-    add_executable(HuskyEngineSample WIN32
+    add_executable(HuskyEngineSample
+        # WIN32
         ${SAMPLE_COMMON_CPP_FILES}
         ${SAMPLE_WIN32_CPP_FILES}
         ${SAMPLE_COMMON_HEADER_FILES}
