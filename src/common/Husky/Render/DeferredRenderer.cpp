@@ -1101,7 +1101,7 @@ namespace Husky::Render
             "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\gbuffer.vert",
 #endif
 #if __APPLE__
-            "/Users/spo1ler/Development/HuskyEngine/src/Husky/Render/Shaders/Deferred/gbuffer.vert",
+            "/Users/spo1ler/Development/HuskyEngine/src/common/Husky/Render/Shaders/Deferred/gbuffer.vert",
 #endif
             shaderDefines);
 
@@ -1118,7 +1118,7 @@ namespace Husky::Render
             "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\gbuffer.frag",
 #endif
 #if __APPLE__
-            "/Users/spo1ler/Development/HuskyEngine/src/Husky/Render/Shaders/Deferred/gbuffer.frag",
+            "/Users/spo1ler/Development/HuskyEngine/src/common/Husky/Render/Shaders/Deferred/gbuffer.frag",
 #endif
             shaderDefines);
 
@@ -1399,7 +1399,7 @@ namespace Husky::Render
             "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\lighting.vert",
 #endif
 #if __APPLE__
-            "/Users/spo1ler/Development/HuskyEngine/src/Husky/Render/Shaders/Deferred/lighting.vert",
+            "/Users/spo1ler/Development/HuskyEngine/src/common/Husky/Render/Shaders/Deferred/lighting.vert",
 #endif
             shaderDefines);
 
@@ -1416,7 +1416,7 @@ namespace Husky::Render
             "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\lighting.frag",
 #endif
 #if __APPLE__
-            "/Users/spo1ler/Development/HuskyEngine/src/Husky/Render/Shaders/Deferred/lighting.frag",
+            "/Users/spo1ler/Development/HuskyEngine/src/common/Husky/Render/Shaders/Deferred/lighting.frag",
 #endif
             shaderDefines);
 

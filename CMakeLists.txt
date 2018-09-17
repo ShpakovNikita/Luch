@@ -89,7 +89,6 @@ include_directories(AFTER SYSTEM
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/stb/
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/glm/
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/json/src/
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/
     ${GLSLANG_DIR}
 )
 
@@ -146,17 +145,49 @@ elseif(APPLE)
         IMPORTED_LOCATION ${SPIRV_REMAPPER_LIB})
 endif()
 
-file(GLOB_RECURSE ENGINE_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Husky/*.cpp)
-file(GLOB_RECURSE ENGINE_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/Husky/*.h)
+file(GLOB_RECURSE ENGINE_COMMON_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/common/Husky/*.cpp)
+file(GLOB_RECURSE ENGINE_COMMON_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/common/Husky/*.h)
 
-file(GLOB_RECURSE SAMPLE_COMMON_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Sample/common/*.cpp)
-file(GLOB_RECURSE SAMPLE_COMMON_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Sample/common/*.h)
+if(APPLE)
+    file(GLOB_RECURSE ENGINE_MACOS_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Husky/*.cpp)
+    file(GLOB_RECURSE ENGINE_MACOS_OBJC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Husky/*.m)
+    file(GLOB_RECURSE ENGINE_MACOS_OBJCPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Husky/*.mm)
+    file(GLOB_RECURSE ENGINE_MACOS_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/macOS/Husky/*.h)
 
-add_library(HuskyEngine ${ENGINE_CPP_FILES} ${ENGINE_HEADER_FILES})
+    include_directories(AFTER
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/common/
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/macOS/)
+
+    add_library(HuskyEngine
+        ${ENGINE_COMMON_CPP_FILES}
+        ${ENGINE_MACOS_CPP_FILES}
+        ${ENGINE_MACOS_OBJC_FILES}
+        ${ENGINE_MACOS_OBJCPP_FILES}
+        ${ENGINE_COMMON_HEADER_FILES}
+        ${ENGINE_MACOS_HEADER_FILES})
+endif()
 
 if(WIN32)
-    file(GLOB_RECURSE SAMPLE_WIN32_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Sample/win32/*.cpp)
-    file(GLOB_RECURSE SAMPLE_WIN32_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Sample/win32/*.h)
+    file(GLOB_RECURSE ENGINE_WIN32_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/win32/Husky/*.cpp)
+    file(GLOB_RECURSE ENGINE_WIN32_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/win32/Husky/*.h)
+
+    include_directories(AFTER
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/common/
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/macOS/)
+
+    add_library(HuskyEngine
+        ${ENGINE_COMMON_CPP_FILES}
+        ${ENGINE_WIN32_CPP_FILES}
+        ${ENGINE_COMMON_HEADER_FILES}
+        ${ENGINE_WIN32_HEADER_FILES})
+endif()
+
+file(GLOB_RECURSE SAMPLE_COMMON_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/common/Sample/*.cpp)
+file(GLOB_RECURSE SAMPLE_COMMON_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/common/Sample/*.h)
+
+if(WIN32)
+    file(GLOB_RECURSE SAMPLE_WIN32_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/win32/Sample/*.cpp)
+    file(GLOB_RECURSE SAMPLE_WIN32_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/win32/Sample/*.h)
 
     add_executable(HuskyEngineSample
         # WIN32
@@ -165,16 +196,19 @@ if(WIN32)
         ${SAMPLE_COMMON_HEADER_FILES}
         ${SAMPLE_WIN32_HEADER_FILES})
 elseif(APPLE)
-    file(GLOB_RECURSE SAMPLE_MACOS_OBJC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Sample/macOS/*.mm)
-    file(GLOB_RECURSE SAMPLE_MACOS_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Sample/macOS/*.cpp)
-    file(GLOB_RECURSE SAMPLE_MACOS_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Sample/macOS/*.h)
-    set(SAMPLE_MACOS_RESOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/res/macOS/Main.storyboard)
+    # Vulkan sample
+    file(GLOB_RECURSE SAMPLE_MACOS_OBJC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Sample/*.m)
+    file(GLOB_RECURSE SAMPLE_MACOS_OBJCPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Sample/*.mm)
+    file(GLOB_RECURSE SAMPLE_MACOS_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Sample/*.cpp)
+    file(GLOB_RECURSE SAMPLE_MACOS_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Sample/*.h)
+    set(SAMPLE_MACOS_RESOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/res/macOS/Sample/Main.storyboard)
 
     add_executable(HuskyEngineSample
         MACOSX_BUNDLE
         ${SAMPLE_COMMON_CPP_FILES}
         ${SAMPLE_MACOS_CPP_FILES}
         ${SAMPLE_MACOS_OBJC_FILES}
+        ${SAMPLE_MACOS_OBJCPP_FILES}
         ${SAMPLE_COMMON_HEADER_FILES}
         ${SAMPLE_MACOS_HEADER_FILES}
         ${SAMPLE_MACOS_RESOURCE_FILES})
@@ -183,13 +217,45 @@ elseif(APPLE)
         HuskyEngineSample
         PROPERTIES
         MACOSX_BUNDLE TRUE
-        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/res/macOS/Info.plist.in
+        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/res/macOS/Sample/Info.plist.in
         RESOURCE "${SAMPLE_MACOS_RESOURCE_FILES}")
 
     target_link_libraries(HuskyEngineSample "-framework Foundation")
     target_link_libraries(HuskyEngineSample "-framework CoreVideo")
     target_link_libraries(HuskyEngineSample "-framework QuartzCore")
     target_link_libraries(HuskyEngineSample "-framework Cocoa")
+
+
+    # TODO: Function or macro or whatever the fuck cmake has for adding samples
+    # Ray tracing sample
+    file(GLOB_RECURSE RT_SAMPLE_MACOS_OBJC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/MetalRayTracingSample/*.mm)
+    file(GLOB_RECURSE RT_SAMPLE_MACOS_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/MetalRayTracingSample/*.cpp)
+    file(GLOB_RECURSE RT_SAMPLE_MACOS_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/MetalRayTracingSample/*.h)
+    set(RT_SAMPLE_MACOS_RESOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/res/macOS/MetalRayTracingSample/Main.storyboard)
+
+    add_executable(HuskyEngineRayTracingSample
+        MACOSX_BUNDLE
+        ${RT_SAMPLE_COMMON_CPP_FILES}
+        ${RT_SAMPLE_MACOS_CPP_FILES}
+        ${RT_SAMPLE_MACOS_OBJC_FILES}
+        ${RT_SAMPLE_COMMON_HEADER_FILES}
+        ${RT_SAMPLE_MACOS_HEADER_FILES}
+        ${RT_SAMPLE_MACOS_RESOURCE_FILES})
+
+    set_target_properties(
+        HuskyEngineRayTracingSample
+        PROPERTIES
+        MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/res/macOS/MetalRayTracingSample/Info.plist.in
+        RESOURCE "${RT_SAMPLE_MACOS_RESOURCE_FILES}")
+
+    target_link_libraries(HuskyEngineRayTracingSample "-framework Foundation")
+    target_link_libraries(HuskyEngineRayTracingSample "-framework CoreVideo")
+    target_link_libraries(HuskyEngineRayTracingSample "-framework QuartzCore")
+    target_link_libraries(HuskyEngineRayTracingSample "-framework Cocoa")
+    target_link_libraries(HuskyEngineRayTracingSample "-framework Metal")
+
+    target_link_libraries(HuskyEngineRayTracingSample HuskyEngine)
 endif()
 
 target_link_libraries(HuskyEngine ${Vulkan_LIBRARIES})
@@ -217,9 +283,3 @@ if(WIN32)
     set_target_properties(HuskyEngineSample PROPERTIES
         VS_DEBUGGER_WORKING_DIRECTORY ${HUSKY_OUTPUT_DIRECTORY}/$(Configuration)) #fuck cmake for making me do this shit
 endif()
-
-# add_custom_command(
-#         TARGET HuskyEngine POST_BUILD
-#         COMMAND ${CMAKE_COMMAND} -E copy_directory
-#                 ${CMAKE_SOURCE_DIR}/src/Husky/Render/Shaders
-#                 $<$<CONFIG:debug>:${HUSKY_OUTPUT_DIRECTORY_DEBUG}>$<$<CONFIG:release>:${HUSKY_OUTPUT_DIRECTORY_RELEASE}>/Shaders)
