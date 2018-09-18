@@ -2,15 +2,15 @@
 
 #include <Husky/BaseObject.h>
 #include <Husky/RefPtr.h>
-#include <Husky/Vulkan/Forwards.h>
 #include <Husky/Vulkan.h>
+#include <Husky/Vulkan/Forwards.h>
 
 namespace Husky::SceneV1
 {
-    class Sampler : public BaseObject
+    class VulkanSampler : public BaseObject
     {
     public:
-        Sampler(
+        VulkanSampler(
             const vk::SamplerCreateInfo& samplerDescription, // TODO
             const String& name = "");
 
