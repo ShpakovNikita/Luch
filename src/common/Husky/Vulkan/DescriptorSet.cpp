@@ -1,23 +1,24 @@
-#include <Husky/Vulkan/DescriptorSet.h>
-#include <Husky/Vulkan/DeviceBuffer.h>
-#include <Husky/Vulkan/GraphicsDevice.h>
-#include <Husky/Vulkan/DescriptorSetLayout.h>
-#include <Husky/Vulkan/DescriptorSetWrites.h>
+#include <Husky/Vulkan/VulkanDescriptorSet.h>
+#include <Husky/Vulkan/VulkanGraphicsDevice.h>
+#include <Husky/Vulkan/VulkanDescriptorSetLayout.h>
+#include <Husky/Vulkan/VulkanDescriptorSetWrites.h>
 
 namespace Husky::Vulkan
 {
-    DescriptorSet::DescriptorSet(GraphicsDevice* aDevice, vk::DescriptorSet aDescriptorSet)
+    VulkanDescriptorSet::VulkanDescriptorSet(
+        VulkanGraphicsDevice* aDevice,
+        vk::DescriptorSet aDescriptorSet)
         : device(aDevice)
         , descriptorSet(aDescriptorSet)
     {
     }
 
-    inline vk::Result DescriptorSet::Free()
+    inline vk::Result VulkanDescriptorSet::Free()
     {
         return device->GetDevice().freeDescriptorSets(descriptorPool, { descriptorSet });
     }
 
-    void DescriptorSet::Update(const DescriptorSetWrites& writes)
+    void VulkanDescriptorSet::Update(const DescriptorSetWrites& writes)
     {
         if (writes.writes.empty())
         {

@@ -7,40 +7,37 @@
 
 namespace Husky::Vulkan
 {
-    class GraphicsDevice;
-    class RenderPassCreateInfo;
-
-    class SubpassDescription
+    class VulkanSubpassDescription
     {
         friend class RenderPassCreateInfo;
     public:
         inline int32 GetIndex() const { return index; }
 
-        inline SubpassDescription& WithNInputAttachments(int32 inputAttachmentCount)
+        inline VulkanSubpassDescription& WithNInputAttachments(int32 inputAttachmentCount)
         {
             inputAttachments.reserve(inputAttachmentCount);
             return *this;
         }
 
-        inline SubpassDescription& WithNColorAttachments(int32 colorAttachmentCount)
+        inline VulkanSubpassDescription& WithNColorAttachments(int32 colorAttachmentCount)
         {
             colorAttachments.reserve(colorAttachmentCount);
             return *this;
         }
 
-        inline SubpassDescription& WithNPreserveAttachments(int32 preserveAttachmentCount)
+        inline VulkanSubpassDescription& WithNPreserveAttachments(int32 preserveAttachmentCount)
         {
             preserveAttachments.reserve(preserveAttachmentCount);
             return *this;
         }
 
-        inline SubpassDescription& AddInputAttachment(const Attachment* attachment, vk::ImageLayout layout)
+        inline VulkanSubpassDescription& AddInputAttachment(const Attachment* attachment, vk::ImageLayout layout)
         {
             inputAttachments.push_back({ attachment, layout });
             return *this;
         }
 
-        inline SubpassDescription& AddColorAttachment(const Attachment* attachment, vk::ImageLayout layout)
+        inline VulkanSubpassDescription& AddColorAttachment(const Attachment* attachment, vk::ImageLayout layout)
         {
             SubpassAttachmentReference colorAttachment = { attachment, layout };
             SubpassAttachmentReference resolveAttachment = { nullptr, vk::ImageLayout::eUndefined };
@@ -50,7 +47,7 @@ namespace Husky::Vulkan
             return *this;
         }
 
-        inline SubpassDescription& AddColorAttachmentWithResolve(
+        inline VulkanSubpassDescription& AddColorAttachmentWithResolve(
             const Attachment* colorAttachment,
             vk::ImageLayout colorAttachmentLayout,
             const Attachment* resolveAttachment,
@@ -65,13 +62,13 @@ namespace Husky::Vulkan
             return *this;
         }
 
-        inline SubpassDescription& AddPreserveAttachment(const Attachment* attachment)
+        inline VulkanSubpassDescription& AddPreserveAttachment(const Attachment* attachment)
         {
             preserveAttachments.push_back(attachment);
             return *this;
         }
 
-        inline SubpassDescription& WithDepthStencilAttachment(const Attachment* attachment, vk::ImageLayout layout)
+        inline VulkanSubpassDescription& WithDepthStencilAttachment(const Attachment* attachment, vk::ImageLayout layout)
         {
             depthStencilAttachment = { attachment, layout };
             return *this;

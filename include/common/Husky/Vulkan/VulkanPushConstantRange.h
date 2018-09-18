@@ -5,7 +5,7 @@
 
 namespace Husky::Vulkan
 {
-    struct PushConstantRange
+    struct VulkanPushConstantRange
     {
         ShaderStage stages;
         int32 offset = 0;

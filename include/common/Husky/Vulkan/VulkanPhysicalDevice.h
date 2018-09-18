@@ -2,25 +2,19 @@
 
 #include <Husky/BaseObject.h>
 #include <Husky/RefPtr.h>
+#include <Husky/Format.h>
 #include <Husky/Vulkan.h>
 #include <Husky/Vulkan/QueueInfo.h>
-#include <Husky/Format.h>
+#include <Husky/Vulkan/Forwards.h>
 
 namespace Husky::Vulkan
 {
-    class Surface;
-
-    class PhysicalDevice : public BaseObject
+    class VulkanPhysicalDevice : public BaseObject
     {
     public:
-        PhysicalDevice() = default;
-
-        PhysicalDevice(
+        VulkanPhysicalDevice(
             vk::PhysicalDevice physicalDevice,
             Husky::Optional<vk::AllocationCallbacks> allocationCallbacks);
-
-        PhysicalDevice(PhysicalDevice&& other) = default;
-        PhysicalDevice& operator=(PhysicalDevice&& other) = default;
 
         inline vk::PhysicalDevice GetPhysicalDevice() { return physicalDevice; }
         inline const vk::Optional<const vk::AllocationCallbacks>& GetAllocationCAllbacks() const { return allocationCallbacks; }

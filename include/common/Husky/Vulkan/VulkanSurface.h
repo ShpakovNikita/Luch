@@ -8,14 +8,14 @@ namespace Husky::Vulkan
     class VulkanSurface : public BaseObject
     {
     public:
-        Surface(
+        VulkanSurface(
             vk::Instance aInstance,
             vk::SurfaceKHR aSurface,
             Husky::Optional<vk::AllocationCallbacks> aAllocationCallbacks = {});
 
-        ~Surface();
+        ~VulkanSurface();
 #ifdef _WIN32
-        static VulkanRefResultValue<Surface> CreateWin32Surface(
+        static VulkanRefResultValue<VulkanSurface> CreateWin32Surface(
             vk::Instance instance,
             HINSTANCE hInstance,
             HWND hWnd,
@@ -23,7 +23,7 @@ namespace Husky::Vulkan
 #endif
 
 #if __APPLE__
-        static VulkanRefResultValue<Surface> CreateMacOSSurface(
+        static VulkanRefResultValue<VulkanSurface> CreateMacOSSurface(
             vk::Instance instance,
             void* view);
 #endif

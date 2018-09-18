@@ -2,52 +2,48 @@
 
 #include <Husky/BaseObject.h>
 #include <Husky/RefPtr.h>
-#include <Husky/Vulkan.h>
 #include <Husky/Format.h>
+#include <Husky/Vulkan.h>
 #include <Husky/Vulkan/QueueInfo.h>
 #include <Husky/Vulkan/Forwards.h>
 
 namespace Husky::Vulkan
 {
-    class PhysicalDevice;
-    class Surface;
-    class ShaderCompiler;
-
-    class GraphicsDevice : public BaseObject
+    class VulkanGraphicsDevice : public BaseObject
     {
-        friend class CommandBuffer;
-        friend class CommandPool;
-        friend class DescriptorPool;
-        friend class DescriptorSet;
-        friend class DescriptorSetLayout;
-        friend class DeviceBuffer;
-        friend class DeviceBufferView;
-        friend class Fence;
-        friend class Framebuffer;
-        friend class Image;
-        friend class ImageView;
-        friend class PhysicalDevice;
-        friend class Pipeline;
-        friend class PipelineCache;
-        friend class PipelineLayout;
-        friend class RenderPass;
-        friend class Semaphore;
-        friend class ShaderModule;
-        friend class Swapchain;
-        friend class Sampler;
+        friend class VulkanCommandBuffer;
+        friend class VulkanCommandPool;
+        friend class VulkanDescriptorPool;
+        friend class VulkanDescriptorSet;
+        friend class VulkanDescriptorSetLayout;
+        friend class VulkanDeviceBuffer;
+        friend class VulkanDeviceBufferView;
+        friend class VulkanFence;
+        friend class VulkanFramebuffer;
+        friend class VulkanImage;
+        friend class VulkanImageView;
+        friend class VulkanPhysicalDevice;
+        friend class VulkanPipeline;
+        friend class VulkanPipelineCache;
+        friend class VulkanPipelineLayout;
+        friend class VulkanRenderPass;
+        friend class VulkanSemaphore;
+        friend class VulkanShaderModule;
+        friend class VulkanSwapchain;
+        friend class VulkanSampler;
     public:
-        GraphicsDevice(
-            PhysicalDevice* physicalDevice,
+        VulkanGraphicsDevice(
+            VulkanPhysicalDevice* physicalDevice,
             vk::Device device,
             QueueInfo&& queueInfo,
             Husky::Optional<vk::AllocationCallbacks> allocationCallbacks);
 
-        ~GraphicsDevice() override;
+        ~VulkanGraphicsDevice() override;
 
         inline vk::Device GetDevice() { return device; }
         inline const vk::Optional<const vk::AllocationCallbacks>& GetAllocationCallbacks() const { return allocationCallbacks; }
 
-        inline PhysicalDevice* GetPhysicalDevice() const { return physicalDevice; }
+        inline VulkanPhysicalDevice* GetPhysicalDevice() const { return physicalDevice; }
         inline const QueueIndices* GetQueueIndices() { return &queueInfo.indices; }
         inline Queue* GetGraphicsQueue() { return queueInfo.graphicsQueue; }
         inline PresentQueue* GetPresentQueue() { return queueInfo.presentQueue; }

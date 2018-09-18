@@ -3,24 +3,21 @@
 #include <Husky/ArrayProxy.h>
 #include <Husky/Vulkan.h>
 #include <Husky/ShaderStage.h>
-#include <Husky/Vulkan/DeviceBuffer.h>
-#include <Husky/Vulkan/DescriptorSet.h>
-#include <Husky/Vulkan/Framebuffer.h>
-#include <Husky/Vulkan/ShaderStage.h>
-#include <Husky/Vulkan/GraphicsDevice.h>
-#include <Husky/Vulkan/IndexType.h>
-#include <Husky/Vulkan/Pipeline.h>
-#include <Husky/Vulkan/PipelineLayout.h>
-#include <Husky/Vulkan/RenderPass.h>
-#include <Husky/Vulkan/PipelineBarrier.h>
-#include <Husky/Vulkan/Image.h>
-#include <Husky/Vulkan/ImageAspects.h>
+#include <Husky/Vulkan/VulkanDeviceBuffer.h>
+#include <Husky/Vulkan/VulkanDescriptorSet.h>
+#include <Husky/Vulkan/VulkanFramebuffer.h>
+#include <Husky/Vulkan/VulkanShaderStage.h>
+#include <Husky/Vulkan/VulkanGraphicsDevice.h>
+#include <Husky/Vulkan/VulkanIndexType.h>
+#include <Husky/Vulkan/VulkanPipeline.h>
+#include <Husky/Vulkan/VulkanPipelineLayout.h>
+#include <Husky/Vulkan/VulkanRenderPass.h>
+#include <Husky/Vulkan/VulkanPipelineBarrier.h>
+#include <Husky/Vulkan/VulkanImage.h>
+#include <Husky/Vulkan/VulkanImageAspects.h>
 
 namespace Husky::Vulkan
 {
-    class GraphicsDevice;
-    class CommandPool;
-
     struct BufferToImageCopy
     {
         int32 bufferOffset = 0;
@@ -30,25 +27,25 @@ namespace Husky::Vulkan
         vk::Extent3D imageExtent;
     };
 
-    class CommandBuffer : public BaseObject
+    class VulkanCommandBuffer : public BaseObject
     {
-        friend class GraphicsDevice;
-        friend class CommandPool;
+        friend class VulkanGraphicsDevice;
+        friend class VulkanCommandPool;
     public:
         static constexpr int32 MaxVertexBuffers = 7;
 
-        CommandBuffer(GraphicsDevice* device, vk::CommandBuffer commandBuffer);
+        VulkanCommandBuffer(VulkanGraphicsDevice* device, vk::CommandBuffer commandBuffer);
 
         inline vk::CommandBuffer GetCommandBuffer() { return commandBuffer; }
 
-        inline CommandBuffer* Begin()
+        inline VulkanCommandBuffer* Begin()
         {
             vk::CommandBufferBeginInfo beginInfo;
             commandBuffer.begin(beginInfo);
             return this;
         }
 
-        inline CommandBuffer* End()
+        inline VulkanCommandBuffer* End()
         {
             commandBuffer.end();
             return this;
@@ -57,7 +54,11 @@ namespace Husky::Vulkan
         // TODO
         //inline CommandBuffer& BeginRenderPass(RenderPass* renderPass, Framebuffer* framebuffer, CommandBuffer* secondaryCommandBuffer);
         
-        inline CommandBuffer* BeginInlineRenderPass(RenderPass* renderPass, Framebuffer* framebuffer, Vector<vk::ClearValue> clearValues, vk::Rect2D renderArea)
+        inline VulkanCommandBuffer* BeginInlineRenderPass(
+            VulkanRenderPass* renderPass,
+            VulkanFramebuffer* framebuffer,
+            Vector<vk::ClearValue> clearValues,
+            vk::Rect2D renderArea)
         {
             vk::RenderPassBeginInfo beginInfo;
             beginInfo.setRenderPass(renderPass->GetRenderPass());
@@ -69,13 +70,16 @@ namespace Husky::Vulkan
             return this;
         }
 
-        inline CommandBuffer* BindGraphicsPipeline(Pipeline* pipeline)
+        inline VulkanCommandBuffer* BindGraphicsPipeline(VulkanPipeline* pipeline)
         {
             commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->GetPipeline());
             return this;
         }
 
-        inline CommandBuffer* BindVertexBuffers(Vector<DeviceBuffer*> vertexBuffers, Vector<int64> offsets, int32 binding)
+        inline VulkanCommandBuffer* BindVertexBuffers(
+            Vector<VulkanDeviceBuffer*> vertexBuffers,
+            Vector<int64> offsets,
+            int32 binding)
         {
             HUSKY_ASSERT(vertexBuffers.size() == offsets.size());
 
@@ -95,13 +99,19 @@ namespace Husky::Vulkan
             return this;
         }
 
-        inline CommandBuffer* BindIndexBuffer(DeviceBuffer* indexBuffer, vk::IndexType indexType, int64 offset)
+        inline VulkanCommandBuffer* BindIndexBuffer(
+            VulkanDeviceBuffer* indexBuffer,
+            vk::IndexType indexType,
+            int64 offset)
         {
             commandBuffer.bindIndexBuffer(indexBuffer->GetBuffer(), offset, indexType);
             return this;
         }
 
-        inline CommandBuffer* BindDescriptorSets(PipelineLayout* layout, int32 firstSet, Vector<DescriptorSet*> sets)
+        inline CommandBuffer* BindDescriptorSets(
+            VulkanPipelineLayout* layout,
+            int32 firstSet,
+            Vector<VulkanDescriptorSet*> sets)
         {
             Vector<vk::DescriptorSet> vulkanSets;
             vulkanSets.reserve(sets.size());
@@ -121,7 +131,10 @@ namespace Husky::Vulkan
             return this;
         }
 
-        inline CommandBuffer* BindDescriptorSet(PipelineLayout* layout, int32 index, DescriptorSet* set)
+        inline VulkanCommandBuffer* BindDescriptorSet(
+            VulkanPipelineLayout* layout,
+            int32 index,
+            VulkanDescriptorSet* set)
         {
             commandBuffer.bindDescriptorSets(
                 vk::PipelineBindPoint::eGraphics,
@@ -133,33 +146,41 @@ namespace Husky::Vulkan
             return this;
         }
 
-        //inline CommandBuffer& NextSubpass(CommandBuffer* secondaryCommandBuffer);
-
-        inline CommandBuffer* NextInlineSubpass()
+        inline VulkanCommandBuffer* NextInlineSubpass()
         {
             commandBuffer.nextSubpass(vk::SubpassContents::eInline);
             return this;
         }
 
-        inline CommandBuffer* EndRenderPass()
+        inline VulkanCommandBuffer* EndRenderPass()
         {
             commandBuffer.endRenderPass();
             return this;
         }
 
-        inline CommandBuffer* DrawIndexed(int32 indexCount, int32 instanceCount, int32 firstIndex, int32 vertexOffset, int32 firstInstance)
+        inline VulkanCommandBuffer* DrawIndexed(
+            int32 indexCount,
+            int32 instanceCount,
+            int32 firstIndex,
+            int32 vertexOffset,
+            int32 firstInstance)
         {
             commandBuffer.drawIndexed(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
             return this;
         }
 
-        inline CommandBuffer* Draw(int32 vertexCount, int32 instanceCount, int32 firstVertex, int32 firstInstance)
+        inline VulkanCommandBuffer* Draw(
+            int32 vertexCount,
+            int32 instanceCount,
+            int32 firstVertex,
+            int32 firstInstance)
         {
             commandBuffer.draw(vertexCount, instanceCount, firstVertex, firstInstance);
             return this;
         }
 
-        inline CommandBuffer* PipelineBarrier(const PipelineBarrier& barrier)
+        inline VulkanCommandBuffer* PipelineBarrier(
+            const PipelineBarrier& barrier)
         {
             auto vulkanBarrier = PipelineBarrier::ToVulkanPipelineBarrier(barrier);
 
@@ -175,9 +196,9 @@ namespace Husky::Vulkan
             return this;
         }
 
-        inline CommandBuffer* CopyBufferToImage(
-            DeviceBuffer* buffer,
-            Image* image,
+        inline VulkanCommandBuffer* CopyBufferToImage(
+            VulkanDeviceBuffer* buffer,
+            VulkanImage* image,
             vk::ImageLayout dstLayout,
             const BufferToImageCopy& copy)
         {
@@ -205,20 +226,24 @@ namespace Husky::Vulkan
             return this;
         }
 
-        inline CommandBuffer* SetViewport(const vk::Viewport& viewport)
+        inline VulkanCommandBuffer* SetViewport(const vk::Viewport& viewport)
         {
             commandBuffer.setViewport(0, { viewport });
             return this;
         }
 
-        inline CommandBuffer* SetScissor(const vk::Rect2D& scissor)
+        inline VulkanCommandBuffer* SetScissor(const vk::Rect2D& scissor)
         {
             commandBuffer.setScissor(0, { scissor });
             return this;
         }
 
         template<typename T>
-        inline CommandBuffer* PushConstants(PipelineLayout* layout, ShaderStage stages, int32 offset, const T& value)
+        inline VulkanCommandBuffer* PushConstants(
+            VulkanPipelineLayout* layout,
+            ShaderStage stages,
+            int32 offset,
+            const T& value)
         {
             commandBuffer.pushConstants(
                 layout->GetPipelineLayout(),
@@ -230,7 +255,7 @@ namespace Husky::Vulkan
             return this;
         }
     private:
-        GraphicsDevice* device = nullptr;
+        VulkanGraphicsDevice* device = nullptr;
         vk::CommandBuffer commandBuffer;
     };
 }

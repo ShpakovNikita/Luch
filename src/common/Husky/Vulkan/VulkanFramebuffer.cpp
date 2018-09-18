@@ -1,20 +1,22 @@
-#include <Husky/Vulkan/Framebuffer.h>
-#include <Husky/Vulkan/GraphicsDevice.h>
+#include <Husky/Vulkan/VulkanFramebuffer.h>
+#include <Husky/Vulkan/VulkanGraphicsDevice.h>
 
 namespace Husky::Vulkan
 {
-    Framebuffer::Framebuffer(GraphicsDevice* aDevice, vk::Framebuffer aFramebuffer)
+    VulkanFramebuffer::VulkanFramebuffer(
+        VulkanGraphicsDevice* aDevice,
+        vk::Framebuffer aFramebuffer)
         : device(aDevice)
         , framebuffer(aFramebuffer)
     {
     }
 
-    Framebuffer::~Framebuffer()
+    VulkanFramebuffer::~VulkanFramebuffer()
     {
         Destroy();
     }
 
-    void Framebuffer::Destroy()
+    void VulkanFramebuffer::Destroy()
     {
         if (device)
         {

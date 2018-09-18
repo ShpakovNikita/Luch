@@ -1,5 +1,5 @@
 #include <Husky/SceneV1/Sampler.h>
-#include <Husky/Vulkan/Sampler.h>
+#include <Husky/Vulkan/VulkanSampler.h>
 
 namespace Husky::SceneV1
 {

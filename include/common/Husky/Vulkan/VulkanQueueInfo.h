@@ -1,14 +1,11 @@
 #pragma once
 
-#include <Husky/Types.h>
 #include <Husky/RefPtr.h>
 #include <Husky/Vulkan.h>
-#include <Husky/Vulkan/Queue.h>
+#include <Husky/Vulkan/Forwards.h>
 
 namespace Husky::Vulkan
 {
-    class Surface;
-
     using QueueIndex = Husky::uint32;
 
     struct QueueIndices
@@ -22,9 +19,9 @@ namespace Husky::Vulkan
 
     struct VulkanQueueInfo
     {
-        RefPtr<Queue> computeQueue;
-        RefPtr<Queue> graphicsQueue;
-        RefPtr<PresentQueue> presentQueue;
+        RefPtr<VulkanQueue> computeQueue;
+        RefPtr<VulkanQueue> graphicsQueue;
+        RefPtr<VulkanPresentQueue> presentQueue;
 
         QueueIndices indices;
         Husky::Vector<vk::Queue> uniqueQueues;

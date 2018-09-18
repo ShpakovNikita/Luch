@@ -11,10 +11,10 @@
 
 namespace Husky::Vulkan
 {
-    struct SwapchainImage
+    struct VulkanSwapchainImage
     {
-        RefPtr<Image> image;
-        RefPtr<ImageView> imageView;
+        RefPtr<VulkanImage> image;
+        RefPtr<VulkanImageView> imageView;
     };
 
     class VulkanSwapchain : public BaseObject
@@ -26,7 +26,7 @@ namespace Husky::Vulkan
             vk::SwapchainKHR swapchain,
             SwapchainCreateInfo createInfo,
             int32 swapchainImageCount,
-            Vector<SwapchainImage>&& swapchainImages);
+            Vector<VulkanSwapchainImage>&& swapchainImages);
 
         ~VulkanSwapchain() override;
 
@@ -37,7 +37,7 @@ namespace Husky::Vulkan
             VulkanSurface* surface);
 
         // TODO semaphores and fences
-        VulkanResultValue<int32> AcquireNextImage(Fence* fence, Semaphore* semaphore, Optional<Timeout> timeout = {});
+        VulkanResultValue<int32> AcquireNextImage(VulkanFence* fence, Semaphore* semaphore, Optional<Timeout> timeout = {});
 
         inline SwapchainCreateInfo GetSwapchainCreateInfo() const { return createInfo; }
         inline Format GetFormat() const { return createInfo.format; }
@@ -48,7 +48,7 @@ namespace Husky::Vulkan
 
         SwapchainCreateInfo createInfo;
         // TODO use static vector
-        Vector<SwapchainImage> swapchainImages;
+        Vector<VulkanSwapchainImage> swapchainImages;
         int32 swapchainImageCount = 0;
         VulkanGraphicsDevice* device = nullptr;
         vk::SwapchainKHR swapchain;

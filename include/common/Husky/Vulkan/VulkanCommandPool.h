@@ -17,19 +17,24 @@ namespace Husky::Vulkan
     {
         friend class GraphicsDevice;
     public:
-        CommandPool(GraphicsDevice* device, vk::CommandPool commandPool);
-        ~CommandPool() override;
+        VulkanCommandPool(
+            VulkanGraphicsDevice* device,
+            vk::CommandPool commandPool);
+        ~VulkanCommandPool() override;
 
         inline vk::CommandPool GetCommandPool() { return commandPool; }
 
-        VulkanResultValue<RefPtrVector<CommandBuffer>> AllocateCommandBuffers(int32 count, CommandBufferLevel level);
-        VulkanRefResultValue<CommandBuffer> AllocateCommandBuffer(CommandBufferLevel level);
+        VulkanResultValue<RefPtrVector<VulkanCommandBuffer>> AllocateCommandBuffers(
+            int32 count,
+            CommandBufferLevel level);
+
+        VulkanRefResultValue<VulkanCommandBuffer> AllocateCommandBuffer(CommandBufferLevel level);
 
         vk::Result Reset(bool releaseResources = false);
     private:
         void Destroy();
 
-        GraphicsDevice* device = nullptr;
+        VulkanGraphicsDevice* device = nullptr;
         vk::CommandPool commandPool;
     };
 }

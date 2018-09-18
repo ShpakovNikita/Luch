@@ -6,18 +6,18 @@
 
 namespace Husky::Vulkan
 {
-    class PipelineCache : public BaseObject
+    class VulkanPipelineCache : public BaseObject
     {
-        friend class GraphicsDevice;
+        friend class VulkanGraphicsDevice;
     public:
-        PipelineCache(GraphicsDevice* device, vk::PipelineCache pipelineCache);
-        ~PipelineCache() override;
+        VulkanPipelineCache(VulkanGraphicsDevice* device, vk::PipelineCache pipelineCache);
+        ~VulkanPipelineCache() override;
 
         vk::PipelineCache GetPipelineCache() { return pipelineCache; }
     private:
         void Destroy();
 
-        GraphicsDevice* device;
+        VulkanGraphicsDevice* device = nullptr;
         vk::PipelineCache pipelineCache;
     };
 }

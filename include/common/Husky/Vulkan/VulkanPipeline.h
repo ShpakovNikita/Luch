@@ -6,8 +6,6 @@
 
 namespace Husky::Vulkan
 {
-    class GraphicsDevice;
-
     class VulkanPipeline : public BaseObject
     {
         friend class VulkanGraphicsDevice;

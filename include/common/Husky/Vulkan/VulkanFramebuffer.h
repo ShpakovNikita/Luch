@@ -6,18 +6,18 @@
 
 namespace Husky::Vulkan
 {
-    class Framebuffer : public BaseObject
+    class VulkanFramebuffer : public BaseObject
     {
-        friend class GraphicsDevice;
+        friend class VulkanGraphicsDevice;
     public:
-        Framebuffer(GraphicsDevice* device, vk::Framebuffer framebuffer);
-        ~Framebuffer();
+        VulkanFramebuffer(VulkanGraphicsDevice* device, vk::Framebuffer framebuffer);
+        ~VulkanFramebuffer();
 
         vk::Framebuffer GetFramebuffer() { return framebuffer; }
     private:
         void Destroy();
 
-        GraphicsDevice* device = nullptr;
+        VulkanGraphicsDevice* device = nullptr;
         vk::Framebuffer framebuffer;
     };
 }

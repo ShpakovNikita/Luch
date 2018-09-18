@@ -7,21 +7,21 @@
 
 namespace Husky::SceneV1
 {
-    class VulkanSampler : public BaseObject
+    class Sampler : public BaseObject
     {
     public:
-        VulkanSampler(
+        Sampler(
             const vk::SamplerCreateInfo& samplerDescription, // TODO
             const String& name = "");
 
         inline const vk::SamplerCreateInfo& GetSamplerDescription() const { return samplerDescription; }
-        inline const RefPtr<Vulkan::Sampler>& GetDeviceSampler() const { return sampler; }
-        inline void SetDeviceSampler(const RefPtr<Vulkan::Sampler>& aSampler) { sampler = aSampler; }
+        inline const RefPtr<Vulkan::VulkanSampler>& GetDeviceSampler() const { return sampler; }
+        inline void SetDeviceSampler(const RefPtr<Vulkan::VulkanSampler>& aSampler) { sampler = aSampler; }
     private:
         String name;
 
         vk::SamplerCreateInfo samplerDescription;
 
-        RefPtr<Vulkan::Sampler> sampler;
+        RefPtr<Vulkan::VulkanSampler> sampler;
     };
 }

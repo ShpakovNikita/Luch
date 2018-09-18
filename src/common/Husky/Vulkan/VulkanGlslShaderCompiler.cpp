@@ -1,4 +1,4 @@
-#include <Husky/Vulkan/GlslShaderCompiler.h>
+#include <Husky/Vulkan/VulkanGlslShaderCompiler.h>
 #include <Husky/Assert.h>
 #include <SPIRV/GlslangToSpv.h>
 
@@ -128,17 +128,17 @@ EShLanguage ToLanguage(ShaderStage shaderStage)
 
 static TBuiltInResource defaultResources = CreateDefaultResources();
 
-void GLSLShaderCompiler::Initialize()
+void VulkanGLSLShaderCompiler::Initialize()
 {
     glslang::InitializeProcess();
 }
 
-void GLSLShaderCompiler::Deinitialize()
+void VulkanGLSLShaderCompiler::Deinitialize()
 {
     glslang::FinalizeProcess();
 }
 
-String GLSLShaderCompiler::GeneratePreamble(const UnorderedMap<String, String>& flags)
+String VulkanGLSLShaderCompiler::GeneratePreamble(const UnorderedMap<String, String>& flags)
 {
     std::stringstream ss;
 
@@ -150,7 +150,11 @@ String GLSLShaderCompiler::GeneratePreamble(const UnorderedMap<String, String>& 
     return ss.str();
 }
 
-bool GLSLShaderCompiler::TryCompileShader(ShaderStage shaderStage, const Vector<Byte>& glslSource, Bytecode& spirvBytecode, const UnorderedMap<String, String>& flags)
+bool VulkanGLSLShaderCompiler::TryCompileShader(
+    ShaderStage shaderStage,
+    const Vector<Byte>& glslSource,
+    Bytecode& spirvBytecode,
+    const UnorderedMap<String, String>& flags)
 {
     if (glslSource.empty())
     {

@@ -6,20 +6,18 @@
 
 namespace Husky::Vulkan
 {
-    class GraphicsDevice;
-
-    class ShaderModule : public BaseObject
+    class VulkanShaderModule : public BaseObject
     {
-        friend class GraphicsDevice;
+        friend class VulkanGraphicsDevice;
     public:
-        ShaderModule(GraphicsDevice* device, vk::ShaderModule module);
-        ~ShaderModule() override;
+        VulkanShaderModule(VulkanGraphicsDevice* device, vk::ShaderModule module);
+        ~VulkanShaderModule() override;
 
         inline vk::ShaderModule GetModule() { return module; }
     private:
         void Destroy();
 
-        GraphicsDevice* device = nullptr;
+        VulkanGraphicsDevice* device = nullptr;
         vk::ShaderModule module;
     };
 }

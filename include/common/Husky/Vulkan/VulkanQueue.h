@@ -6,21 +6,21 @@
 
 namespace Husky::Vulkan
 {
-    struct SemaphoreWaitOperation
+    struct VulkanSemaphoreWaitOperation
     {
-        Semaphore* semaphore = nullptr;
+        VulkanSemaphore* semaphore = nullptr;
         vk::PipelineStageFlags stage = vk::PipelineStageFlagBits::eTopOfPipe;
     };
 
-    struct Submission
+    struct VulkanSubmission
     {
-        Vector<SemaphoreWaitOperation> waitOperations;
+        Vector<VulkanSemaphoreWaitOperation> waitOperations;
         Vector<VulkanSemaphore*> signalSemaphores;
         Vector<VulkanCommandBuffer*> commandBuffers;
         VulkanFence* fence = nullptr;
     };
 
-    struct PresentSubmission
+    struct VulkanPresentSubmission
     {
         Vector<VulkanSemaphore*> waitSemaphores;
         VulkanSwapchain* swapchain;
@@ -29,11 +29,11 @@ namespace Husky::Vulkan
 
     class VulkanQueue : public BaseObject
     {
-        friend GraphicsDevice;
-        friend PhysicalDevice;
-        friend QueueInfo;
+        friend class VulkanGraphicsDevice;
+        friend class VulkanPhysicalDevice;
+        friend class VulkanQueueInfo;
     public:
-        explicit Queue(vk::Queue queue);
+        explicit VulkanQueue(vk::Queue queue);
         ~Queue() = default; // Queues are owned by device, so we don't destroy them in destructor
 
         vk::Result WaitIdle();
@@ -42,16 +42,16 @@ namespace Husky::Vulkan
         vk::Queue queue;
     };
 
-    class PresentQueue : public Queue
+    class VulkanPresentQueue : public VulkanQueue
     {
-        friend class GraphicsDevice;
-        friend class PhysicalDevice;
+        friend class VulkanGraphicsDevice;
+        friend class VulkanPhysicalDevice;
     public:
-        inline explicit PresentQueue(vk::Queue queue)
-            : Queue(queue)
+        inline explicit VulkanPresentQueue(vk::Queue queue)
+            : VulkanQueue(queue)
         {
         }
 
-        vk::Result Present(const PresentSubmission& presentSubmission);
+        vk::Result Present(const VulkanPresentSubmission& presentSubmission);
     };
 }

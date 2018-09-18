@@ -1,17 +1,15 @@
 #pragma once
 
-#include <Husky/Vulkan.h>
 #include <Husky/BaseObject.h>
+#include <Husky/Vulkan.h>
 #include <Husky/Vulkan/Forwards.h>
 #include <Husky/Vulkan/QueueInfo.h>
 
 namespace Husky::Vulkan
 {
-    class PipelineBarrier;
-
     class BufferMemoryBarrier
     {
-        friend class PipelineBarrier;
+        friend class VulkanPipelineBarrier;
     public:
         static vk::BufferMemoryBarrier ToVulkanBufferMemoryBarrier(const BufferMemoryBarrier& bufferMemoryBarrier);
 
@@ -128,10 +126,6 @@ namespace Husky::Vulkan
     {
     public:
         static VulkanPipelineBarrier ToVulkanPipelineBarrier(const PipelineBarrier& barrier);
-
-        PipelineBarrier() = default;
-        PipelineBarrier(const PipelineBarrier& other) = default;
-        PipelineBarrier& operator=(const PipelineBarrier& other) = default;
 
         inline PipelineBarrier& FromStage(vk::PipelineStageFlags aSrcStage)
         {

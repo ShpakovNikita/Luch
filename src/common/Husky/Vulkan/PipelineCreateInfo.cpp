@@ -1,9 +1,9 @@
 #include <Husky/Vulkan/PipelineCreateInfo.h>
-#include <Husky/Vulkan/ShaderModule.h>
-#include <Husky/Vulkan/SampleCount.h>
-#include <Husky/Vulkan/RenderPass.h>
-#include <Husky/Vulkan/PipelineLayout.h>
-#include <Husky/Vulkan/ShaderStage.h>
+#include <Husky/Vulkan/VulkanShaderModule.h>
+#include <Husky/Vulkan/VulkanSampleCount.h>
+#include <Husky/Vulkan/VulkanRenderPass.h>
+#include <Husky/Vulkan/VulkanPipelineLayout.h>
+#include <Husky/Vulkan/VulkanShaderStage.h>
 
 namespace Husky::Vulkan
 {

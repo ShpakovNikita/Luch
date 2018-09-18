@@ -5,7 +5,7 @@
 
 namespace Husky::Vulkan
 {
-    class GLSLShaderCompiler
+    class VulkanGLSLShaderCompiler
     {
     public:
         using Bytecode = Vector<uint32>;

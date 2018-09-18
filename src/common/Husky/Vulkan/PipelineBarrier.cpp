@@ -5,7 +5,6 @@
 
 namespace Husky::Vulkan
 {
-
     vk::BufferMemoryBarrier BufferMemoryBarrier::ToVulkanBufferMemoryBarrier(const BufferMemoryBarrier& bufferMemoryBarrier)
     {
         vk::BufferMemoryBarrier result;

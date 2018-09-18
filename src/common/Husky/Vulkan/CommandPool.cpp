@@ -1,20 +1,24 @@
-#include <Husky/Vulkan/CommandPool.h>
-#include <Husky/Vulkan/GraphicsDevice.h>
+#include <Husky/Vulkan/VulkanCommandPool.h>
+#include <Husky/Vulkan/VulkanGraphicsDevice.h>
 
 namespace Husky::Vulkan
 {
-    CommandPool::CommandPool(GraphicsDevice * aDevice, vk::CommandPool aCommandPool)
+    VulkanCommandPool::VulkanCommandPool(
+        VulkanGraphicsDevice* aDevice,
+        vk::CommandPool aCommandPool)
         : device(aDevice)
         , commandPool(aCommandPool)
     {
     }
 
-    CommandPool::~CommandPool()
+    VulkanCommandPool::~VulkanCommandPool()
     {
         Destroy();
     }
 
-    VulkanResultValue<RefPtrVector<CommandBuffer>> CommandPool::AllocateCommandBuffers(int32 count, CommandBufferLevel level)
+    VulkanResultValue<RefPtrVector<VulkanCommandBuffer>> VulkanCommandPool::AllocateCommandBuffers(
+        int32 count,
+        CommandBufferLevel level)
     {
         vk::CommandBufferAllocateInfo allocateInfo;
         allocateInfo.setCommandBufferCount(count);
@@ -36,18 +40,18 @@ namespace Husky::Vulkan
             return { allocateResult };
         }
 
-        RefPtrVector<CommandBuffer> buffers;
+        RefPtrVector<VulkanCommandBuffer> buffers;
         buffers.reserve(count);
 
         for (auto vulkanBuffer : allocatedBuffers)
         {
-            buffers.emplace_back(MakeRef<CommandBuffer>(device, vulkanBuffer));
+            buffers.emplace_back(MakeRef<VulkanCommandBuffer>(device, vulkanBuffer));
         }
 
         return { allocateResult, std::move(buffers) };
     }
 
-    VulkanRefResultValue<CommandBuffer> CommandPool::AllocateCommandBuffer(CommandBufferLevel level)
+    VulkanRefResultValue<VulkanCommandBuffer> VulkanCommandPool::AllocateCommandBuffer(CommandBufferLevel level)
     {
         vk::CommandBufferAllocateInfo allocateInfo;
         allocateInfo.setCommandBufferCount(1);
@@ -69,10 +73,10 @@ namespace Husky::Vulkan
             return { allocateResult };
         }
 
-        return { allocateResult, MakeRef<CommandBuffer>(device, allocatedBuffers[0]) };
+        return { allocateResult, MakeRef<VulkanCommandBuffer>(device, allocatedBuffers[0]) };
     }
 
-    vk::Result CommandPool::Reset(bool releaseResources)
+    vk::Result VulkanCommandPool::Reset(bool releaseResources)
     {
         vk::CommandPoolResetFlags flags;
         if (releaseResources)
@@ -83,7 +87,7 @@ namespace Husky::Vulkan
         return device->device.resetCommandPool(commandPool, flags);
     }
 
-    void CommandPool::Destroy()
+    void VulkanCommandPool::Destroy()
     {
         if (device)
         {

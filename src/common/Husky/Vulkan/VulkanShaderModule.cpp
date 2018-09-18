@@ -1,20 +1,22 @@
-#include <Husky/Vulkan/ShaderModule.h>
-#include <Husky/Vulkan/GraphicsDevice.h>
+#include <Husky/Vulkan/VulkanShaderModule.h>
+#include <Husky/Vulkan/VulkanGraphicsDevice.h>
 
 namespace Husky::Vulkan
 {
-    ShaderModule::ShaderModule(GraphicsDevice* aDevice, vk::ShaderModule aModule)
+    VulkanShaderModule::VulkanShaderModule(
+        VulkanGraphicsDevice* aDevice,
+        vk::ShaderModule aModule)
         : device(aDevice)
         , module(aModule)
     {
     }
 
-    ShaderModule::~ShaderModule()
+    VulkanShaderModule::~VulkanShaderModule()
     {
         Destroy();
     }
 
-    void ShaderModule::Destroy()
+    void VulkanShaderModule::Destroy()
     {
         if (device)
         {
