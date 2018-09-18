@@ -4,7 +4,7 @@
 #include <Husky/Format.h>
 #include <Husky/ImageAspects.h>
 #include <Husky/Vulkan.h>
-#include <Husky/Vulkan/Forwards.h>
+#include <Husky/Vulkan/VulkanForwards.h>
 #include <Husky/Vulkan/VulkanFormat.h>
 
 namespace Husky::Vulkan

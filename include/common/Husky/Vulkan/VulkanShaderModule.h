@@ -2,7 +2,7 @@
 
 #include <Husky/BaseObject.h>
 #include <Husky/Vulkan.h>
-#include <Husky/Vulkan/Forwards.h>
+#include <Husky/Vulkan/VulkanForwards.h>
 
 namespace Husky::Vulkan
 {

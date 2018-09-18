@@ -2,7 +2,7 @@
 
 #include <Husky/RefPtr.h>
 #include <Husky/SharedPtr.h>
-#include <Husky/Vulkan/Forwards.h>
+#include <Husky/Vulkan/VulkanForwards.h>
 #include <Husky/SceneV1/Forwards.h>
 #include <Husky/SceneV1/BufferSource.h>
 #include <Husky/glTF2/Forwards.h>

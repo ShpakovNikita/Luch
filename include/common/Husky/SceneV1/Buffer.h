@@ -3,7 +3,7 @@
 #include <Husky/Types.h>
 #include <Husky/RefPtr.h>
 #include <Husky/BaseObject.h>
-#include <Husky/Vulkan/Forwards.h>
+#include <Husky/Vulkan/VulkanForwards.h>
 #include <Husky/SceneV1/BufferSource.h>
 
 namespace Husky::SceneV1

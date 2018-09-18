@@ -5,7 +5,7 @@
 #include <Husky/VectorTypes.h>
 #include <Husky/BaseObject.h>
 #include <Husky/SceneV1/CameraType.h>
-#include <Husky/Vulkan/Forwards.h>
+#include <Husky/Vulkan/VulkanForwards.h>
 
 namespace Husky::SceneV1
 {

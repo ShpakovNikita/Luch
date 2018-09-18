@@ -4,8 +4,8 @@
 #include <Husky/RefPtr.h>
 #include <Husky/Format.h>
 #include <Husky/Vulkan.h>
-#include <Husky/Vulkan/QueueInfo.h>
-#include <Husky/Vulkan/Forwards.h>
+#include <Husky/Vulkan/VulkanQueueInfo.h>
+#include <Husky/Vulkan/VulkanForwards.h>
 
 namespace Husky::Vulkan
 {
@@ -35,7 +35,7 @@ namespace Husky::Vulkan
         VulkanGraphicsDevice(
             VulkanPhysicalDevice* physicalDevice,
             vk::Device device,
-            QueueInfo&& queueInfo,
+            VulkanQueueInfo&& queueInfo,
             Husky::Optional<vk::AllocationCallbacks> allocationCallbacks);
 
         ~VulkanGraphicsDevice() override;
@@ -45,34 +45,75 @@ namespace Husky::Vulkan
 
         inline VulkanPhysicalDevice* GetPhysicalDevice() const { return physicalDevice; }
         inline const QueueIndices* GetQueueIndices() { return &queueInfo.indices; }
-        inline Queue* GetGraphicsQueue() { return queueInfo.graphicsQueue; }
-        inline PresentQueue* GetPresentQueue() { return queueInfo.presentQueue; }
-        inline Queue* GetComputeQueue() { return queueInfo.computeQueue; }
+        inline VulkanQueue* GetGraphicsQueue() { return queueInfo.graphicsQueue; }
+        inline VulkanPresentQueue* GetPresentQueue() { return queueInfo.presentQueue; }
+        inline VulkanQueue* GetComputeQueue() { return queueInfo.computeQueue; }
 
         vk::Result WaitIdle();
 
         int32 ChooseMemoryType(Husky::uint32 memoryTypeBits, vk::MemoryPropertyFlags memoryProperties);
-        vk::ImageViewCreateInfo GetDefaultImageViewCreateInfo(Image* image);
+        vk::ImageViewCreateInfo GetDefaultImageViewCreateInfo(VulkanImage* image);
 
-        VulkanRefResultValue<Swapchain> CreateSwapchain(const SwapchainCreateInfo& swapchainCreateInfo, Surface* surface);
+        VulkanRefResultValue<VulkanSwapchain> CreateSwapchain(
+            const SwapchainCreateInfo& swapchainCreateInfo,
+            VulkanSurface* surface);
 
-        VulkanRefResultValue<CommandPool> CreateCommandPool(QueueIndex queueIndex, bool transient = false, bool canReset = false);
-        VulkanRefResultValue<DeviceBuffer> CreateBuffer(int64 size, QueueIndex queueIndex, vk::BufferUsageFlags usage, bool mappable);
-        VulkanRefResultValue<DeviceBufferView> CreateBufferView(DeviceBuffer* buffer, Format format, int64 offset, int64 size);
-        VulkanRefResultValue<Image> CreateImage(const vk::ImageCreateInfo& imageCreateInfo);
-        VulkanRefResultValue<ImageView> CreateImageView(Image* image, vk::ImageViewCreateInfo& imageViewCreateInfo);
-        VulkanRefResultValue<ImageView> CreateImageView(Image* image);
-        VulkanRefResultValue<ShaderModule> CreateShaderModule(uint32* bytecode, int64 bytecodeSizeInBytes);
-        VulkanRefResultValue<PipelineCache> CreatePipelineCache();
-        VulkanRefResultValue<Pipeline> CreateGraphicsPipeline(const GraphicsPipelineCreateInfo& graphicsPipelineCreateInfo, PipelineCache* pipelineCache = nullptr);
-        VulkanRefResultValue<RenderPass> CreateRenderPass(const RenderPassCreateInfo& createInfo);
-        VulkanRefResultValue<DescriptorSetLayout> CreateDescriptorSetLayout(const DescriptorSetLayoutCreateInfo& createInfo);
-        VulkanRefResultValue<DescriptorPool> CreateDescriptorPool(int32 maxSets, const UnorderedMap<vk::DescriptorType, int32>& poolSizes, bool canFreeDescriptors = false);
-        VulkanRefResultValue<PipelineLayout> CreatePipelineLayout(const PipelineLayoutCreateInfo& createInfo);
-        VulkanRefResultValue<Framebuffer> CreateFramebuffer(const FramebufferCreateInfo& createInfo);
-        VulkanRefResultValue<Fence> CreateFence(bool signaled = false);
-        VulkanRefResultValue<Semaphore> CreateSemaphore();
-        VulkanRefResultValue<Sampler> CreateSampler(const vk::SamplerCreateInfo& createInfo);
+        VulkanRefResultValue<CommandPool> CreateCommandPool(
+            QueueIndex queueIndex,
+            bool transient = false,
+            bool canReset = false);
+
+        VulkanRefResultValue<VulkanDeviceBuffer> CreateBuffer(
+            int64 size,
+            QueueIndex queueIndex,
+            vk::BufferUsageFlags usage,
+            bool mappable);
+
+        VulkanRefResultValue<VulkanDeviceBufferView> CreateBufferView(
+            VulkanDeviceBuffer* buffer,
+            Format format,
+            int64 offset,
+            int64 size);
+
+        VulkanRefResultValue<VulkanImage> CreateImage(const vk::ImageCreateInfo& imageCreateInfo);
+
+        VulkanRefResultValue<VulkanImageView> CreateImageView(
+            VulkanImage* image,
+            vk::ImageViewCreateInfo& imageViewCreateInfo);
+
+        VulkanRefResultValue<VulkanImageView> CreateImageView(VulkanImage* image);
+
+        VulkanRefResultValue<VulkanShaderModule> CreateShaderModule(
+            uint32* bytecode,
+            int64 bytecodeSizeInBytes);
+
+        VulkanRefResultValue<VulkanPipelineCache> CreatePipelineCache();
+
+        VulkanRefResultValue<VulkanPipeline> CreateGraphicsPipeline(
+            const GraphicsPipelineCreateInfo& graphicsPipelineCreateInfo,
+            VulkanPipelineCache* pipelineCache = nullptr);
+
+        VulkanRefResultValue<VulkanRenderPass> CreateRenderPass(const RenderPassCreateInfo& createInfo);
+
+        VulkanRefResultValue<VulkanDescriptorSetLayout> CreateDescriptorSetLayout(
+            const DescriptorSetLayoutCreateInfo& createInfo);
+
+        VulkanRefResultValue<VulkanDescriptorPool> CreateDescriptorPool(
+            int32 maxSets,
+            const UnorderedMap<vk::DescriptorType, int32>& poolSizes,
+            bool canFreeDescriptors = false);
+
+        VulkanRefResultValue<VulkanPipelineLayout> CreatePipelineLayout(
+            const PipelineLayoutCreateInfo& createInfo);
+
+        VulkanRefResultValue<VulkanFramebuffer> CreateFramebuffer(
+            const FramebufferCreateInfo& createInfo);
+
+        VulkanRefResultValue<VulkanFence> CreateFence(bool signaled = false);
+
+        VulkanRefResultValue<VulkanSemaphore> CreateSemaphore();
+
+        VulkanRefResultValue<VulkanSampler> CreateSampler(const vk::SamplerCreateInfo& createInfo);
     private:
         VulkanResultValue<vk::DeviceMemory> AllocateMemory(
             vk::MemoryRequirements memoryRequirements,
