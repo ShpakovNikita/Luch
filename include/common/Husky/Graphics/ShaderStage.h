@@ -2,14 +2,14 @@
 
 #include <Husky/Flags.h>
 
-namespace Husky
+namespace Husky::Graphics
 {
     enum class ShaderStage
     {
         Fragment = 1 << 0,
-        Geometry = 1 << 1,
-        TessellationControl = 1 << 2,    // hull
-        TessellationEvaluation = 1 << 3, // domain
+        //Geometry = 1 << 1,
+        //TessellationControl = 1 << 2,    // hull
+        //TessellationEvaluation = 1 << 3, // domain
         Vertex = 1 << 4,
         Compute = 1 << 5,
     };

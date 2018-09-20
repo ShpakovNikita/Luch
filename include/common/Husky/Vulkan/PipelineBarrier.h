@@ -3,7 +3,7 @@
 #include <Husky/BaseObject.h>
 #include <Husky/Vulkan.h>
 #include <Husky/Vulkan/VulkanForwards.h>
-#include <Husky/Vulkan/QueueInfo.h>
+#include <Husky/Vulkan/VulkanQueueInfo.h>
 
 namespace Husky::Vulkan
 {
@@ -97,13 +97,13 @@ namespace Husky::Vulkan
             return *this;
         }
 
-        inline ImageMemoryBarrier& ForImage(Image* aImage)
+        inline ImageMemoryBarrier& ForImage(VulkanImage* aImage)
         {
             image = aImage;
             return *this;
         }
     private:
-        Image* image;
+        VulkanImage* image;
         vk::AccessFlags srcAccess;
         vk::AccessFlags dstAccess;
         QueueIndex srcQueue;

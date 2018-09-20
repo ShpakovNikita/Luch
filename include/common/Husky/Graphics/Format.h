@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Husky
+namespace Husky::Graphics
 {
     enum class Format
     {

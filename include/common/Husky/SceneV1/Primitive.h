@@ -1,10 +1,10 @@
 #pragma once
 
-#include <Husky/PrimitiveTopology.h>
 #include <Husky/Types.h>
-#include <Husky/Format.h>
 #include <Husky/RefPtr.h>
 #include <Husky/BaseObject.h>
+#include <Husky/Graphics/Format.h>
+#include <Husky/Graphics/PrimitiveTopology.h>
 #include <Husky/Vulkan/VulkanForwards.h>
 #include <Husky/SceneV1/Forwards.h>
 #include <Husky/SceneV1/AttributeSemantic.h>
@@ -13,6 +13,8 @@
 
 namespace Husky::SceneV1
 {
+    using namespace Graphics;
+
     enum class ComponentType
     {
         Int8,
@@ -41,9 +43,9 @@ namespace Husky::SceneV1
         AttributeSemantic semantic;
         ComponentType componentType;
         AttributeType attributeType;
-        Format format;
+        Format format = Format::Undefined;
         int32 offset = 0;
-        int32 vertexBufferIndex;
+        int32 vertexBufferIndex = 0;
     };
 
     class Primitive : public BaseObject

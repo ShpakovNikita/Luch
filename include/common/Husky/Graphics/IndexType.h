@@ -3,7 +3,7 @@
 #include <Husky/Assert.h>
 #include <Husky/Types.h>
 
-namespace Husky
+namespace Husky::Graphics
 {
     enum class IndexType
     {
