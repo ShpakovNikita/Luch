@@ -1,13 +1,13 @@
 #pragma once
 
 #include <Husky/Vulkan.h>
-#include <Husky/ShaderStage.h>
+#include <Husky/Graphics/ShaderStage.h>
 
 namespace Husky::Vulkan
 {
-    class DescriptorSetBinding
+    class VulkanDescriptorSetBinding
     {
-        friend class DescriptorSetLayoutCreateInfo;
+        friend class VulkanDescriptorSetLayoutCreateInfo;
     public:
         inline DescriptorSetBinding& OfType(vk::DescriptorType aType)
         {

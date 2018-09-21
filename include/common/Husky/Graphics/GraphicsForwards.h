@@ -5,14 +5,19 @@
 namespace Husky::Graphics
 {
     class Buffer;
-    class CommandList;
+    class BufferCreateInfo;
     class CommandPool;
     class ComputeCommandList;
     class DescriptorPool;
     class DescriptorSet;
+    class DescriptorSetLayout;
+    class DescriptorSetLayoutCreateInfo;
     class GraphicsCommandList;
     class GraphicsDevice;
+    class GraphicsObject;
     class PhysicalDevice;
+    class PipelineLayout;
+    class PipelineLayoutCreateInfo;
     class PipelineState;
     class Queue;
     class RenderPass;

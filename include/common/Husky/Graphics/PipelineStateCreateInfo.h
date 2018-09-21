@@ -48,7 +48,7 @@ namespace Husky::Graphics
     {
         int32 rasterizationSamples = 1;
         bool sampleShadingEnable = false;
-        float32  minSampleShading = 0;
+        float32 minSampleShading = 0;
         bool alphaToCoverageEnable = false;
         bool alphaToOneEnable = false;
     };
@@ -104,5 +104,7 @@ namespace Husky::Graphics
         PipelineRasterizationStateCreateInfo rasterization;
         PipelineDepthStencilStateCreateInfo depthStencil;
         PipelineColorAttachmentsStateCreateInfo colorAttachments;
+        PipelineLayout* pipelineLayout = nullptr;
+        RenderPass* renderPass = nullptr;
     };
 }

@@ -9,4 +9,3 @@ namespace Husky::Graphics
         Back,
     }
 }
-

@@ -4,14 +4,10 @@
 #include <Husky/ShaderStage.h>
 #include <Husky/UniquePtr.h>
 #include <Husky/SampleCount.h>
+#include <Husky/Vulkan/VulkanForwards.h>
 
 namespace Husky::Vulkan
 {
-    class ShaderModule;
-    class Pipeline;
-    class PipelineLayout;
-    class RenderPass;
-
     /*enum DynamicState
     {
         Viewport,
@@ -167,7 +163,7 @@ namespace Husky::Vulkan
         PipelineDepthStencilStateCreateInfo depthStencilState;
         PipelineColorBlendStateCreateInfo colorBlendState;
         PipelieDynamicStateCreateInfo dynamicState;
-        PipelineLayout* layout = nullptr;
-        RenderPass* renderPass = nullptr;
+        VulkanPipelineLayout* layout = nullptr;
+        VulkanRenderPass* renderPass = nullptr;
     };
 }

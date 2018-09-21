@@ -8,7 +8,7 @@
 
 namespace Husky::Vulkan
 {
-    class RenderPassCreateInfo
+    class VulkanRenderPassCreateInfo
     {
     public:
         struct VulkanSubpassDescription

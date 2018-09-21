@@ -5,7 +5,7 @@
 
 namespace Husky::Vulkan
 {
-    struct SubpassDependency
+    struct VulkanSubpassDependency
     {
         SubpassDescription* srcSubpass = nullptr;
         SubpassDescription* dstSubpass = nullptr;

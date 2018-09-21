@@ -4,7 +4,7 @@
 
 namespace Husky::Vulkan
 {
-    struct SwapchainCreateInfo
+    struct VulkanSwapchainCreateInfo
     {
         int32 imageCount = 0;
         int32 width = 0;
