@@ -1,7 +1,6 @@
 #include <Husky/SceneV1/Loader/glTFLoader.h>
 #include <Husky/SceneV1/Loader/LoaderUtils.h>
 #include <Husky/glTF2/glTF.h>
-#include <Husky/Vulkan.h>
 #include <Husky/UniquePtr.h>
 #include <Husky/FileStream.h>
 #include <Husky/SceneV1/Buffer.h>
@@ -470,23 +469,23 @@ namespace Husky::SceneV1::Loader
     {
         const auto& name = sampler.name;
 
-        vk::SamplerCreateInfo samplerCreateInfo;
+        Graphics::SamplerCreateInfo samplerCreateInfo;
 
-        samplerCreateInfo.addressModeU = ToVkSamplerAddresMode(sampler.wrapS);
-        samplerCreateInfo.addressModeV = ToVkSamplerAddresMode(sampler.wrapT);
+        samplerCreateInfo.uAddressMode = ToSamplerAddresMode(sampler.wrapS);
+        samplerCreateInfo.vAddressMode = ToSamplerAddresMode(sampler.wrapT);
 
         if (sampler.minFilter.has_value())
         {
-            MinFilter minFilter = ToVkMinFilter(*sampler.minFilter);
+            MinFilter minFilter = ToMinFilter(*sampler.minFilter);
             samplerCreateInfo.minFilter = minFilter.minFilter;
-            samplerCreateInfo.mipmapMode = minFilter.mipmapMode;
+            samplerCreateInfo.mipFilter = minFilter.mipFilter;
             samplerCreateInfo.minLod = minFilter.minLod;
             samplerCreateInfo.maxLod = minFilter.maxLod;
         }
         
         if (sampler.magFilter.has_value())
         {
-            samplerCreateInfo.magFilter = ToVkMagFilter(*sampler.magFilter);
+            samplerCreateInfo.magFilter = ToMagFilter(*sampler.magFilter);
         }
 
         return MakeRef<Sampler>(samplerCreateInfo, name);

@@ -3,10 +3,10 @@
 #include <Husky/Types.h>
 #include <Husky/RefPtr.h>
 #include <Husky/BaseObject.h>
+#include <Husky/Graphics/GraphicsForwards.h>
 #include <Husky/Graphics/Format.h>
 #include <Husky/Graphics/PrimitiveTopology.h>
-#include <Husky/Vulkan/VulkanForwards.h>
-#include <Husky/SceneV1/Forwards.h>
+#include <Husky/SceneV1/SceneV1Forwards.h>
 #include <Husky/SceneV1/AttributeSemantic.h>
 #include <Husky/SceneV1/IndexBuffer.h>
 #include <Husky/SceneV1/VertexBuffer.h>
@@ -66,16 +66,16 @@ namespace Husky::SceneV1
         const Optional<IndexBuffer>& GetIndexBuffer() const { return indexBuffer; }
         const RefPtr<PbrMaterial>& GetMaterial() const { return material; }
         inline PrimitiveTopology GetTopology() const { return topology; }
-        inline const RefPtr<Vulkan::Pipeline>& GetPipeline() const { return pipeline; }
-        inline void SetPipeline(const RefPtr<Vulkan::Pipeline>& aPipeline) { pipeline = aPipeline; }
-        inline void AddShaderModule(const RefPtr<Vulkan::ShaderModule>& shaderModule) { shaderModules.push_back(shaderModule); }
+        inline const RefPtr<Graphics::PipelineState>& GetPipelineState() const { return pipelineState; }
+        inline void SetPipeline(const RefPtr<Graphics::PipelineState>& aPipelineState) { pipelineState = aPipelineState; }
+        //inline void AddShaderModule(const RefPtr<Vulkan::ShaderModule>& shaderModule) { shaderModules.push_back(shaderModule); }
     private:
         Vector<PrimitiveAttribute> attributes;
         Vector<VertexBuffer> vertexBuffers;
         Optional<IndexBuffer> indexBuffer;
         RefPtr<PbrMaterial> material;
         PrimitiveTopology topology = PrimitiveTopology::TriangleList;
-        RefPtrVector<Vulkan::ShaderModule> shaderModules;
-        RefPtr<Vulkan::Pipeline> pipeline;
+        //RefPtrVector<Graphics::ShaderModule> shaderModules;
+        RefPtr<Graphics::PipelineState> pipelineState;
     };
 }

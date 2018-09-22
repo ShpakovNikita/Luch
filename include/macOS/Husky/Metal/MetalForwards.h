@@ -5,4 +5,7 @@ namespace Husky::Metal
     class MetalPhysicalDevice;
     class MetalGraphicsDevice;
     class MetalCommandQueue;
+    class MetalDescriptorSet;
+    class MetalGraphicsCommandList;
+    class MetalPipelineState;
 }

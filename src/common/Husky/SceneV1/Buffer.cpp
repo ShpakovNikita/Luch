@@ -1,8 +1,9 @@
 #include <Husky/SceneV1/Buffer.h>
 #include <Husky/FileStream.h>
 #include <Husky/UniquePtr.h>
-#include <Husky/Vulkan/GraphicsDevice.h>
-#include <Husky/Vulkan/DeviceBuffer.h>
+#include <Husky/Graphics/GraphicsDevice.h>
+#include <Husky/Graphics/Buffer.h>
+#include <Husky/Graphics/BufferCreateInfo.h>
 
 namespace Husky::SceneV1
 {
@@ -27,28 +28,21 @@ namespace Husky::SceneV1
         hostBuffer.shrink_to_fit();
     }
 
-    bool Buffer::UploadToDevice(Vulkan::GraphicsDevice* device)
+    bool Buffer::UploadToDevice(Graphics::GraphicsDevice* device)
     {
+        Graphics::BufferCreateInfo ci;
+        ci.length = source.byteLength;
+        ci.usage = Graphics::BufferUsageFlags::VertexBuffer | Graphics::BufferUsageFlags::IndexBuffer;
+        ci.storageMode = Graphics::ResourceStorageMode::Shared;
+
         auto[createBufferResult, createdBuffer] = device->CreateBuffer(
-            source.byteLength,
-            device->GetQueueIndices()->graphicsQueueFamilyIndex,
-            vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndexBuffer,
-            true);
+            ci,
+            hostBuffer.data());
 
-        if (createBufferResult != vk::Result::eSuccess)
+        if (createBufferResult != Graphics::GraphicsResult::Success)
         {
             return false;
         }
-
-        auto[mapResult, mappedMemory] = createdBuffer->MapMemory(source.byteLength, 0);
-        if (mapResult != vk::Result::eSuccess)
-        {
-            return false;
-        }
-
-        memcpy(mappedMemory, hostBuffer.data(), source.byteLength);
-
-        createdBuffer->UnmapMemory();
 
         deviceBuffer = createdBuffer;
 

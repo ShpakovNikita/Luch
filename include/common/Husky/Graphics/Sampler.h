@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Husky/Graphics/GraphicsForwards.h>
+#include <Husky/Graphics/GraphicsObject.h>
 
 namespace Husky::Graphics
 {
@@ -8,8 +8,10 @@ namespace Husky::Graphics
     {
     public:
         Sampler(GraphicsDevice* device) : GraphicsObject(device) {}
-        virtual ~Sampler() = 0 {}
+        virtual ~Sampler() = 0;
 
         virtual const SamplerCreateInfo& GetCreateInfo() const = 0;
-    }
+    };
+
+    inline Sampler::~Sampler() {}
 }

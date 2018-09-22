@@ -1,6 +1,5 @@
 #pragma once
 
-
 namespace Husky::SceneV1
 {
     class Buffer;

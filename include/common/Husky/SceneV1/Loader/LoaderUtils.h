@@ -1,22 +1,26 @@
 #pragma once
 
-#include <Husky/Vulkan.h>
+#include <Husky/Graphics/SamplerAddressMode.h>
+#include <Husky/Graphics/SamplerMinMagFilter.h>
+#include <Husky/Graphics/SamplerMipFilter.h>
 #include <Husky/glTF2/glTF.h>
 #include <Husky/Assert.h>
 #include <Husky/SceneV1/Primitive.h>
 
 namespace Husky::SceneV1::Loader
 {
+    using namespace Graphics;
+
     struct MinFilter
     {
-        vk::Filter minFilter;
-        vk::SamplerMipmapMode mipmapMode;
+        SamplerMinMagFilter minFilter;
+        SamplerMipFilter mipFilter;
         float32 minLod = 0;
         float32 maxLod = 0;
     };
 
-    vk::SamplerAddressMode ToVkSamplerAddresMode(glTF::WrapMode mode);
-    vk::Filter ToVkMagFilter(glTF::MagFilter mode);
-    MinFilter ToVkMinFilter(glTF::MinFilter mode);
+    SamplerAddressMode ToSamplerAddresMode(glTF::WrapMode mode);
+    SamplerMinMagFilter ToMagFilter(glTF::MagFilter mode);
+    MinFilter ToMinFilter(glTF::MinFilter mode);
     int32 CalculateStride(ComponentType componentType, AttributeType attributeType);
 }

@@ -3,8 +3,7 @@
 #include <Husky/RefPtr.h>
 #include <Husky/SharedPtr.h>
 #include <Husky/glTF2/glTFForwards.h>
-#include <Husky/Vulkan/VulkanForwards.h>
-#include <Husky/SceneV1/Forwards.h>
+#include <Husky/SceneV1/SceneV1Forwards.h>
 #include <Husky/SceneV1/BufferSource.h>
 #include <Husky/SceneV1/Primitive.h>
 

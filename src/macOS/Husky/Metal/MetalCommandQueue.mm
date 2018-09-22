@@ -1,4 +1,6 @@
 #include <Husky/Metal/MetalCommandQueue.h>
+#include <Husky/Metal/MetalGraphicsDevice.h>
+#include <Husky/Metal/MetalGraphicsCommandList.h>
 
 namespace Husky::Metal
 {
@@ -11,7 +13,7 @@ namespace Husky::Metal
     GraphicsResultRefPtr<GraphicsCommandList> MetalCommandQueue::AllocateGraphicsCommandList()
     {
         auto metalCommandBuffer = queue.CommandBuffer();
-        return { GraphicsResult::Success, MakeRef<MetalCommandList>(this, metalCommandBuffer) };
+        return { GraphicsResult::Success, MakeRef<MetalGraphicsCommandList>(this, metalCommandBuffer) };
     }
 }
 

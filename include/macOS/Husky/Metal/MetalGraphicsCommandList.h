@@ -6,6 +6,8 @@
 
 namespace Husky::Metal
 {
+    using namespace Graphics;
+
     class MetalGraphicsCommandList : public GraphicsCommandList
     {
     public:
@@ -13,11 +15,24 @@ namespace Husky::Metal
             MetalCommandQueue* queue,
             mtlpp::CommandBuffer commandBuffer);
 
-        void Begin() override;
+        void Begin(const RenderPassCreateInfo& renderPassCreateInfo) override;
         void End() override;
 
-        
+        void BindPipelineState(PipelineState* pipelineState) override;
+        void BindTextureDescriptorSet(ShaderStage stage, DescriptorSet* descriptorSet) override;
+        void BindBufferDescriptorSet(ShaderStage stage, DescriptorSet* descriptorSet) override;
+        void BindSamplerDescriptorSet(ShaderStage stage, DescriptorSet* descriptorSet) override;
+
+        void BindVertexBuffers(
+            const ArrayProxy<Buffer*>& buffers,
+            const ArrayProxy<int32> offsets,
+            int32 firstBuffer = 0) override;
+
+        virtual void BindIndexBuffer(
+            Buffer* indexBuffer,
+            IndexType indexType) = 0;
     private:
         mtlpp::CommandBuffer commandBuffer;
+        mtlpp::RenderCommandEncoder commandEncoder;
     };
 }

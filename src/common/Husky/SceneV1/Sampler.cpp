@@ -1,13 +1,13 @@
 #include <Husky/SceneV1/Sampler.h>
-#include <Husky/Vulkan/VulkanSampler.h>
+#include <Husky/Graphics/Sampler.h>
 
 namespace Husky::SceneV1
 {
     Sampler::Sampler(
-        const vk::SamplerCreateInfo& aSamplerDescription,
+        const Graphics::SamplerCreateInfo& aSamplerDescription,
         const String& aName)
-        : samplerDescription(aSamplerDescription)
-        , name(aName)
+        : name(aName)
+        , samplerDescription(aSamplerDescription)
     {
     }
 }

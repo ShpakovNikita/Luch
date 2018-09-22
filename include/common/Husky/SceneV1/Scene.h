@@ -2,8 +2,8 @@
 
 #include <Husky/BaseObject.h>
 #include <Husky/RefPtr.h>
-#include <Husky/Vulkan/VulkanForwards.h>
-#include <Husky/SceneV1/Forwards.h>
+#include <Husky/Graphics/GraphicsForwards.h>
+#include <Husky/SceneV1/SceneV1Forwards.h>
 #include <Husky/SceneV1/SceneProperties.h>
 
 namespace Husky::SceneV1

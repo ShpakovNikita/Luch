@@ -4,8 +4,8 @@
 #include <Husky/VectorTypes.h>
 #include <Husky/RefPtr.h>
 #include <Husky/BaseObject.h>
-#include <Husky/Vulkan/VulkanForwards.h>
-#include <Husky/SceneV1/Forwards.h>
+#include <Husky/Graphics/GraphicsForwards.h>
+#include <Husky/SceneV1/SceneV1Forwards.h>
 #include <Husky/SceneV1/AlphaMode.h>
 
 namespace Husky::SceneV1
@@ -51,14 +51,10 @@ namespace Husky::SceneV1
         float32 alphaCutoff = 0.5f;
         bool doubleSided = false;
 
-        inline const RefPtr<Vulkan::DescriptorSet>& GetDescriptorSet() const { return descriptorSet; }
-        inline void SetDescriptorSet(const RefPtr<Vulkan::DescriptorSet>& aDescriptorSet) { descriptorSet = aDescriptorSet; }
         inline bool HasBaseColorTexture() const { return metallicRoughness.baseColorTexture.texture != nullptr; }
         inline bool HasMetallicRoughnessTexture() const { return metallicRoughness.metallicRoughnessTexture.texture != nullptr; }
         inline bool HasNormalTexture() const { return normalTexture.texture != nullptr; }
         inline bool HasOcclusionTexture() const { return occlusionTexture.texture != nullptr; }
         inline bool HasEmissiveTexture() const { return emissiveTexture.texture != nullptr; }
-    private:
-        RefPtr<Vulkan::DescriptorSet> descriptorSet;
     };
 }

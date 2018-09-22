@@ -24,6 +24,7 @@ namespace Husky::Graphics
     class PipelineLayout;
     class PipelineLayoutCreateInfo;
     class PipelineState;
+    class PipelineStateCreateInfo;
     class Queue;
     class RenderPass;
     class RenderPassCreateInfo;

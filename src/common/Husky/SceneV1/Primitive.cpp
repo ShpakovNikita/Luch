@@ -1,6 +1,5 @@
 #include <Husky/SceneV1/Primitive.h>
 #include <Husky/SceneV1/PbrMaterial.h>
-#include <Husky/Vulkan/VulkanPipeline.h>
 
 namespace Husky::SceneV1
 {

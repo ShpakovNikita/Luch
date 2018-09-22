@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Husky/RefPtr.h>
-#include <Husky/SceneV1/Forwards.h>
+#include <Husky/SceneV1/SceneV1Forwards.h>
 
 namespace Husky::SceneV1
 {

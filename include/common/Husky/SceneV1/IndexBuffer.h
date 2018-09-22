@@ -10,7 +10,7 @@ namespace Husky::SceneV1
     {
         RefPtr<Buffer> backingBuffer;
 
-        IndexType indexType = IndexType::UInt16;
+        Graphics::IndexType indexType = Graphics::IndexType::UInt16;
         int32 count = 0;
 
         int32 byteOffset = 0;

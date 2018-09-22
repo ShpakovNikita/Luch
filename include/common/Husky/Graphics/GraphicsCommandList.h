@@ -7,16 +7,17 @@
 #include <Husky/Graphics/Rect.h>
 #include <Husky/Graphics/Viewport.h>
 #include <Husky/Graphics/Color.h>
-#include <Husky/Graphics/GraphicsForwards.h>
+#include <Husky/Graphics/GraphicsObject.h>
 
 namespace Husky::Graphics
 {
-    class GraphicsCommandList : public BaseObject
+    class GraphicsCommandList : public GraphicsObject
     {
     public:
+        GraphicsCommandList(GraphicsDevice* device) : GraphicsObject(device) {}
         virtual ~GraphicsCommandList() = 0;
 
-        virtual void Begin() = 0;
+        virtual void Begin(const RenderPassCreateInfo& renderPassCreateInfo) = 0;
         virtual void End() = 0;
 
         virtual void BindPipelineState(PipelineState* pipelineState) = 0;
@@ -44,7 +45,7 @@ namespace Husky::Graphics
 //        virtual void SetBlendColor(ColorSNorm32 color) = 0;
 //        virtual void SetStencilReference(uint32 front, uint32 back) = 0;
 
-        virtual void Draw
+        virtual void Draw(
             int32 vertexStart,
             int32 vertexCount) = 0;
 
@@ -62,7 +63,7 @@ namespace Husky::Graphics
             int32 baseInstance = 0) = 0;
 
         // TODO Indirect Draw
-    }
+    };
 
-    inline GraphicsCommandList::~GraphicsCommandList() {}
+    //inline GraphicsCommandList::~GraphicsCommandList() {}
 }

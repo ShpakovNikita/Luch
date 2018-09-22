@@ -5,7 +5,7 @@
 #include <Husky/VectorTypes.h>
 #include <Husky/BaseObject.h>
 #include <Husky/SceneV1/CameraType.h>
-#include <Husky/Vulkan/VulkanForwards.h>
+#include <Husky/Graphics/GraphicsForwards.h>
 
 namespace Husky::SceneV1
 {
@@ -23,19 +23,19 @@ namespace Husky::SceneV1
 
         virtual Mat4x4 GetCameraProjectionMatrix() const = 0;
 
-        inline const RefPtr<Vulkan::DeviceBuffer>& GetUniformBuffer() const { return uniformBuffer; }
-        inline void SetUniformBuffer(const RefPtr<Vulkan::DeviceBuffer>& aUniformBuffer) { uniformBuffer = aUniformBuffer; }
+        inline const RefPtr<Graphics::Buffer>& GetUniformBuffer() const { return uniformBuffer; }
+        inline void SetUniformBuffer(const RefPtr<Graphics::Buffer>& aUniformBuffer) { uniformBuffer = aUniformBuffer; }
 
-        inline const RefPtr<Vulkan::DescriptorSet>& GetDescriptorSet() const { return descriptorSet; }
-        inline void SetDescriptorSet(const RefPtr<Vulkan::DescriptorSet>& aDescriptorSet) { descriptorSet = aDescriptorSet; }
+        inline const RefPtr<Graphics::DescriptorSet>& GetDescriptorSet() const { return descriptorSet; }
+        inline void SetDescriptorSet(const RefPtr<Graphics::DescriptorSet>& aDescriptorSet) { descriptorSet = aDescriptorSet; }
     protected:
         Mat4x4 viewMatrix;
     private:
         CameraType type = CameraType::Perspective;
         String name;
 
-        RefPtr<Vulkan::DescriptorSet> descriptorSet;
-        RefPtr<Vulkan::DeviceBuffer> uniformBuffer;
+        RefPtr<Graphics::DescriptorSet> descriptorSet;
+        RefPtr<Graphics::Buffer> uniformBuffer;
     };
 
     class PerspectiveCamera : public Camera

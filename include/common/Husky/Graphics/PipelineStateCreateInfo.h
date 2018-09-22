@@ -5,8 +5,13 @@
 #include <Husky/Graphics/PolygonMode.h>
 #include <Husky/Graphics/CullMode.h>
 #include <Husky/Graphics/FrontFace.h>
+#include <Husky/Graphics/Color.h>
+#include <Husky/Graphics/ColorComponentFlags.h>
+#include <Husky/Graphics/BlendFactor.h>
+#include <Husky/Graphics/BlendOperation.h>
+#include <Husky/Graphics/PrimitiveTopology.h>
 #include <Husky/Graphics/StencilOperation.h>
-#include <Husky/Graphics/CompareFuntion.h>
+#include <Husky/Graphics/CompareFunction.h>
 #include <Husky/Graphics/GraphicsForwards.h>
 
 namespace Husky::Graphics
@@ -83,22 +88,21 @@ namespace Husky::Graphics
         bool blendEnable = false;
         BlendFactor srcColorBlendFactor = BlendFactor::One;
         BlendFactor dstColorBlendFactor = BlendFactor::Zero;
-        BlendOp colorBlendOp = BlendOp::Add;
+        BlendOperation colorBlendOp = BlendOperation::Add;
         BlendFactor srcAlphaBlendFactor = BlendFactor::One;
         BlendFactor dstAlphaBlendFactor = BlendFactor::Zero;
-        BlendOp alphaBlendOp = BlendOp::Add;
-        ColorComponentFlags colorWriteMask = ColorComponentFlags::All
+        BlendOperation alphaBlendOp = BlendOperation::Add;
+        ColorComponentFlags colorWriteMask = ColorComponentFlags::All;
     };
 
     struct PipelineColorAttachmentsStateCreateInfo
     {
-        Vector<PipelineColorBlendAttachmentState> attachments;
-        ColorSNorm blendColor;
+        Vector<PipelineColorAttachmentState> attachments;
+        ColorSNorm32 blendColor;
     };
 
     struct PipelineStateCreateInfo
     {
-        VertexInputStateCreateInfo vertexInput;
         PipelineVertexInputStateCreateInfo inputAssembler;
         PipelineMultisampleStateCreateInfo multisampling;
         PipelineRasterizationStateCreateInfo rasterization;

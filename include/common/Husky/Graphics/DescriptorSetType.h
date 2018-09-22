@@ -2,7 +2,7 @@
 
 namespace Husky::Graphics
 {
-    enum DescriptorSetType
+    enum class DescriptorSetType
     {
         Texture,
         Buffer,

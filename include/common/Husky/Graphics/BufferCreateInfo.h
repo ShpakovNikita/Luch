@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Husky/Graphics/GraphicsCreateInfo.h>
+#include <Husky/Graphics/GraphicsForwards.h>
 #include <Husky/Graphics/ResourceStorageMode.h>
 #include <Husky/Graphics/BufferUsageFlags.h>
 

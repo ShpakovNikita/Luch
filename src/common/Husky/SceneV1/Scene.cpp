@@ -7,9 +7,9 @@ namespace Husky::SceneV1
         RefPtrVector<Node> aNodes,
         SceneProperties aSceneProperties,
         const String &aName)
-        : nodes(std::move(aNodes))
+        : name(aName)
+        , nodes(std::move(aNodes))
         , sceneProperties(std::move(aSceneProperties))
-        , name(aName)
     {
     }
 

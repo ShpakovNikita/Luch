@@ -7,5 +7,5 @@ namespace Husky::Graphics
         None,
         Front,
         Back,
-    }
+    };
 }

@@ -6,5 +6,5 @@ namespace Husky::Graphics
     {
         Fill,
         Lines,
-    }
+    };
 }

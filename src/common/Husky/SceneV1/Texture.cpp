@@ -1,11 +1,6 @@
 #include <Husky/SceneV1/Texture.h>
 #include <Husky/SceneV1/Sampler.h>
 #include <Husky/SceneV1/Image.h>
-#include <Husky/Vulkan/GraphicsDevice.h>
-#include <Husky/Vulkan/Image.h>
-#include <Husky/Vulkan/ImageView.h>
-#include <Husky/Vulkan/DeviceBuffer.h>
-#include <Husky/Vulkan/CommandPool.h>
 
 namespace Husky::SceneV1
 {
@@ -13,9 +8,9 @@ namespace Husky::SceneV1
         const RefPtr<Sampler>& aSampler,
         const RefPtr<Image>& aHostImage,
         const String& aName)
-        : sampler(aSampler)
+        : name(aName)
         , hostImage(aHostImage)
-        , name(aName)
+        , sampler(aSampler)
     {
     }
 }

@@ -14,5 +14,5 @@ namespace Husky::Graphics
         Compute = 1 << 5,
     };
 
-    DEFINE_OPERATORS_FOR_FLAGS_ENUM(ShaderStage)
+    DEFINE_OPERATORS_FOR_FLAGS_ENUM(ShaderStage);
 }

@@ -2,7 +2,7 @@
 
 namespace Husky::Graphics
 {
-    enum class SamplerMipFilter,
+    enum class SamplerMipFilter
     {
         NotMipmapped,
         Nearest,

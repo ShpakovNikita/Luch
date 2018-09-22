@@ -3,8 +3,7 @@
 #include <Husky/BaseObject.h>
 #include <Husky/VectorTypes.h>
 #include <Husky/RefPtr.h>
-#include <Husky/Vulkan/VulkanForwards.h>
-#include <Husky/SceneV1/Forwards.h>
+#include <Husky/SceneV1/SceneV1Forwards.h>
 
 namespace Husky::SceneV1
 {

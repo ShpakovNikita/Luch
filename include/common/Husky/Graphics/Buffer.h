@@ -8,9 +8,11 @@ namespace Husky::Graphics
     {
     public:
         Buffer(GraphicsDevice* device) : GraphicsObject(device) {}
-        virtual ~Buffer() = 0 {};
+        virtual ~Buffer() = 0;
 
         virtual const BufferCreateInfo& GetCreateInfo() const = 0;
-    }
+    };
+
+    inline Buffer::~Buffer() {}
 }
 

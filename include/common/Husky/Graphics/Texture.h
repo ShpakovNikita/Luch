@@ -8,8 +8,10 @@ namespace Husky::Graphics
     {
     public:
         Texture(GraphicsDevice* device) : GraphicsObject(device) {}
-        virtual ~Texture() = 0 {};
+        virtual ~Texture() = 0;
 
         virtual const TextureCreateInfo& GetCreateInfo() const = 0;
-    }
+    };
+
+    inline Texture::~Texture() {}
 }

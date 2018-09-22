@@ -2,9 +2,8 @@
 
 #include <Husky/BaseObject.h>
 #include <Husky/RefPtr.h>
-#include <Husky/Vulkan/VulkanForwards.h>
-#include <Husky/Vulkan/CommandBuffer.h>
-#include <Husky/SceneV1/Forwards.h>
+#include <Husky/Graphics/GraphicsForwards.h>
+#include <Husky/SceneV1/SceneV1Forwards.h>
 #include <Husky/SceneV1/Sampler.h>
 
 namespace Husky::SceneV1
@@ -16,19 +15,17 @@ namespace Husky::SceneV1
             const RefPtr<Sampler>& sampler,
             const String& name = "");
 
-        inline const RefPtr<Vulkan::Image>& GetDeviceImage() const { return deviceImage; }
-        inline const RefPtr<Vulkan::ImageView>& GetDeviceImageView() const { return deviceImageView; }
+        inline const RefPtr<Graphics::Texture>& GetDeviceTexture() const { return deviceTexture; }
 
-        inline void SetDeviceImage(const RefPtr<Vulkan::Image>& aDeviceImage) { deviceImage = aDeviceImage; }
-        inline void SetDeviceImageView(const RefPtr<Vulkan::ImageView>& aDeviceImageView) { deviceImageView = aDeviceImageView; }
+        inline void SetDeviceTexture(const RefPtr<Graphics::Texture>& aTexture) { deviceTexture = aTexture; }
+
 
         inline const RefPtr<Sampler>& GetSampler() const { return sampler; }
-        inline const RefPtr<Vulkan::Sampler>& GetDeviceSampler() const { return sampler->GetDeviceSampler(); }
+        inline const RefPtr<Graphics::Sampler>& GetDeviceSampler() const { return sampler->GetDeviceSampler(); }
     private:
         String name;
 
-        RefPtr<Vulkan::Image> deviceImage;
-        RefPtr<Vulkan::ImageView> deviceImageView;
+        RefPtr<Graphics::Texture> deviceTexture;
 
         RefPtr<Sampler> sampler;
     };

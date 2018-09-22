@@ -1,11 +1,11 @@
 #pragma once
 
 #include <Husky/Types.h>
-#include <Husky/Limits.h>
 #include <Husky/Graphics/CompareFunction.h>
 #include <Husky/Graphics/SamplerAddressMode.h>
 #include <Husky/Graphics/SamplerMinMagFilter.h>
 #include <Husky/Graphics/SamplerMipFilter.h>
+#include <Husky/Graphics/SamplerBorderColor.h>
 
 namespace Husky::Graphics
 {
@@ -16,7 +16,7 @@ namespace Husky::Graphics
         SamplerAddressMode wAddressMode = SamplerAddressMode::ClampToEdge;
         SamplerMinMagFilter minFilter = SamplerMinMagFilter::Nearest;
         SamplerMinMagFilter magFilter = SamplerMinMagFilter::Nearest;
-        SamplerMipFilter mipFilter SamplerMipFilter::NotMipmapped;
+        SamplerMipFilter mipFilter = SamplerMipFilter::NotMipmapped;
         CompareFunction compareFunction = CompareFunction::Never;
         SamplerBorderColor borderColor = SamplerBorderColor::OpaqueBlack;
         int32 maxAnisotropy = 1;

@@ -6,7 +6,7 @@ namespace Husky::Graphics
     {
         Clockwise,
         CounterClockwise
-    }
+    };
 }
 
 

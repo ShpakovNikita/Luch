@@ -7,6 +7,7 @@ namespace Husky::Graphics
 {
     class CommandQueue : public GraphicsObject
     {
+    public:
         CommandQueue(GraphicsDevice* device) : GraphicsObject(device) {}
         virtual ~CommandQueue() = 0;
 

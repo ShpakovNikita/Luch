@@ -14,4 +14,6 @@ namespace Husky::Graphics
         Uniform = 1 << 4,
         // TODO
     };
+
+    DEFINE_OPERATORS_FOR_FLAGS_ENUM(BufferUsageFlags);
 }

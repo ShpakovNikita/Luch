@@ -7,6 +7,8 @@
 
 namespace Husky::Metal
 {
+    using namespace Graphics;
+
     class MetalCommandQueue : public CommandQueue
     {
     public:

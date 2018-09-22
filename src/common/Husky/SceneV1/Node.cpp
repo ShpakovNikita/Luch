@@ -10,11 +10,11 @@ namespace Husky::SceneV1
         const RefPtr<Camera>& aCamera,
         const TransformType &aTransform,
         const String &aName)
-        : children(move(aChildren))
+        : name(aName)
+        , children(move(aChildren))
         , mesh(aMesh)
         , camera(aCamera)
         , transform(aTransform)
-        , name(aName)
     {
     }
 

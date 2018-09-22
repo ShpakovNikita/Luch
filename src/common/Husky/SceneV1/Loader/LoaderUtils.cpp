@@ -2,36 +2,37 @@
 
 namespace Husky::SceneV1::Loader
 {
-    vk::SamplerAddressMode ToVkSamplerAddresMode(glTF::WrapMode mode)
+    using namespace Graphics;
+
+    SamplerAddressMode ToSamplerAddresMode(glTF::WrapMode mode)
     {
         switch (mode)
         {
         case glTF::WrapMode::ClampToEdge:
-            return vk::SamplerAddressMode::eClampToEdge;
+            return SamplerAddressMode::ClampToEdge;
         case glTF::WrapMode::Repeat:
-            return vk::SamplerAddressMode::eRepeat;
+            return SamplerAddressMode::Repeat;
         case glTF::WrapMode::MirroredRepeat:
-            return vk::SamplerAddressMode::eMirroredRepeat;
+            return SamplerAddressMode::MirrorRepeat;
         default:
             HUSKY_ASSERT_MSG(false, "Unknown sampler addres mode");
         }
     }
 
-    vk::Filter ToVkMagFilter(glTF::MagFilter mode)
+    SamplerMinMagFilter ToMagFilter(glTF::MagFilter mode)
     {
         switch (mode)
         {
         case glTF::MagFilter::Nearest:
-            return vk::Filter::eNearest;
+            return SamplerMinMagFilter::Nearest;
         case glTF::MagFilter::Linear:
-            return vk::Filter::eLinear;
+            return SamplerMinMagFilter::Linear;
         default:
             HUSKY_ASSERT_MSG(false, "Unknown mag filter");
         }
     }
 
-    
-    MinFilter ToVkMinFilter(glTF::MinFilter mode)
+    MinFilter ToMinFilter(glTF::MinFilter mode)
     {
         MinFilter filter;
 
@@ -39,32 +40,32 @@ namespace Husky::SceneV1::Loader
         switch (mode)
         {
         case glTF::MinFilter::Linear:
-            filter.minFilter = vk::Filter::eLinear;
-            filter.mipmapMode = vk::SamplerMipmapMode::eNearest;
+            filter.minFilter = SamplerMinMagFilter::Linear;
+            filter.mipFilter = SamplerMipFilter::Nearest;
             filter.minLod = 0;
             filter.maxLod = 0.25f;
             break;
         case glTF::MinFilter::LinearMipMapLinear:
-            filter.minFilter = vk::Filter::eLinear;
-            filter.mipmapMode = vk::SamplerMipmapMode::eLinear;
+            filter.minFilter = SamplerMinMagFilter::Linear;
+            filter.mipFilter = SamplerMipFilter::Linear;
             break;
         case glTF::MinFilter::LinearMipMapNearest:
-            filter.minFilter = vk::Filter::eLinear;
-            filter.mipmapMode = vk::SamplerMipmapMode::eNearest;
+            filter.minFilter = SamplerMinMagFilter::Linear;
+            filter.mipFilter = SamplerMipFilter::Nearest;
             break;
         case glTF::MinFilter::Nearest:
-            filter.minFilter = vk::Filter::eNearest;
-            filter.mipmapMode = vk::SamplerMipmapMode::eNearest;
+            filter.minFilter = SamplerMinMagFilter::Nearest;
+            filter.mipFilter = SamplerMipFilter::Nearest;
             filter.minLod = 0;
             filter.maxLod = 0.25f;
             break;
         case glTF::MinFilter::NearestMipMapLinear:
-            filter.minFilter = vk::Filter::eNearest;
-            filter.mipmapMode = vk::SamplerMipmapMode::eLinear;
+            filter.minFilter = SamplerMinMagFilter::Nearest;
+            filter.mipFilter = SamplerMipFilter::Linear;
             break;
         case glTF::MinFilter::NearestMipMapNearest:
-            filter.minFilter = vk::Filter::eNearest;
-            filter.mipmapMode = vk::SamplerMipmapMode::eNearest;
+            filter.minFilter = SamplerMinMagFilter::Nearest;
+            filter.mipFilter = SamplerMipFilter::Nearest;
             break;
         }
 
