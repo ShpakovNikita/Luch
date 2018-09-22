@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Husky/BaseObject.h>
-#include <Husky/Graphics/GraphicsForwads.h>
+#include <Husky/Graphics/GraphicsForwards.h>
 
 namespace Husky::Graphics
 {
@@ -16,5 +16,5 @@ namespace Husky::Graphics
         inline GraphicsDevice* GetGraphicsDevice() { return device; }
     private:
         GraphicsDevice* device = nullptr;
-    }
+    };
 }

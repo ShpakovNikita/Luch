@@ -9,6 +9,6 @@ namespace Husky::Graphics
     template<typename Value>
     using GraphicsResultValue = ResultValue<GraphicsResult, Value>;
 
-    template<typename Value>
+    template<typename T>
     using GraphicsResultRefPtr = GraphicsResultValue<RefPtr<T>>;
 }

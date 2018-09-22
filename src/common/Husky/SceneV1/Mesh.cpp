@@ -1,6 +1,6 @@
 #include <Husky/SceneV1/Mesh.h>
 #include <Husky/SceneV1/Primitive.h>
-#include <Husky/Vulkan/DeviceBuffer.h>
+#include <Husky/Vulkan/VuklanDeviceBuffer.h>
 
 namespace Husky::SceneV1
 {

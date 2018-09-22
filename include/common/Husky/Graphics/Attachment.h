@@ -17,16 +17,26 @@ namespace Husky::Graphics
     {
         DontCare,
         Store,
-        Resolve,
+        //Resolve,
+    };
+
+    struct AttachmentTextureInfo
+    {
+        Texture* texture = nullptr;
+        int32 mipmapLevel = 0;
+        int32 slice = 0;
+        int32 depthPlane = 0;
     };
 
     struct Attachment
     {
         int32 index = -1;
+        AttachmentTextureInfo output;
+        AttachmentTextureInfo resolve;
         Format format = Format::Undefined;
-        int32 sampleCount = 1;
         AttachmentLoadOp loadOp = AttachmentLoadOp::DontCare;
         AttachmentStoreOp storeOp = AttachmentStoreOp::DontCare;
+        // TODO Multisampling
     };
 
     struct ColorAttachment : public Attachment
@@ -36,8 +46,8 @@ namespace Husky::Graphics
 
     struct DepthStencilAttachment : public Attachment
     {
-        float32 depthClearValue;
-        uint32 stencilClearValue;
+        float32 depthClearValue = 1.0f;
+        uint32 stencilClearValue = 0;
     };
 }
 

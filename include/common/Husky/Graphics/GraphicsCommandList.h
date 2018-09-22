@@ -2,6 +2,8 @@
 
 #include <Husky/ArrayProxy.h>
 #include <Husky/BaseObject.h>
+#include <Husky/Graphics/IndexType.h>
+#include <Husky/Graphics/ShaderStage.h>
 #include <Husky/Graphics/Rect.h>
 #include <Husky/Graphics/Viewport.h>
 #include <Husky/Graphics/Color.h>
@@ -12,13 +14,15 @@ namespace Husky::Graphics
     class GraphicsCommandList : public BaseObject
     {
     public:
-        virtual ~GraphicsCommandList() = 0 {};
+        virtual ~GraphicsCommandList() = 0;
 
         virtual void Begin() = 0;
         virtual void End() = 0;
 
         virtual void BindPipelineState(PipelineState* pipelineState) = 0;
-        virtual void BindDescriptorSet(DescriptorSet* descriptorSet) = 0;
+        virtual void BindTextureDescriptorSet(ShaderStage stage, DescriptorSet* descriptorSet) = 0;
+        virtual void BindBufferDescriptorSet(ShaderStage stage, DescriptorSet* descriptorSet) = 0;
+        virtual void BindSamplerDescriptorSet(ShaderStage stage, DescriptorSet* descriptorSet) = 0;
 
         virtual void BindVertexBuffers(
             const ArrayProxy<Buffer*>& buffers,
@@ -30,7 +34,7 @@ namespace Husky::Graphics
             IndexType indexType) = 0;
 
         virtual void SetViewports(const ArrayProxy<Viewport>& viewports) = 0;
-        virtual void SetScissorRects(const ArrayProxy<Rect>& scissorRects) = 0;
+        virtual void SetScissorRects(const ArrayProxy<FloatRect>& scissorRects) = 0;
 
 //        virtual void SetDepthBias(
 //            float32 depthBias,
@@ -59,4 +63,6 @@ namespace Husky::Graphics
 
         // TODO Indirect Draw
     }
+
+    inline GraphicsCommandList::~GraphicsCommandList() {}
 }

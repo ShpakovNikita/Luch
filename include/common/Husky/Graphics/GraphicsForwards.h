@@ -4,11 +4,16 @@
 
 namespace Husky::Graphics
 {
+    class Attachment;
     class Buffer;
     class BufferCreateInfo;
+    class ColorAttachment;
     class CommandPool;
+    class CommandQueue;
     class ComputeCommandList;
+    class DepthStencilAttachment;
     class DescriptorPool;
+    class DescriptorPoolCreateInfo;
     class DescriptorSet;
     class DescriptorSetLayout;
     class DescriptorSetLayoutCreateInfo;
@@ -21,6 +26,7 @@ namespace Husky::Graphics
     class PipelineState;
     class Queue;
     class RenderPass;
+    class RenderPassCreateInfo;
     class Sampler;
     class SamplerCreateInfo;
     class Surface;

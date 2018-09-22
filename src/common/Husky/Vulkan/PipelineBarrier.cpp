@@ -1,7 +1,7 @@
 #include <Husky/Vulkan/PipelineBarrier.h>
-#include <Husky/Vulkan/DeviceBuffer.h>
-#include <Husky/Vulkan/Image.h>
-#include <Husky/Vulkan/ImageAspects.h>
+#include <Husky/Vulkan/VuklanDeviceBuffer.h>
+#include <Husky/Vulkan/VuklanImage.h>
+#include <Husky/Vulkan/VuklanImageAspects.h>
 
 namespace Husky::Vulkan
 {

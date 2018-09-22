@@ -1,9 +1,9 @@
 #pragma once
 
-#include <Husky/ShaderStage.h>
+#include <Husky/Graphics/ShaderStage.h>
 #include <Husky/Vulkan.h>
 
-namespace Husky
+namespace Husky::Vulkan
 {
     inline vk::ShaderStageFlags ToVulkanShaderStages(ShaderStage stages)
     {

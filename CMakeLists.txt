@@ -149,14 +149,22 @@ file(GLOB_RECURSE ENGINE_COMMON_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/common
 file(GLOB_RECURSE ENGINE_COMMON_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/common/Husky/*.h)
 
 if(APPLE)
+
     file(GLOB_RECURSE ENGINE_MACOS_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Husky/*.cpp)
     file(GLOB_RECURSE ENGINE_MACOS_OBJC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Husky/*.m)
     file(GLOB_RECURSE ENGINE_MACOS_OBJCPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Husky/*.mm)
     file(GLOB_RECURSE ENGINE_MACOS_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/macOS/Husky/*.h)
 
-    include_directories(AFTER
+    include_directories(BEFORE SYSTEM
         ${CMAKE_CURRENT_SOURCE_DIR}/include/common/
         ${CMAKE_CURRENT_SOURCE_DIR}/include/macOS/)
+
+    include_directories(AFTER
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/mtlpp/)
+
+    add_library(mtlpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/mtlpp/mtlpp.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/mtlpp/mtlpp.mm)
 
     add_library(HuskyEngine
         ${ENGINE_COMMON_CPP_FILES}

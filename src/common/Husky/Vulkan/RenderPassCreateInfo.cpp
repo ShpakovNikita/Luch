@@ -1,4 +1,4 @@
-#include <Husky/Vulkan/RenderPassCreateInfo.h>
+#include <Husky/Vulkan/VulkanRenderPassCreateInfo.h>
 #include <Husky/Vulkan/Format.h>
 #include <Husky/Vulkan/SampleCount.h>
 

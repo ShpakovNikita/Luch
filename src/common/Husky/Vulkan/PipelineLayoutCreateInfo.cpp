@@ -1,4 +1,4 @@
-#include <Husky/Vulkan/PipelineLayoutCreateInfo.h>
+#include <Husky/Vulkan/VulkanPipelineLayoutCreateInfo.h>
 
 #include <Husky/Vulkan/ShaderStage.h>
 

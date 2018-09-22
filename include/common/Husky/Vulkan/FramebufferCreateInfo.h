@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Husky/Vulkan.h>
-#include <Husky/Vulkan/Attachment.h>
+#include <Husky/Vulkan/VuklanAttachment.h>
 #include <Husky/Vulkan/ImageView.h>
 
 namespace Husky::Vulkan

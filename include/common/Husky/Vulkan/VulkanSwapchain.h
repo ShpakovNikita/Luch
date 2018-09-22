@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Husky/Types.h>
-#include <Husky/Format.h>
+#include <Husky/Graphics/Format.h>
 #include <Husky/RefPtr.h>
 #include <Husky/Vulkan.h>
 #include <Husky/Vulkan/VulkanForwards.h>

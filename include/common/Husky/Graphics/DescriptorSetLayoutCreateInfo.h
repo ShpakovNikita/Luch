@@ -1,48 +1,29 @@
 #pragma once
 
-
-#include <Husky/Graphics/ShaderStage.h>
 #include <Husky/Graphics/GraphicsForwards.h>
-#include <Husky/Graphics/DscriptorSetBinding.h>
+#include <Husky/Graphics/DescriptorSetType.h>
 
 namespace Husky::Graphics
 {
-    struct DescriptorSetBindingCollection
-    {
-        UnorderedMap<ShaderStage, Vector<DescriptorSetBinding*>> bindings;
-        int32 currentBindingIndex = 0;
-
-        inline void AddBinding(ShaderStage stage, const DescriptorSetBinding& binding)
-        {
-            binding->index = currentBindingIndex;
-            currentBindingIndex += binding->count;
-            bindings.push_back(binding);
-        }
-    };
-
     class DescriptorSetLayoutCreateInfo
     {
     public:
-        inline DescriptorSetLayoutCreateInfo& AddBufferBinding(ShaderStage stage, DescriptorSetBinding* binding)
+        inline DescriptorSetLayoutCreateInfo& OfType(DescriptorSetType aType)
         {
-           bufferBindings.AddBinding(stage, binding);
-           return *this;
+            type = aType;
+            return *this;
         }
 
-        inline DescriptorSetLayoutCreateInfo& AddTextureBinding(ShaderStage stage, DescriptorSetBinding* binding)
+        inline DescriptorSetLayoutCreateInfo& AddBinding(DescriptorSetBinding* binding)
         {
-           textureBindings.AddBinding(stage, binding);
-           return *this;
-        }
-
-        inline DescriptorSetLayoutCreateInfo& AddSamplerBinding(ShaderStage stage, DescriptorSetBinding* binding)
-        {
-           samplerBindings.AddBinding(stage, binding);
-           return *this;
+            binding->index = currentBindingIndex;
+            currentBindingIndex++;
+            bindings.push_back(binding);
+            return *this;
         }
     private:
-        DescriptorSetBindingCollection bufferBindings;
-        DescriptorSetBindingCollection textureBindings;
-        DescriptorSetBindingCollection samplerBindings;
+        DescriptorSetType type;
+        int32 currentBindingIndex = 0;
+        Vector<DescriptorSetBinding*> bindings;
     };
 }

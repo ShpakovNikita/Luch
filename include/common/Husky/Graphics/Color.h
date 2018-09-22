@@ -11,7 +11,7 @@ namespace Husky::Graphics
         T green = {};
         T blue = {};
         T alpha = {};
-    }
+    };
 
     using ColorUInt8 = Color<uint8>;
     using ColorUInt32 = Color<uint32>;

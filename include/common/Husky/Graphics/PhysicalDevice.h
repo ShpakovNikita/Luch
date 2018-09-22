@@ -9,8 +9,10 @@ namespace Husky::Graphics
     class PhysicalDevice : public BaseObject
     {
     public:
-        ~PhysicalDevice() = 0 {};
+        virtual ~PhysicalDevice() = 0;
 
-        virtual GraphicsResult<GraphicsDevice> CreateGraphicsDevice() = 0;
+        virtual GraphicsResultRefPtr<GraphicsDevice> CreateGraphicsDevice() = 0;
     };
+
+    inline PhysicalDevice::~PhysicalDevice() {}
 }

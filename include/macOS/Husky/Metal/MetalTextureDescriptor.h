@@ -5,5 +5,5 @@ namespace Husky::Metal
     class MetalTextureDescriptor
     {
 
-    }
+    };
 }

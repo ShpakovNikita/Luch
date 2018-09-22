@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Husky/RefPtr.h>
-#include <Husky/IndexType.h>
+#include <Husky/Graphics/IndexType.h>
 #include <Husky/SceneV1/Buffer.h>
 
 namespace Husky::SceneV1

@@ -3,7 +3,7 @@
 #include <Husky/BaseObject.h>
 #include <Husky/RefPtr.h>
 #include <Husky/Vulkan/VulkanForwards.h>
-#include <Husky/Vulkan/CommandBuffer.h>
+#include <Husky/Vulkan/VulkanCommandBuffer.h>
 #include <Husky/SceneV1/Forwards.h>
 #include <Husky/SceneV1/Sampler.h>
 

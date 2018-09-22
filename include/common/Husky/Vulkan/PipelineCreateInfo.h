@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Husky/Vulkan.h>
-#include <Husky/ShaderStage.h>
+#include <Husky/Graphics/ShaderStage.h>
 #include <Husky/UniquePtr.h>
 #include <Husky/SampleCount.h>
 #include <Husky/Vulkan/VulkanForwards.h>

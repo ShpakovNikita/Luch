@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Husky/ShaderStage.h>
+#include <Husky/Graphics/ShaderStage.h>
 #include <Husky/Types.h>
 
 namespace Husky::Vulkan
