@@ -2,6 +2,7 @@
 
 #include <Husky/Graphics/GraphicsForwards.h>
 #include <Husky/Graphics/DescriptorSetType.h>
+#include <Husky/Graphics/DescriptorSetBinding.h>
 
 namespace Husky::Graphics
 {
@@ -14,6 +15,11 @@ namespace Husky::Graphics
             return *this;
         }
 
+        inline DescriptorSetLayoutCreateInfo& WithNBindings(int32 count)
+        {
+            bindings.reserve(count);
+        }
+
         inline DescriptorSetLayoutCreateInfo& AddBinding(DescriptorSetBinding* binding)
         {
             binding->index = currentBindingIndex;
@@ -21,7 +27,7 @@ namespace Husky::Graphics
             bindings.push_back(binding);
             return *this;
         }
-    private:
+
         DescriptorSetType type;
         int32 currentBindingIndex = 0;
         Vector<DescriptorSetBinding*> bindings;

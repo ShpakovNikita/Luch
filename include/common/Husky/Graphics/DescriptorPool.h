@@ -8,9 +8,11 @@ namespace Husky::Graphics
     class DescriptorPool : public GraphicsObject
     {
     public:
-        DescriptorPool(GraphicsDevice* deivce) : GraphicsObject(device) {}
-        virtual ~DescriptorPool() = 0 {};
+        DescriptorPool(GraphicsDevice* device) : GraphicsObject(device) {}
+        virtual ~DescriptorPool() = 0;
 
         virtual GraphicsResultRefPtr<DescriptorSet> AllocateDescriptorSet(DescriptorSetLayout* layout) = 0;
     };
+
+    inline DescriptorPool::~DescriptorPool() {}
 }

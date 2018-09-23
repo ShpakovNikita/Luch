@@ -9,11 +9,11 @@ namespace Husky::Graphics
     {
         struct StageDescriptorSetLayouts
         {
-            DescriptorSetLayout* textures = nullptr;
-            DescriptorSetLayout* buffers = nullptr;
-            DescriptorSetLayout* samplers = nullptr;
+            Vector<DescriptorSetLayout*> textureSetLayouts;
+            Vector<DescriptorSetLayout*> bufferSetLayouts;
+            Vector<DescriptorSetLayout*> samplerSetLayouts;
         };
 
         UnorderedMap<ShaderStage, StageDescriptorSetLayouts> stages;
-    }
+    };
 }

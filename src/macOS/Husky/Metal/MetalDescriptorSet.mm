@@ -1,4 +1,5 @@
 #include <Husky/Metal/MetalDescriptorSet.h>
+#include <Husky/Metal/MetalDescriptorSetLayout.h>
 #include <Husky/Metal/MetalGraphicsDevice.h>
 
 namespace Husky::Metal
@@ -7,11 +8,14 @@ namespace Husky::Metal
 
     MetalDescriptorSet::MetalDescriptorSet(
         MetalGraphicsDevice* device,
-        DescriptorSetType aType,
-        int32 aStart)
+        MetalDescriptorSetLayout* aDescriptorSetLayout)
         : DescriptorSet(device)
-        , type(aType)
-        , start(aStart)
+        , descriptorSetLayout(aDescriptorSetLayout)
     {
+    }
+
+    DescriptorSetLayout* MetalDescriptorSet::GetDescriptorSetLayout()
+    {
+        return descriptorSetLayout;
     }
 }

@@ -7,8 +7,11 @@ namespace Husky::Graphics
     class PipelineLayout : public GraphicsObject
     {
     public:
-        virtual ~PipelineLayout() = 0 {};
+        PipelineLayout(GraphicsDevice* device) : GraphicsObject(device) {}
+        virtual ~PipelineLayout() = 0;
 
         virtual const PipelineLayoutCreateInfo& GetCreateInfo() const = 0;
-    }
+    };
+
+    inline PipelineLayout::~PipelineLayout() {}
 }

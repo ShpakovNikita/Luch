@@ -11,7 +11,7 @@ namespace Husky::Graphics
         DescriptorSet(GraphicsDevice* device) : GraphicsObject(device) {}
         virtual ~DescriptorSet() = 0;
 
-        virtual DescriptorSetType GetType() const = 0;
+        virtual DescriptorSetLayout* GetDescriptorSetLayout() = 0;
     };
 
     inline DescriptorSet::~DescriptorSet() {}

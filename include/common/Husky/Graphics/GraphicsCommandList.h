@@ -21,13 +21,25 @@ namespace Husky::Graphics
         virtual void End() = 0;
 
         virtual void BindPipelineState(PipelineState* pipelineState) = 0;
-        virtual void BindTextureDescriptorSet(ShaderStage stage, DescriptorSet* descriptorSet) = 0;
-        virtual void BindBufferDescriptorSet(ShaderStage stage, DescriptorSet* descriptorSet) = 0;
-        virtual void BindSamplerDescriptorSet(ShaderStage stage, DescriptorSet* descriptorSet) = 0;
+
+        virtual void BindTextureDescriptorSet(
+            ShaderStage stage,
+            PipelineLayout* pipelineLayout,
+            DescriptorSet* descriptorSet) = 0;
+
+        virtual void BindBufferDescriptorSet(
+            ShaderStage stage,
+            PipelineLayout* pipelineLayout,
+            DescriptorSet* descriptorSet) = 0;
+
+        virtual void BindSamplerDescriptorSet(
+            ShaderStage stage,
+            PipelineLayout* pipelineLayout,
+            DescriptorSet* descriptorSet) = 0;
 
         virtual void BindVertexBuffers(
             const ArrayProxy<Buffer*>& buffers,
-            const ArrayProxy<int32> offsets,
+            const ArrayProxy<int32>& offsets,
             int32 firstBuffer = 0) = 0;
 
         virtual void BindIndexBuffer(
@@ -35,7 +47,7 @@ namespace Husky::Graphics
             IndexType indexType) = 0;
 
         virtual void SetViewports(const ArrayProxy<Viewport>& viewports) = 0;
-        virtual void SetScissorRects(const ArrayProxy<FloatRect>& scissorRects) = 0;
+        virtual void SetScissorRects(const ArrayProxy<IntRect>& scissorRects) = 0;
 
 //        virtual void SetDepthBias(
 //            float32 depthBias,
@@ -53,7 +65,7 @@ namespace Husky::Graphics
             int32 vertexStart,
             int32 vertexCount,
             int32 instanceCount,
-            int32 instanceBase = 0) = 0;
+            int32 baseInstance = 0) = 0;
 
         virtual void DrawIndexedInstanced(
             int32 indexCount,

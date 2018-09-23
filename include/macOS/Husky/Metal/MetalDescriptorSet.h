@@ -2,6 +2,7 @@
 
 #include <Husky/Graphics/DescriptorSet.h>
 #include <Husky/Graphics/DescriptorSetType.h>
+#include <Husky/Graphics/DescriptorSetLayout.h>
 #include <Husky/Metal/MetalForwards.h>
 #include <mtlpp.hpp>
 
@@ -13,15 +14,16 @@ namespace Husky::Metal
     {
         friend class MetalGraphicsCommandList;
     public:
-        MetalDescriptorSet(MetalGraphicsDevice* device, DescriptorSetType type, int32 start);
+        MetalDescriptorSet(
+            MetalGraphicsDevice* device,
+            MetalDescriptorSetLayout* descriptorSetLayout);
 
-        DescriptorSetType GetType() const override { return type; }
+        DescriptorSetLayout* GetDescriptorSetLayout() override;
     private:
         Vector<mtlpp::Texture> textures;
         Vector<mtlpp::Buffer> buffers;
         Vector<int32> bufferOffsets;
         Vector<mtlpp::SamplerState> samplers;
-        DescriptorSetType type;
-        int32 start = 0;
+        MetalDescriptorSetLayout* descriptorSetLayout;
     };
 }

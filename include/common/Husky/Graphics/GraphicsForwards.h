@@ -15,6 +15,7 @@ namespace Husky::Graphics
     class DescriptorPool;
     class DescriptorPoolCreateInfo;
     class DescriptorSet;
+    class DescriptorSetBinding;
     class DescriptorSetLayout;
     class DescriptorSetLayoutCreateInfo;
     class GraphicsCommandList;

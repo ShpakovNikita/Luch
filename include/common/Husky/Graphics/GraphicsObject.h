@@ -9,12 +9,12 @@ namespace Husky::Graphics
     {
     public:
         GraphicsObject(GraphicsDevice* aDevice)
-            : device(aDevice)
+            : graphicsDevice(aDevice)
         {
         }
 
-        inline GraphicsDevice* GetGraphicsDevice() { return device; }
+        inline GraphicsDevice* GetGraphicsDevice() { return graphicsDevice; }
     private:
-        GraphicsDevice* device = nullptr;
+        GraphicsDevice* graphicsDevice = nullptr;
     };
 }

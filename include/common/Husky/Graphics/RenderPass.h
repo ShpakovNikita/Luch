@@ -8,9 +8,11 @@ namespace Husky::Graphics
     {
     public:
         RenderPass(GraphicsDevice* device) : GraphicsObject(device) {}
-        virtual ~RenderPass() = 0 {};
+        virtual ~RenderPass() = 0;
 
-        virtual const RenderPass& GetCreateInfo() const = 0;
-    }
+        virtual const RenderPassCreateInfo& GetCreateInfo() const = 0;
+    };
+
+    inline RenderPass::~RenderPass() {}
 }
 

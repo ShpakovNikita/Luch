@@ -21,6 +21,18 @@ namespace Husky::Graphics
         virtual GraphicsResultRefPtr<DescriptorPool> CreateDescriptorPool(
             const DescriptorPoolCreateInfo& createInfo) = 0;
 
+        virtual GraphicsResultRefPtr<DescriptorSetLayout> CreateDescriptorSetLayout(
+            const DescriptorSetLayoutCreateInfo& createInfo) = 0;
+
+        virtual GraphicsResultRefPtr<PipelineLayout> CreatePipelineLayout(
+            const PipelineLayoutCreateInfo& createInfo) = 0;
+
+        virtual GraphicsResultRefPtr<RenderPass> CreateRenderPass(
+            const RenderPassCreateInfo& createInfo) = 0;
+
+        virtual GraphicsResultRefPtr<PipelineState> CreatePipelineState(
+            const PipelineStateCreateInfo& createInfo) = 0;
+
         virtual GraphicsResultRefPtr<Texture> CreateTexture(
             const TextureCreateInfo& createInfo) = 0;
 
@@ -30,15 +42,6 @@ namespace Husky::Graphics
 
         virtual GraphicsResultRefPtr<Sampler> CreateSampler(
             const SamplerCreateInfo& createInfo) = 0;
-
-        virtual GraphicsResultRefPtr<DescriptorSetLayout> CreateDescriptorSetLayout(
-            const DescriptorSetLayoutCreateInfo& createInfo) = 0;
-
-        virtual GraphicsResultRefPtr<PipelineLayout> CreatePipelineLayout(
-            const PipelineLayoutCreateInfo& createInfo) = 0;
-
-        virtual GraphicsResultRefPtr<RenderPass> CreateRenderPass(
-            const RenderPassCreateInfo& createInfo) = 0;
     };
 
     inline GraphicsDevice::~GraphicsDevice() {}

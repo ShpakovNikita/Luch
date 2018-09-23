@@ -8,4 +8,8 @@ namespace Husky::Metal
     class MetalDescriptorSet;
     class MetalGraphicsCommandList;
     class MetalPipelineState;
+    class MetalPipelineLayout;
+    class MetalBuffer;
+    class MetalDescriptorPool;
+    class MetalDescriptorSetLayout;
 }
