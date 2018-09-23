@@ -1027,7 +1027,7 @@ namespace mtlpp
         LanguageVersion                        GetLanguageVersion() const MTLPP_AVAILABLE(10_11, 9_0);
 
         void SetFastMathEnabled(bool fastMathEnabled);
-        void SetFastMathEnabled(LanguageVersion languageVersion);
+        void SetLanguageVersion(LanguageVersion languageVersion);
     }
     MTLPP_AVAILABLE(10_11, 8_0);
 
@@ -2439,6 +2439,17 @@ namespace mtlpp
 
         Int1010102Normalized  = 40,
         UInt1010102Normalized = 41,
+
+        UChar4Normalized_BGRA = 42,
+
+        UChar = 45,
+        Char = 46,
+        UCharNormalized = 47,
+        CharNormalized = 48,
+        UShort = 49,
+        Short = 50,
+        UShortNormalized = 51,
+        ShortNormalized = 52,
     }
     MTLPP_AVAILABLE(10_11, 8_0);
 

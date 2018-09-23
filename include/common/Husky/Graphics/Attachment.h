@@ -34,15 +34,15 @@ namespace Husky::Graphics
         AttachmentTextureInfo output;
         AttachmentTextureInfo resolve;
         Format format = Format::Undefined;
-        AttachmentLoadOp loadOp = AttachmentLoadOp::DontCare;
-        AttachmentStoreOp storeOp = AttachmentStoreOp::DontCare;
+        AttachmentLoadOperation loadOp = AttachmentLoadOperation::DontCare;
+        AttachmentStoreOperation storeOp = AttachmentStoreOperation::DontCare;
         // TODO Multisampling
     };
 
     struct ColorAttachment : public Attachment
     {
-        ColorSNorm clearValue;
-    }
+        ColorSNorm32 clearValue;
+    };
 
     struct DepthStencilAttachment : public Attachment
     {

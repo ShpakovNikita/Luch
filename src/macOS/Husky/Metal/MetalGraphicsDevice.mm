@@ -3,7 +3,9 @@
 #include <Husky/Metal/MetalDescriptorPool.h>
 #include <Husky/Metal/MetalDescriptorSetLayout.h>
 #include <Husky/Metal/MetalPipelineLayout.h>
+#include <Husky/Metal/MetalShaderLibrary.h>
 #include <Husky/Metal/MetalRenderPass.h>
+#include <Husky/Metal/MetalError.h>
 #include <Husky/Assert.h>
 
 namespace Husky::Metal
@@ -70,6 +72,26 @@ namespace Husky::Metal
 
 
         auto mtlPipelineState = device.NewRenderPipelineState(mtlDescriptor, &error);
+        
+    }
 
+    GraphicsResultRefPtr<ShaderLibrary> MetalGraphicsDevice::CreateShaderLibraryFromSource(
+        const Vector<Byte>& source,
+        const UnorderedMap<String, Variant<int32, String>>& defines)
+    {
+        mtlpp::CompileOptions options;
+        // TODO Defines
+        ns::Error error;
+        auto mtlLibrary = device.NewLibrary((const char*)source.data(), options, &error);
+
+        GraphicsResult result = ToGraphicsResult(error);
+        if(mtlLibrary)
+        {
+            return { result, MakeRef<MetalShaderLibrary>(this, mtlLibrary) };
+        }
+        else
+        {
+            return { result };
+        }
     }
 }

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Husky/Graphics/GraphicsDevice.h>
-#include <mtlpp.hpp>
+#include <Husky/Metal/MetalForwards.h>
 
 namespace Husky::Metal
 {
@@ -46,6 +46,10 @@ namespace Husky::Metal
 
         GraphicsResultRefPtr<Sampler> CreateSampler(
             const SamplerCreateInfo& createInfo) override;
+
+        GraphicsResultRefPtr<ShaderLibrary> CreateShaderLibraryFromSource(
+            const Vector<Byte>& source,
+            const UnorderedMap<String, Variant<int32, String>>& defines) override;
     private:
         PhysicalDevice* physicalDevice = nullptr;
         mtlpp::Device device;

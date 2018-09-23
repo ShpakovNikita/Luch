@@ -2247,10 +2247,10 @@ namespace mtlpp
         [(__bridge MTLCompileOptions*)m_ptr setFastMathEnabled:fastMathEnabled];
     }
 
-    void CompileOptions::SetFastMathEnabled(LanguageVersion languageVersion)
+    void CompileOptions::GetLanguageVersion(LanguageVersion languageVersion)
     {
         Validate();
-        [(__bridge MTLCompileOptions*)m_ptr setFastMathEnabled:MTLLanguageVersion(languageVersion)];
+        [(__bridge MTLCompileOptions*)m_ptr setLanguageVersion:MTLLanguageVersion(languageVersion)];
     }
 
     ns::String Library::GetLabel() const

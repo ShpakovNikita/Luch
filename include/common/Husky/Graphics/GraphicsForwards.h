@@ -31,6 +31,8 @@ namespace Husky::Graphics
     class RenderPassCreateInfo;
     class Sampler;
     class SamplerCreateInfo;
+    class ShaderLibrary;
+    class ShaderProgram;
     class Surface;
     class Swapchain;
     class Texture;

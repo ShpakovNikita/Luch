@@ -1,5 +1,7 @@
 #pragma once
 
+#include <mtlpp.hpp>
+
 namespace Husky::Metal
 {
     class MetalPhysicalDevice;
@@ -8,8 +10,11 @@ namespace Husky::Metal
     class MetalDescriptorSet;
     class MetalGraphicsCommandList;
     class MetalPipelineState;
+    class MetalPipelineStateCreateInfo;
     class MetalPipelineLayout;
     class MetalBuffer;
     class MetalDescriptorPool;
     class MetalDescriptorSetLayout;
+    class MetalShaderLibrary;
+    class MetalShaderProgram;
 }

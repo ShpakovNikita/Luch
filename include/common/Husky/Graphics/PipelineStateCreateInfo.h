@@ -104,6 +104,8 @@ namespace Husky::Graphics
     struct PipelineStateCreateInfo
     {
         PipelineVertexInputStateCreateInfo inputAssembler;
+        ShaderProgram* vertexProgram = nullptr;
+        ShaderProgram* fragmentProgram = nullptr;
         PipelineMultisampleStateCreateInfo multisampling;
         PipelineRasterizationStateCreateInfo rasterization;
         PipelineDepthStencilStateCreateInfo depthStencil;

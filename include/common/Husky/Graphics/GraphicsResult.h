@@ -6,6 +6,11 @@ namespace Husky::Graphics
     {
         Success,
 
-        // TODO
+        UnknownError,
+        Unsupported,
+
+        CompilerError,
+        CompilerWarning,
+        FunctionNotFound,
     };
 }

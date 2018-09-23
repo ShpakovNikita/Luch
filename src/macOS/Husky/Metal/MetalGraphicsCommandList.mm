@@ -7,7 +7,7 @@
 #include <Husky/Metal/MetalDescriptorSet.h>
 #include <Husky/Metal/MetalDescriptorSetLayout.h>
 #include <Husky/Metal/MetalBuffer.h>
-#include <Husky/Metal/MetalPrimitiveType.h>
+#include <Husky/Metal/MetalPrimitiveTopology.h>
 #include <Husky/Metal/MetalIndexType.h>
 #include <Husky/Assert.h>
 
