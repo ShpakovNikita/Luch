@@ -6,6 +6,7 @@
 namespace Husky::Metal
 {
     using namespace Graphics;
-    
-    GraphicsResult ToGraphicsResult(ns::Error error);
+
+    GraphicsResult LibraryErrorToGraphicsResult(ns::Error error);
+    GraphicsResult PipelineErrorToGraphicsResult(ns::Error error);
 }

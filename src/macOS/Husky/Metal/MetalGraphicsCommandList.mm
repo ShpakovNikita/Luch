@@ -15,6 +15,50 @@ using namespace Husky::Graphics;
 
 namespace Husky::Metal
 {
+    mtlpp::CullMode ToMetalCullMode(CullMode cullMode)
+    {
+        switch(cullMode)
+        {
+        case CullMode::Back:
+            return mtlpp::CullMode::Back;
+        case CullMode::Front:
+            return mtlpp::CullMode::Front;
+        case CullMode::None:
+            return mtlpp::CullMode::None;
+        default:
+            HUSKY_ASSERT_MSG(false, "Unknown cull mode");
+            return mtlpp::CullMode::None;
+        }
+    }
+
+    mtlpp::Winding ToMetalWinding(FrontFace frontFace)
+    {
+        switch(frontFace)
+        {
+        case FrontFace::Clockwise:
+            return mtlpp::Winding::Clockwise;
+        case FrontFace::CounterClockwise:
+            return mtlpp::Winding::CounterClockwise;
+        default:
+            HUSKY_ASSERT_MSG(false, "Unknown front face winding order");
+            return mtlpp::Winding::CounterClockwise;
+        }
+    }
+
+    mtlpp::TriangleFillMode ToMetalTriangleFillMode(PolygonMode polygonMode)
+    {
+        switch(polygonMode)
+        {
+        case PolygonMode::Fill:
+            return mtlpp::TriangleFillMode::Fill;
+        case PolygonMode::Lines:
+            return mtlpp::TriangleFillMode::Lines;
+        default:
+            HUSKY_ASSERT_MSG(false, "Unknown polygon fill mode");
+            return mtlpp::TriangleFillMode::Lines;
+        }
+    }
+
     MetalGraphicsCommandList::MetalGraphicsCommandList(
         MetalCommandQueue* queue,
         mtlpp::CommandBuffer commandBuffer)
@@ -36,8 +80,34 @@ namespace Husky::Metal
     void MetalGraphicsCommandList::BindPipelineState(PipelineState* pipelineState)
     {
         auto mtlPipelineState = static_cast<MetalPipelineState*>(pipelineState);
-        primitiveType = ToMetalPrimitiveType(mtlPipelineState->GetCreateInfo().inputAssembler.primitiveTopology);
+        const auto& ci = mtlPipelineState->GetCreateInfo();
+
+        primitiveType = ToMetalPrimitiveType(ci.inputAssembler.primitiveTopology);
+
         commandEncoder.SetRenderPipelineState(mtlPipelineState->state);
+        commandEncoder.SetCullMode(ToMetalCullMode(ci.rasterization.cullMode));
+        commandEncoder.SetFrontFacingWinding(ToMetalWinding(ci.rasterization.frontFace));
+
+        if(ci.rasterization.depthBiasEnable)
+        {
+            commandEncoder.SetDepthBias(
+                ci.rasterization.depthBiasConstantFactor,
+                ci.rasterization.depthBiasSlopeFactor,
+                ci.rasterization.depthBiasClamp);
+        }
+
+        const auto& blendColor = ci.colorAttachments.blendColor;
+        commandEncoder.SetBlendColor(
+            blendColor.red,
+            blendColor.green,
+            blendColor.blue,
+            blendColor.alpha);
+
+        commandEncoder.SetDepthClipMode(ci.rasterization.depthClampEnable
+            ? mtlpp::DepthClipMode::Clamp
+            : mtlpp::DepthClipMode::Clip);
+
+        commandEncoder.SetTriangleFillMode(ToMetalTriangleFillMode(ci.rasterization.polygonMode));
     }
 
     void MetalGraphicsCommandList::BindTextureDescriptorSet(

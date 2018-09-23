@@ -6,6 +6,7 @@
 #include <Husky/Metal/MetalShaderLibrary.h>
 #include <Husky/Metal/MetalRenderPass.h>
 #include <Husky/Metal/MetalError.h>
+#include <Husky/Metal/MetalPipelineStateCreateInfo.h>
 #include <Husky/Assert.h>
 
 namespace Husky::Metal
@@ -66,13 +67,23 @@ namespace Husky::Metal
     GraphicsResultRefPtr<PipelineState> MetalGraphicsDevice::CreatePipelineState(
         const PipelineStateCreateInfo& createInfo)
     {
-        mtlpp::RenderPipelineDescriptor mtlDescriptor;
+        auto mtlPipelineDescriptor = ToMetalPiplineStateCreateInfo(createInfo);
+        auto mtlDepthStencilDescriptor = ToMetalDepthStencilDescriptor(createInfo);
         ns::Error error;
 
+        auto mtlPipelineState = device.NewRenderPipelineState(mtlPipelineDescriptor, &error);
+        auto mtlDepthStencilState = device.NewDepthStencilState(mtlDepthStencilDescriptor);
 
+        auto result = PipelineErrorToGraphicsResult(error);
 
-        auto mtlPipelineState = device.NewRenderPipelineState(mtlDescriptor, &error);
-        
+        if(result == GraphicsResult::Success)
+        {
+            return { result, MakeRef<MetalPipelineState>(this, createInfo, mtlPipelineState, mtlDepthStencilState) };
+        }
+        else
+        {
+            return { result };
+        }
     }
 
     GraphicsResultRefPtr<ShaderLibrary> MetalGraphicsDevice::CreateShaderLibraryFromSource(

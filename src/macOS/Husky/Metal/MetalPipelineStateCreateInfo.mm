@@ -4,6 +4,7 @@
 #include <Husky/Metal/MetalShaderProgram.h>
 #include <Husky/Metal/MetalPrimitiveTopology.h>
 #include <Husky/Metal/MetalColorAttachment.h>
+#include <Husky/Metal/MetalDepthStencilAttachment.h>
 #include <Husky/Assert.h>
 
 namespace Husky::Metal
@@ -83,11 +84,31 @@ namespace Husky::Metal
         return d;
     }
 
+    mtlpp::StencilDescriptor ToMetalStencilDescriptor(const PipelineStencilStateCreateInfo& createInfo)
+    {
+        mtlpp::StencilDescriptor d;
+
+        d.SetWriteMask(createInfo.writeMask);
+        d.SetReadMask(createInfo.reference);
+        d.SetDepthFailureOperation(ToMetalStencilOperation(createInfo.depthFailOperation));
+        d.SetStencilFailureOperation(ToMetalStencilOperation(createInfo.stencilFailOperation));
+        d.SetDepthStencilPassOperation(ToMetalStencilOperation(createInfo.depthStencilPassOperation));
+        d.SetStencilCompareFunction(ToMetalCompareFunction(createInfo.compareFunction));
+
+        return d;
+    }
+
     mtlpp::DepthStencilDescriptor ToMetalDepthStencilDescriptor(const PipelineStateCreateInfo& createInfo)
     {
         mtlpp::DepthStencilDescriptor d;
 
-        
+        const auto& ci = createInfo.depthStencil;
+        HUSKY_ASSERT_MSG(ci.depthTestEnable, "Wtf");
+        mtlpp::DepthClipMode
+        d.SetDepthCompareFunction(ToMetalCompareFunction(ci.depthCompareFunction));
+        d.SetDepthWriteEnabled(ci.depthWriteEnable);
+        d.SetBackFaceStencil(ToMetalStencilDescriptor(ci.back));
+        d.SetFrontFaceStencil(ToMetalStencilDescriptor(ci.front));
 
         return d;
     }

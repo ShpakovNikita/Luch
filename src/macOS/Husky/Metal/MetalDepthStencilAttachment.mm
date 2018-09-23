@@ -30,4 +30,30 @@ namespace Husky::Metal
             return mtlpp::StencilOperation::Zero;
         }
     }
+
+    mtlpp::CompareFunction ToMetalCompareFunction(CompareFunction compareFunction)
+    {
+        switch(compareFunction)
+        {
+        case CompareFunction::Never:
+            return mtlpp::CompareFunction::Never;
+        case CompareFunction::Less:
+            return mtlpp::CompareFunction::Less;
+        case CompareFunction::Equal:
+            return mtlpp::CompareFunction::LessEqual;
+        case CompareFunction::LessEqual:
+            return mtlpp::CompareFunction::LessEqual;
+        case CompareFunction::Greater:
+            return mtlpp::CompareFunction::Greater;
+        case CompareFunction::NotEqual:
+            return mtlpp::CompareFunction::NotEqual;
+        case CompareFunction::GreaterEqual:
+            return mtlpp::CompareFunction::GreaterEqual;
+        case CompareFunction::Always:
+            return mtlpp::CompareFunction::Always;
+        default:
+            HUSKY_ASSERT_MSG(false, "Unknown compare function");
+            return mtlpp::CompareFunction::Never;
+        }
+    }
 }
