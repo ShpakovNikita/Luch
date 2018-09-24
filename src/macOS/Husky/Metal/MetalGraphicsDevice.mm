@@ -1,4 +1,5 @@
 #include <Husky/Metal/MetalGraphicsDevice.h>
+#include <Husky/Graphics/BufferCreateInfo.h>
 #include <Husky/Metal/MetalCommandQueue.h>
 #include <Husky/Metal/MetalDescriptorPool.h>
 #include <Husky/Metal/MetalPipelineState.h>
@@ -10,6 +11,7 @@
 #include <Husky/Metal/MetalError.h>
 #include <Husky/Metal/MetalPipelineStateCreateInfo.h>
 #include <Husky/Metal/MetalTextureCreateInfo.h>
+#include <Husky/Metal/MetalSamplerCreateInfo.h>
 #include <Husky/Assert.h>
 
 namespace Husky::Metal
@@ -99,15 +101,37 @@ namespace Husky::Metal
 
     GraphicsResultRefPtr<Buffer> MetalGraphicsDevice::CreateBuffer(
         const BufferCreateInfo& createInfo,
-        void* initialData = nullptr)
+        void* initialData)
     {
+        uint32 optionBits = (uint32)mtlpp::ResourceOptions::CpuCacheModeDefaultCache;
+        switch(createInfo.storageMode)
+        {
+        case ResourceStorageMode::DeviceLocal:
+            if(initialData != nullptr)
+            {
+                HUSKY_ASSERT_MSG(false, "Can't create GPU-only buffer with initial data");
+                return { GraphicsResult::InvalidValue };
+            }
+            optionBits |= (uint32)mtlpp::ResourceOptions::StorageModePrivate;
+            break;
+        case ResourceStorageMode::Shared:
+            optionBits |= (uint32)mtlpp::ResourceOptions::StorageModeShared;
+            break;
+        }
 
+        mtlpp::ResourceOptions options = static_cast<mtlpp::ResourceOptions>(optionBits);
+
+        auto mtlBuffer = device.NewBuffer(initialData, createInfo.length, options);
+
+        return { GraphicsResult::Success, MakeRef<MetalBuffer>(this, createInfo, mtlBuffer) };
     }
 
-    GraphicsResultRefPtr<Sampler> CreateSampler(
+    GraphicsResultRefPtr<Sampler> MetalGraphicsDevice::CreateSampler(
         const SamplerCreateInfo& createInfo)
     {
-    
+        auto d = ToMetalSamplerDescriptor(createInfo);
+        auto mtlSamplre = device.NewSamplerState(d);
+        return { GraphicsResult::Success, MakeRef<MetalSampler>(this, createInfo, mtlSampler) };
     }
 
     GraphicsResultRefPtr<ShaderLibrary> MetalGraphicsDevice::CreateShaderLibraryFromSource(
