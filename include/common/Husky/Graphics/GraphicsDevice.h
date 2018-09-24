@@ -16,8 +16,6 @@ namespace Husky::Graphics
 
         virtual GraphicsResultRefPtr<CommandQueue> CreateCommandQueue() = 0;
 
-        virtual GraphicsResultRefPtr<CommandPool> CreateCommandPool() = 0;
-
         virtual GraphicsResultRefPtr<DescriptorPool> CreateDescriptorPool(
             const DescriptorPoolCreateInfo& createInfo) = 0;
 
@@ -46,6 +44,8 @@ namespace Husky::Graphics
         virtual GraphicsResultRefPtr<ShaderLibrary> CreateShaderLibraryFromSource(
             const Vector<Byte>& source,
             const UnorderedMap<String, Variant<int32, String>>& defines) = 0;
+
+        virtual GraphicsResultRefPtr<Semaphore> CreateSemaphore() = 0;
     };
 
     inline GraphicsDevice::~GraphicsDevice() {}

@@ -11,9 +11,18 @@ namespace Husky::Metal
 
     class MetalCommandQueue : public CommandQueue
     {
+        friend class MetalCommandPool;
     public:
         MetalCommandQueue(MetalGraphicsDevice* device, mtlpp::CommandQueue queue);
-        GraphicsResultRefPtr<GraphicsCommandList> AllocateGraphicsCommandList() override;
+        //GraphicsResultRefPtr<GraphicsCommandList> AllocateGraphicsCommandList() override;
+        GraphicsResultRefPtr<CommandPool> CreateCommandPool() override;
+
+        GraphicsResult Submit(
+            GraphicsCommandList* commandList) override;
+
+        GraphicsResult Present(
+            int32 imageIndex,
+            Swapchain* swapchain) override;
     private:
         mtlpp::CommandQueue queue;
     };

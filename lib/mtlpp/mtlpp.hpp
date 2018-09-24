@@ -640,6 +640,8 @@ namespace mtlpp
         TextureCube                                     = 5,
         TextureCubeArray     MTLPP_AVAILABLE_MAC(10_11) = 6,
         Texture3D                                       = 7,
+        Texture2DMultisampleArray                       = 8,
+        TextureBuffer                                   = 9,
     }
     MTLPP_AVAILABLE(10_11, 8_0);
 

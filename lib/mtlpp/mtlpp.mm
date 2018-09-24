@@ -2247,7 +2247,7 @@ namespace mtlpp
         [(__bridge MTLCompileOptions*)m_ptr setFastMathEnabled:fastMathEnabled];
     }
 
-    void CompileOptions::GetLanguageVersion(LanguageVersion languageVersion)
+    void CompileOptions::SetLanguageVersion(LanguageVersion languageVersion)
     {
         Validate();
         [(__bridge MTLCompileOptions*)m_ptr setLanguageVersion:MTLLanguageVersion(languageVersion)];

@@ -60,9 +60,9 @@ namespace Husky::Metal
     }
 
     MetalGraphicsCommandList::MetalGraphicsCommandList(
-        MetalCommandQueue* queue,
+        MetalGraphicsDevice* device,
         mtlpp::CommandBuffer commandBuffer)
-        : GraphicsCommandList(queue->GetGraphicsDevice())
+        : GraphicsCommandList(device)
     {
     }
 
@@ -84,7 +84,8 @@ namespace Husky::Metal
 
         primitiveType = ToMetalPrimitiveType(ci.inputAssembler.primitiveTopology);
 
-        commandEncoder.SetRenderPipelineState(mtlPipelineState->state);
+        commandEncoder.SetRenderPipelineState(mtlPipelineState->pipelineState);
+        commandEncoder.SetDepthStencilState(mtlPipelineState->depthStencilState);
         commandEncoder.SetCullMode(ToMetalCullMode(ci.rasterization.cullMode));
         commandEncoder.SetFrontFacingWinding(ToMetalWinding(ci.rasterization.frontFace));
 

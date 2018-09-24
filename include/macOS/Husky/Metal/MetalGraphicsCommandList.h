@@ -10,9 +10,10 @@ namespace Husky::Metal
 
     class MetalGraphicsCommandList : public GraphicsCommandList
     {
+        friend class MetalCommandQueue;
     public:
         MetalGraphicsCommandList(
-            MetalCommandQueue* queue,
+            MetalGraphicsDevice* device,
             mtlpp::CommandBuffer commandBuffer);
 
         void Begin(const RenderPassCreateInfo& renderPassCreateInfo) override;

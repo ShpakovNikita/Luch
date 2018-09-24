@@ -1,12 +1,15 @@
 #include <Husky/Metal/MetalGraphicsDevice.h>
 #include <Husky/Metal/MetalCommandQueue.h>
 #include <Husky/Metal/MetalDescriptorPool.h>
+#include <Husky/Metal/MetalPipelineState.h>
 #include <Husky/Metal/MetalDescriptorSetLayout.h>
 #include <Husky/Metal/MetalPipelineLayout.h>
 #include <Husky/Metal/MetalShaderLibrary.h>
+#include <Husky/Metal/MetalSemaphore.h>
 #include <Husky/Metal/MetalRenderPass.h>
 #include <Husky/Metal/MetalError.h>
 #include <Husky/Metal/MetalPipelineStateCreateInfo.h>
+#include <Husky/Metal/MetalTextureCreateInfo.h>
 #include <Husky/Assert.h>
 
 namespace Husky::Metal
@@ -86,6 +89,27 @@ namespace Husky::Metal
         }
     }
 
+    GraphicsResultRefPtr<Texture> MetalGraphicsDevice::CreateTexture(
+        const TextureCreateInfo& createInfo)
+    {
+        auto d = ToMetalTextureDescriptor(createInfo);
+        auto mtlTexture = device.NewTexture(d);
+        return { GraphicsResult::Success, MakeRef<MetalTexture>(this, createInfo, mtlTexture) };
+    }
+
+    GraphicsResultRefPtr<Buffer> MetalGraphicsDevice::CreateBuffer(
+        const BufferCreateInfo& createInfo,
+        void* initialData = nullptr)
+    {
+
+    }
+
+    GraphicsResultRefPtr<Sampler> CreateSampler(
+        const SamplerCreateInfo& createInfo)
+    {
+    
+    }
+
     GraphicsResultRefPtr<ShaderLibrary> MetalGraphicsDevice::CreateShaderLibraryFromSource(
         const Vector<Byte>& source,
         const UnorderedMap<String, Variant<int32, String>>& defines)
@@ -95,7 +119,7 @@ namespace Husky::Metal
         ns::Error error;
         auto mtlLibrary = device.NewLibrary((const char*)source.data(), options, &error);
 
-        GraphicsResult result = ToGraphicsResult(error);
+        GraphicsResult result = LibraryErrorToGraphicsResult(error);
         if(mtlLibrary)
         {
             return { result, MakeRef<MetalShaderLibrary>(this, mtlLibrary) };
@@ -104,5 +128,10 @@ namespace Husky::Metal
         {
             return { result };
         }
+    }
+
+    GraphicsResultRefPtr<Semaphore> MetalGraphicsDevice::CreateSemaphore()
+    {
+        return { GraphicsResult::Success, MakeRef<MetalSemaphore>(this) };
     }
 }

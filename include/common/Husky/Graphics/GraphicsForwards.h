@@ -35,6 +35,8 @@ namespace Husky::Graphics
     class ShaderProgram;
     class Surface;
     class Swapchain;
+    class SwapchainCreateInfo;
+    class Semaphore;
     class Texture;
     class TextureCreateInfo;
 }

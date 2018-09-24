@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Husky/Types.h>
+#include <Husky/Graphics/Format.h>
 #include <Husky/Graphics/TextureType.h>
 #include <Husky/Graphics/TextureUsageFlags.h>
 #include <Husky/Graphics/ResourceStorageMode.h>

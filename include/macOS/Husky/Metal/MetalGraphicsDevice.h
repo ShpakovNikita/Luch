@@ -50,6 +50,8 @@ namespace Husky::Metal
         GraphicsResultRefPtr<ShaderLibrary> CreateShaderLibraryFromSource(
             const Vector<Byte>& source,
             const UnorderedMap<String, Variant<int32, String>>& defines) override;
+
+        GraphicsResultRefPtr<Semaphore> CreateSemaphore() override;
     private:
         PhysicalDevice* physicalDevice = nullptr;
         mtlpp::Device device;

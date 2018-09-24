@@ -9,10 +9,12 @@ namespace Husky::Graphics
     {
     public:
         CommandPool(GraphicsDevice* device) : GraphicsObject(device) {}
-        virtual ~CommandPool() = 0 {};
+        virtual ~CommandPool() = 0;
 
         virtual GraphicsResultRefPtr<GraphicsCommandList> AllocateGraphicsCommandList() = 0;
         // TODO
         // virtual RefPtr<ComputeCommandList> AllocateComputeCommandList() = 0;
     };
+
+    inline CommandPool::~CommandPool() {}
 }

@@ -276,6 +276,10 @@ target_link_libraries(HuskyEngine SPIRV-Tools)
 target_link_libraries(HuskyEngine SPIRV-Tools-opt)
 target_link_libraries(HuskyEngine SPVRemapper)
 
+if(APPLE)
+    target_link_libraries(HuskyEngine mtlpp)
+endif()
+
 target_link_libraries(HuskyEngineSample HuskyEngine)
 
 if(WIN32)

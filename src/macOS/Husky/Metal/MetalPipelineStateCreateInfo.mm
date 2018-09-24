@@ -104,7 +104,7 @@ namespace Husky::Metal
 
         const auto& ci = createInfo.depthStencil;
         HUSKY_ASSERT_MSG(ci.depthTestEnable, "Wtf");
-        mtlpp::DepthClipMode
+
         d.SetDepthCompareFunction(ToMetalCompareFunction(ci.depthCompareFunction));
         d.SetDepthWriteEnabled(ci.depthWriteEnable);
         d.SetBackFaceStencil(ToMetalStencilDescriptor(ci.back));
