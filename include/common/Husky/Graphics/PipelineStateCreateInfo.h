@@ -20,7 +20,7 @@ namespace Husky::Graphics
     {
         Format format = Format::Undefined;
         int32 offset = 0;
-        int32 location = 0;
+        int32 binding = 0;
     };
 
     struct VertexInputBindingDescription
@@ -76,8 +76,7 @@ namespace Husky::Graphics
         CompareFunction depthCompareFunction = CompareFunction::Never;
         bool depthBoundsTestEnable = false;
         bool stencilTestEnable = false;
-        Format depthFormat = Format::D32Sfloat;
-        Format stencilFormat = Format::S8Uint;
+        Format depthStencilFormat = Format::D32SfloatS8Uint;
         PipelineStencilStateCreateInfo front;
         PipelineStencilStateCreateInfo back;
     };

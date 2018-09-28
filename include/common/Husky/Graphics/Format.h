@@ -6,7 +6,16 @@ namespace Husky::Graphics
     {
         Undefined,
 
-        // Color
+        // Color (R)
+        R8Unorm,
+
+        // Color (RG)
+        R8G8Unorm,
+
+        // Color (RGB)
+        R8G8B8Unorm,
+
+        // Color RGBA
         R8G8B8A8Unorm,
         B8G8R8A8Unorm,
 

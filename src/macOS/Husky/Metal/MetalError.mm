@@ -5,7 +5,7 @@ namespace Husky::Metal
 {
     GraphicsResult LibraryErrorToGraphicsResult(ns::Error error)
     {
-        if(!error)
+        if(error.GetCode() == 0)
         {
             return GraphicsResult::Success;
         }
@@ -29,7 +29,7 @@ namespace Husky::Metal
 
     GraphicsResult PipelineErrorToGraphicsResult(ns::Error error)
     {
-        if(!error)
+        if(error.GetCode() == 0)
         {
             return GraphicsResult::Success;
         }

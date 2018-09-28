@@ -5,6 +5,7 @@
 #include <Husky/Metal/MetalPipelineState.h>
 #include <Husky/Metal/MetalPipelineLayout.h>
 #include <Husky/Metal/MetalDescriptorSet.h>
+#include <Husky/Metal/MetalRenderPassCreateInfo.h>
 #include <Husky/Metal/MetalDescriptorSetLayout.h>
 #include <Husky/Metal/MetalBuffer.h>
 #include <Husky/Metal/MetalPrimitiveTopology.h>
@@ -61,14 +62,15 @@ namespace Husky::Metal
 
     MetalGraphicsCommandList::MetalGraphicsCommandList(
         MetalGraphicsDevice* device,
-        mtlpp::CommandBuffer commandBuffer)
+        mtlpp::CommandBuffer aCommandBuffer)
         : GraphicsCommandList(device)
+        , commandBuffer(aCommandBuffer)
     {
     }
 
     void MetalGraphicsCommandList::Begin(const RenderPassCreateInfo& renderPassCreateInfo)
     {
-        mtlpp::RenderPassDescriptor renderPassDescriptor;
+        auto renderPassDescriptor = ToMetalRenderPasDescriptor(renderPassCreateInfo);
         commandEncoder = commandBuffer.RenderCommandEncoder(renderPassDescriptor);
     }
 
@@ -228,7 +230,7 @@ namespace Husky::Metal
         HUSKY_ASSERT(buffers.size() == offsets.size());
         auto mtlGraphicsDevice = (MetalGraphicsDevice*)GetGraphicsDevice();
         int32 start = mtlGraphicsDevice->MaxBoundBuffers() - 1 - buffers.size();
-        ns::Range range { (uint32)start, (uint32)mtlGraphicsDevice->MaxBoundBuffers() - 1 };
+        ns::Range range { (uint32)start, (uint32)buffers.size() };
 
         Vector<mtlpp::Buffer> mtlBuffers;
         mtlBuffers.reserve(buffers.size());
@@ -243,10 +245,12 @@ namespace Husky::Metal
 
     void MetalGraphicsCommandList::BindIndexBuffer(
         Buffer* aIndexBuffer,
-        IndexType aIndexType)
+        IndexType aIndexType,
+        int32 aIndexBufferOffset)
     {
         indexBuffer = static_cast<MetalBuffer*>(aIndexBuffer)->buffer;
         indexType = ToMetalIndexType(aIndexType);
+        indexBufferOffset = aIndexBufferOffset;
     }
 
     void MetalGraphicsCommandList::SetViewports(const ArrayProxy<Viewport>& viewports)
@@ -298,7 +302,6 @@ namespace Husky::Metal
 
     void MetalGraphicsCommandList::DrawIndexedInstanced(
         int32 indexCount,
-        int32 indexBufferOffset,
         int32 baseVertex,
         int32 instanceCount,
         int32 baseInstance)

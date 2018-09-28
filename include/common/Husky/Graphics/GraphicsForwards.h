@@ -11,6 +11,7 @@ namespace Husky::Graphics
     class CommandPool;
     class CommandQueue;
     class ComputeCommandList;
+    class CopyCommandList;
     class DepthStencilAttachment;
     class DescriptorPool;
     class DescriptorPoolCreateInfo;

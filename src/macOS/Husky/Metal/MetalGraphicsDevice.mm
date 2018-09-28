@@ -8,11 +8,17 @@
 #include <Husky/Metal/MetalShaderLibrary.h>
 #include <Husky/Metal/MetalSemaphore.h>
 #include <Husky/Metal/MetalRenderPass.h>
+#include <Husky/Metal/MetalTexture.h>
+#include <Husky/Metal/MetalBuffer.h>
+#include <Husky/Metal/MetalSampler.h>
+#include <Husky/Metal/MetalSwapchain.h>
+#include <Husky/Metal/MetalSurface.h>
 #include <Husky/Metal/MetalError.h>
 #include <Husky/Metal/MetalPipelineStateCreateInfo.h>
 #include <Husky/Metal/MetalTextureCreateInfo.h>
 #include <Husky/Metal/MetalSamplerCreateInfo.h>
 #include <Husky/Assert.h>
+#import <QuartzCore/CAMetalLAyer.h>
 
 namespace Husky::Metal
 {
@@ -72,7 +78,7 @@ namespace Husky::Metal
     GraphicsResultRefPtr<PipelineState> MetalGraphicsDevice::CreatePipelineState(
         const PipelineStateCreateInfo& createInfo)
     {
-        auto mtlPipelineDescriptor = ToMetalPiplineStateCreateInfo(createInfo);
+        auto mtlPipelineDescriptor = ToMetalPipelineStateCreateInfo(createInfo);
         auto mtlDepthStencilDescriptor = ToMetalDepthStencilDescriptor(createInfo);
         ns::Error error;
 
@@ -101,7 +107,7 @@ namespace Husky::Metal
 
     GraphicsResultRefPtr<Buffer> MetalGraphicsDevice::CreateBuffer(
         const BufferCreateInfo& createInfo,
-        void* initialData)
+        const void* initialData)
     {
         uint32 optionBits = (uint32)mtlpp::ResourceOptions::CpuCacheModeDefaultCache;
         switch(createInfo.storageMode)
@@ -121,7 +127,15 @@ namespace Husky::Metal
 
         mtlpp::ResourceOptions options = static_cast<mtlpp::ResourceOptions>(optionBits);
 
-        auto mtlBuffer = device.NewBuffer(initialData, createInfo.length, options);
+        mtlpp::Buffer mtlBuffer;
+        if(initialData != nullptr)
+        {
+            mtlBuffer = device.NewBuffer(initialData, createInfo.length, options);
+        }
+        else
+        {
+            mtlBuffer = device.NewBuffer(createInfo.length, options);
+        }
 
         return { GraphicsResult::Success, MakeRef<MetalBuffer>(this, createInfo, mtlBuffer) };
     }
@@ -130,8 +144,16 @@ namespace Husky::Metal
         const SamplerCreateInfo& createInfo)
     {
         auto d = ToMetalSamplerDescriptor(createInfo);
-        auto mtlSamplre = device.NewSamplerState(d);
+        auto mtlSampler = device.NewSamplerState(d);
         return { GraphicsResult::Success, MakeRef<MetalSampler>(this, createInfo, mtlSampler) };
+    }
+
+    GraphicsResultRefPtr<Swapchain> MetalGraphicsDevice::CreateSwapchain(
+        const SwapchainCreateInfo& createInfo,
+        Surface* surface)
+    {
+        auto mtlSurface = static_cast<MetalSurface*>(surface);
+        return { GraphicsResult::Success, MakeRef<MetalSwapchain>(this, createInfo, (CAMetalLayer*)mtlSurface->layer) };
     }
 
     GraphicsResultRefPtr<ShaderLibrary> MetalGraphicsDevice::CreateShaderLibraryFromSource(

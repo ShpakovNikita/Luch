@@ -1,6 +1,7 @@
 #include <Husky/glTF2/glTFParser.h>
 #include <Husky/glTF2/glTF.h>
 #include <Husky/Stream.h>
+#include <Husky/Assert.h>
 #include <json.hpp>
 
 namespace Husky::glTF

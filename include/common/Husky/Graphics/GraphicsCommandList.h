@@ -15,7 +15,6 @@ namespace Husky::Graphics
     {
     public:
         GraphicsCommandList(GraphicsDevice* device) : GraphicsObject(device) {}
-        virtual ~GraphicsCommandList() = 0;
 
         virtual void Begin(const RenderPassCreateInfo& renderPassCreateInfo) = 0;
         virtual void End() = 0;
@@ -44,7 +43,8 @@ namespace Husky::Graphics
 
         virtual void BindIndexBuffer(
             Buffer* indexBuffer,
-            IndexType indexType) = 0;
+            IndexType indexType,
+            int32 indexBufferOffset) = 0;
 
         virtual void SetViewports(const ArrayProxy<Viewport>& viewports) = 0;
         virtual void SetScissorRects(const ArrayProxy<IntRect>& scissorRects) = 0;
@@ -65,17 +65,14 @@ namespace Husky::Graphics
             int32 vertexStart,
             int32 vertexCount,
             int32 instanceCount,
-            int32 baseInstance = 0) = 0;
+            int32 baseInstance) = 0;
 
         virtual void DrawIndexedInstanced(
             int32 indexCount,
-            int32 indexBufferOffset,
             int32 baseVertex,
             int32 instanceCount,
-            int32 baseInstance = 0) = 0;
+            int32 baseInstance) = 0;
 
         // TODO Indirect Draw
     };
-
-    //inline GraphicsCommandList::~GraphicsCommandList() {}
 }

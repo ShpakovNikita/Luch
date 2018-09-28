@@ -1,4 +1,5 @@
 #include <Husky/Metal/MetalFormat.h>
+#include <Husky/Graphics/Format.h>
 #include <Husky/Assert.h>
 
 namespace Husky::Metal
@@ -74,6 +75,13 @@ namespace Husky::Metal
         switch(format)
         {
         case Format::Undefined:
+            return mtlpp::PixelFormat::Invalid;
+        case Format::R8Unorm:
+            return mtlpp::PixelFormat::R8Unorm;
+        case Format::R8G8Unorm:
+            return mtlpp::PixelFormat::RG8Unorm;
+        case Format::R8G8B8Unorm:
+            HUSKY_ASSERT_MSG(false, "R8G8B8 is not supported in metal");
             return mtlpp::PixelFormat::Invalid;
         case Format::R8G8B8A8Unorm:
             return mtlpp::PixelFormat::RGBA8Unorm;

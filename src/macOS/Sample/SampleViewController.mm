@@ -28,7 +28,7 @@
 
     app = new SampleApplication();
     app->SetViewSize(static_cast<Husky::int32>(bounds.size.width), static_cast<Husky::int32>(bounds.size.height));
-    app->SetView(self.view);
+    app->SetView(self.view.layer);
     bool result = app->Initialize({});
     HUSKY_ASSERT(result);
 

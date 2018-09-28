@@ -46,7 +46,12 @@ namespace Husky::Metal
 
         uint32 bits = 0;
 
-        if((flags & TextureUsageFlags::RenderTarget) == TextureUsageFlags::RenderTarget)
+        if((flags & TextureUsageFlags::ColorAttachment) == TextureUsageFlags::ColorAttachment)
+        {
+            bits |= (uint32)mtlpp::TextureUsage::RenderTarget;
+        }
+
+        if((flags & TextureUsageFlags::DethpStencilAttachment) == TextureUsageFlags::DethpStencilAttachment)
         {
             bits |= (uint32)mtlpp::TextureUsage::RenderTarget;
         }
@@ -60,6 +65,8 @@ namespace Husky::Metal
         {
             bits |= (uint32)mtlpp::TextureUsage::ShaderWrite;
         }
+
+        // Metal doesn't cae for TextureUsageFlags::TransferSource and TextureUsageFlags::TransferDestination 
 
         return static_cast<mtlpp::TextureUsage>(bits);
     }

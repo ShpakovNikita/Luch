@@ -1,16 +1,19 @@
 #pragma once
 
-#include <Husky/BaseObject.h>
+#include <Husky/Graphics/Surface.h>
+#include <Husky/Metal/MetalForwards.h>
 #include <Husky/RefPtr.h>
 
 namespace Husky::Metal
 {
-    class MetalSurface : public BaseObject
+    using namespace Graphics;
+
+    class MetalSurface : public Surface
     {
+        friend class MetalGraphicsDevice;
     public:
-        MetalSurface(void* view);
-        ~MetalSurface();
+        MetalSurface(void* layer);
     private:
-        void* view = nullptr;
+        void* layer;
     };
 }

@@ -2,7 +2,6 @@
 
 #include <Husky/Graphics/GraphicsCommandList.h>
 #include <Husky/Metal/MetalForwards.h>
-#include <mtlpp.hpp>
 
 namespace Husky::Metal
 {
@@ -43,7 +42,8 @@ namespace Husky::Metal
 
         void BindIndexBuffer(
             Buffer* indexBuffer,
-            IndexType indexType) override;
+            IndexType indexType,
+            int32 indexBufferOffset) override;
 
         void SetViewports(const ArrayProxy<Viewport>& viewports) override;
         void SetScissorRects(const ArrayProxy<IntRect>& scissorRects) override;
@@ -56,20 +56,20 @@ namespace Husky::Metal
             int32 vertexStart,
             int32 vertexCount,
             int32 instanceCount,
-            int32 instanceBase = 0) override;
+            int32 instanceBase) override;
 
         void DrawIndexedInstanced(
             int32 indexCount,
-            int32 indexBufferOffset,
             int32 baseVertex,
             int32 instanceCount,
-            int32 baseInstance = 0) override;
+            int32 baseInstance) override;
     private:
         PipelineState* pipelineState = nullptr;
         mtlpp::CommandBuffer commandBuffer;
         mtlpp::RenderCommandEncoder commandEncoder;
         mtlpp::Buffer indexBuffer;
         mtlpp::IndexType indexType = mtlpp::IndexType::UInt16;
+        int32 indexBufferOffset;
         mtlpp::PrimitiveType primitiveType = mtlpp::PrimitiveType::Triangle;
     };
 }

@@ -11,6 +11,8 @@ namespace Husky::Metal
     class MetalTexture : public Texture
     {
         friend class MetalSwapchain;
+        friend class MetalDescriptorSet;
+        friend class MetalCopyCommandList;
     public:
         MetalTexture(
             MetalGraphicsDevice* device,
@@ -18,6 +20,7 @@ namespace Husky::Metal
             mtlpp::Texture texture);
 
         const TextureCreateInfo& GetCreateInfo() const override { return createInfo; }
+        mtlpp::Texture GetNativeTexture() { return texture; }
     private:
         TextureCreateInfo createInfo;
         mtlpp::Texture texture;

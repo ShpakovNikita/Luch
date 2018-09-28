@@ -1,6 +1,5 @@
 #include "SampleApplication.h"
 
-#include <Husky/Vulkan.h>
 #include <Husky/Math/Math.h>
 #include <Husky/FileStream.h>
 #include <Husky/VectorTypes.h>
@@ -21,21 +20,19 @@
 #include <Husky/SceneV1/PbrMaterial.h>
 #include <Husky/SceneV1/Sampler.h>
 
-using namespace Husky;
-using namespace Husky::Vulkan;
+#if HUSKY_USE_METAL
+    #include <Husky/Metal/MetalPhysicalDevice.h>
+    #include <Husky/Metal/MetalSurface.h>
+#elif USE_VULKAN
+    static_assert(false, "Vulkan is not ready");
+#endif
 
-static VkBool32 StaticDebugCallback(
-    VkDebugReportFlagsEXT flags,
-    VkDebugReportObjectTypeEXT objectType,
-    uint64 object,
-    size_t location,
-    int32 messageCode,
-    const char8 * pLayerPrefix,
-    const char8 * pMessage,
-    void* userData)
-{
-    return static_cast<VulkanDebugDelegate*>(userData)->DebugCallback(flags, objectType, object, location, messageCode, pLayerPrefix, pMessage);
-}
+using namespace Husky;
+using namespace Husky::Graphics;
+
+#if HUSKY_USE_METAL
+using namespace Husky::Metal;
+#endif
 
 #ifdef _WIN32
 
@@ -70,31 +67,18 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     allocationCallbacks = allocator.GetAllocationCallbacks();
 #endif
 
-    auto [createInstanceResult, createdInstance] = CreateVulkanInstance();
-    if (createInstanceResult != vk::Result::eSuccess)
+#if HUSKY_USE_METAL
+    auto [enumeratePhysicalDevicesResult, physicalDevices] = MetalPhysicalDevice::EnumeratePhysicalDevices();
+    if (enumeratePhysicalDevicesResult != GraphicsResult::Success || physicalDevices.empty())
     {
         // TODO
         return false;
     }
 
-    instance = createdInstance;
+    physicalDevice = physicalDevices.front();
 
-    auto [createDebugCallbackResult, createdDebugCallback] = CreateDebugCallback(instance);
-    if(createDebugCallbackResult != vk::Result::eSuccess)
-    {
-        return false;
-    }
-
-    debugCallback = createdDebugCallback;
-
-    auto [enumeratePhysicalDevicesResult, physicalDevices] = instance.enumeratePhysicalDevices();
-    if (enumeratePhysicalDevicesResult != vk::Result::eSuccess || physicalDevices.empty())
-    {
-        // TODO
-        return false;
-    }
-
-    physicalDevice = PhysicalDevice{ ChoosePhysicalDevice(physicalDevices), allocationCallbacks };
+    surface = MakeRef<MetalSurface>(view);
+#endif
 
 #if _WIN32
     std::tie(hInstance, hWnd) = CreateMainWindow(GetMainWindowTitle(), width, height);
@@ -117,22 +101,6 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     ShowWindow(hWnd, SW_SHOW);
 #endif
 
-#if __APPLE__
-    if(view == nullptr)
-    {
-        return false;
-    }
-
-    auto [createSurfaceResult, createdSurface] = Surface::CreateMacOSSurface(instance, view);
-    if (createSurfaceResult != vk::Result::eSuccess)
-    {
-        // TODO
-        return false;
-    }
-
-    surface = std::move(createdSurface);
-#endif
-
     glTF::glTFParser glTFparser;
 
 #if __APPLE__
@@ -145,7 +113,6 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     String filename{ "Sponza.gltf" };
 #endif
 
-
     FileStream fileStream{ rootDir + filename, FileOpenModes::Read };
 
     auto root = glTFparser.ParseJSON(&fileStream);
@@ -153,10 +120,8 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     SceneV1::Loader::glTFLoader loader{ rootDir, root };
     auto scenes = loader.LoadScenes();
 
-    //forwardRenderer = MakeUnique<Render::ForwardRenderer>(&physicalDevice, surface, width, height);
-    deferredRenderer = MakeUnique<Render::DeferredRenderer>(&physicalDevice, surface, width, height);
+    deferredRenderer = MakeUnique<Render::DeferredRenderer2>(physicalDevice, surface, width, height);
 
-    //forwardRenderer->Initialize();
     deferredRenderer->Initialize();
 
     auto& scene = scenes[0];
@@ -223,15 +188,6 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
 bool SampleApplication::Deinitialize()
 {
-    DestroyDebugCallback(instance, debugCallback);
-
-    vk::Optional<const vk::AllocationCallbacks> ac = nullptr;
-    if(allocationCallbacks.has_value())
-    {
-        ac = *allocationCallbacks;
-    }
-
-    instance.destroy(ac);
     return true;
 }
 
@@ -258,86 +214,6 @@ void SampleApplication::Run()
 void SampleApplication::Process()
 {
     deferredRenderer->DrawScene(preparedScene);
-}
-
-vk::ResultValue<vk::Instance> SampleApplication::CreateVulkanInstance()
-{
-    auto requiredExtensions = GetRequiredInstanceExtensionNames();
-    auto validationLayers = GetValidationLayerNames();
-
-    auto applicationName = GetApplicationName();
-
-    vk::ApplicationInfo applicationInfo;
-    applicationInfo.setApiVersion(VK_MAKE_VERSION(1, 0, 56));
-    applicationInfo.setApplicationVersion(VK_MAKE_VERSION(0, 1, 0));
-    applicationInfo.setPApplicationName(applicationName.c_str());
-    applicationInfo.setEngineVersion(VK_MAKE_VERSION(0, 1, 0));
-    applicationInfo.setPEngineName("Husky Engine");
-
-    vk::InstanceCreateInfo ci;
-    ci.setPApplicationInfo(&applicationInfo);
-    ci.setEnabledLayerCount((int32)validationLayers.size());
-    ci.setPpEnabledLayerNames(validationLayers.data());
-    ci.setEnabledExtensionCount((int32)requiredExtensions.size());
-    ci.setPpEnabledExtensionNames(requiredExtensions.data());
-
-    vk::Optional<const vk::AllocationCallbacks> ac = nullptr;
-    if(allocationCallbacks.has_value())
-    {
-        ac = *allocationCallbacks;
-    }
-
-    return vk::createInstance(ci, ac);
-}
-
-vk::ResultValue<vk::DebugReportCallbackEXT> SampleApplication::CreateDebugCallback(
-    vk::Instance& instance)
-{
-    VkDebugReportCallbackCreateInfoEXT ci;
-    ci.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
-    ci.pNext = nullptr;
-
-    ci.flags =
-          VK_DEBUG_REPORT_INFORMATION_BIT_EXT
-        | VK_DEBUG_REPORT_WARNING_BIT_EXT
-        | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT
-        | VK_DEBUG_REPORT_ERROR_BIT_EXT
-        | VK_DEBUG_REPORT_DEBUG_BIT_EXT;
-
-    ci.pfnCallback = StaticDebugCallback;
-    ci.pUserData = static_cast<VulkanDebugDelegate*>(this);
-
-    const VkAllocationCallbacks* callbacks = nullptr;
-    if(allocationCallbacks.has_value())
-    {
-        callbacks = reinterpret_cast<const VkAllocationCallbacks*>(&*allocationCallbacks);
-    }
-
-    PFN_vkCreateDebugReportCallbackEXT procAddr = reinterpret_cast<PFN_vkCreateDebugReportCallbackEXT>(instance.getProcAddr("vkCreateDebugReportCallbackEXT"));
-    VkDebugReportCallbackEXT callback;
-    vk::Result result = static_cast<vk::Result>(procAddr(instance, &ci, callbacks, &callback));
-
-    vk::DebugReportCallbackEXT debugReportCallback{ callback };
-    return { result, debugReportCallback };
-}
-
-void SampleApplication::DestroyDebugCallback(
-    vk::Instance& instance,
-    vk::DebugReportCallbackEXT& callback)
-{
-    const VkAllocationCallbacks* callbacks = nullptr;
-    if(allocationCallbacks.has_value())
-    {
-        callbacks = reinterpret_cast<const VkAllocationCallbacks*>(&*allocationCallbacks);
-    }
-
-    PFN_vkDestroyDebugReportCallbackEXT procAddr = reinterpret_cast<PFN_vkDestroyDebugReportCallbackEXT>(instance.getProcAddr("vkDestroyDebugReportCallbackEXT"));
-    procAddr(instance, callback, callbacks);
-}
-
-vk::PhysicalDevice SampleApplication::ChoosePhysicalDevice(const Husky::Vector<vk::PhysicalDevice>& devices)
-{
-    return devices[0];
 }
 
 #ifdef _WIN32
@@ -413,41 +289,3 @@ std::tuple<HINSTANCE, HWND> SampleApplication::CreateMainWindow(const Husky::Str
 
 #endif
 
-Vector<const char8*> SampleApplication::GetRequiredInstanceExtensionNames() const
-{
-    Vector<const char8*> requiredExtensionNames;
-
-    requiredExtensionNames.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
-    requiredExtensionNames.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-#if _WIN32
-    requiredExtensionNames.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
-#elif __APPLE__
-    requiredExtensionNames.push_back(VK_MVK_MACOS_SURFACE_EXTENSION_NAME);
-#endif
-
-    return requiredExtensionNames;
-}
-
-Vector<const char8*> SampleApplication::GetValidationLayerNames() const
-{
-    return
-    {
-        "VK_LAYER_LUNARG_standard_validation",
-#if _WIN32
-        "VK_LAYER_LUNARG_assistant_layer"
-#endif
-    };
-}
-
-VkBool32 SampleApplication::DebugCallback(
-    VkDebugReportFlagsEXT flags,
-    VkDebugReportObjectTypeEXT objectType,
-    uint64_t object,
-    size_t location,
-    int32_t messageCode,
-    const char * pLayerPrefix,
-    const char * pMessage)
-{
-    std::cout << pLayerPrefix << " | " << pMessage << "\n";
-    return VK_TRUE;
-}

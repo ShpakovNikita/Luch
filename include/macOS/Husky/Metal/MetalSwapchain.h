@@ -3,8 +3,8 @@
 #include <Husky/Graphics/Swapchain.h>
 #include <Husky/Graphics/SwapchainCreateInfo.h>
 #include <Husky/Metal/MetalForwards.h>
-#include <dispatch/dispatch.h>
-#include <QuartzCore/CAMetalLayer.h>
+#import <dispatch/dispatch.h>
+#import <QuartzCore/CAMetalLayer.h>
 
 namespace Husky::Metal
 {

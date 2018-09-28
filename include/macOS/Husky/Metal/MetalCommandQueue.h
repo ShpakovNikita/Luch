@@ -20,6 +20,9 @@ namespace Husky::Metal
         GraphicsResult Submit(
             GraphicsCommandList* commandList) override;
 
+        GraphicsResult Submit(
+            CopyCommandList* commandList) override;
+
         GraphicsResult Present(
             int32 imageIndex,
             Swapchain* swapchain) override;

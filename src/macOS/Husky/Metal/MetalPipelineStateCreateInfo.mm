@@ -31,28 +31,31 @@ namespace Husky::Metal
         auto mtlAttributes = d.GetAttributes();
         auto mtlLayouts = d.GetLayouts();
 
+        // TODO
+        int32 buffersStart = 31 - 1 - ci.bindings.size();
+
         for(int32 i = 0; i < ci.attributes.size(); i++)
         {
             const auto& attribute = ci.attributes[i];
 
             mtlAttributes[i].SetFormat(ToMetalVertexFormat(attribute.format));
             mtlAttributes[i].SetOffset((uint32)attribute.offset);
-            mtlAttributes[i].SetBufferIndex((uint32)attribute.location);
+            mtlAttributes[i].SetBufferIndex((uint32)(buffersStart + attribute.binding)); // TODO
         }
 
         for(int32 i = 0; i < ci.bindings.size(); i++)
         {
             auto binding = ci.bindings[i];
 
-            mtlLayouts[i].SetStride((uint32)binding.stride);
-            mtlLayouts[i].SetStepRate(1);
-            mtlLayouts[i].SetStepFunction(ToMetalVertexStepFunction(binding.inputRate));
+            mtlLayouts[buffersStart + i].SetStride((uint32)binding.stride);
+            mtlLayouts[buffersStart + i].SetStepRate(1);
+            mtlLayouts[buffersStart + i].SetStepFunction(ToMetalVertexStepFunction(binding.inputRate));
         }
 
         return d;
     }
 
-    mtlpp::RenderPipelineDescriptor ToMetalPiplineStateCreateInfo(const PipelineStateCreateInfo& ci)
+    mtlpp::RenderPipelineDescriptor ToMetalPipelineStateCreateInfo(const PipelineStateCreateInfo& ci)
     {
         mtlpp::RenderPipelineDescriptor d;
         auto mtlVertexProgram = static_cast<MetalShaderProgram*>(ci.vertexProgram);
@@ -78,8 +81,8 @@ namespace Husky::Metal
             d.GetColorAttachments()[i].SetWriteMask(ToMetalColorWriteMask(colorAttachment.colorWriteMask));
         }
 
-        d.SetDepthAttachmentPixelFormat(ToMetalPixelFormat(ci.depthStencil.depthFormat));
-        d.SetStencilAttachmentPixelFormat(ToMetalPixelFormat(ci.depthStencil.stencilFormat));
+        d.SetDepthAttachmentPixelFormat(ToMetalPixelFormat(ci.depthStencil.depthStencilFormat));
+        d.SetStencilAttachmentPixelFormat(ToMetalPixelFormat(ci.depthStencil.depthStencilFormat));
 
         return d;
     }
@@ -103,7 +106,6 @@ namespace Husky::Metal
         mtlpp::DepthStencilDescriptor d;
 
         const auto& ci = createInfo.depthStencil;
-        HUSKY_ASSERT_MSG(ci.depthTestEnable, "Wtf");
 
         d.SetDepthCompareFunction(ToMetalCompareFunction(ci.depthCompareFunction));
         d.SetDepthWriteEnabled(ci.depthWriteEnable);

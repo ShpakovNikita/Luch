@@ -12,6 +12,7 @@ namespace Husky::Graphics
         virtual ~CommandPool() = 0;
 
         virtual GraphicsResultRefPtr<GraphicsCommandList> AllocateGraphicsCommandList() = 0;
+        virtual GraphicsResultRefPtr<CopyCommandList> AllocateCopyCommandList() = 0;
         // TODO
         // virtual RefPtr<ComputeCommandList> AllocateComputeCommandList() = 0;
     };

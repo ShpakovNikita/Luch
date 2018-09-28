@@ -28,7 +28,7 @@ namespace Husky::Graphics
             depthStencilAttachment = aDepthStencilAttachment;
             return *this;
         }
-    private:
+
         int32 currentColorAttachmentIndex = 0;
         int32 totalColorAttachmentsCount = 0;
         Vector<ColorAttachment*> colorAttachments;

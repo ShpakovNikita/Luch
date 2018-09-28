@@ -36,7 +36,7 @@ namespace Husky::Graphics
 
         virtual GraphicsResultRefPtr<Buffer> CreateBuffer(
             const BufferCreateInfo& createInfo,
-            void* initialData = nullptr) = 0;
+            const void* initialData = nullptr) = 0;
 
         virtual GraphicsResultRefPtr<Sampler> CreateSampler(
             const SamplerCreateInfo& createInfo) = 0;
@@ -44,6 +44,10 @@ namespace Husky::Graphics
         virtual GraphicsResultRefPtr<ShaderLibrary> CreateShaderLibraryFromSource(
             const Vector<Byte>& source,
             const UnorderedMap<String, Variant<int32, String>>& defines) = 0;
+
+        virtual GraphicsResultRefPtr<Swapchain> CreateSwapchain(
+            const SwapchainCreateInfo& createInfo,
+            Surface* surface) = 0;
 
         virtual GraphicsResultRefPtr<Semaphore> CreateSemaphore() = 0;
     };

@@ -12,6 +12,7 @@ namespace Husky::Metal
     public:
         MetalCommandPool(MetalGraphicsDevice* device, MetalCommandQueue* queue);
         GraphicsResultRefPtr<GraphicsCommandList> AllocateGraphicsCommandList() override;
+        GraphicsResultRefPtr<CopyCommandList> AllocateCopyCommandList() override;
     private:
         MetalCommandQueue* queue = nullptr;
     };

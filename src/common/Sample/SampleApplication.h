@@ -3,31 +3,28 @@
 #include <Husky/BaseApplication.h>
 #include <Husky/glTF2/glTFParser.h>
 #include <Husky/glTF2/glTF.h>
-#include <Husky/Vulkan.h>
-#include <Husky/Vulkan/GlslShaderCompiler.h>
-#include <Husky/Vulkan/GraphicsDevice.h>
-#include <Husky/Vulkan/PhysicalDevice.h>
-#include <Husky/Vulkan/Surface.h>
-#include <Husky/Vulkan/Swapchain.h>
 
-#include <Husky/Render/ForwardRenderer.h>
-#include <Husky/Render/DeferredRenderer.h>
+#include <Husky/Render/DeferredRenderer2.h>
 
 #ifdef _WIN32
-#include "../win32/VulkanAllocator.h"
-#include <Husky/Platform/Win32/WndProcDelegate.h>
+    #if HUSKY_USE_VULKAN
+        #include "../win32/VulkanAllocator.h"
+    #endif
+    #include <Husky/Platform/Win32/WndProcDelegate.h>
 #endif
 
 class SampleApplication
     : public Husky::BaseApplication
+#if USE_VULKAN
     , private Husky::Vulkan::VulkanDebugDelegate
+#endif
 #ifdef _WIN32
     , private Husky::Platform::Win32::WndProcDelegate
 #endif
 {
 public:
     SampleApplication() = default;
-    
+
     bool Initialize(const Husky::Vector<Husky::String>& args) override;
     bool Deinitialize() override;
     void Run() override;
@@ -63,16 +60,6 @@ public:
     }
 #endif
 private:
-    vk::ResultValue<vk::Instance> CreateVulkanInstance();
-
-    vk::ResultValue<vk::DebugReportCallbackEXT> CreateDebugCallback(vk::Instance& instance);
-
-    void DestroyDebugCallback(
-        vk::Instance& instance,
-        vk::DebugReportCallbackEXT& callback);
-
-    vk::PhysicalDevice ChoosePhysicalDevice(const Husky::Vector<vk::PhysicalDevice>& devices);
-
 #ifdef _WIN32
     LRESULT WndProc(
         HWND   hwnd,
@@ -83,18 +70,6 @@ private:
 
     std::tuple<HINSTANCE, HWND> CreateMainWindow(const Husky::String& title, Husky::int32 width, Husky::int32 height);
 #endif
-
-    Husky::Vector<const Husky::char8*> GetRequiredInstanceExtensionNames() const;
-    Husky::Vector<const Husky::char8*> GetValidationLayerNames() const;
-
-    vk::Bool32 DebugCallback(
-        VkDebugReportFlagsEXT flags,
-        VkDebugReportObjectTypeEXT objectType,
-        uint64_t object,
-        size_t location,
-        int32_t messageCode,
-        const char * pLayerPrefix,
-        const char * pMessage) override;
 
 #if _WIN32
     HWND hWnd = nullptr;
@@ -108,17 +83,12 @@ private:
     Husky::int32 width = 1200;
     Husky::int32 height = 900;
 
-    Husky::Vulkan::PhysicalDevice physicalDevice;
-    Husky::RefPtr<Husky::Vulkan::Surface> surface;
+    Husky::RefPtr<Husky::Graphics::PhysicalDevice> physicalDevice;
+    Husky::RefPtr<Husky::Graphics::Surface> surface;
 #if WIN32
     VulkanAllocator allocator;
 #endif
-    vk::Instance instance;
-    vk::DebugReportCallbackEXT debugCallback;
     Husky::Render::DeferredPreparedScene preparedScene;
 
-    Husky::Optional<vk::AllocationCallbacks> allocationCallbacks;
-
-    Husky::UniquePtr<Husky::Render::ForwardRenderer> forwardRenderer;
-    Husky::UniquePtr<Husky::Render::DeferredRenderer> deferredRenderer;
+    Husky::UniquePtr<Husky::Render::DeferredRenderer2> deferredRenderer;
 };

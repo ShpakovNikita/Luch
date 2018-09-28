@@ -19,6 +19,11 @@ namespace Husky::Metal
             MetalDescriptorSetLayout* descriptorSetLayout);
 
         DescriptorSetLayout* GetDescriptorSetLayout() override;
+
+        void WriteTexture(DescriptorSetBinding* binding, Texture* texture) override;
+        void WriteUniformBuffer(DescriptorSetBinding* binding, Buffer* buffer) override;
+        void WriteSampler(DescriptorSetBinding* binding, Sampler* sampler) override;
+        void Update() override;
     private:
         Vector<mtlpp::Texture> textures;
         Vector<mtlpp::Buffer> buffers;

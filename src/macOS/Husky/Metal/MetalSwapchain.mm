@@ -17,6 +17,9 @@ namespace Husky::Metal
     {
         HUSKY_ASSERT(createInfo.imageCount == 1);
         //frameSemaphore = dispatch_semaphore_create(createInfo.imageCount);
+        auto mtlDevice = static_cast<MetalGraphicsDevice*>(GetGraphicsDevice());
+
+        layer.device = (__bridge id<MTLDevice>)mtlDevice->device.GetPtr();
     }
 
 //    GraphicsResultValue<AcquiredTexture> MetalSwapchain::GetNextAvailableTexture(

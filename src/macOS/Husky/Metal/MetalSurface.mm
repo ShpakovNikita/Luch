@@ -1,16 +1,9 @@
 #include <Husky/Metal/MetalSurface.h>
-#import <MetalKit/MetalKit.h>
 
 namespace Husky::Metal
 {
-    MetalSurface::MetalSurface(void* aView)
-        : view(aView)
+    MetalSurface::MetalSurface(void* aLayer)
+        : layer(aLayer)
     {
-        [(MTKView*)view retain];
-    }
-
-    MetalSurface::~MetalSurface()
-    {
-        [(MTKView*)view release];
     }
 }

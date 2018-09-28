@@ -90,14 +90,14 @@ namespace Husky
         return count;
     }
 
-    T* data() const
+    const T* data() const
     {
         return ptr;
     }
 
     private:
         int32 count;
-        T* ptr;
+        const T* ptr;
     };
 
     template <typename T>

@@ -17,6 +17,7 @@ namespace Husky::Metal
     class MetalTexture;
     class MetalSampler;
     class MetalSwapchain;
+    class MetalSurface;
     class MetalDescriptorPool;
     class MetalDescriptorSetLayout;
     class MetalShaderLibrary;

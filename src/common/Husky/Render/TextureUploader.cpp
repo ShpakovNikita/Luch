@@ -2,13 +2,17 @@
 #include <Husky/SceneV1/Texture.h>
 #include <Husky/SceneV1/Sampler.h>
 #include <Husky/SceneV1/Image.h>
-#include <Husky/Vulkan/CommandPool.h>
+#include <Husky/Graphics/GraphicsDevice.h>
+#include <Husky/Graphics/TextureCreateInfo.h>
+#include <Husky/Graphics/BufferCreateInfo.h>
+#include <Husky/Graphics/CommandPool.h>
+#include <Husky/Graphics/CopyCommandList.h>
 
 namespace Husky::Render
 {
     TextureUploader::TextureUploader(
-        Vulkan::GraphicsDevice* aDevice,
-        Vulkan::CommandPool* aCommandPool)
+        Graphics::GraphicsDevice* aDevice,
+        Graphics::CommandPool* aCommandPool)
         : device(aDevice)
         , commandPool(aCommandPool)
     {
@@ -18,8 +22,8 @@ namespace Husky::Render
     {
         TextureUploaderResult result;
 
-        auto [allocateBuffersResult, buffer] = commandPool->AllocateCommandBuffer(Vulkan::CommandBufferLevel::Primary);
-        if (allocateBuffersResult != vk::Result::eSuccess)
+        auto [allocateCommandListResult, commandList] = commandPool->AllocateCopyCommandList();
+        if (allocateCommandListResult != Graphics::GraphicsResult::Success)
         {
             return { false };
         }
@@ -45,40 +49,19 @@ namespace Husky::Render
             intermediateResults.push_back(intermediateResult);
         }
 
-        Vulkan::PipelineBarrier beforeBarrier;
-        beforeBarrier
-            .ToStage(vk::PipelineStageFlagBits::eTransfer);
-
-        Vulkan::PipelineBarrier afterBarrier;
-        afterBarrier
-            .FromStage(vk::PipelineStageFlagBits::eTransfer)
-            .ToStage(vk::PipelineStageFlagBits::eFragmentShader);
+        commandList->Begin();
 
         for (const auto& intermediateResult : intermediateResults)
         {
-            beforeBarrier.WithImageBarrier(&intermediateResult.transferImageBarrier);
-            afterBarrier.WithImageBarrier(&intermediateResult.readImageBarrier);
-        }
-
-        buffer
-            ->Begin()
-            ->PipelineBarrier(beforeBarrier);
-
-        for (const auto& intermediateResult : intermediateResults)
-        {
-            buffer->CopyBufferToImage(
+            commandList->CopyBufferToTexture(
                 intermediateResult.stagingBuffer,
-                intermediateResult.image,
-                vk::ImageLayout::eTransferDstOptimal,
-                intermediateResult.copy
-            );
+                intermediateResult.texture,
+                intermediateResult.copy);
         }
 
-        buffer
-            ->PipelineBarrier(afterBarrier)
-            ->End();
+        commandList->End();
 
-        result.commandBuffers = { buffer };
+        result.commandLists = { commandList };
 
         return { true, result };
     }
@@ -91,74 +74,51 @@ namespace Husky::Render
 
         int32 hostImageComponentCount = hostImage->GetComponentCount();
 
-        vk::Format format;
+        int32 pixelSizeInBytes = hostImageComponentCount;
+        Graphics::Format format = Graphics::Format::Undefined;
 
         switch (hostImageComponentCount)
         {
         case 1:
-            format = vk::Format::eR8Unorm;
+            format = Graphics::Format::R8Unorm;
             break;
         case 2:
-            format = vk::Format::eR8G8Unorm;
+            format = Graphics::Format::R8G8Unorm;
             break;
         case 3:
-            format = vk::Format::eR8G8B8Unorm;
+            format = Graphics::Format::R8G8B8Unorm;
             break;
         case 4:
-            format = vk::Format::eR8G8B8A8Unorm;
+            format = Graphics::Format::R8G8B8A8Unorm;
             break;
         default:
             HUSKY_ASSERT(false);
         }
 
-        vk::ImageCreateInfo imageCI;
-        imageCI.imageType = vk::ImageType::e2D;
-        imageCI.format = format;
-        imageCI.extent.width = hostImage->GetWidth();
-        imageCI.extent.height = hostImage->GetHeight();
-        imageCI.extent.depth = 1;
-        imageCI.mipLevels = 1;
-        imageCI.arrayLayers = 1;
-        imageCI.samples = vk::SampleCountFlagBits::e1;
-        imageCI.tiling = vk::ImageTiling::eOptimal;
-        imageCI.usage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst;
-        imageCI.sharingMode = vk::SharingMode::eExclusive;
+        Graphics::TextureCreateInfo textureCreateInfo;
+        textureCreateInfo.textureType = Graphics::TextureType::Texture2D;
+        textureCreateInfo.format = format;
+        textureCreateInfo.width = hostImage->GetWidth();
+        textureCreateInfo.height = hostImage->GetHeight();
+        textureCreateInfo.usage = Graphics::TextureUsageFlags::ShaderRead | Graphics::TextureUsageFlags::TransferDestination;
+        textureCreateInfo.storageMode = Graphics::ResourceStorageMode::DeviceLocal;
 
-        auto[createImageResult, createdImage] = device->CreateImage(imageCI);
-        if (createImageResult != vk::Result::eSuccess)
+        auto[createTextureResult, createdTexture] = device->CreateTexture(textureCreateInfo);
+        if (createTextureResult != Graphics::GraphicsResult::Success)
         {
             return { false };
         }
-
-
-        const auto &queueIndices = device->GetQueueIndices();
 
         auto &hostImageBuffer = hostImage->GetBuffer();
 
-        // TODO think about separate queue for transfer
-        auto[createStagingBufferResult, stagingBuffer] = device->CreateBuffer(
-            hostImageBuffer.size(),
-            queueIndices->graphicsQueueFamilyIndex,
-            vk::BufferUsageFlagBits::eTransferSrc,
-            true);
+        Graphics::BufferCreateInfo bufferCreateInfo;
+        bufferCreateInfo.length = hostImageBuffer.size();
+        bufferCreateInfo.usage = Graphics::BufferUsageFlags::TransferSource;
+        bufferCreateInfo.storageMode = Graphics::ResourceStorageMode::Shared;
 
-        if (createStagingBufferResult != vk::Result::eSuccess)
-        {
-            return { false };
-        }
+        auto[createStagingBufferResult, stagingBuffer] = device->CreateBuffer(bufferCreateInfo, hostImageBuffer.data());
 
-        auto[mapResult, mappedMemory] = stagingBuffer->MapMemory(hostImageBuffer.size(), 0);
-        if (mapResult != vk::Result::eSuccess)
-        {
-            return { false };
-        }
-
-        memcpy(mappedMemory, hostImageBuffer.data(), hostImageBuffer.size());
-
-        stagingBuffer->UnmapMemory();
-
-        auto [createImageViewResult, createdImageView] = device->CreateImageView(createdImage);
-        if (createImageViewResult != vk::Result::eSuccess)
+        if (createStagingBufferResult != Graphics::GraphicsResult::Success)
         {
             return { false };
         }
@@ -169,46 +129,27 @@ namespace Husky::Render
             return { false };
         }
 
-        texture->SetDeviceImage(createdImage);
-        texture->SetDeviceImageView(createdImageView);
+        texture->SetDeviceTexture(createdTexture);
         texture->GetSampler()->SetDeviceSampler(createdSampler);
 
-        const auto& indices = device->GetQueueIndices();
-
-        result.image = createdImage;
+        result.texture = createdTexture;
         result.stagingBuffer = stagingBuffer;
 
-        result.copy.bufferOffset = 0;
-        result.copy.bufferRowLength = 0;
-        result.copy.bufferImageHeight = 0;
-        result.copy.imageExtent = vk::Extent3D{ (uint32)hostImage->GetWidth(), (uint32)hostImage->GetHeight(), 1 };
-        result.copy.imageOffset = vk::Offset3D{ 0, 0, 0 };
+        int32 width = hostImage->GetWidth();
+        int32 height = hostImage->GetHeight();
 
-        result.transferImageBarrier
-            .ForImage(createdImage)
-            .FromLayout(vk::ImageLayout::eUndefined)
-            .ToLayout(vk::ImageLayout::eTransferDstOptimal)
-            .ToAccess(vk::AccessFlagBits::eTransferWrite)
-            .FromQueue(indices->graphicsQueueFamilyIndex)
-            .ToQueue(indices->graphicsQueueFamilyIndex);
-
-        result.readImageBarrier
-            .ForImage(createdImage)
-            .FromLayout(vk::ImageLayout::eTransferDstOptimal)
-            .ToLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-            .FromAccess(vk::AccessFlagBits::eTransferWrite)
-            .ToAccess(vk::AccessFlagBits::eShaderRead)
-            .FromQueue(indices->graphicsQueueFamilyIndex)
-            .ToQueue(indices->graphicsQueueFamilyIndex);
+        result.copy.bytesPerRow = pixelSizeInBytes * width;
+        result.copy.bytesPerImage = result.copy.bytesPerRow * height;
+        result.copy.sourceSize = { width, height };
 
         return { true, result };
     }
 
-    ResultValue<bool, RefPtr<Vulkan::Sampler>> TextureUploader::CreateSampler(SceneV1::Texture* texture)
+    ResultValue<bool, RefPtr<Graphics::Sampler>> TextureUploader::CreateSampler(SceneV1::Texture* texture)
     {
         const auto& samplerCI = texture->GetSampler()->GetSamplerDescription();
         auto [createSamplerResult, createdSampler] = device->CreateSampler(samplerCI);
-        if (createSamplerResult != vk::Result::eSuccess)
+        if (createSamplerResult != Graphics::GraphicsResult::Success)
         {
             return { false };
         }

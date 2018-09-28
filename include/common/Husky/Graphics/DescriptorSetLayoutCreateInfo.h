@@ -18,6 +18,7 @@ namespace Husky::Graphics
         inline DescriptorSetLayoutCreateInfo& WithNBindings(int32 count)
         {
             bindings.reserve(count);
+            return *this;
         }
 
         inline DescriptorSetLayoutCreateInfo& AddBinding(DescriptorSetBinding* binding)
@@ -28,7 +29,7 @@ namespace Husky::Graphics
             return *this;
         }
 
-        DescriptorSetType type;
+        DescriptorSetType type = DescriptorSetType::Unknown;
         int32 currentBindingIndex = 0;
         Vector<DescriptorSetBinding*> bindings;
     };

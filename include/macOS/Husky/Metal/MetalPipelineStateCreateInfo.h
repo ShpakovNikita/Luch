@@ -7,6 +7,6 @@ namespace Husky::Metal
 {
     using namespace Graphics;
 
-    mtlpp::RenderPipelineDescriptor ToMetalPiplineStateCreateInfo(const PipelineStateCreateInfo& createInfo);
+    mtlpp::RenderPipelineDescriptor ToMetalPipelineStateCreateInfo(const PipelineStateCreateInfo& createInfo);
     mtlpp::DepthStencilDescriptor ToMetalDepthStencilDescriptor(const PipelineStateCreateInfo& createInfo);
 }

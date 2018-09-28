@@ -2,6 +2,7 @@
 
 #include <Husky/Graphics/GraphicsForwards.h>
 #include <Husky/Graphics/ResourceType.h>
+#include <Husky/Graphics/ShaderStage.h>
 
 namespace Husky::Graphics
 {
@@ -9,11 +10,23 @@ namespace Husky::Graphics
     {
         friend class DescriptorSetLayoutCreateInfo;
     public:
-        ResourceType GetType() const { return type; }
-        void SetType(ResourceType aType) { type = aType; }
+        inline ResourceType GetType() const { return type; }
+        inline DescriptorSetBinding& OfType(ResourceType aType)
+        {
+            type = aType;
+            return *this;
+        }
+
+        inline DescriptorSetBinding& AtStage(ShaderStage stage)
+        {
+            shaderStage = stage;
+            return *this;
+        }
+
         int32 GetIndex() const { return index; }
     private:
         int32 index = -1;
         ResourceType type;
+        ShaderStage shaderStage;
     };
 }

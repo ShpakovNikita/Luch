@@ -9,6 +9,7 @@ namespace Husky::Metal
 
     class MetalGraphicsDevice : public GraphicsDevice
     {
+        friend class MetalSwapchain;
     public:
         MetalGraphicsDevice(
             PhysicalDevice* physicalDevice,
@@ -42,10 +43,14 @@ namespace Husky::Metal
 
         GraphicsResultRefPtr<Buffer> CreateBuffer(
             const BufferCreateInfo& createInfo,
-            void* initialData = nullptr) override;
+            const void* initialData = nullptr) override;
 
         GraphicsResultRefPtr<Sampler> CreateSampler(
             const SamplerCreateInfo& createInfo) override;
+
+        GraphicsResultRefPtr<Swapchain> CreateSwapchain(
+            const SwapchainCreateInfo& createInfo,
+            Surface* surface) override;
 
         GraphicsResultRefPtr<ShaderLibrary> CreateShaderLibraryFromSource(
             const Vector<Byte>& source,

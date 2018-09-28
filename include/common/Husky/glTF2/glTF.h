@@ -3,7 +3,6 @@
 #include <Husky/Types.h>
 #include <Husky/VectorTypes.h>
 #include <Husky/Version.h>
-#include <Husky/Vulkan.h>
 
 namespace Husky::glTF
 {
