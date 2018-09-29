@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Husky/ECS/Forwards.h>
+#include <Husky/ECS/ECSForwards.h>
 
 namespace Husky::ECS
 {

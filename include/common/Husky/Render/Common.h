@@ -4,16 +4,12 @@
 #include <Husky/VectorTypes.h>
 #include <Husky/RefPtr.h>
 #include <Husky/UniquePtr.h>
-#include <Husky/Format.h>
-#include <Husky/SceneV1/Forwards.h>
-#include <Husky/Vulkan.h>
-#include <Husky/Vulkan/VulkanForwards.h>
-#include <Husky/Vulkan/GlslShaderCompiler.h>
-#include <Husky/Vulkan/DescriptorSetBinding.h>
+#include <Husky/Graphics/Format.h>
+#include <Husky/SceneV1/SceneV1Forwards.h>
 
 namespace Husky::Render
 {
-    using namespace Husky::Vulkan;
+    using namespace Husky::Graphics;
 
 #pragma pack(push)
 #pragma pack(1)
@@ -34,7 +30,7 @@ namespace Husky::Render
 
     static_assert(sizeof(MeshUniformBuffer) % 4 == 0);
 
-    struct MaterialPushConstants
+    struct MaterialUniform
     {
         Vec4 baseColorFactor;
         Vec3 emissiveFactor;
@@ -45,7 +41,7 @@ namespace Husky::Render
         float32 occlusionStrength;
     };
 
-    static_assert(sizeof(MaterialPushConstants) % 4 == 0);
+    static_assert(sizeof(MaterialUniform) % 4 == 0);
 
     struct LightUniform
     {
@@ -67,18 +63,12 @@ namespace Husky::Render
     static_assert(sizeof(LightUniform) % 4 == 0);
 #pragma pack(pop)
 
-    struct CommandPoolCreateResult
-    {
-        vk::ResultValue<vk::CommandPool> graphicsCommandPool;
-        vk::ResultValue<vk::CommandPool> presentCommandPool;
-        vk::ResultValue<vk::CommandPool> computeCommandPool;
-
-        Vector<vk::CommandPool> uniqueCommandPools;
-    };
-
-    struct Shader
-    {
-        GLSLShaderCompiler::Bytecode bytecode;
-        RefPtr<ShaderModule> module;
-    };
+//    struct CommandPoolCreateResult
+//    {
+//        vk::ResultValue<vk::CommandPool> graphicsCommandPool;
+//        vk::ResultValue<vk::CommandPool> presentCommandPool;
+//        vk::ResultValue<vk::CommandPool> computeCommandPool;
+//
+//        Vector<vk::CommandPool> uniqueCommandPools;
+//    };
 }

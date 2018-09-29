@@ -8,10 +8,12 @@ namespace Husky
 
 struct Version
 {
+#if USE_VULKAN
     static auto ToVulkanVersion(const Version& version)
     {
         return VK_MAKE_VERSION(version.major, version.minor, version.patch);
     }
+#endif
 
     uint8 major;
     uint8 minor;

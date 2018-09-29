@@ -21,6 +21,10 @@ if(MSVC)
     endif()
 endif()
 
+if(USE_METAL AND NOT APPLE)
+    message(FATAL_ERROR "Metal is only for macOS")
+endif()
+
 if(APPLE)
     set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
     set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++17")
@@ -34,14 +38,17 @@ if(USE_VULKAN)
     add_compile_definitions(HUSKY_USE_VULKAN)
 endif()
 
+# TODO Check depth for consistency
 add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
 
+# Theese libs are always used
 include_directories(AFTER SYSTEM
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/stb/
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/glm/
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/json/src/
 )
 
+# Setup vulkan include and library paths
 if(USE_VULKAN)
     find_package(Vulkan REQUIRED)
     set(Vulkan_SDK_DIR ${Vulkan_INCLUDE_DIR}/../)
@@ -156,18 +163,22 @@ if(USE_VULKAN)
         set_target_properties(SPVRemapper PROPERTIES
             IMPORTED_LOCATION ${SPIRV_REMAPPER_LIB})
     endif()
+
+    file(GLOB_RECURSE ENGINE_VULKAN_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Vulkan/Husky/*.cpp)
+    file(GLOB_RECURSE ENGINE_VULKAN_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Vulkan/Husky/*.h)
 endif()
 
-file(GLOB_RECURSE ENGINE_COMMON_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/common/Husky/*.cpp)
-file(GLOB_RECURSE ENGINE_COMMON_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/common/Husky/*.h)
+file(GLOB_RECURSE ENGINE_COMMON_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Husky/*.cpp)
+file(GLOB_RECURSE ENGINE_COMMON_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/Common/Husky/*.h)
 
+# Add Husky Engine library
 if(APPLE)
     file(GLOB_RECURSE ENGINE_MACOS_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Husky/*.cpp)
     file(GLOB_RECURSE ENGINE_MACOS_OBJC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Husky/*.m)
     file(GLOB_RECURSE ENGINE_MACOS_OBJCPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Husky/*.mm)
     file(GLOB_RECURSE ENGINE_MACOS_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/macOS/Husky/*.h)
 
-    include_directories(BEFORE SYSTEM
+    include_directories(BEFORE
         ${CMAKE_CURRENT_SOURCE_DIR}/include/common/
         ${CMAKE_CURRENT_SOURCE_DIR}/include/macOS/)
 
@@ -178,37 +189,15 @@ if(APPLE)
         ${ENGINE_MACOS_OBJCPP_FILES}
         ${ENGINE_COMMON_HEADER_FILES}
         ${ENGINE_MACOS_HEADER_FILES})
-
-    if(USE_METAL)
-        include_directories(AFTER
-            ${CMAKE_CURRENT_SOURCE_DIR}/lib/mtlpp/)
-
-        add_library(mtlpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/lib/mtlpp/mtlpp.hpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/lib/mtlpp/mtlpp.mm)
-
-        file(GLOB_RECURSE MACOS_METAL_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/*.metal)
-
-        set_source_files_properties(
-            ${MACOS_METAL_FILES}
-            PROPERTIES
-            HEADER_FILE_ONLY TRUE)
-
-        source_group(
-            "Shaders" FILES ${MACOS_METAL_FILES})
-
-        target_sources(HuskyEngine PUBLIC ${MACOS_METAL_FILES})
-    endif()
-
 endif()
 
 if(WIN32)
-    file(GLOB_RECURSE ENGINE_WIN32_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/win32/Husky/*.cpp)
-    file(GLOB_RECURSE ENGINE_WIN32_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/win32/Husky/*.h)
+    file(GLOB_RECURSE ENGINE_WIN32_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Win32/Husky/*.cpp)
+    file(GLOB_RECURSE ENGINE_WIN32_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/Win32/Husky/*.h)
 
     include_directories(AFTER
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/common/
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/macOS/)
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/Common/
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/Win32/)
 
     add_library(HuskyEngine
         ${ENGINE_COMMON_CPP_FILES}
@@ -217,12 +206,75 @@ if(WIN32)
         ${ENGINE_WIN32_HEADER_FILES})
 endif()
 
-file(GLOB_RECURSE SAMPLE_COMMON_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/common/Sample/*.cpp)
-file(GLOB_RECURSE SAMPLE_COMMON_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/common/Sample/*.h)
+# Add Metal implementation is it's used
+if(USE_METAL)
+    # Add mtlpp library and includes
+    include_directories(AFTER
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/mtlpp/)
+
+    add_library(mtlpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/mtlpp/mtlpp.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/mtlpp/mtlpp.mm)
+
+
+    target_link_libraries(mtlpp "-framework Foundation")
+    target_link_libraries(mtlpp "-framework CoreVideo")
+    target_link_libraries(mtlpp "-framework QuartzCore")
+    target_link_libraries(mtlpp "-framework Cocoa")
+    target_link_libraries(mtlpp "-framework Metal")
+
+    target_link_libraries(HuskyEngine mtlpp)
+
+    # Add Metal implementation files
+    file(GLOB_RECURSE ENGINE_METAL_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Metal/Husky/*.cpp)
+    file(GLOB_RECURSE ENGINE_METAL_OBJC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Metal/Husky/*.m)
+    file(GLOB_RECURSE ENGINE_METAL_OBJCPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Metal/Husky/*.mm)
+    file(GLOB_RECURSE ENGINE_METAL_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/Metal/Husky/*.h)
+
+    include_directories(AFTER
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/Metal/)
+
+    target_sources(HuskyEngine PUBLIC
+        ${ENGINE_METAL_CPP_FILES}
+        ${ENGINE_METAL_OBJC_FILES}
+        ${ENGINE_METAL_OBJCPP_FILES}
+        ${ENGINE_METAL_HEADER_FILES})
+
+    # Add metal shaders to Xcode project for easy editing
+    file(GLOB_RECURSE MACOS_METAL_SHADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/*.metal)
+
+    set_source_files_properties(
+        ${MACOS_METAL_SHADER_FILES}
+        PROPERTIES
+        HEADER_FILE_ONLY TRUE)
+
+    source_group(
+        "Shaders" FILES ${MACOS_METAL_SHADER_FILES})
+
+    target_sources(HuskyEngine PUBLIC ${MACOS_METAL_SHADER_FILES})
+endif()
+
+# TODO Add vulkan implementation
+
+# if(USE_VULKAN)
+#     target_link_libraries(HuskyEngine ${Vulkan_LIBRARIES})
+#     target_link_libraries(HuskyEngine glslang)
+#     target_link_libraries(HuskyEngine SPIRV)
+#     target_link_libraries(HuskyEngine OGLCompiler)
+#     target_link_libraries(HuskyEngine OSDependent)
+#     target_link_libraries(HuskyEngine HLSL)
+#     target_link_libraries(HuskyEngine SPIRV-Tools)
+#     target_link_libraries(HuskyEngine SPIRV-Tools-opt)
+#     target_link_libraries(HuskyEngine SPVRemapper)
+# endif()
+
+# Add sample
+file(GLOB_RECURSE SAMPLE_COMMON_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Sample/*.cpp)
+file(GLOB_RECURSE SAMPLE_COMMON_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Sample/*.h)
 
 if(WIN32)
-    file(GLOB_RECURSE SAMPLE_WIN32_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/win32/Sample/*.cpp)
-    file(GLOB_RECURSE SAMPLE_WIN32_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/win32/Sample/*.h)
+    file(GLOB_RECURSE SAMPLE_WIN32_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Win32/Sample/*.cpp)
+    file(GLOB_RECURSE SAMPLE_WIN32_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Win32/Sample/*.h)
 
     add_executable(HuskyEngineSample
         # WIN32
@@ -230,12 +282,12 @@ if(WIN32)
         ${SAMPLE_WIN32_CPP_FILES}
         ${SAMPLE_COMMON_HEADER_FILES}
         ${SAMPLE_WIN32_HEADER_FILES})
-elseif(APPLE)
-    # Vulkan sample
+endif()
+
+if(APPLE)
     file(GLOB_RECURSE SAMPLE_MACOS_OBJC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Sample/*.m)
     file(GLOB_RECURSE SAMPLE_MACOS_OBJCPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Sample/*.mm)
     file(GLOB_RECURSE SAMPLE_MACOS_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Sample/*.cpp)
-    file(GLOB_RECURSE SAMPLE_MACOS_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Sample/*.h)
     file(GLOB_RECURSE SAMPLE_MACOS_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Sample/*.h)
     set(SAMPLE_MACOS_RESOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/res/macOS/Sample/Main.storyboard)
 
@@ -260,61 +312,6 @@ elseif(APPLE)
     target_link_libraries(HuskyEngineSample "-framework CoreVideo")
     target_link_libraries(HuskyEngineSample "-framework QuartzCore")
     target_link_libraries(HuskyEngineSample "-framework Cocoa")
-
-    # TODO: Function or macro or whatever the fuck cmake has for adding samples
-    # Ray tracing sample
-    file(GLOB_RECURSE RT_SAMPLE_MACOS_OBJC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/MetalRayTracingSample/*.mm)
-    file(GLOB_RECURSE RT_SAMPLE_MACOS_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/MetalRayTracingSample/*.cpp)
-    file(GLOB_RECURSE RT_SAMPLE_MACOS_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/MetalRayTracingSample/*.h)
-    set(RT_SAMPLE_MACOS_RESOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/res/macOS/MetalRayTracingSample/Main.storyboard)
-
-    add_executable(HuskyEngineRayTracingSample
-        MACOSX_BUNDLE
-        ${RT_SAMPLE_COMMON_CPP_FILES}
-        ${RT_SAMPLE_MACOS_CPP_FILES}
-        ${RT_SAMPLE_MACOS_OBJC_FILES}
-        ${RT_SAMPLE_COMMON_HEADER_FILES}
-        ${RT_SAMPLE_MACOS_HEADER_FILES}
-        ${RT_SAMPLE_MACOS_RESOURCE_FILES})
-
-    set_target_properties(
-        HuskyEngineRayTracingSample
-        PROPERTIES
-        MACOSX_BUNDLE TRUE
-        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/res/macOS/MetalRayTracingSample/Info.plist.in
-        RESOURCE "${RT_SAMPLE_MACOS_RESOURCE_FILES}")
-
-    target_link_libraries(HuskyEngineRayTracingSample "-framework Foundation")
-    target_link_libraries(HuskyEngineRayTracingSample "-framework CoreVideo")
-    target_link_libraries(HuskyEngineRayTracingSample "-framework QuartzCore")
-    target_link_libraries(HuskyEngineRayTracingSample "-framework Cocoa")
-    target_link_libraries(HuskyEngineRayTracingSample "-framework Metal")
-
-    target_link_libraries(HuskyEngineRayTracingSample HuskyEngine)
-endif()
-
-if(USE_VULKAN)
-    target_link_libraries(HuskyEngine ${Vulkan_LIBRARIES})
-    target_link_libraries(HuskyEngine glslang)
-    target_link_libraries(HuskyEngine SPIRV)
-    target_link_libraries(HuskyEngine OGLCompiler)
-    target_link_libraries(HuskyEngine OSDependent)
-    target_link_libraries(HuskyEngine HLSL)
-    target_link_libraries(HuskyEngine SPIRV-Tools)
-    target_link_libraries(HuskyEngine SPIRV-Tools-opt)
-    target_link_libraries(HuskyEngine SPVRemapper)
-endif()
-
-if(APPLE)
-    target_link_libraries(mtlpp "-framework Foundation")
-    target_link_libraries(mtlpp "-framework CoreVideo")
-    target_link_libraries(mtlpp "-framework QuartzCore")
-    target_link_libraries(mtlpp "-framework Cocoa")
-    target_link_libraries(mtlpp "-framework Metal")
-
-    if(USE_METAL)
-        target_link_libraries(HuskyEngine mtlpp)
-    endif()
 endif()
 
 target_link_libraries(HuskyEngineSample HuskyEngine)

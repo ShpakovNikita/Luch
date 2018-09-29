@@ -39,10 +39,11 @@ namespace Husky::Render
 
     struct ShaderDefines
     {
-        UnorderedMap<String, String> defines;
+        UnorderedMap<String, Variant<int32, String>> defines;
 
         void AddFlag(ShaderDefine flag);
         void AddDefine(ShaderDefine define, const String& value);
+        void AddDefine(ShaderDefine define, const int32& value);
     };
 
     struct QuadVertex
@@ -56,6 +57,10 @@ namespace Husky::Render
         RefPtr<Texture> baseColorTexture;
         RefPtr<Texture> normalMapTexture;
         RefPtr<Texture> depthStencilBuffer;
+
+        RefPtr<Sampler> baseColorSampler;
+        RefPtr<Sampler> normalMapSampler;
+        RefPtr<Sampler> depthStencilSampler;
     };
 
     struct DeferredFrameResources
@@ -145,7 +150,8 @@ namespace Husky::Render
         RefPtr<Sampler> normalMapSampler;
         RefPtr<Sampler> depthBufferSampler;
 
-        RefPtr<DescriptorSetLayout> gbufferDescriptorSetLayout;
+        RefPtr<DescriptorSetLayout> gbufferTextureDescriptorSetLayout;
+        RefPtr<DescriptorSetLayout> gbufferSamplerDescriptorSetLayout;
 
         RefPtr<DescriptorSet> lightsDescriptorSet;
 
@@ -162,14 +168,10 @@ namespace Husky::Render
     {
         RefPtr<SceneV1::Scene> scene;
         RefPtr<SceneV1::Node> cameraNode;
-        RefPtr<PipelineLayout> pipelineLayout;
-        RefPtr<DescriptorPool> descriptorPool;
-
-        DescriptorSetBinding cameraUniformBufferVertexBinding;
-        DescriptorSetBinding cameraUniformBufferFragmentBinding;
-
         RefPtrVector<SceneV1::Light> lights;
 
+        RefPtr<PipelineLayout> pipelineLayout;
+        RefPtr<DescriptorPool> descriptorPool;
         RefPtr<CommandPool> commandPool;
 
         GBufferPassResources gbuffer;
@@ -217,8 +219,6 @@ namespace Husky::Render
         void DrawMesh(const RefPtr<SceneV1::Mesh>& mesh, const DeferredPreparedScene& scene, GraphicsCommandList* cmdBuffer);
         void DrawPrimitive(const RefPtr<SceneV1::Primitive>& primitive, const DeferredPreparedScene& scene, GraphicsCommandList* cmdBuffer);
 
-        //ImageDescriptorInfo ToVulkanImageDescriptorInfo(const SceneV1::TextureInfo& textureInfo);
-
         MaterialUniform GetMaterialUniform(SceneV1::PbrMaterial *material);
 
         Vector<Byte> LoadShaderSource(const FilePath& path);
@@ -231,12 +231,15 @@ namespace Husky::Render
         ResultValue<bool, GBufferPassResources> PrepareGBufferPassResources(DeferredPreparedScene& scene);
         ResultValue<bool, LightingPassResources> PrepareLightingPassResources(DeferredPreparedScene& scene);
         ResultValue<bool, OffscreenTextures> CreateOffscreenTextures();
-        //ResultValue<bool, Shader> CreateShader(ShaderStage stage, const String& path, const ShaderDefines& defines);
+        ResultValue<bool, RefPtr<ShaderLibrary>> CreateShaderLibrary(const String& path, const ShaderDefines& defines);
 
         UniquePtr<DeferredRendererContext> context;
 
         Husky::int32 width;
         Husky::int32 height;
+        Format swapchainFormat = Format::B8G8R8A8Unorm;
+        Format baseColorFormat = Format::B8G8R8A8Unorm;
+        Format normalMapFormat = Format::B8G8R8A8Unorm;
         Format depthStencilFormat = Format::D24UnormS8Uint;
         Husky::float32 minDepth = 0.0;
         Husky::float32 maxDepth = 1.0;

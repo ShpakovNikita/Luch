@@ -5,7 +5,6 @@ namespace Husky::SceneV1
     class Buffer;
     class Camera;
     class Image;
-    class IndexBuffer;
     class Light;
     class Mesh;
     class Node;
@@ -16,10 +15,11 @@ namespace Husky::SceneV1
     class Sampler;
     class Scene;
     class Texture;
-    class VertexBuffer;
 
     struct BufferSource;
+    struct IndexBuffer;
     struct TextureInfo;
     struct TextureSource;
+    struct VertexBuffer;
     struct SceneProperties;
 }

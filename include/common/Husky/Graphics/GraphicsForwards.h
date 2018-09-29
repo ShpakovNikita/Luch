@@ -4,40 +4,41 @@
 
 namespace Husky::Graphics
 {
-    class Attachment;
     class Buffer;
-    class BufferCreateInfo;
-    class ColorAttachment;
     class CommandPool;
     class CommandQueue;
     class ComputeCommandList;
     class CopyCommandList;
-    class DepthStencilAttachment;
     class DescriptorPool;
-    class DescriptorPoolCreateInfo;
     class DescriptorSet;
     class DescriptorSetBinding;
     class DescriptorSetLayout;
-    class DescriptorSetLayoutCreateInfo;
     class GraphicsCommandList;
     class GraphicsDevice;
     class GraphicsObject;
     class PhysicalDevice;
     class PipelineLayout;
-    class PipelineLayoutCreateInfo;
     class PipelineState;
-    class PipelineStateCreateInfo;
     class Queue;
     class RenderPass;
-    class RenderPassCreateInfo;
     class Sampler;
-    class SamplerCreateInfo;
     class ShaderLibrary;
     class ShaderProgram;
     class Surface;
     class Swapchain;
-    class SwapchainCreateInfo;
     class Semaphore;
     class Texture;
-    class TextureCreateInfo;
+
+    struct Attachment;
+    struct ColorAttachment;
+    struct DepthStencilAttachment;
+    struct DescriptorPoolCreateInfo;
+    struct BufferCreateInfo;
+    struct DescriptorSetLayoutCreateInfo;
+    struct PipelineLayoutCreateInfo;
+    struct PipelineStateCreateInfo;
+    struct RenderPassCreateInfo;
+    struct SamplerCreateInfo;
+    struct SwapchainCreateInfo;
+    struct TextureCreateInfo;
 }

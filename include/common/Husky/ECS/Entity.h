@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Husky/UniquePtr.h>
-#include <Husky/ECS/Forwards.h>
+#include <Husky/ECS/ECSForwards.h>
 
 namespace Husky::ECS
 {
@@ -26,3 +26,4 @@ namespace Husky::ECS
         void OnComponentRemoved(Component* component);
     };
 }
+

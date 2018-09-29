@@ -47,7 +47,7 @@ namespace Husky::Metal
             auto mtlTexture = static_cast<MetalTexture*>(colorAttachment->output.texture);
             HUSKY_ASSERT(mtlTexture != nullptr);
 
-            auto mtlResolveTexture = static_cast<MetalTexture*>(colorAttachment->resolve.texture);
+//            auto mtlResolveTexture = static_cast<MetalTexture*>(colorAttachment->resolve.texture);
 //            if(colorAttachment->colorStoreOperation == AttachmentStoreOperation::Resolve)
 //            {
 //                HUSKY_ASSERT(mtlResolveTexture != nullptr);

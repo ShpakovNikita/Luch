@@ -161,7 +161,7 @@ namespace Husky::Metal
         const UnorderedMap<String, Variant<int32, String>>& defines)
     {
         mtlpp::CompileOptions options;
-        // TODO Defines
+
         ns::Error error;
         auto mtlLibrary = device.NewLibrary((const char*)source.data(), options, &error);
 

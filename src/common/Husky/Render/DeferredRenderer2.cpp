@@ -109,6 +109,14 @@ namespace Husky::Render
         }
     }
 
+    void ShaderDefines::AddDefine(ShaderDefine define, const int& value)
+    {
+        if (define != ShaderDefine::Empty)
+        {
+            defines[FlagToString.at(define)] = value;
+        }
+    }
+
     DeferredRenderer2::DeferredRenderer2(
         const RefPtr<PhysicalDevice>& physicalDevice,
         const RefPtr<Surface>& surface,
@@ -1030,9 +1038,9 @@ namespace Husky::Render
 #endif
 #if __APPLE__
     #if HUSKY_USE_METAL
-            "/Users/spo1ler/Development/HuskyEngine/src/macOS/Husky/Render/Shaders/Metal/Deferred/gbuffer_vp.metal",
+            "/Users/spo1ler/Development/HuskyEngine/src/Metal/Husky/Render/Shaders/Deferred/gbuffer_vp.metal",
     #elif HUSKY_USE_VULKAN
-            "/Users/spo1ler/Development/HuskyEngine/src/common/Husky/Render/Shaders/Deferred/gbuffer.vert",
+            "/Users/spo1ler/Development/HuskyEngine/src/Vulkan/Husky/Render/Shaders/Deferred/gbuffer.vert",
     #endif
 #endif
             shaderDefines);
@@ -1055,9 +1063,9 @@ namespace Husky::Render
 #endif
 #if __APPLE__
     #if HUSKY_USE_METAL
-            "/Users/spo1ler/Development/HuskyEngine/src/macOS/Husky/Render/Shaders/Metal/Deferred/gbuffer_fp.metal",
+            "/Users/spo1ler/Development/HuskyEngine/src/Metal/Husky/Render/Shaders/Deferred/gbuffer_fp.metal",
     #elif HUSKY_USE_VULKAN
-            "/Users/spo1ler/Development/HuskyEngine/src/common/Husky/Render/Shaders/Deferred/gbuffer.frag",
+            "/Users/spo1ler/Development/HuskyEngine/src/Vulkan/Husky/Render/Shaders/Deferred/gbuffer.frag",
     #endif
 #endif
             shaderDefines);
@@ -1325,9 +1333,9 @@ namespace Husky::Render
 #endif
 #if __APPLE__
     #if HUSKY_USE_METAL
-            "/Users/spo1ler/Development/HuskyEngine/src/macOS/Husky/Render/Shaders/Metal/Deferred/lighting_vp.metal",
+            "/Users/spo1ler/Development/HuskyEngine/src/Metal/Husky/Render/Shaders/Deferred/lighting_vp.metal",
     #elif HUSKY_USE_VULKAN
-            "/Users/spo1ler/Development/HuskyEngine/src/common/Husky/Render/Shaders/Deferred/lighting.vert",
+            "/Users/spo1ler/Development/HuskyEngine/src/Vulkan/Husky/Render/Shaders/Deferred/lighting.vert",
     #endif
 #endif
             shaderDefines);
@@ -1351,9 +1359,9 @@ namespace Husky::Render
 #endif
 #if __APPLE__
     #if HUSKY_USE_METAL
-            "/Users/spo1ler/Development/HuskyEngine/src/macOS/Husky/Render/Shaders/Metal/Deferred/lighting_fp.metal",
+            "/Users/spo1ler/Development/HuskyEngine/src/Metal/Husky/Render/Shaders/Deferred/lighting_fp.metal",
     #elif HUSKY_USE_VULKAN
-            "/Users/spo1ler/Development/HuskyEngine/src/common/Husky/Render/Shaders/Deferred/lighting.frag",
+            "/Users/spo1ler/Development/HuskyEngine/src/Vulkan/Husky/Render/Shaders/Deferred/lighting.frag",
     #endif
 #endif
             shaderDefines);

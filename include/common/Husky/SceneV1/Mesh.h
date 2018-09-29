@@ -22,8 +22,8 @@ namespace Husky::SceneV1
         inline const RefPtr<Graphics::Buffer>& GetUniformBuffer() const { return uniformBuffer; }
         inline void SetUniformBuffer(const RefPtr<Graphics::Buffer>& aUniformBuffer) { uniformBuffer = aUniformBuffer; }
 
-        inline const RefPtr<Graphics::DescriptorSet>& GetDescriptorSet() const { return descriptorSet; }
-        inline void SetDescriptorSet(const RefPtr<Graphics::DescriptorSet>& aDescriptorSet) { descriptorSet = aDescriptorSet; }
+        inline const RefPtr<Graphics::DescriptorSet>& GetBufferDescriptorSet() const { return descriptorSet; }
+        inline void SetBufferDescriptorSet(const RefPtr<Graphics::DescriptorSet>& aDescriptorSet) { descriptorSet = aDescriptorSet; }
     private:
         String name;
 

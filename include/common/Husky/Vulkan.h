@@ -1,5 +1,5 @@
 #pragma once
-
+#if USE_VULKAN
 #include <chrono>
 
 #define NOMINMAX
@@ -60,3 +60,5 @@ public:
 };
 
 }
+
+#endif

@@ -2,7 +2,6 @@
 
 #include <Husky/BaseObject.h>
 #include <Husky/RefPtr.h>
-#include <Husky/Vulkan.h>
 #include <Husky/Graphics/GraphicsForwards.h>
 #include <Husky/Graphics/SamplerCreateInfo.h>
 

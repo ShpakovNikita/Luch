@@ -72,7 +72,9 @@ VertexOut vp_main(
 
     out.positionVS = positionVS.xyz;
 
-    float4x4 normalMatrix = transpose(inverse(viewModel));
+    #if HAS_NORMAL || HAS_TANGENT
+        float4x4 normalMatrix = viewModel;//transpose(inverse(viewModel));
+    #endif
 
     #if HAS_NORMAL
         out.normalVS = (normalMatrix * float4(in.normalLS, 0.0)).xyz;
@@ -93,8 +95,7 @@ VertexOut vp_main(
         #endif
     #endif
 
-    out.position = camera.projection * positionVS;
+    out.positionCS = camera.projection * positionVS;
 
     return out;
 }
-

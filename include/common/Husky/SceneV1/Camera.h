@@ -26,15 +26,19 @@ namespace Husky::SceneV1
         inline const RefPtr<Graphics::Buffer>& GetUniformBuffer() const { return uniformBuffer; }
         inline void SetUniformBuffer(const RefPtr<Graphics::Buffer>& aUniformBuffer) { uniformBuffer = aUniformBuffer; }
 
-        inline const RefPtr<Graphics::DescriptorSet>& GetDescriptorSet() const { return descriptorSet; }
-        inline void SetDescriptorSet(const RefPtr<Graphics::DescriptorSet>& aDescriptorSet) { descriptorSet = aDescriptorSet; }
+        inline const RefPtr<Graphics::DescriptorSet>& GetVertexDescriptorSet() const { return vertexDescriptorSet; }
+        inline void SetVertexDescriptorSet(const RefPtr<Graphics::DescriptorSet>& aVertexDescriptorSet) { vertexDescriptorSet = aVertexDescriptorSet; }
+
+        inline const RefPtr<Graphics::DescriptorSet>& GetFragmentDescriptorSet() const { return fragmentDescriptorSet; }
+        inline void SetFragmentDescriptorSet(const RefPtr<Graphics::DescriptorSet>& aFragmentDescriptorSet) { fragmentDescriptorSet = aFragmentDescriptorSet; }
     protected:
         Mat4x4 viewMatrix;
     private:
         CameraType type = CameraType::Perspective;
         String name;
 
-        RefPtr<Graphics::DescriptorSet> descriptorSet;
+        RefPtr<Graphics::DescriptorSet> vertexDescriptorSet;
+        RefPtr<Graphics::DescriptorSet> fragmentDescriptorSet;
         RefPtr<Graphics::Buffer> uniformBuffer;
     };
 
