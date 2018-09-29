@@ -20,7 +20,7 @@ namespace Husky::Metal
             const BufferCreateInfo& createInfo,
             mtlpp::Buffer buffer);
 
-        const BufferCreateInfo& GetCreateInfo() const { return createInfo; }
+        const BufferCreateInfo& GetCreateInfo() const override { return createInfo; }
 
         void* GetMappedMemory() override { return mappedMemory; }
         GraphicsResultValue<void*> MapMemory(int32 size, int32 offset) override;

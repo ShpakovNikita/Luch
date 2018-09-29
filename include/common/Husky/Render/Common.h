@@ -16,7 +16,11 @@ namespace Husky::Render
     struct CameraUniformBuffer
     {
         Mat4x4 view;
+        Mat4x4 inverseView;
         Mat4x4 projection;
+        Mat4x4 inverseProjection;
+        Mat4x4 viewProjection;
+        Mat4x4 inverseViewProjection;
         Vec4 position;
         Vec2 zMinMax;
     };
@@ -26,6 +30,7 @@ namespace Husky::Render
     struct MeshUniformBuffer
     {
         Mat4x4 transform;
+        Mat4x4 inverseTransform;
     };
 
     static_assert(sizeof(MeshUniformBuffer) % 4 == 0);

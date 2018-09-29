@@ -19,6 +19,7 @@
 #include <Husky/Metal/MetalSamplerCreateInfo.h>
 #include <Husky/Assert.h>
 #import <QuartzCore/CAMetalLAyer.h>
+#import <Metal/MTLLibrary.h>
 
 namespace Husky::Metal
 {
@@ -161,8 +162,35 @@ namespace Husky::Metal
         const UnorderedMap<String, Variant<int32, String>>& defines)
     {
         mtlpp::CompileOptions options;
-
         ns::Error error;
+
+        NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+
+        for(const auto& define : defines)
+        {
+            auto defineName = define.first;
+            NSString* key = [NSString stringWithCString:defineName.c_str() encoding:NSUTF8StringEncoding];
+            id<NSObject> value;
+            if(std::holds_alternative<int32>(define.second))
+            {
+                value = [NSNumber numberWithInt:std::get<int32>(define.second)];
+            }
+            else if(std::holds_alternative<String>(define.second))
+            {
+                auto defineString = std::get<String>(define.second);
+                value = [NSString stringWithCString:defineString.c_str() encoding:NSUTF8StringEncoding];
+            }
+            else
+            {
+                HUSKY_ASSERT_MSG(false, "Unknown define type");
+                return { GraphicsResult::InvalidValue };
+            }
+            dict[key] = value;
+        }
+
+        MTLCompileOptions* o = (__bridge MTLCompileOptions*)options.GetPtr();
+        [o setPreprocessorMacros:dict];
+
         auto mtlLibrary = device.NewLibrary((const char*)source.data(), options, &error);
 
         GraphicsResult result = LibraryErrorToGraphicsResult(error);
@@ -172,6 +200,9 @@ namespace Husky::Metal
         }
         else
         {
+            auto description = error.GetLocalizedDescription().GetCStr();
+            //auto reason = error.GetLocalizedFailureReason().GetCStr();
+            HUSKY_ASSERT(false);
             return { result };
         }
     }

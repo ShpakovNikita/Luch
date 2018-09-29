@@ -13,6 +13,7 @@ namespace Husky::Graphics
     class DescriptorSet;
     class DescriptorSetBinding;
     class DescriptorSetLayout;
+    class DescriptorSetLayoutCreateInfo;
     class GraphicsCommandList;
     class GraphicsDevice;
     class GraphicsObject;
@@ -21,6 +22,7 @@ namespace Husky::Graphics
     class PipelineState;
     class Queue;
     class RenderPass;
+    class RenderPassCreateInfo;
     class Sampler;
     class ShaderLibrary;
     class ShaderProgram;
@@ -34,10 +36,8 @@ namespace Husky::Graphics
     struct DepthStencilAttachment;
     struct DescriptorPoolCreateInfo;
     struct BufferCreateInfo;
-    struct DescriptorSetLayoutCreateInfo;
     struct PipelineLayoutCreateInfo;
     struct PipelineStateCreateInfo;
-    struct RenderPassCreateInfo;
     struct SamplerCreateInfo;
     struct SwapchainCreateInfo;
     struct TextureCreateInfo;

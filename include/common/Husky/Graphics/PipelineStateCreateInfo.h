@@ -73,7 +73,7 @@ namespace Husky::Graphics
     {
         bool depthTestEnable = false;
         bool depthWriteEnable = false;
-        CompareFunction depthCompareFunction = CompareFunction::Never;
+        CompareFunction depthCompareFunction = CompareFunction::Always;
         bool depthBoundsTestEnable = false;
         bool stencilTestEnable = false;
         Format depthStencilFormat = Format::D32SfloatS8Uint;

@@ -109,8 +109,8 @@ namespace Husky::Metal
 
         d.SetDepthCompareFunction(ToMetalCompareFunction(ci.depthCompareFunction));
         d.SetDepthWriteEnabled(ci.depthWriteEnable);
-        d.SetBackFaceStencil(ToMetalStencilDescriptor(ci.back));
-        d.SetFrontFaceStencil(ToMetalStencilDescriptor(ci.front));
+        //d.SetBackFaceStencil(ToMetalStencilDescriptor(ci.back));
+        //d.SetFrontFaceStencil(ToMetalStencilDescriptor(ci.front));
 
         return d;
     }

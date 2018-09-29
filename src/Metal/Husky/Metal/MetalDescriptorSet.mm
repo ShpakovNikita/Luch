@@ -26,6 +26,8 @@ namespace Husky::Metal
     {
         HUSKY_ASSERT(binding != nullptr);
         HUSKY_ASSERT(texture != nullptr);
+        HUSKY_ASSERT(samplers.empty());
+        HUSKY_ASSERT(buffers.empty());
 
         auto index = binding->GetIndex();
         if(index >= textures.size())
@@ -41,6 +43,8 @@ namespace Husky::Metal
     {
         HUSKY_ASSERT(binding != nullptr);
         HUSKY_ASSERT(buffer != nullptr);
+        HUSKY_ASSERT(textures.empty());
+        HUSKY_ASSERT(samplers.empty());
 
         auto index = binding->GetIndex();
         if(index >= buffers.size())
@@ -58,6 +62,8 @@ namespace Husky::Metal
     {
         HUSKY_ASSERT(binding != nullptr);
         HUSKY_ASSERT(sampler != nullptr);
+        HUSKY_ASSERT(textures.empty());
+        HUSKY_ASSERT(buffers.empty());
 
         auto index = binding->GetIndex();
         if(index >= samplers.size())

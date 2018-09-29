@@ -241,7 +241,7 @@ if(USE_METAL)
         ${ENGINE_METAL_HEADER_FILES})
 
     # Add metal shaders to Xcode project for easy editing
-    file(GLOB_RECURSE MACOS_METAL_SHADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/*.metal)
+    file(GLOB_RECURSE MACOS_METAL_SHADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Metal/*.metal)
 
     set_source_files_properties(
         ${MACOS_METAL_SHADER_FILES}

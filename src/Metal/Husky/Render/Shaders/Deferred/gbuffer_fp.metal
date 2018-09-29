@@ -4,12 +4,10 @@
 
 using namespace metal;
 
-constexpr float PI = 3.1415926538;
-
 struct MaterialUniform
 {
-    vec4 baseColorFactor;
-    vec3 emissiveFactor;
+    packed_float4 baseColorFactor;
+    packed_float3 emissiveFactor;
     float alphaCutoff;
     float metallicFactor;
     float roughnessFactor;
@@ -37,18 +35,18 @@ struct VertexOut
 
 struct FragmentOut
 {
-    float4 baseColor; [[color(0)]]
-    float4 outNormal; [[color(1)]]
+    float4 baseColor [[color(0)]];
+    float4 normal [[color(1)]];
 };
 
 float3 ExtractNormal(float3 normalTS, float3x3 TBN)
 {
     float3 result = normalTS * 2 - float3(1.0);
 
-    return normalize(TBN * normalTS);
+    return normalize(TBN * result);
 }
 
-float3 TangentFrame(float3 dp1, float3 dp2, float3 N, float2 uv)
+float3x3 TangentFrame(float3 dp1, float3 dp2, float3 N, float2 uv)
 {
     // get edge vectors of the pixel triangle
     float2 duv1 = dfdx(uv);
@@ -61,25 +59,44 @@ float3 TangentFrame(float3 dp1, float3 dp2, float3 N, float2 uv)
     float3 B = dp2perp * duv1.y + dp1perp * duv2.y;
 
     // construct a scale-invariant frame
-    float invmax = inversesqrt(max(dot(T, T), dot(B,B)));
+    float invmax = rsqrt(max(dot(T, T), dot(B,B)));
     return float3x3(T * invmax, B * invmax, N);
 }
 
 // Figure out coordinate system
-FragmentOut fp_main(
+fragment FragmentOut fp_main(
     VertexOut in [[stage_in]],
-    constant Material& material, [[buffer(0)]],
+    device MaterialUniform& material [[buffer(0)]]
+
+#if HAS_BASE_COLOR_TEXTURE
+    ,
     texture2d<float> baseColorMap [[texture(0)]],         // RGB - color, A - opacity
+    sampler baseColorSampler [[sampler(0)]]
+#endif
+#if HAS_METALLIC_ROUGHNESS_TEXTURE
+    ,
     texture2d<float> metallicRoughnessMap [[texture(1)]], // R - metallic, G - roughness, BA unused
+    sampler metallicRoughnessSampler [[sampler(1)]]
+#endif
+#if HAS_NORMAL_TEXTURE
+    ,
     texture2d<float> normalMap [[texture(2)]],            // RGB - XYZ, A - unused
+    sampler normalMapSampler [[sampler(2)]]
+#endif
+#if HAS_OCCLUSION_TEXTURE
+    ,
     texture2d<float> occlusionMap [[texture(3)]],         // greyscale,
+    sampler occlusiionSampler [[sampler(3)]]
+#endif
+#if HAS_EMISSIVE_TEXTURE
+    ,
     texture2d<float> emissiveMap [[texture(4)]],          // RGB - light color, A unused
-    sampler baseColorSampler [[sampler(0)]],
-    sampler metallicRoughnessSampler [[sampler(0)]],
-    sampler normalMapSampler [[sampler(0)]],
-    sampler occlusiionSampler [[sampler(0)]],
-    sampler emissiveSampler [[sampler(0)]])
+    sampler emissiveSampler [[sampler(4)]]
+#endif
+    )
 {
+    FragmentOut out;
+
     float3 positionVS = in.positionVS;
 
     #if !HAS_NORMAL && !HAS_TANGENT
@@ -133,7 +150,7 @@ FragmentOut fp_main(
     #endif
 
     #if HAS_METALLIC_ROUGHNESS_TEXTURE && HAS_TEXCOORD_0
-        float4 metallicRoughness = metallicRoughnessMap.(metallicRoughnessSampler, texCoord);
+        float4 metallicRoughness = metallicRoughnessMap.sample(metallicRoughnessSampler, texCoord);
         float metallic = material.metallicFactor * metallicRoughness.b;
         float roughness = material.roughnessFactor * clamp(metallicRoughness.g, 0.04, 1.0);
     #else
@@ -141,8 +158,10 @@ FragmentOut fp_main(
         float roughness = material.roughnessFactor;
     #endif
 
-    outBaseColor = baseColor;
-    outNormal.xy = N.xy * 0.5 + vec2(0.5);
-    outNormal.zw = float2(metallic, roughness);
+    out.baseColor = baseColor;
+    out.normal.xy = N.xy * 0.5 + float2(0.5);
+    out.normal.zw = float2(metallic, roughness);
+
+    return out;
 }
 

@@ -78,9 +78,9 @@ namespace Husky::Metal
     {
         mtlpp::SamplerDescriptor d;
 
-        d.SetRAddressMode(ToMetalSamplerAddressMode(createInfo.uAddressMode));
-        d.SetSAddressMode(ToMetalSamplerAddressMode(createInfo.vAddressMode));
-        d.SetTAddressMode(ToMetalSamplerAddressMode(createInfo.wAddressMode));
+        d.SetRAddressMode(ToMetalSamplerAddressMode(createInfo.wAddressMode));
+        d.SetSAddressMode(ToMetalSamplerAddressMode(createInfo.uAddressMode));
+        d.SetTAddressMode(ToMetalSamplerAddressMode(createInfo.vAddressMode));
         d.SetMinFilter(ToMetalSamplerMinMagFilter(createInfo.minFilter));
         d.SetMagFilter(ToMetalSamplerMinMagFilter(createInfo.magFilter));
         d.SetMipFilter(ToMetalSamplerMipFilter(createInfo.mipFilter));

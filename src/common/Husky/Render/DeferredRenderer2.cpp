@@ -47,16 +47,25 @@ namespace Husky::Render
     using namespace Graphics;
 
     // Fullscreen quad for triangle list
+//    static const Vector<QuadVertex> fullscreenQuadVertices =
+//    {
+//        {{-1.0f, +1.0f, 0.0f}, {0.0f, 1.0f}}, // bottom left
+//        {{+1.0f, +1.0f, 0.0f}, {1.0f, 1.0f}}, // bottom right
+//        {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}}, // top left
+//
+//        {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}},  // top left
+//        {{+1.0f, +1.0f, 0.0f}, {1.0f, 1.0f}},  // bottom right
+//        {{+1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}}, // top right
+//    };
+
+    // One triangle that covers whole screen
     static const Vector<QuadVertex> fullscreenQuadVertices =
     {
-        {{-1.0f, +1.0f, 0.0f}, {0.0f, 1.0f}}, // bottom left
-        {{+1.0f, +1.0f, 0.0f}, {1.0f, 1.0f}}, // bottom right
-        {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}}, // top left
-
-        {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}},  // top left
-        {{+1.0f, +1.0f, 0.0f}, {1.0f, 1.0f}},  // bottom right
-        {{+1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}}, // top right
+        { {-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}},
+        { {+3.0f, -1.0f, 0.0f}, {2.0f, 0.0f}},
+        { {-1.0f, +3.0f, 0.0f}, {0.0f, 2.0f}},
     };
+
 
     // Think about passing these numbers through shader defines
     static const Map<SceneV1::AttributeSemantic, int32> SemanticToLocation =
@@ -296,7 +305,7 @@ namespace Husky::Render
 
             frameResources.gbufferTextureDescriptorSet->WriteTexture(
                 &preparedScene.lighting.normalMapTextureBinding,
-                frameResources.offscreen.baseColorTexture);
+                frameResources.offscreen.normalMapTexture);
 
             frameResources.gbufferTextureDescriptorSet->WriteTexture(
                 &preparedScene.lighting.depthStencilTextureBinding,
@@ -394,12 +403,6 @@ namespace Husky::Render
         auto [allocateGBufferCommandListResult, gBufferCmdList] = frameResource.commandPool->AllocateGraphicsCommandList();
         HUSKY_ASSERT(allocateGBufferCommandListResult == GraphicsResult::Success);
 
-//        vk::ClearColorValue colorClearValue{ clearColor };
-//        vk::ClearDepthStencilValue depthStencilClearValue{ maxDepth, 0 };
-//
-//        Vector<vk::ClearValue> offscreenClearValues = { colorClearValue, colorClearValue, depthStencilClearValue };
-//        Vector<vk::ClearValue> clearValues = { colorClearValue, depthStencilClearValue };
-
         int32 framebufferWidth = context->swapchain->GetCreateInfo().width;
         int32 framebufferHeight = context->swapchain->GetCreateInfo().height;
 
@@ -452,7 +455,7 @@ namespace Husky::Render
 
         lightingCmdList->Begin(lightingRenderPassCreateInfo);
         lightingCmdList->BindPipelineState(scene.lighting.pipelineState);
-        lightingCmdList->SetViewports({viewport});
+        lightingCmdList->SetViewports({ viewport });
         lightingCmdList->SetScissorRects({ scissorRect });
         lightingCmdList->BindTextureDescriptorSet(ShaderStage::Fragment, scene.lighting.pipelineLayout, frameResource.gbufferTextureDescriptorSet);
         lightingCmdList->BindSamplerDescriptorSet(ShaderStage::Fragment, scene.lighting.pipelineLayout, frameResource.gbufferSamplerDescriptorSet);
@@ -460,7 +463,7 @@ namespace Husky::Render
         lightingCmdList->BindBufferDescriptorSet(ShaderStage::Fragment, scene.lighting.pipelineLayout, scene.lighting.lightsDescriptorSet);
 
         lightingCmdList->BindVertexBuffers({ scene.lighting.fullscreenQuadBuffer }, {0}, 0);
-        lightingCmdList->Draw(fullscreenQuadVertices.size(), 0);
+        lightingCmdList->Draw(0, fullscreenQuadVertices.size());
         lightingCmdList->End();
 
         context->commandQueue->Submit(lightingCmdList);
@@ -587,7 +590,9 @@ namespace Husky::Render
         bufferCreateInfo.storageMode = ResourceStorageMode::Shared;
         bufferCreateInfo.usage = BufferUsageFlags::Uniform;
 
-        auto[createBufferResult, createdBuffer] = context->device->CreateBuffer(bufferCreateInfo);
+        MaterialUniform materialUniform = GetMaterialUniform(material);
+
+        auto[createBufferResult, createdBuffer] = context->device->CreateBuffer(bufferCreateInfo, &materialUniform);
         HUSKY_ASSERT(createBufferResult == GraphicsResult::Success);
 
         material->SetDeviceBuffer(createdBuffer);
@@ -622,9 +627,9 @@ namespace Husky::Render
                 &scene.gbuffer.normalTextureBinding,
                 material->normalTexture.texture->GetDeviceTexture());
 
-            samplerDescriptorSet->WriteTexture(
+            samplerDescriptorSet->WriteSampler(
                 &scene.gbuffer.normalSamplerBinding,
-                material->normalTexture.texture->GetDeviceTexture());
+                material->normalTexture.texture->GetDeviceSampler());
         }
 
         if (material->HasOcclusionTexture())
@@ -753,7 +758,8 @@ namespace Husky::Render
 
         MeshUniformBuffer meshUniformBuffer;
         //meshUniformBuffer.transform = glm::transpose(transform);
-        meshUniformBuffer.transform = (transform);
+        meshUniformBuffer.transform = transform;
+        meshUniformBuffer.inverseTransform = glm::inverse(transform);
 
         // TODO template function member in buffer to write updates
         memcpy(buffer->GetMappedMemory(), &meshUniformBuffer, sizeof(MeshUniformBuffer));
@@ -767,7 +773,12 @@ namespace Husky::Render
 
         CameraUniformBuffer cameraUniformBuffer;
         cameraUniformBuffer.view = camera->GetCameraViewMatrix();
+        cameraUniformBuffer.inverseView = glm::inverse(cameraUniformBuffer.view);
         cameraUniformBuffer.projection = camera->GetCameraProjectionMatrix();
+        cameraUniformBuffer.inverseProjection = glm::inverse(cameraUniformBuffer.projection);
+        cameraUniformBuffer.inverseProjection = glm::inverse(cameraUniformBuffer.projection);
+        cameraUniformBuffer.viewProjection = cameraUniformBuffer.projection * cameraUniformBuffer.view;
+        cameraUniformBuffer.inverseViewProjection = glm::inverse(cameraUniformBuffer.viewProjection);
         cameraUniformBuffer.position = Vec4{ camera->GetCameraPosition(), 1.0 };
 
         Vec2 zMinMax;
@@ -878,8 +889,6 @@ namespace Husky::Render
 
         const auto& material = primitive->GetMaterial();
 
-        MaterialUniform materialUniform = GetMaterialUniform(material);
-
         //TODO
 
         commandList->BindPipelineState(pipelineState);
@@ -975,6 +984,9 @@ namespace Husky::Render
         {
             ci.rasterization.cullMode = CullMode::Back;
         }
+
+        // TODO
+        ci.rasterization.cullMode = CullMode::None;
 
         ci.depthStencil.depthTestEnable = true;
         ci.depthStencil.depthWriteEnable = true;
@@ -1630,8 +1642,9 @@ namespace Husky::Render
         auto shaderSource = LoadShaderSource(path);
 
         auto [createLibraryResult, library] = context->device->CreateShaderLibraryFromSource(shaderSource, defines.defines);
-        if(createLibraryResult != GraphicsResult::Success)
+        if(createLibraryResult != GraphicsResult::Success && createLibraryResult != GraphicsResult::CompilerWarning)
         {
+            HUSKY_ASSERT(false);
             return { false };
         }
         else
