@@ -201,7 +201,6 @@ namespace Husky::Metal
         else
         {
             auto description = error.GetLocalizedDescription().GetCStr();
-            //auto reason = error.GetLocalizedFailureReason().GetCStr();
             HUSKY_ASSERT(false);
             return { result };
         }

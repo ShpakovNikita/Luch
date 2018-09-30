@@ -4,7 +4,7 @@
 #include <Husky/glTF2/glTFParser.h>
 #include <Husky/glTF2/glTF.h>
 
-#include <Husky/Render/DeferredRenderer2.h>
+#include <Husky/Render/DeferredRenderer.h>
 
 #ifdef _WIN32
     #if HUSKY_USE_VULKAN
@@ -90,5 +90,5 @@ private:
 #endif
     Husky::Render::DeferredPreparedScene preparedScene;
 
-    Husky::UniquePtr<Husky::Render::DeferredRenderer2> deferredRenderer;
+    Husky::UniquePtr<Husky::Render::DeferredRenderer> deferredRenderer;
 };
