@@ -3,11 +3,20 @@
 
 using namespace metal;
 
-#define MAX_LIGHTS_COUNT 8
+constant constexpr int MAX_LIGHTS_COUNT = 8;
 
-#define LIGHT_POINT 0
-#define LIGHT_SPOT 1
-#define LIGHT_DIRECTIONAL 2
+enum LightType
+{
+    LIGHT_POINT = 0,
+    LIGHT_SPOT = 1,
+    LIGHT_DIRECTIONAL = 2,
+};
+
+enum LightState
+{
+    LIGHT_DISABLED = 0,
+    LIGHT_ENABLED = 1,
+};
 
 struct Light
 {
@@ -16,7 +25,7 @@ struct Light
     float4 positionVS;
     float4 directionVS;
     float4 color;
-    bool enabled;
+    int state;
     int type;
     float spotlightAngle;
     float range;
@@ -67,7 +76,7 @@ float G_CookTorranceGGX(float3 V, float3 N, float3 H, float3 L)
 
     float g = 2 * NdotH * intermediate / VdotH;
 
-    return clamp(g, 0.0, 1.0);
+    return saturate(g);
 }
 
 float3 F_Schlick(float cosTheta, float3 F0)
@@ -85,9 +94,9 @@ float3 SpecularLighting(float3 color, float3 V, float3 L, float3 N, float3 F, fl
 {
     float3 H = normalize(V + L);
 
-    float NdotV = clamp(dot(N, V), 0.0, 1.0);
-    float NdotH = clamp(dot(N, H), 0.0, 1.0);
-    float NdotL = clamp(dot(N, L), 0.0, 1.0);
+    float NdotV = saturate(dot(N, V));
+    float NdotH = saturate(dot(N, H));
+    float NdotL = saturate(dot(N, L));
 
     float den = 4 * NdotV * NdotL + 0.001;
     float D = D_GGX(NdotH, roughness);
@@ -108,7 +117,7 @@ LightingResult ApplyDirectionalLight(Light light, float3 V, float3 N, float3 F0,
 
     float3 color = light.color.xyz;
     float3 L = light.directionVS.xyz;
-    float NdotV = clamp(dot(N, V), 0.0, 1.0);
+    float NdotV = saturate(dot(N, V));
 
     float3 F = F_Schlick(NdotV, F0);
     float3 kD = (1 - metallic)*(float3(1.0) - F);
@@ -119,15 +128,11 @@ LightingResult ApplyDirectionalLight(Light light, float3 V, float3 N, float3 F0,
     return result;
 }
 
-LightingResult ApplyPointlLight(Light light, float3 V, float3 P, float3 N, float3 F0, float metallic, float roughness)
+LightingResult ApplyPointlLightImpl(Light light, float3 L, float dist, float3 V, float3 P, float3 N, float3 F0, float metallic, float roughness)
 {
     LightingResult result;
 
     float3 color = light.color.xyz;
-
-    float3 L = light.positionVS.xyz - P.xyz;
-    float dist = length(L);
-    L = L/dist;
     float attenuation = Attenuation(light, dist);
 
     float NdotV = clamp(dot(N, V), 0.0, 1.0);
@@ -139,6 +144,15 @@ LightingResult ApplyPointlLight(Light light, float3 V, float3 P, float3 N, float
     result.specular = SpecularLighting(color, V, L, N, F, roughness) * light.intensity * attenuation;
 
     return result;
+}
+
+LightingResult ApplyPointlLight(Light light, float3 V, float3 P, float3 N, float3 F0, float metallic, float roughness)
+{
+    float3 L = light.positionVS.xyz - P;
+    float dist = length(L);
+    L = L/dist;
+
+    return ApplyPointlLightImpl(light, L, dist, V, P, N, F0, metallic, roughness);
 }
 
 float SpotCone(Light light, float3 L)
@@ -153,33 +167,28 @@ LightingResult ApplySpotLight(Light light, float3 V, float3 P, float3 N, float3 
 {
     LightingResult result;
 
-    float3 color = light.color.xyz;
-
     float3 L = light.positionVS.xyz - P;
     float dist = length(L);
     L = L/dist;
 
-    float attenuation = Attenuation(light, dist);
+    LightingResult pointLighting = ApplyPointlLightImpl(light, L, dist, V, P, N, F0, metallic, roughness);
     float spotIntensity = SpotCone(light, L);
 
-    float NdotL = clamp(dot(N, L), 0.0, 1.0);
-
-    float3 F = F_Schlick(NdotL, F0);
-    float3 kD = (1 - metallic)*(float3(1.0) - F);
-
-    result.diffuse = kD * DiffuseLighting(color, L, N) * light.intensity * attenuation * spotIntensity;
-    result.specular = SpecularLighting(color, V, L, N, F, roughness) * light.intensity * attenuation * spotIntensity;
+    result.diffuse = pointLighting.diffuse * spotIntensity;
+    result.specular = pointLighting.specular * spotIntensity;
 
     return result;
 }
 
-float3 ExtractNormal(float3 normalTS, float3 T, float3 N)
+float DepthToNDC(float depth, float minDepth, float maxDepth)
 {
-    float3 result = normalTS * 2 - float3(1.0);
-    float3 B = -normalize(cross(N, T));
-    float3x3 TBN = float3x3(T, B, N);
+    return (depth - minDepth) / (maxDepth - minDepth);
+}
 
-    return normalize(TBN * result);
+float2 FragCoordToNDC(float2 fragCoord, float2 size)
+{
+    float2 pd = 2 * fragCoord / size - float2(1.0);
+    return float2(pd.x, -pd.y);
 }
 
 // These functions are for projection matrices that look like
@@ -191,29 +200,16 @@ float3 ExtractNormal(float3 normalTS, float3 T, float3 N)
 // VS - view space
 // CS - clip space
 // NDC - normalized device coordinates
-float DepthToNDC(float depth, float minDepth, float maxDepth)
-{
-    float result = depth - minDepth;
-    result /= maxDepth - minDepth;
-    return result;
-}
-
-float HomogenousCS(float depthNDC, float A, float B, float C)
+float HomogenousCoordinate(float depthNDC, float A, float B, float C)
 {
     float result = B;
     result /= (depthNDC - A / C);
     return result;
 }
 
-float2 FragCoordToNDC(float2 fragCoord, float2 size)
+float4 PositionNDCtoCS(float3 positionNDC, float w)
 {
-    float2 pd = 2 * fragCoord / size - float2(1.0);
-    return pd;
-}
-
-float4 PositionNDCtoCS(float2 positionNDC, float depthNDC, float wCS)
-{
-    return float4(float3(positionNDC, depthNDC) * wCS, wCS);
+    return float4(positionNDC * w, w);
 }
 
 float4 PositionCStoVS(float4 positionCS, float4x4 inverseProjection)
@@ -226,6 +222,21 @@ struct VertexOut
     float4 position [[position]];
     float2 texCoord;
 };
+
+float3 UncompressNormal(float2 normalMapSample)
+{
+    // This function unpacks a _view space_ normal
+    // Normal is packed by using just its xy view space coordinates
+    // z always looks towards camera (-Z) since we are in view space
+    float2 normalXY = normalMapSample.xy * 2 - float2(1.0);
+    float normalZ = sqrt(saturate(1 - length_squared(normalXY)));
+    return float3(normalXY.xy, -normalZ);
+}
+
+float3 PackVector(float3 v)
+{
+    return v*0.5 + float3(0.5);
+}
 
 fragment float4 fp_main(
     VertexOut in [[stage_in]],
@@ -240,13 +251,10 @@ fragment float4 fp_main(
 {
     float2 texCoord = in.texCoord;
 
-    float4 normalMapSample = normalMap.sample(normalMapSampler, texCoord);
-    float2 compressedNormal = normalMapSample.xy * 2 - float2(1.0);
-    float normalZ = sqrt(1 - compressedNormal.x * compressedNormal.x - compressedNormal.y * compressedNormal.y);
-    float3 N = float3(compressedNormal.x, compressedNormal.y, normalZ);
-
     float4 baseColorSample = baseColorMap.sample(baseColorSampler, texCoord);
+    float4 normalMapSample = normalMap.sample(normalMapSampler, texCoord);
 
+    float3 N = UncompressNormal(normalMapSample.xy);
     float metallic = normalMapSample.z;
     float roughness = normalMapSample.w;
 
@@ -256,34 +264,36 @@ fragment float4 fp_main(
     F0 = mix(F0, baseColorSample.rgb, metallic);
 
     // Depth buffer MUST BE the same size as MRTs
-    float2 framebufferSize = float2(depthBuffer.get_width(), depthBuffer.get_height());
-    float2 fragCoord = in.position.xy;
+    float2 attachmentSize = float2(depthBuffer.get_width(), depthBuffer.get_height());
+    float2 positionSS = in.position.xy;
     float depth = depthBuffer.sample(depthBufferSampler, texCoord);
+    float2 xyNDC = FragCoordToNDC(positionSS, attachmentSize);
+    float3 positionNDC = float3(xyNDC, depth);
 
-    float A = camera.projection[2][2];
-    float B = camera.projection[3][2];
-    float C = camera.projection[2][3];
+//    float A = camera.projection[2][2];
+//    float B = camera.projection[3][2];
+//    float C = camera.projection[2][3];
+//    float w = HomogenousCoordinate(depth, A, B, C);
+//    float4 positionCS = PositionNDCtoCS(positionNDC, w);
+//    float4 intermediateP = camera.inverseProjection * positionCS;
+//    float3 P = intermediateP.xyz;
 
-    float depthNDC = DepthToNDC(depth, 0, 1);
-    float wCS = HomogenousCS(depthNDC, A, B, C);
-    float2 xyNDC = FragCoordToNDC(fragCoord, framebufferSize);
-    float4 positionCS = PositionNDCtoCS(xyNDC, depthNDC, wCS);
-
-    float3 P = PositionCStoVS(positionCS, camera.inverseProjection).xyz;
+    float4 intermediatePosition = camera.inverseProjection * float4(xyNDC, depth, 1.0);
+    float3 P = intermediatePosition.xyz / intermediatePosition.w;
     float3 eyePosVS = float3(0); // in view space eye is at origin
     float3 V = normalize(eyePosVS - P);
 
-    LightingResult lightingResult = { float3(0), float3(0) };
+    LightingResult lightingResult;
 
     for(int i = 0; i < MAX_LIGHTS_COUNT; i++)
     {
         Light light = lights.lights[i];
-        if(!light.enabled)
+        if(light.state == LIGHT_DISABLED)
         {
             continue;
         }
 
-        LightingResult intermediateResult = { float3(0), float3(0) };
+        LightingResult intermediateResult;
 
         switch(light.type)
         {
@@ -297,7 +307,7 @@ fragment float4 fp_main(
             intermediateResult = ApplySpotLight(light, V, P, N, F0, metallic, roughness);
             break;
         default:
-            discard_fragment();
+            intermediateResult = { NAN, NAN };
         }
 
         lightingResult.diffuse += intermediateResult.diffuse;
@@ -305,6 +315,23 @@ fragment float4 fp_main(
     }
 
     float3 resultColor = baseColorSample.xyz * (lightingResult.diffuse + lightingResult.specular);
+
+//    Light light = lights.lights[2];
+//
+//    float3 L = light.positionVS.xyz - P;
+//    float dist = length(L);
+//    L = L/dist;
+//
+//    float3 color = light.color.xyz;
+//    float attenuation = Attenuation(light, dist);
+//
+//    float NdotV = saturate(dot(N, V));
+//
+//    float3 F = F_Schlick(NdotV, F0);
+//    float3 kD = (1 - metallic)*(float3(1.0) - F);
+//
+//    float3 diffuse = kD * DiffuseLighting(color, L, N) * light.intensity * attenuation;
+//    float3 specular = SpecularLighting(color, V, L, N, F, roughness) * light.intensity * attenuation;
 
     return float4(resultColor, 1.0);
 }

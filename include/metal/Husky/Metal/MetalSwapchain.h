@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Husky/Graphics/Swapchain.h>
-#include <Husky/Graphics/SwapchainCreateInfo.h>
+#include <Husky/Graphics/SwapchainInfo.h>
 #include <Husky/Metal/MetalForwards.h>
 #import <dispatch/dispatch.h>
 #import <QuartzCore/CAMetalLayer.h>
@@ -16,13 +16,13 @@ namespace Husky::Metal
     public:
         MetalSwapchain(
             MetalGraphicsDevice* device,
-            const SwapchainCreateInfo& createInfo,
+            const SwapchainInfo& swapchainInfo,
             CAMetalLayer* layer);
 
-        inline const SwapchainCreateInfo& GetCreateInfo() const override { return createInfo; }
+        inline const SwapchainInfo& GetInfo() const override { return swapchainInfo; }
         GraphicsResultValue<AcquiredTexture> GetNextAvailableTexture(Semaphore* semaphore) override;
     private:
-        SwapchainCreateInfo createInfo;
+        SwapchainInfo swapchainInfo;
         id<CAMetalDrawable> drawable;
         CAMetalLayer* layer = nil;
     };

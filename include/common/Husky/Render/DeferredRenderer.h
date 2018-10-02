@@ -238,8 +238,8 @@ namespace Husky::Render
         Husky::int32 width;
         Husky::int32 height;
         Format swapchainFormat = Format::B8G8R8A8Unorm;
-        Format baseColorFormat = Format::B8G8R8A8Unorm;
-        Format normalMapFormat = Format::B8G8R8A8Unorm;
+        Format baseColorFormat = Format::R8G8B8A8Unorm;
+        Format normalMapFormat = Format::R32G32B32A32Sfloat;
         Format depthStencilFormat = Format::D24UnormS8Uint;
         Husky::float32 minDepth = 0.0;
         Husky::float32 maxDepth = 1.0;

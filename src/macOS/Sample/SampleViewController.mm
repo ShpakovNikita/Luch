@@ -25,9 +25,10 @@
     self.view.wantsLayer = YES;
 
     NSRect bounds = self.view.bounds;
+    CGSize backingSize = [self.view convertSizeToBacking:bounds.size];
 
     app = new SampleApplication();
-    app->SetViewSize(static_cast<Husky::int32>(bounds.size.width), static_cast<Husky::int32>(bounds.size.height));
+    app->SetViewSize(static_cast<Husky::int32>(backingSize.width), static_cast<Husky::int32>(backingSize.height));
     app->SetView(self.view.layer);
     bool result = app->Initialize({});
     HUSKY_ASSERT(result);
@@ -78,8 +79,7 @@ static CVReturn DisplayLinkCallback(CVDisplayLinkRef displayLink,
 -(CALayer*) makeBackingLayer
 {
     CALayer* layer = [self.class.layerClass layer];
-    CGSize viewScale = [self convertSizeToBacking: CGSizeMake(1.0, 1.0)];
-    layer.contentsScale = MIN(viewScale.width, viewScale.height);
+    layer.contentsScale = [[NSScreen mainScreen] backingScaleFactor];
     return layer;
 }
 

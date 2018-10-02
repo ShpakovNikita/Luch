@@ -49,7 +49,7 @@ namespace Husky::Metal
             const SamplerCreateInfo& createInfo) override;
 
         GraphicsResultRefPtr<Swapchain> CreateSwapchain(
-            const SwapchainCreateInfo& createInfo,
+            const SwapchainInfo& createInfo,
             Surface* surface) override;
 
         GraphicsResultRefPtr<ShaderLibrary> CreateShaderLibraryFromSource(

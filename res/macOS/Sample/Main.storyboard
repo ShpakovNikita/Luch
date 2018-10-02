@@ -103,9 +103,9 @@
                 <windowController id="B8D-0N-5wS" sceneMemberID="viewController">
                     <window key="window" title="MoltenVK Demo" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="IQv-IB-iLA" userLabel="Husky Engine Sample">
                         <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
-                        <rect key="contentRect" x="1051" y="656" width="800" height="600"/>
+                        <rect key="contentRect" x="1051" y="656" width="500" height="500"/>
                         <rect key="screenRect" x="0.0" y="0.0" width="2560" height="1417"/>
-                        <value key="minSize" type="size" width="800" height="600"/>
+                        <value key="minSize" type="size" width="500" height="500"/>
                         <connections>
                             <outlet property="delegate" destination="B8D-0N-5wS" id="vjR-Rl-Kvz"/>
                         </connections>
@@ -123,7 +123,7 @@
             <objects>
                 <viewController id="XfG-lQ-9wD" customClass="SampleViewController" sceneMemberID="viewController">
                     <view key="view" id="m2S-Jp-Qdl" customClass="SampleView">
-                        <rect key="frame" x="0.0" y="0.0" width="1000" height="1000"/>
+                        <rect key="frame" x="0.0" y="0.0" width="500" height="500"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </view>
                 </viewController>

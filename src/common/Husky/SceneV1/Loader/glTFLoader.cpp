@@ -213,8 +213,8 @@ namespace Husky::SceneV1::Loader
             transform = TransformProperties
             {
                 node.rotation.value_or(Quaternion{}),
-                node.scale.value_or(Vec3{1.0f, 1.0f, 1.0f}),
-                node.translation.value_or(Vec3{0, 0,0 })
+                node.scale.value_or(Vec3{ 1.0f, 1.0f, 1.0f }),
+                node.translation.value_or(Vec3{ 0, 0, 0 })
             };
         }
 

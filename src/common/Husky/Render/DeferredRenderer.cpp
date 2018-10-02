@@ -26,17 +26,16 @@
 #include <Husky/Graphics/DescriptorSet.h>
 #include <Husky/Graphics/PhysicalDevice.h>
 #include <Husky/Graphics/GraphicsDevice.h>
-//#include <Husky/Graphics/DescriptorSetWrites.h>
 #include <Husky/Graphics/CommandQueue.h>
 #include <Husky/Graphics/CommandPool.h>
 #include <Husky/Graphics/DescriptorPool.h>
 #include <Husky/Graphics/GraphicsCommandList.h>
 #include <Husky/Graphics/Swapchain.h>
+#include <Husky/Graphics/SwapchainInfo.h>
 #include <Husky/Graphics/PipelineState.h>
 #include <Husky/Graphics/DescriptorSetBinding.h>
 #include <Husky/Graphics/RenderPassCreateInfo.h>
 #include <Husky/Graphics/DescriptorPoolCreateInfo.h>
-#include <Husky/Graphics/SwapchainCreateInfo.h>
 #include <Husky/Graphics/DescriptorSetLayoutCreateInfo.h>
 #include <Husky/Graphics/PipelineLayoutCreateInfo.h>
 #include <Husky/Graphics/IndexType.h>
@@ -61,9 +60,9 @@ namespace Husky::Render
     // One triangle that covers whole screen
     static const Vector<QuadVertex> fullscreenQuadVertices =
     {
-        { {-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}},
-        { {+3.0f, -1.0f, 0.0f}, {2.0f, 0.0f}},
-        { {-1.0f, +3.0f, 0.0f}, {0.0f, 2.0f}},
+        { {-1.0f, -1.0f, 0.0f}, {0.0f, 1.0f}},
+        { {+3.0f, -1.0f, 0.0f}, {2.0f, 1.0f}},
+        { {-1.0f, +3.0f, 0.0f}, {0.0f, -1.0f}},
     };
 
 
@@ -177,7 +176,7 @@ namespace Husky::Render
 //            return false;
 //        }
 
-        SwapchainCreateInfo swapchainCreateInfo;
+        SwapchainInfo swapchainCreateInfo;
         swapchainCreateInfo.format = swapchainFormat;
         swapchainCreateInfo.imageCount = 1;
         swapchainCreateInfo.width = width;
@@ -249,8 +248,8 @@ namespace Husky::Render
             preparedScene.lighting = std::move(preparedLightingResources);
         }
 
-        const auto& swapchainCreateInfo = context->swapchain->GetCreateInfo();
-        preparedScene.frameResources.reserve(swapchainCreateInfo.imageCount);
+        const auto& swapchainInfo = context->swapchain->GetInfo();
+        preparedScene.frameResources.reserve(swapchainInfo.imageCount);
 
         auto[createdCommandPoolResult, createdCommandPool] = context->commandQueue->CreateCommandPool();
         if (createdCommandPoolResult != GraphicsResult::Success)
@@ -261,7 +260,7 @@ namespace Husky::Render
 
         preparedScene.commandPool = std::move(createdCommandPool);
 
-        for (int32 i = 0; i < swapchainCreateInfo.imageCount; i++)
+        for (int32 i = 0; i < swapchainInfo.imageCount; i++)
         {
             auto& frameResources = preparedScene.frameResources.emplace_back();
 
@@ -403,8 +402,8 @@ namespace Husky::Render
         auto [allocateGBufferCommandListResult, gBufferCmdList] = frameResource.commandPool->AllocateGraphicsCommandList();
         HUSKY_ASSERT(allocateGBufferCommandListResult == GraphicsResult::Success);
 
-        int32 framebufferWidth = context->swapchain->GetCreateInfo().width;
-        int32 framebufferHeight = context->swapchain->GetCreateInfo().height;
+        int32 framebufferWidth = context->swapchain->GetInfo().width;
+        int32 framebufferHeight = context->swapchain->GetInfo().height;
 
         Viewport viewport { 0, 0, (float32)framebufferWidth, (float32)framebufferHeight, 0.0f, 1.0f };
         IntRect scissorRect { {0, 0}, { framebufferWidth, framebufferHeight } };
@@ -687,7 +686,6 @@ namespace Husky::Render
         HUSKY_ASSERT(createDescriptorSetResult == GraphicsResult::Success);
         scene.lighting.lightsDescriptorSet = createdDescriptorSet;
 
-
         createdDescriptorSet->WriteUniformBuffer(&scene.lighting.lightsUniformBufferBinding, createdLightsBuffer);
         createdDescriptorSet->Update();
     }
@@ -757,7 +755,6 @@ namespace Husky::Render
         const auto& buffer = mesh->GetUniformBuffer();
 
         MeshUniformBuffer meshUniformBuffer;
-        //meshUniformBuffer.transform = glm::transpose(transform);
         meshUniformBuffer.transform = transform;
         meshUniformBuffer.inverseTransform = glm::inverse(transform);
 
@@ -769,7 +766,7 @@ namespace Husky::Render
     {
         const auto& buffer = camera->GetUniformBuffer();
 
-        camera->SetCameraViewMatrix(transform);
+        camera->SetCameraViewMatrix(glm::inverse(transform));
 
         CameraUniformBuffer cameraUniformBuffer;
         cameraUniformBuffer.view = camera->GetCameraViewMatrix();
@@ -809,9 +806,6 @@ namespace Husky::Render
         LightUniform lightUniform;
 
         lightUniform.positionWS = transform * Vec4{ 0.0, 0.0, 0.0, 1.0 };
-        // TODO get rid of this workaround
-        lightUniform.positionWS.y = -lightUniform.positionWS.y;
-
         lightUniform.directionWS = transform * Vec4{ light->GetDirection().value_or(Vec3{0, 0, 1}), 0.0 };
         lightUniform.positionVS = viewTransform * lightUniform.positionWS;
         lightUniform.directionVS = viewTransform * lightUniform.directionWS;
@@ -1134,7 +1128,7 @@ namespace Husky::Render
         ci.depthStencil.depthWriteEnable = false;
 
         auto& outputAttachment = ci.colorAttachments.attachments.emplace_back();
-        outputAttachment.format = context->swapchain->GetCreateInfo().format;
+        outputAttachment.format = context->swapchain->GetInfo().format;
         outputAttachment.blendEnable = false;
 
         ci.depthStencil.depthStencilFormat = Format::Undefined;
@@ -1318,7 +1312,7 @@ namespace Husky::Render
     ResultValue<bool, LightingPassResources> DeferredRenderer::PrepareLightingPassResources(DeferredPreparedScene& scene)
     {
         LightingPassResources resources;
-        int32 swapchainLength = context->swapchain->GetCreateInfo().imageCount;
+        int32 swapchainLength = context->swapchain->GetInfo().imageCount;
 
         DescriptorPoolCreateInfo descriptorPoolCreateInfo;
         descriptorPoolCreateInfo.maxDescriptorSets = 1 + swapchainLength + 1;
@@ -1520,7 +1514,7 @@ namespace Husky::Render
 
         resources.pipelineLayout = std::move(createdPipelineLayout);
 
-        resources.colorAttachmentTemplate.format = context->swapchain->GetCreateInfo().format;
+        resources.colorAttachmentTemplate.format = context->swapchain->GetInfo().format;
         resources.colorAttachmentTemplate.colorLoadOperation = AttachmentLoadOperation::Clear;
         resources.colorAttachmentTemplate.colorStoreOperation = AttachmentStoreOperation::Store;
 
@@ -1548,7 +1542,7 @@ namespace Husky::Render
     {
         OffscreenTextures textures;
 
-        const auto& swapchainCreateInfo = context->swapchain->GetCreateInfo();
+        const auto& swapchainCreateInfo = context->swapchain->GetInfo();
         int32 textureWidth = swapchainCreateInfo.width;
         int32 textureHeight = swapchainCreateInfo.height;
 

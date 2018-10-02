@@ -50,6 +50,7 @@ include_directories(AFTER SYSTEM
 
 # Setup vulkan include and library paths
 if(USE_VULKAN)
+    add_compile_definitions(GLM_FORCE_RIGHT_HANDED)
     find_package(Vulkan REQUIRED)
     set(Vulkan_SDK_DIR ${Vulkan_INCLUDE_DIR}/../)
     set(GLSLANG_DIR ${Vulkan_SDK_DIR}/glslang/)
@@ -208,6 +209,7 @@ endif()
 
 # Add Metal implementation is it's used
 if(USE_METAL)
+    add_compile_definitions(GLM_FORCE_LEFT_HANDED)
     # Add mtlpp library and includes
     include_directories(AFTER
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/mtlpp/)

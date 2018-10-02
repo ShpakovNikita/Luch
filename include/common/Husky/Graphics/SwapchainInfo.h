@@ -5,7 +5,7 @@
 
 namespace Husky::Graphics
 {
-    struct SwapchainCreateInfo
+    struct SwapchainInfo
     {
         int32 imageCount = 0;
         Format format = Format::R8G8B8A8Unorm;

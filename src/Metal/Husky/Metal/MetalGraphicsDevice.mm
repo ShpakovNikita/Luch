@@ -150,7 +150,7 @@ namespace Husky::Metal
     }
 
     GraphicsResultRefPtr<Swapchain> MetalGraphicsDevice::CreateSwapchain(
-        const SwapchainCreateInfo& createInfo,
+        const SwapchainInfo& createInfo,
         Surface* surface)
     {
         auto mtlSurface = static_cast<MetalSurface*>(surface);

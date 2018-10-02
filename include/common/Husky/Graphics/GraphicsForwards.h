@@ -39,6 +39,6 @@ namespace Husky::Graphics
     struct PipelineLayoutCreateInfo;
     struct PipelineStateCreateInfo;
     struct SamplerCreateInfo;
-    struct SwapchainCreateInfo;
+    struct SwapchainInfo;
     struct TextureCreateInfo;
 }

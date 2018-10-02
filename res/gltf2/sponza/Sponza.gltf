@@ -8,7 +8,7 @@
             "type":"perspective",
             "perspective":{
                 "yfov": 1,
-                "znear": 0.1,
+                "znear": 2,
                 "zfar": 100
             }
         }
@@ -27,7 +27,7 @@
             "rotation": [ 0, 0.7071068, 0, 0.7071068 ],
             "translation": [
                 0,
-                -3,
+                3,
                 0
             ]
         }

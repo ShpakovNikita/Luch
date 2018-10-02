@@ -136,6 +136,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     light1->SetColor({1.0, 0.0, 0.0});
     light1->SetDirection({ 0.995037, -0.0995037, 0 });
     light1->SetSpotlightAngle(0.3);
+    light1->SetIntensity(0.2);
     lightNode1->SetLight(light1);
 
     auto lightNode2 = MakeRef<SceneV1::Node>();
@@ -148,6 +149,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     light2->SetColor({ 0.0, 0.0, 1.0 });
     light2->SetDirection({ 0.995037, 0.0995037, 0 });
     light2->SetSpotlightAngle(0.3);
+    light2->SetIntensity(0.3);
 
     lightNode2->SetLight(light2);
 
@@ -162,15 +164,15 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     lightNode3->SetLight(light3);
 
     SceneV1::TransformProperties light1Transform;
-    light1Transform.translation = Vec3{ 0, 2, 0 };
+    light1Transform.translation = Vec3{ 0, 5, 0 };
     lightNode1->SetTransform(light1Transform);
 
     SceneV1::TransformProperties light2Transform;
-    light2Transform.translation = Vec3{ 0, 2, 0 };
+    light2Transform.translation = Vec3{ 0, 5, 0 };
     lightNode2->SetTransform(light2Transform);
 
     SceneV1::TransformProperties light3Transform;
-    light3Transform.translation = Vec3{ 0, 2, 0 };
+    light3Transform.translation = Vec3{ 4, 5, 0 };
     lightNode3->SetTransform(light3Transform);
 
     scene->AddNode(lightNode1);

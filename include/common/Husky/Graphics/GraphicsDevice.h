@@ -46,7 +46,7 @@ namespace Husky::Graphics
             const UnorderedMap<String, Variant<int32, String>>& defines) = 0;
 
         virtual GraphicsResultRefPtr<Swapchain> CreateSwapchain(
-            const SwapchainCreateInfo& createInfo,
+            const SwapchainInfo& createInfo,
             Surface* surface) = 0;
 
         virtual GraphicsResultRefPtr<Semaphore> CreateSemaphore() = 0;

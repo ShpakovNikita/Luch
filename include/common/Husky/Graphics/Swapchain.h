@@ -17,7 +17,7 @@ namespace Husky::Graphics
         Swapchain(GraphicsDevice* device) : GraphicsObject(device) {}
         virtual ~Swapchain() = 0;
 
-        virtual const SwapchainCreateInfo& GetCreateInfo() const = 0;
+        virtual const SwapchainInfo& GetInfo() const = 0;
         virtual GraphicsResultValue<AcquiredTexture> GetNextAvailableTexture(Semaphore* semaphore) = 0;
     };
 

@@ -9,41 +9,18 @@ namespace Husky::Metal
 
     MetalSwapchain::MetalSwapchain(
         MetalGraphicsDevice* device,
-        const SwapchainCreateInfo& aCreateInfo,
+        const SwapchainInfo& aCreateInfo,
         CAMetalLayer* aLayer)
         : Swapchain(device)
-        , createInfo(aCreateInfo)
+        , swapchainInfo(aCreateInfo)
         , layer(aLayer)
     {
-        HUSKY_ASSERT(createInfo.imageCount == 1);
+        HUSKY_ASSERT(swapchainInfo.imageCount == 1);
         //frameSemaphore = dispatch_semaphore_create(createInfo.imageCount);
         auto mtlDevice = static_cast<MetalGraphicsDevice*>(GetGraphicsDevice());
 
         layer.device = (__bridge id<MTLDevice>)mtlDevice->device.GetPtr();
     }
-
-//    GraphicsResultValue<AcquiredTexture> MetalSwapchain::GetNextAvailableTexture(
-//        Semaphore* semaphore)
-//    {
-//        auto mtlSemaphore = static_cast<MetalSemaphore*>(semaphore);
-//        auto mtlDevice = static_cast<MetalGraphicsDevice*>(GetGraphicsDevice());
-//
-//        dispatch_semaphore_wait(frameSemaphore, DISPATCH_TIME_FOREVER);
-//
-//        auto acquiredIndex = currentImageIndex;
-//        currentImageIndex = (currentImageIndex + 1) % createInfo.imageCount;
-//
-//        TextureCreateInfo textureCreateInfo;
-//        // TODO
-//        id<CAMetalDrawable> drawable = [layer nextDrawable];
-//        drawables[acquiredIndex] = drawable;
-//        mtlpp::Texture mtlTexture = ns::Handle{ (__bridge void*)drawable.texture };
-//
-//        dispatch_semaphore_signal(mtlSemaphore->semaphore);
-//
-//        auto texture = MakeRef<MetalTexture>(mtlDevice, textureCreateInfo, mtlTexture);
-//        return { GraphicsResult::Success, { acquiredIndex, texture } };
-//    }
 
     GraphicsResultValue<AcquiredTexture> MetalSwapchain::GetNextAvailableTexture(
         Semaphore* semaphore)
