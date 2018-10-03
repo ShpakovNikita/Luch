@@ -120,7 +120,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     SceneV1::Loader::glTFLoader loader{ rootDir, root };
     auto scenes = loader.LoadScenes();
 
-    deferredRenderer = MakeUnique<Render::DeferredRenderer>(physicalDevice, surface, width, height);
+    deferredRenderer = MakeUnique<Render::Deferred::DeferredRenderer>(physicalDevice, surface, width, height);
 
     deferredRenderer->Initialize();
 

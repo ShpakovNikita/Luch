@@ -11,40 +11,18 @@
 #include <Husky/Graphics/Attachment.h>
 #include <Husky/SceneV1/SceneV1Forwards.h>
 #include <Husky/Render/Common.h>
+#include <Husky/Render/ShaderDefines.h>
+#include <Husky/Render/Deferred/GBufferPassResources.h>
+#include <Husky/Render/Deferred/LightingPassResources.h>
+#include <Husky/Render/Deferred/DeferredOptions.h>
+#include <Husky/Render/Deferred/DeferredShaderDefines.h>
 
-namespace Husky::Render
+#include <Husky/Render/Deferred/ShadowMapping/ShadowMappingPassResources.h>
+
+namespace Husky::Render::Deferred
 {
     using namespace Graphics;
-
-    enum class ShaderDefine
-    {
-        Empty, // special value for no define
-        //HasPosition,
-        HasNormal,
-        HasTangent,
-        HasTexCoord0,
-        HasTexCoord1,
-        HasColor,
-
-        HasBitangentDirection,
-
-        HasBaseColorTexture,
-        HasMetallicRoughnessTexture,
-        HasNormalTexture,
-        HasOcclusionTexture,
-        HasEmissiveTexture,
-
-        AlphaMask,
-    };
-
-    struct ShaderDefines
-    {
-        UnorderedMap<String, Variant<int32, String>> defines;
-
-        void AddFlag(ShaderDefine flag);
-        void AddDefine(ShaderDefine define, const String& value);
-        void AddDefine(ShaderDefine define, const int32& value);
-    };
+    using namespace ShadowMapping;
 
     struct QuadVertex
     {
@@ -94,74 +72,7 @@ namespace Husky::Render
         Mat4x4 view;
         Mat4x4 projection;
         int32 frameIndex;
-        DeferredFrameResources* frameResources;
-    };
-
-    struct GBufferPassResources
-    {
-        RefPtr<PipelineLayout> pipelineLayout;
-        RefPtr<DescriptorPool> descriptorPool;
-
-        DescriptorSetBinding cameraUniformBufferBinding;
-        DescriptorSetBinding meshUniformBufferBinding;
-        DescriptorSetBinding materialUniformBufferBinding;
-        DescriptorSetBinding baseColorTextureBinding;
-        DescriptorSetBinding baseColorSamplerBinding;
-        DescriptorSetBinding metallicRoughnessTextureBinding;
-        DescriptorSetBinding metallicRoughnessSamplerBinding;
-        DescriptorSetBinding normalTextureBinding;
-        DescriptorSetBinding normalSamplerBinding;
-        DescriptorSetBinding occlusionTextureBinding;
-        DescriptorSetBinding occlusionSamplerBinding;
-        DescriptorSetBinding emissiveTextureBinding;
-        DescriptorSetBinding emissiveSamplerBinding;
-
-        ColorAttachment baseColorAttachmentTemplate;
-        ColorAttachment normalMapAttachmentTemplate;
-        DepthStencilAttachment depthStencilAttachmentTemplate;
-
-        RefPtr<DescriptorSetLayout> meshDescriptorSetLayout;
-        RefPtr<DescriptorSetLayout> cameraDescriptorSetLayout;
-        RefPtr<DescriptorSetLayout> materialTextureDescriptorSetLayout;
-        RefPtr<DescriptorSetLayout> materialBufferDescriptorSetLayout;
-        RefPtr<DescriptorSetLayout> materialSamplerDescriptorSetLayout;
-    };
-
-    struct LightingPassResources
-    {
-        RefPtr<PipelineState> pipelineState;
-        RefPtr<PipelineLayout> pipelineLayout;
-        RefPtr<DescriptorPool> descriptorPool;
-
-        RefPtr<Buffer> fullscreenQuadBuffer;
-
-        DescriptorSetBinding lightsUniformBufferBinding;
-        RefPtr<Buffer> lightsBuffer;
-
-        DescriptorSetBinding cameraUniformBufferBinding;
-        DescriptorSetBinding baseColorTextureBinding;
-        DescriptorSetBinding baseColorSamplerBinding;
-        DescriptorSetBinding normalMapTextureBinding;
-        DescriptorSetBinding normalMapSamplerBinding;
-        DescriptorSetBinding depthStencilTextureBinding;
-        DescriptorSetBinding depthStencilSamplerBinding;
-
-        RefPtr<Sampler> baseColorSampler;
-        RefPtr<Sampler> normalMapSampler;
-        RefPtr<Sampler> depthBufferSampler;
-
-        RefPtr<DescriptorSetLayout> gbufferTextureDescriptorSetLayout;
-        RefPtr<DescriptorSetLayout> gbufferSamplerDescriptorSetLayout;
-
-        RefPtr<DescriptorSet> lightsDescriptorSet;
-
-        RefPtr<DescriptorSetLayout> cameraDescriptorSetLayout;
-        RefPtr<DescriptorSetLayout> lightsDescriptorSetLayout;
-
-        ColorAttachment colorAttachmentTemplate;
-
-        RefPtr<ShaderProgram> vertexShader;
-        RefPtr<ShaderProgram> fragmentShader;
+        DeferredFrameResources* frameResources = nullptr;
     };
 
     struct DeferredPreparedScene
@@ -178,6 +89,7 @@ namespace Husky::Render
         LightingPassResources lighting;
 
         Vector<DeferredFrameResources> frameResources;
+        DeferredOptions options;
     };
 
     class DeferredRenderer
@@ -225,13 +137,15 @@ namespace Husky::Render
 
         RefPtr<PipelineState> CreateGBufferPipelineState(const RefPtr<SceneV1::Primitive>& primitive, DeferredPreparedScene& scene);
         RefPtr<PipelineState> CreateLightingPipelineState(const LightingPassResources& lighting);
+        RefPtr<PipelineState> CreateShadowPipeline(const RefPtr<SceneV1::Light>& light);
 
         Vector<const char8*> GetRequiredDeviceExtensionNames() const;
 
         ResultValue<bool, GBufferPassResources> PrepareGBufferPassResources(DeferredPreparedScene& scene);
         ResultValue<bool, LightingPassResources> PrepareLightingPassResources(DeferredPreparedScene& scene);
+        ResultValue<bool, ShadowMappingPassResources> PrepareShadowMappingPassResources(DeferredPreparedScene& scene);
         ResultValue<bool, OffscreenTextures> CreateOffscreenTextures();
-        ResultValue<bool, RefPtr<ShaderLibrary>> CreateShaderLibrary(const String& path, const ShaderDefines& defines);
+        ResultValue<bool, RefPtr<ShaderLibrary>> CreateShaderLibrary(const String& path, const ShaderDefines<DeferredShaderDefines>& defines);
 
         UniquePtr<DeferredRendererContext> context;
 

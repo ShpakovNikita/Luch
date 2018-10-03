@@ -1,5 +1,6 @@
-#include <Husky/Render/DeferredRenderer.h>
+#include <Husky/Render/Deferred/DeferredRenderer.h>
 #include <Husky/Render/TextureUploader.h>
+#include <Husky/Render/ShaderDefines.h>
 
 #include <Husky/Graphics/PrimitiveTopology.h>
 
@@ -41,7 +42,7 @@
 #include <Husky/Graphics/IndexType.h>
 #include <Husky/Graphics/PipelineStateCreateInfo.h>
 
-namespace Husky::Render
+namespace Husky::Render::Deferred
 {
     using namespace Graphics;
 
@@ -65,7 +66,6 @@ namespace Husky::Render
         { {-1.0f, +3.0f, 0.0f}, {0.0f, -1.0f}},
     };
 
-
     // Think about passing these numbers through shader defines
     static const Map<SceneV1::AttributeSemantic, int32> SemanticToLocation =
     {
@@ -77,53 +77,32 @@ namespace Husky::Render
         { SceneV1::AttributeSemantic::Color_0, 5 },
     };
 
-    static const Map<SceneV1::AttributeSemantic, ShaderDefine> SemanticToFlag =
+    static const Map<SceneV1::AttributeSemantic, DeferredShaderDefines> SemanticToFlag =
     {
-        { SceneV1::AttributeSemantic::Position, ShaderDefine::Empty },
-        { SceneV1::AttributeSemantic::Normal, ShaderDefine::HasNormal},
-        { SceneV1::AttributeSemantic::Tangent, ShaderDefine::HasTangent },
-        { SceneV1::AttributeSemantic::Texcoord_0, ShaderDefine::HasTexCoord0 },
-        { SceneV1::AttributeSemantic::Texcoord_1, ShaderDefine::HasTexCoord1 },
-        { SceneV1::AttributeSemantic::Color_0, ShaderDefine::HasColor},
+        { SceneV1::AttributeSemantic::Position, DeferredShaderDefines::Empty },
+        { SceneV1::AttributeSemantic::Normal, DeferredShaderDefines::HasNormal},
+        { SceneV1::AttributeSemantic::Tangent, DeferredShaderDefines::HasTangent },
+        { SceneV1::AttributeSemantic::Texcoord_0, DeferredShaderDefines::HasTexCoord0 },
+        { SceneV1::AttributeSemantic::Texcoord_1, DeferredShaderDefines::HasTexCoord1 },
+        { SceneV1::AttributeSemantic::Color_0, DeferredShaderDefines::HasColor},
     };
 
-    static UnorderedMap<ShaderDefine, String> FlagToString =
+    static UnorderedMap<DeferredShaderDefines, String> FlagToString =
     {
         //{ ShaderDefine::HasPosition, "HAS_POSITION" },
-        { ShaderDefine::HasNormal, "HAS_NORMAL" },
-        { ShaderDefine::HasTangent, "HAS_TANGENT" },
-        { ShaderDefine::HasTexCoord0, "HAS_TEXCOORD_0" },
-        { ShaderDefine::HasTexCoord1, "HAS_TEXCOORD_0" },
-        { ShaderDefine::HasColor, "HAS_COLOR" },
-        { ShaderDefine::HasBitangentDirection , "HAS_BITANGENT_DIRECTION"},
-        { ShaderDefine::HasBaseColorTexture, "HAS_BASE_COLOR_TEXTURE" },
-        { ShaderDefine::HasMetallicRoughnessTexture, "HAS_METALLIC_ROUGHNESS_TEXTURE" },
-        { ShaderDefine::HasNormalTexture, "HAS_NORMAL_TEXTURE" },
-        { ShaderDefine::HasOcclusionTexture, "HAS_OCCLUSION_TEXTURE" },
-        { ShaderDefine::HasEmissiveTexture, "HAS_EMISSIVE_TEXTURE" },
-        { ShaderDefine::AlphaMask, "ALPHA_MASK" },
+        { DeferredShaderDefines::HasNormal, "HAS_NORMAL" },
+        { DeferredShaderDefines::HasTangent, "HAS_TANGENT" },
+        { DeferredShaderDefines::HasTexCoord0, "HAS_TEXCOORD_0" },
+        { DeferredShaderDefines::HasTexCoord1, "HAS_TEXCOORD_0" },
+        { DeferredShaderDefines::HasColor, "HAS_COLOR" },
+        { DeferredShaderDefines::HasBitangentDirection , "HAS_BITANGENT_DIRECTION"},
+        { DeferredShaderDefines::HasBaseColorTexture, "HAS_BASE_COLOR_TEXTURE" },
+        { DeferredShaderDefines::HasMetallicRoughnessTexture, "HAS_METALLIC_ROUGHNESS_TEXTURE" },
+        { DeferredShaderDefines::HasNormalTexture, "HAS_NORMAL_TEXTURE" },
+        { DeferredShaderDefines::HasOcclusionTexture, "HAS_OCCLUSION_TEXTURE" },
+        { DeferredShaderDefines::HasEmissiveTexture, "HAS_EMISSIVE_TEXTURE" },
+        { DeferredShaderDefines::AlphaMask, "ALPHA_MASK" },
     };
-
-    void ShaderDefines::AddFlag(ShaderDefine flag)
-    {
-        AddDefine(flag, "1");
-    }
-
-    void ShaderDefines::AddDefine(ShaderDefine define, const String& value)
-    {
-        if (define != ShaderDefine::Empty)
-        {
-            defines[FlagToString.at(define)] = value;
-        }
-    }
-
-    void ShaderDefines::AddDefine(ShaderDefine define, const int& value)
-    {
-        if (define != ShaderDefine::Empty)
-        {
-            defines[FlagToString.at(define)] = value;
-        }
-    }
 
     DeferredRenderer::DeferredRenderer(
         const RefPtr<PhysicalDevice>& physicalDevice,
@@ -909,7 +888,8 @@ namespace Husky::Render
     {
         PipelineStateCreateInfo ci;
 
-        ShaderDefines shaderDefines;
+        ShaderDefines<DeferredShaderDefines> shaderDefines;
+        shaderDefines.mapping = &FlagToString;
 
         const auto& vertexBuffers = primitive->GetVertexBuffers();
         ci.inputAssembler.bindings.resize(vertexBuffers.size());
@@ -935,7 +915,7 @@ namespace Husky::Render
             {
                 if (attribute.format == Format::R32G32B32A32Sfloat)
                 {
-                    shaderDefines.AddFlag(ShaderDefine::HasBitangentDirection);
+                    shaderDefines.AddFlag(DeferredShaderDefines::HasBitangentDirection);
                 }
                 else if(attribute.format == Format::R32G32B32Sfloat)
                 {
@@ -994,32 +974,32 @@ namespace Husky::Render
 
         if (material->HasBaseColorTexture())
         {
-            shaderDefines.AddFlag(ShaderDefine::HasBaseColorTexture);
+            shaderDefines.AddFlag(DeferredShaderDefines::HasBaseColorTexture);
         }
 
         if (material->HasMetallicRoughnessTexture())
         {
-            shaderDefines.AddFlag(ShaderDefine::HasMetallicRoughnessTexture);
+            shaderDefines.AddFlag(DeferredShaderDefines::HasMetallicRoughnessTexture);
         }
 
         if (material->HasNormalTexture())
         {
-            shaderDefines.AddFlag(ShaderDefine::HasNormalTexture);
+            shaderDefines.AddFlag(DeferredShaderDefines::HasNormalTexture);
         }
 
         if (material->HasOcclusionTexture())
         {
-            shaderDefines.AddFlag(ShaderDefine::HasOcclusionTexture);
+            shaderDefines.AddFlag(DeferredShaderDefines::HasOcclusionTexture);
         }
 
         if (material->HasEmissiveTexture())
         {
-            shaderDefines.AddFlag(ShaderDefine::HasEmissiveTexture);
+            shaderDefines.AddFlag(DeferredShaderDefines::HasEmissiveTexture);
         }
 
         if (material->alphaMode == SceneV1::AlphaMode::Mask)
         {
-            shaderDefines.AddFlag(ShaderDefine::AlphaMask);
+            shaderDefines.AddFlag(DeferredShaderDefines::AlphaMask);
         }
 
         auto[vertexShaderLibraryCreated, vertexShaderLibrary] = CreateShaderLibrary(
@@ -1315,7 +1295,8 @@ namespace Husky::Render
 
         resources.descriptorPool = std::move(createdDescriptorPool);
 
-        ShaderDefines shaderDefines;
+        ShaderDefines<DeferredShaderDefines> shaderDefines;
+        shaderDefines.mapping = &FlagToString;
 
         auto[vertexShaderLibraryCreated, createdVertexShaderLibrary] = CreateShaderLibrary(
 #if _WIN32
@@ -1615,7 +1596,7 @@ namespace Husky::Render
 
     ResultValue<bool, RefPtr<ShaderLibrary>> DeferredRenderer::CreateShaderLibrary(
         const String& path,
-        const ShaderDefines& defines)
+        const ShaderDefines<DeferredShaderDefines>& defines)
     {
         auto shaderSource = LoadShaderSource(path);
 
