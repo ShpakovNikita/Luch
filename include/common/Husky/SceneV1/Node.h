@@ -17,27 +17,7 @@ namespace Husky::SceneV1
     class Node : public BaseObject
     {
     public:
-        //using TransformType = Variant<Mat4x4, TransformProperties>;
-        struct TransformType
-        {
-            TransformType() = default;
-            TransformType(const TransformType& other) = default;
-            TransformType(Mat4x4 aMatrix) : matrix(aMatrix), hasMatrix(true) {}
-            TransformType(TransformProperties aProperties) : properties(aProperties), hasMatrix(false) {}
-            Mat4x4 matrix = Mat4x4{1.0};
-            TransformProperties properties;
-            bool hasMatrix = true;
-        };
-
-        /*Node(
-            const RefPtrVector<Mesh>& children,
-            const Mat4x4 matrix,
-            const String& name);
-
-        Node(
-            const RefPtrVector<Mesh>& children,
-            const Transform& transform,
-            const String& name);*/
+        using TransformType = Variant<Mat4x4, TransformProperties>;
 
         Node() = default;
 

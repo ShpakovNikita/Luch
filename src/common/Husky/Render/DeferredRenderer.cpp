@@ -696,27 +696,13 @@ namespace Husky::Render
 
         Mat4x4 localTransformMatrix;
         const auto& localTransform = node->GetTransform();
-//        if (std::holds_alternative<Mat4x4>(localTransform))
-//        {
-//            localTransformMatrix = std::get<Mat4x4>(localTransform);
-//        }
-//        else
-//        {
-//            const auto& transformProperties = std::get<SceneV1::TransformProperties>(localTransform);
-//
-//            localTransformMatrix
-//                = glm::translate(transformProperties.translation)
-//                * glm::toMat4(transformProperties.rotation)
-//                * glm::scale(transformProperties.scale);
-//        }
-
-        if (localTransform.hasMatrix)
+        if (std::holds_alternative<Mat4x4>(localTransform))
         {
-            localTransformMatrix = localTransform.matrix;
+            localTransformMatrix = std::get<Mat4x4>(localTransform);
         }
-        else
+        else if(std::holds_alternative<SceneV1::TransformProperties>(localTransform))
         {
-            const auto& transformProperties = localTransform.properties;
+            const auto& transformProperties = std::get<SceneV1::TransformProperties>(localTransform);
 
             localTransformMatrix
                 = glm::translate(transformProperties.translation)
@@ -882,8 +868,6 @@ namespace Husky::Render
         const auto& indexBuffer = *primitive->GetIndexBuffer();
 
         const auto& material = primitive->GetMaterial();
-
-        //TODO
 
         commandList->BindPipelineState(pipelineState);
         commandList->BindVertexBuffers(graphicsVertexBuffers, offsets, 0);
