@@ -23,4 +23,11 @@ namespace Husky::Render::Deferred
 
         return *shadowMappingOptions;
     }
+
+    const ShadowMappingOptions& DeferredOptions::GetShadowMappingOptions() const
+    {
+        HUSKY_ASSERT(shadowMappingOptions.has_value());
+
+        return *shadowMappingOptions;
+    }
 }

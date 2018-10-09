@@ -25,7 +25,7 @@ namespace Husky::Render::Deferred::ShadowMapping
 
         DepthStencilAttachment depthStencilAttachmentTemplate;
 
-        RefPtr<DescriptorSetLayout> meshBufferDescriptorSetLayout;
+        RefPtr<DescriptorSetLayout> meshBufferSetLayout;
         RefPtr<DescriptorSetLayout> cameraBufferSetLayout;
 
         RefPtr<PipelineState> directionalLightPipelineState;

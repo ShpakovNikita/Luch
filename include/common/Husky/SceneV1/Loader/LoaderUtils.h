@@ -22,5 +22,14 @@ namespace Husky::SceneV1::Loader
     SamplerAddressMode ToSamplerAddresMode(glTF::WrapMode mode);
     SamplerMinMagFilter ToMagFilter(glTF::MagFilter mode);
     MinFilter ToMinFilter(glTF::MinFilter mode);
-    int32 CalculateStride(ComponentType componentType, AttributeType attributeType);
+    int32 CalculateStride(AttributeType attributeType, ComponentType componentType);
+
+    void GenerateTangents(
+        glTF::PrimitiveMode mode,
+        int32 indexCount,
+        uint32* indices,
+        Vec3* positions,
+        Vec3* normals,
+        Vec2* texcoords,
+        Vec4* outTangents);
 }

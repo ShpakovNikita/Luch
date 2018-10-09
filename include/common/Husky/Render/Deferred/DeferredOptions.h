@@ -14,7 +14,9 @@ namespace Husky::Render::Deferred
         // Shadow mapping
         bool IsShadowMappingEnabled() const { return shadowMappingOptions.has_value(); }
         void SetShadowMappingEnabled(bool enabled);
+
         ShadowMappingOptions& GetShadowMappingOptions();
+        const ShadowMappingOptions& GetShadowMappingOptions() const;
     private:
         Optional<ShadowMappingOptions> shadowMappingOptions;
     };

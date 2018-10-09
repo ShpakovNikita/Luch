@@ -1503,6 +1503,60 @@ namespace Husky::Render::Deferred
         return { true, resources };
     }
 
+    ResultValue<bool, ShadowMappingPassResources> DeferredRenderer::PrepareShadowMappingPassResources(
+        DeferredPreparedScene& scene)
+    {
+        const auto& shadowMappingOptions = scene.options.GetShadowMappingOptions();
+        ShadowMappingPassResources resources;
+
+        resources.cameraUniformBufferBinding
+            .OfType(ResourceType::UniformBuffer)
+            .AtStage(ShaderStage::Vertex);
+
+        resources.meshUniformBufferBinding
+            .OfType(ResourceType::UniformBuffer)
+            .AtStage(ShaderStage::Vertex);
+
+        resources.depthStencilAttachmentTemplate.format = shadowMappingOptions.shadowMapFormat;
+        resources.depthStencilAttachmentTemplate.depthClearValue = 1.0f;
+        resources.depthStencilAttachmentTemplate.depthLoadOperation = AttachmentLoadOperation::Clear;
+        resources.depthStencilAttachmentTemplate.depthStoreOperation = AttachmentStoreOperation::Store;
+
+        DescriptorSetLayoutCreateInfo cameraBufferSetLayoutCreateInfo;
+        cameraBufferSetLayoutCreateInfo
+            .OfType(DescriptorSetType::Buffer)
+            .WithNBindings(1)
+            .AddBinding(&resources.cameraUniformBufferBinding);
+
+        auto [cameraBufferSetLayoutCreateResult, createdCameraBufferSetLayout] = context->device->CreateDescriptorSetLayout(
+            cameraBufferSetLayoutCreateInfo);
+        if(cameraBufferSetLayoutCreateResult != GraphicsResult::Success)
+        {
+            return { false };
+        }
+
+        resources.cameraBufferSetLayout = std::move(createdCameraBufferSetLayout);
+
+        DescriptorSetLayoutCreateInfo meshBufferSetLayoutCreateInfo;
+        meshBufferSetLayoutCreateInfo
+            .OfType(DescriptorSetType::Buffer)
+            .WithNBindings(1)
+            .AddBinding(&resources.meshUniformBufferBinding);
+
+        auto [meshBufferSetLayoutCreateResult, createdMeshBufferSetLayout] = context->device->CreateDescriptorSetLayout(
+            meshBufferSetLayoutCreateInfo);
+        if(meshBufferSetLayoutCreateResult != GraphicsResult::Success)
+        {
+            return { false };
+        }
+
+        resources.meshBufferSetLayout = std::move(createdMeshBufferSetLayout);
+
+        PipelineStateCreateInfo pipelineStateCreateInfoTemplate;
+
+        return { true, resources };
+    }
+
     ResultValue<bool, OffscreenTextures> DeferredRenderer::CreateOffscreenTextures()
     {
         OffscreenTextures textures;

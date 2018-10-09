@@ -71,7 +71,7 @@ namespace Husky::Render::Deferred
         Mat4x4 model;
         Mat4x4 view;
         Mat4x4 projection;
-        int32 frameIndex;
+        int32 frameIndex = 0;
         DeferredFrameResources* frameResources = nullptr;
     };
 
@@ -87,6 +87,7 @@ namespace Husky::Render::Deferred
 
         GBufferPassResources gbuffer;
         LightingPassResources lighting;
+        ShadowMappingPassResources shadowMapping;
 
         Vector<DeferredFrameResources> frameResources;
         DeferredOptions options;
@@ -144,19 +145,20 @@ namespace Husky::Render::Deferred
         ResultValue<bool, GBufferPassResources> PrepareGBufferPassResources(DeferredPreparedScene& scene);
         ResultValue<bool, LightingPassResources> PrepareLightingPassResources(DeferredPreparedScene& scene);
         ResultValue<bool, ShadowMappingPassResources> PrepareShadowMappingPassResources(DeferredPreparedScene& scene);
+
         ResultValue<bool, OffscreenTextures> CreateOffscreenTextures();
         ResultValue<bool, RefPtr<ShaderLibrary>> CreateShaderLibrary(const String& path, const ShaderDefines<DeferredShaderDefines>& defines);
 
         UniquePtr<DeferredRendererContext> context;
 
-        Husky::int32 width;
-        Husky::int32 height;
+        int32 width = 0;
+        int32 height = 0;
         Format swapchainFormat = Format::B8G8R8A8Unorm;
         Format baseColorFormat = Format::R8G8B8A8Unorm;
         Format normalMapFormat = Format::R32G32B32A32Sfloat;
         Format depthStencilFormat = Format::D24UnormS8Uint;
-        Husky::float32 minDepth = 0.0;
-        Husky::float32 maxDepth = 1.0;
-        Husky::int32 frameIndex = 0;
+        float32 minDepth = 0.0;
+        float32 maxDepth = 1.0;
+        int32 frameIndex = 0;
     };
 }
