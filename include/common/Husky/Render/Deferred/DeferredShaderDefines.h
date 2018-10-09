@@ -9,10 +9,6 @@ namespace Husky::Render::Deferred
         HasNormal,
         HasTangent,
         HasTexCoord0,
-        HasTexCoord1,
-        HasColor,
-
-        HasBitangentDirection,
 
         HasBaseColorTexture,
         HasMetallicRoughnessTexture,

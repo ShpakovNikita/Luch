@@ -83,8 +83,6 @@ namespace Husky::Render::Deferred
         { SceneV1::AttributeSemantic::Normal, DeferredShaderDefines::HasNormal},
         { SceneV1::AttributeSemantic::Tangent, DeferredShaderDefines::HasTangent },
         { SceneV1::AttributeSemantic::Texcoord_0, DeferredShaderDefines::HasTexCoord0 },
-        { SceneV1::AttributeSemantic::Texcoord_1, DeferredShaderDefines::HasTexCoord1 },
-        { SceneV1::AttributeSemantic::Color_0, DeferredShaderDefines::HasColor},
     };
 
     static UnorderedMap<DeferredShaderDefines, String> FlagToString =
@@ -93,9 +91,6 @@ namespace Husky::Render::Deferred
         { DeferredShaderDefines::HasNormal, "HAS_NORMAL" },
         { DeferredShaderDefines::HasTangent, "HAS_TANGENT" },
         { DeferredShaderDefines::HasTexCoord0, "HAS_TEXCOORD_0" },
-        { DeferredShaderDefines::HasTexCoord1, "HAS_TEXCOORD_0" },
-        { DeferredShaderDefines::HasColor, "HAS_COLOR" },
-        { DeferredShaderDefines::HasBitangentDirection , "HAS_BITANGENT_DIRECTION"},
         { DeferredShaderDefines::HasBaseColorTexture, "HAS_BASE_COLOR_TEXTURE" },
         { DeferredShaderDefines::HasMetallicRoughnessTexture, "HAS_METALLIC_ROUGHNESS_TEXTURE" },
         { DeferredShaderDefines::HasNormalTexture, "HAS_NORMAL_TEXTURE" },
@@ -906,26 +901,9 @@ namespace Husky::Render::Deferred
         for (const auto& attribute : attributes)
         {
             auto& attributeDescription = ci.inputAssembler.attributes[SemanticToLocation.at(attribute.semantic)];
-            attributeDescription.binding = attribute.vertexBufferIndex; // TODO
+            attributeDescription.binding = attribute.vertexBufferIndex;
             attributeDescription.format = attribute.format;
             attributeDescription.offset = attribute.offset;
-
-            // Wtf is this shit
-            if (attribute.semantic == SceneV1::AttributeSemantic::Tangent)
-            {
-                if (attribute.format == Format::R32G32B32A32Sfloat)
-                {
-                    shaderDefines.AddFlag(DeferredShaderDefines::HasBitangentDirection);
-                }
-                else if(attribute.format == Format::R32G32B32Sfloat)
-                {
-                }
-                else
-                {
-                    // TODO
-                    //HUSKY_ASSERT_MSG(false, "Wtf is this tangent");
-                }
-            }
 
             shaderDefines.AddFlag(SemanticToFlag.at(attribute.semantic));
         }
