@@ -11,8 +11,15 @@ namespace Husky::Render
 {
     using namespace Husky::Graphics;
 
-#pragma pack(push)
-#pragma pack(1)
+#pragma pack(push, 1)
+    struct Vertex
+    {
+        Vec3 position;
+        Vec3 normal;
+        Vec4 tangent;
+        Vec2 texcoord;
+    };
+
     struct CameraUniformBuffer
     {
         Mat4x4 view;
@@ -68,12 +75,5 @@ namespace Husky::Render
     static_assert(sizeof(LightUniform) % 4 == 0);
 #pragma pack(pop)
 
-//    struct CommandPoolCreateResult
-//    {
-//        vk::ResultValue<vk::CommandPool> graphicsCommandPool;
-//        vk::ResultValue<vk::CommandPool> presentCommandPool;
-//        vk::ResultValue<vk::CommandPool> computeCommandPool;
-//
-//        Vector<vk::CommandPool> uniqueCommandPools;
-//    };
+
 }

@@ -215,11 +215,31 @@ namespace Husky::Render::Deferred
         {
             preparedScene.gbuffer = std::move(preparedGBufferResources);
         }
+        else
+        {
+            return { false };
+        }
 
         auto[lightingResourcesPrepared, preparedLightingResources] = PrepareLightingPassResources(preparedScene);
         if (lightingResourcesPrepared)
         {
             preparedScene.lighting = std::move(preparedLightingResources);
+        }
+        else
+        {
+            return { false };
+        }
+
+        preparedScene.options.SetShadowMappingEnabled(true);
+
+        auto[shadowMappingResourcesPrepared, shadowMappingResources] = PrepareShadowMappingPassResources(preparedScene);
+        if (shadowMappingResourcesPrepared)
+        {
+            preparedScene.shadowMapping = std::move(shadowMappingResources);
+        }
+        else
+        {
+            return { false };
         }
 
         const auto& swapchainInfo = context->swapchain->GetInfo();
@@ -433,7 +453,7 @@ namespace Husky::Render::Deferred
         lightingCmdList->BindTextureDescriptorSet(ShaderStage::Fragment, scene.lighting.pipelineLayout, frameResource.gbufferTextureDescriptorSet);
         lightingCmdList->BindSamplerDescriptorSet(ShaderStage::Fragment, scene.lighting.pipelineLayout, frameResource.gbufferSamplerDescriptorSet);
         lightingCmdList->BindBufferDescriptorSet(ShaderStage::Fragment, scene.lighting.pipelineLayout, scene.cameraNode->GetCamera()->GetFragmentDescriptorSet());
-        lightingCmdList->BindBufferDescriptorSet(ShaderStage::Fragment, scene.lighting.pipelineLayout, scene.lighting.lightsDescriptorSet);
+        lightingCmdList->BindBufferDescriptorSet(ShaderStage::Fragment, scene.lighting.pipelineLayout, scene.lighting.lightsBufferDescriptorSet);
 
         lightingCmdList->BindVertexBuffers({ scene.lighting.fullscreenQuadBuffer }, {0}, 0);
         lightingCmdList->Draw(0, fullscreenQuadVertices.size());
@@ -458,10 +478,10 @@ namespace Husky::Render::Deferred
         auto[mapMemoryResult, mappedMemory] = buffer->MapMemory(sizeof(CameraUniformBuffer), 0);
         HUSKY_ASSERT(mapMemoryResult == GraphicsResult::Success);
 
-        auto[createVertexDescriptorSetResult, vertexDescriptorSet] = scene.descriptorPool->AllocateDescriptorSet(scene.gbuffer.cameraDescriptorSetLayout);
+        auto[createVertexDescriptorSetResult, vertexDescriptorSet] = scene.descriptorPool->AllocateDescriptorSet(scene.gbuffer.cameraBufferDescriptorSetLayout);
         HUSKY_ASSERT(createVertexDescriptorSetResult == GraphicsResult::Success);
 
-        auto[createFragmentDescriptorSetResult, fragmentDescriptorSet] = scene.descriptorPool->AllocateDescriptorSet(scene.lighting.cameraDescriptorSetLayout);
+        auto[createFragmentDescriptorSetResult, fragmentDescriptorSet] = scene.descriptorPool->AllocateDescriptorSet(scene.lighting.cameraBufferDescriptorSetLayout);
         HUSKY_ASSERT(createFragmentDescriptorSetResult == GraphicsResult::Success);
 
         camera->SetUniformBuffer(buffer);
@@ -532,7 +552,7 @@ namespace Husky::Render::Deferred
         auto[mapMemoryResult, mappedMemory] = createdUniformBuffer->MapMemory(sizeof(MeshUniformBuffer), 0);
         HUSKY_ASSERT(mapMemoryResult == GraphicsResult::Success);
 
-        auto[allocateDescriptorSetResult, allocatedDescriptorSet] = scene.gbuffer.descriptorPool->AllocateDescriptorSet(scene.gbuffer.meshDescriptorSetLayout);
+        auto[allocateDescriptorSetResult, allocatedDescriptorSet] = scene.gbuffer.descriptorPool->AllocateDescriptorSet(scene.gbuffer.meshBufferDescriptorSetLayout);
         HUSKY_ASSERT(allocateDescriptorSetResult == GraphicsResult::Success);
 
         mesh->SetUniformBuffer(createdUniformBuffer);
@@ -656,9 +676,9 @@ namespace Husky::Render::Deferred
         HUSKY_ASSERT(createLightsBufferResult == GraphicsResult::Success);
         scene.lighting.lightsBuffer = createdLightsBuffer;
 
-        auto[createDescriptorSetResult, createdDescriptorSet] = scene.lighting.descriptorPool->AllocateDescriptorSet(scene.lighting.lightsDescriptorSetLayout);
+        auto[createDescriptorSetResult, createdDescriptorSet] = scene.lighting.descriptorPool->AllocateDescriptorSet(scene.lighting.lightsBufferDescriptorSetLayout);
         HUSKY_ASSERT(createDescriptorSetResult == GraphicsResult::Success);
-        scene.lighting.lightsDescriptorSet = createdDescriptorSet;
+        scene.lighting.lightsBufferDescriptorSet = createdDescriptorSet;
 
         createdDescriptorSet->WriteUniformBuffer(&scene.lighting.lightsUniformBufferBinding, createdLightsBuffer);
         createdDescriptorSet->Update();
@@ -887,6 +907,8 @@ namespace Husky::Render::Deferred
         shaderDefines.mapping = &FlagToString;
 
         const auto& vertexBuffers = primitive->GetVertexBuffers();
+        HUSKY_ASSERT(vertexBuffers.size() == 1);
+
         ci.inputAssembler.bindings.resize(vertexBuffers.size());
         for (int i = 0; i < vertexBuffers.size(); i++)
         {
@@ -908,6 +930,7 @@ namespace Husky::Render::Deferred
             shaderDefines.AddFlag(SemanticToFlag.at(attribute.semantic));
         }
 
+        // TODO
         ci.inputAssembler.primitiveTopology = PrimitiveTopology::TriangleList;
 
         const auto& material = primitive->GetMaterial();
@@ -1114,6 +1137,7 @@ namespace Husky::Render::Deferred
         auto[createDescriptorPoolResult, createdDescriptorPool] = context->device->CreateDescriptorPool(descriptorPoolCreateInfo);
         if (createDescriptorPoolResult != GraphicsResult::Success)
         {
+            HUSKY_ASSERT(false);
             return { false };
         }
 
@@ -1171,14 +1195,16 @@ namespace Husky::Render::Deferred
         auto[createMeshDescriptorSetLayoutResult, createdMeshDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(meshDescriptorSetLayoutCreateInfo);
         if (createMeshDescriptorSetLayoutResult != GraphicsResult::Success)
         {
+            HUSKY_ASSERT(false);
             return { false };
         }
 
-        resources.meshDescriptorSetLayout = std::move(createdMeshDescriptorSetLayout);
+        resources.meshBufferDescriptorSetLayout = std::move(createdMeshDescriptorSetLayout);
 
         auto[createMaterialTextureDescriptorSetLayoutResult, createdMaterialTextureDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(materialTextureDescriptorSetLayoutCreateInfo);
         if (createMaterialTextureDescriptorSetLayoutResult != GraphicsResult::Success)
         {
+            HUSKY_ASSERT(false);
             return { false };
         }
 
@@ -1187,6 +1213,7 @@ namespace Husky::Render::Deferred
         auto[createMaterialBufferDescriptorSetLayoutResult, createdMaterialBufferDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(materialBufferDescriptorSetLayoutCreateInfo);
         if (createMaterialBufferDescriptorSetLayoutResult != GraphicsResult::Success)
         {
+            HUSKY_ASSERT(false);
             return { false };
         }
 
@@ -1195,6 +1222,7 @@ namespace Husky::Render::Deferred
         auto[createMaterialSamplerDescriptorSetLayoutResult, createdMaterialSamplerDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(materialSamplerDescriptorSetLayoutCreateInfo);
         if (createMaterialSamplerDescriptorSetLayoutResult != GraphicsResult::Success)
         {
+            HUSKY_ASSERT(false);
             return { false };
         }
 
@@ -1209,15 +1237,16 @@ namespace Husky::Render::Deferred
         auto[createCameraDescriptorSetLayoutResult, createdCameraDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(cameraDescriptorSetLayoutCreateInfo);
         if (createCameraDescriptorSetLayoutResult != GraphicsResult::Success)
         {
+            HUSKY_ASSERT(false);
             return { false };
         }
 
-        resources.cameraDescriptorSetLayout = std::move(createdCameraDescriptorSetLayout);
+        resources.cameraBufferDescriptorSetLayout = std::move(createdCameraDescriptorSetLayout);
 
         PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
         pipelineLayoutCreateInfo
-            .AddSetLayout(ShaderStage::Vertex, resources.cameraDescriptorSetLayout)
-            .AddSetLayout(ShaderStage::Vertex, resources.meshDescriptorSetLayout)
+            .AddSetLayout(ShaderStage::Vertex, resources.cameraBufferDescriptorSetLayout)
+            .AddSetLayout(ShaderStage::Vertex, resources.meshBufferDescriptorSetLayout)
             .AddSetLayout(ShaderStage::Fragment, resources.materialTextureDescriptorSetLayout)
             .AddSetLayout(ShaderStage::Fragment, resources.materialBufferDescriptorSetLayout)
             .AddSetLayout(ShaderStage::Fragment, resources.materialSamplerDescriptorSetLayout);
@@ -1225,6 +1254,7 @@ namespace Husky::Render::Deferred
         auto[createPipelineLayoutResult, createdPipelineLayout] = context->device->CreatePipelineLayout(pipelineLayoutCreateInfo);
         if (createPipelineLayoutResult != GraphicsResult::Success)
         {
+            HUSKY_ASSERT(false);
             return { false };
         }
 
@@ -1268,6 +1298,7 @@ namespace Husky::Render::Deferred
         auto[createDescriptorPoolResult, createdDescriptorPool] = context->device->CreateDescriptorPool(descriptorPoolCreateInfo);
         if (createDescriptorPoolResult != GraphicsResult::Success)
         {
+            HUSKY_ASSERT(false);
             return { false };
         }
 
@@ -1276,7 +1307,7 @@ namespace Husky::Render::Deferred
         ShaderDefines<DeferredShaderDefines> shaderDefines;
         shaderDefines.mapping = &FlagToString;
 
-        auto[vertexShaderLibraryCreated, createdVertexShaderLibrary] = CreateShaderLibrary(
+        auto [vertexShaderLibraryCreated, createdVertexShaderLibrary] = CreateShaderLibrary(
 #if _WIN32
             "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\lighting.vert",
 #endif
@@ -1291,12 +1322,14 @@ namespace Husky::Render::Deferred
 
         if (!vertexShaderLibraryCreated)
         {
+            HUSKY_ASSERT(false);
             return { false };
         }
 
-        auto [vertexShaderProgramCreated, vertexShaderProgram] = createdVertexShaderLibrary->CreateShaderProgram(ShaderStage::Vertex, "vp_main");
-        if(vertexShaderProgramCreated != GraphicsResult::Success)
+        auto [vertexShaderProgramCreateResult, vertexShaderProgram] = createdVertexShaderLibrary->CreateShaderProgram(ShaderStage::Vertex, "vp_main");
+        if(vertexShaderProgramCreateResult != GraphicsResult::Success)
         {
+            HUSKY_ASSERT(false);
             return { false };
         }
 
@@ -1317,12 +1350,17 @@ namespace Husky::Render::Deferred
 
         if (!fragmentShaderLibraryCreated)
         {
+            HUSKY_ASSERT(false);
             return { false };
         }
 
-        auto [fragmentShaderProgramCreated, fragmentShaderProgram] = createdFragmentShaderLibrary->CreateShaderProgram(ShaderStage::Fragment, "fp_main");
-        if(fragmentShaderProgramCreated != GraphicsResult::Success)
+        auto [fragmentShaderProgramCreateResult, fragmentShaderProgram] = createdFragmentShaderLibrary->CreateShaderProgram(
+            ShaderStage::Fragment,
+            "fp_main");
+
+        if(fragmentShaderProgramCreateResult != GraphicsResult::Success)
         {
+            HUSKY_ASSERT(false);
             return { false };
         }
 
@@ -1341,10 +1379,11 @@ namespace Husky::Render::Deferred
         auto[createCameraDescriptorSetLayoutResult, createdCameraDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(cameraDescriptorSetLayoutCreateInfo);
         if (createCameraDescriptorSetLayoutResult != GraphicsResult::Success)
         {
+            HUSKY_ASSERT(false);
             return { false };
         }
 
-        resources.cameraDescriptorSetLayout = std::move(createdCameraDescriptorSetLayout);
+        resources.cameraBufferDescriptorSetLayout = std::move(createdCameraDescriptorSetLayout);
 
         DescriptorSetLayoutCreateInfo lightsDescriptorSetLayoutCreateInfo;
         lightsDescriptorSetLayoutCreateInfo
@@ -1355,10 +1394,11 @@ namespace Husky::Render::Deferred
         auto[createLightsDescriptorSetLayoutResult, createdLightsDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(lightsDescriptorSetLayoutCreateInfo);
         if (createLightsDescriptorSetLayoutResult != GraphicsResult::Success)
         {
+            HUSKY_ASSERT(false);
             return { false };
         }
 
-        resources.lightsDescriptorSetLayout = std::move(createdLightsDescriptorSetLayout);
+        resources.lightsBufferDescriptorSetLayout = std::move(createdLightsDescriptorSetLayout);
 
         resources.baseColorTextureBinding
             .OfType(ResourceType::Texture)
@@ -1395,6 +1435,7 @@ namespace Husky::Render::Deferred
         auto[createGBufferTextureDescriptorSetLayoutResult, createdGBufferTextureDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(gbufferTextureDescriptorSetLayoutCreateInfo);
         if (createGBufferTextureDescriptorSetLayoutResult != GraphicsResult::Success)
         {
+            HUSKY_ASSERT(false);
             return { false };
         }
 
@@ -1411,6 +1452,7 @@ namespace Husky::Render::Deferred
         auto[createGBufferSamplerDescriptorSetLayoutResult, createdGBufferSamplerDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(gbufferSamplerDescriptorSetLayoutCreateInfo);
         if (createGBufferSamplerDescriptorSetLayoutResult != GraphicsResult::Success)
         {
+            HUSKY_ASSERT(false);
             return { false };
         }
 
@@ -1421,6 +1463,7 @@ namespace Husky::Render::Deferred
         auto[createBaseColorSamplerResult, createdBaseColorSampler] = context->device->CreateSampler(samplerCreateInfo);
         if (createBaseColorSamplerResult != GraphicsResult::Success)
         {
+            HUSKY_ASSERT(false);
             return { false };
         }
 
@@ -1429,6 +1472,7 @@ namespace Husky::Render::Deferred
         auto[createNormalMapSamplerResult, createdNormalMapSampler] = context->device->CreateSampler(samplerCreateInfo);
         if (createNormalMapSamplerResult != GraphicsResult::Success)
         {
+            HUSKY_ASSERT(false);
             return { false };
         }
 
@@ -1437,6 +1481,7 @@ namespace Husky::Render::Deferred
         auto[createDepthSamplerResult, createdDepthSampler] = context->device->CreateSampler(samplerCreateInfo);
         if (createDepthSamplerResult != GraphicsResult::Success)
         {
+            HUSKY_ASSERT(false);
             return { false };
         }
 
@@ -1444,14 +1489,15 @@ namespace Husky::Render::Deferred
 
         PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
         pipelineLayoutCreateInfo
-            .AddSetLayout(ShaderStage::Fragment, resources.cameraDescriptorSetLayout)
-            .AddSetLayout(ShaderStage::Fragment, resources.lightsDescriptorSetLayout)
+            .AddSetLayout(ShaderStage::Fragment, resources.cameraBufferDescriptorSetLayout)
+            .AddSetLayout(ShaderStage::Fragment, resources.lightsBufferDescriptorSetLayout)
             .AddSetLayout(ShaderStage::Fragment, resources.gbufferTextureDescriptorSetLayout)
             .AddSetLayout(ShaderStage::Fragment, resources.gbufferSamplerDescriptorSetLayout);
 
         auto[createPipelineLayoutResult, createdPipelineLayout] = context->device->CreatePipelineLayout(pipelineLayoutCreateInfo);
         if (createPipelineLayoutResult != GraphicsResult::Success)
         {
+            HUSKY_ASSERT(false);
             return { false };
         }
 
@@ -1473,6 +1519,7 @@ namespace Husky::Render::Deferred
 
         if (createQuadBufferResult != GraphicsResult::Success)
         {
+            HUSKY_ASSERT(false);
             return { false };
         }
 
@@ -1510,6 +1557,7 @@ namespace Husky::Render::Deferred
             cameraBufferSetLayoutCreateInfo);
         if(cameraBufferSetLayoutCreateResult != GraphicsResult::Success)
         {
+            HUSKY_ASSERT(false);
             return { false };
         }
 
@@ -1525,12 +1573,83 @@ namespace Husky::Render::Deferred
             meshBufferSetLayoutCreateInfo);
         if(meshBufferSetLayoutCreateResult != GraphicsResult::Success)
         {
+            HUSKY_ASSERT(false);
             return { false };
         }
 
         resources.meshBufferSetLayout = std::move(createdMeshBufferSetLayout);
 
-        PipelineStateCreateInfo pipelineStateCreateInfoTemplate;
+        PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
+        pipelineLayoutCreateInfo
+            .AddSetLayout(ShaderStage::Vertex, resources.cameraBufferSetLayout)
+            .AddSetLayout(ShaderStage::Vertex, resources.meshBufferSetLayout);
+
+        auto [createPipelineLayoutResult, createdPipelineLayout] = context->device->CreatePipelineLayout(pipelineLayoutCreateInfo);
+        if(createPipelineLayoutResult != GraphicsResult::Success)
+        {
+            HUSKY_ASSERT(false);
+            return { false };
+        }
+
+        resources.pipelineLayout = std::move(createdPipelineLayout);
+
+        VertexInputAttributeDescription positionAttribute;
+        positionAttribute.format = Format::R32G32B32A32Sfloat;
+
+        VertexInputBindingDescription vertexBufferBinding;
+        vertexBufferBinding.stride = sizeof(Vertex);
+
+        ShaderDefines<DeferredShaderDefines> shaderDefines;
+
+        auto[vertexShaderLibraryCreated, vertexShaderLibrary] = CreateShaderLibrary(
+#if _WIN32
+            "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\todo.vert",
+#endif
+#if __APPLE__
+    #if HUSKY_USE_METAL
+            "/Users/spo1ler/Development/HuskyEngine/src/Metal/Husky/Render/Shaders/Deferred/shadowmap_vp.metal",
+    #elif HUSKY_USE_VULKAN
+            "/Users/spo1ler/Development/HuskyEngine/src/Vulkan/Husky/Render/Shaders/Deferred/todo.vert",
+    #endif
+#endif
+            shaderDefines);
+
+        if(!vertexShaderLibraryCreated)
+        {
+            HUSKY_ASSERT(false);
+            return { false };
+        }
+
+        auto [createVertexProgramResult, createdVertexProgram] = vertexShaderLibrary->CreateShaderProgram(
+            ShaderStage::Vertex,
+            "vp_main");
+
+        if(createVertexProgramResult != GraphicsResult::Success)
+        {
+            HUSKY_ASSERT(false);
+            return { false };
+        }
+
+        PipelineStateCreateInfo pipelineStateCreateInfo;
+
+        pipelineStateCreateInfo.inputAssembler.attributes.push_back(positionAttribute);
+        pipelineStateCreateInfo.inputAssembler.bindings.push_back(vertexBufferBinding);
+        // todo primitive topology pipelineStateCreateInfo.inputAssembler
+        pipelineStateCreateInfo.vertexProgram = createdVertexProgram;
+        pipelineStateCreateInfo.depthStencil.depthTestEnable = true;
+        pipelineStateCreateInfo.depthStencil.depthWriteEnable = true;
+        pipelineStateCreateInfo.depthStencil.depthCompareFunction = CompareFunction::Less;
+        pipelineStateCreateInfo.depthStencil.depthStencilFormat = Format::D32Sfloat;
+        pipelineStateCreateInfo.pipelineLayout = resources.pipelineLayout;
+
+        auto [createPipelineStateResult, createdPipelineState] = context->device->CreatePipelineState(pipelineStateCreateInfo);
+        if(createPipelineStateResult != GraphicsResult::Success)
+        {
+            HUSKY_ASSERT(false);
+            return { false };
+        }
+
+        resources.pipelineState = std::move(createdPipelineState);
 
         return { true, resources };
     }

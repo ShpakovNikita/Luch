@@ -17,12 +17,12 @@ namespace Husky::Metal
             MetalGraphicsDevice* device,
             const PipelineStateCreateInfo& createInfo,
             mtlpp::RenderPipelineState pipelineState,
-            mtlpp::DepthStencilState depthStencilState);
+            Optional<mtlpp::DepthStencilState> depthStencilState);
 
         const PipelineStateCreateInfo& GetCreateInfo() const override { return createInfo; }
     private:
         PipelineStateCreateInfo createInfo;
         mtlpp::RenderPipelineState pipelineState;
-        mtlpp::DepthStencilState depthStencilState;
+        Optional<mtlpp::DepthStencilState> depthStencilState;
     };
 }

@@ -36,8 +36,8 @@ namespace Husky::Render::Deferred
         ColorAttachment normalMapAttachmentTemplate;
         DepthStencilAttachment depthStencilAttachmentTemplate;
 
-        RefPtr<DescriptorSetLayout> meshDescriptorSetLayout;
-        RefPtr<DescriptorSetLayout> cameraDescriptorSetLayout;
+        RefPtr<DescriptorSetLayout> meshBufferDescriptorSetLayout;
+        RefPtr<DescriptorSetLayout> cameraBufferDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> materialTextureDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> materialBufferDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> materialSamplerDescriptorSetLayout;

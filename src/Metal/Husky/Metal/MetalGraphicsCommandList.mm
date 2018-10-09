@@ -87,7 +87,17 @@ namespace Husky::Metal
         primitiveType = ToMetalPrimitiveType(ci.inputAssembler.primitiveTopology);
 
         commandEncoder.SetRenderPipelineState(mtlPipelineState->pipelineState);
-        commandEncoder.SetDepthStencilState(mtlPipelineState->depthStencilState);
+
+        if(mtlPipelineState->depthStencilState.has_value())
+        {
+            HUSKY_ASSERT(mtlPipelineState->GetCreateInfo().depthStencil.depthTestEnable == true);
+            commandEncoder.SetDepthStencilState(mtlPipelineState->depthStencilState.value());
+        }
+        else
+        {
+            HUSKY_ASSERT(mtlPipelineState->GetCreateInfo().depthStencil.depthTestEnable == false);
+        }
+        // TODO stencil reference
         commandEncoder.SetCullMode(ToMetalCullMode(ci.rasterization.cullMode));
         commandEncoder.SetFrontFacingWinding(ToMetalWinding(ci.rasterization.frontFace));
 

@@ -17,6 +17,7 @@
 #include <Husky/SceneV1/VertexBuffer.h>
 #include <Husky/SceneV1/PbrMaterial.h>
 #include <Husky/SceneV1/Sampler.h>
+#include <Husky/Render/Common.h>
 #include <cstring>
 #include <cmath>
 
@@ -370,7 +371,7 @@ namespace Husky::SceneV1::Loader
         positionAttribute.componentType = ComponentType::Float;
         positionAttribute.attributeType = AttributeType::Vec4;
         positionAttribute.format = Format::R32G32B32A32Sfloat;
-        positionAttribute.offset = offsetof(InterleavedVertex, position);
+        positionAttribute.offset = offsetof(Render::Vertex, position);
         positionAttribute.vertexBufferIndex = 0;
 
         auto& normalAttribute = attributes.emplace_back();
@@ -378,7 +379,7 @@ namespace Husky::SceneV1::Loader
         normalAttribute.componentType = ComponentType::Float;
         normalAttribute.attributeType = AttributeType::Vec4;
         normalAttribute.format = Format::R32G32B32A32Sfloat;
-        normalAttribute.offset = offsetof(InterleavedVertex, normal);
+        normalAttribute.offset = offsetof(Render::Vertex, normal);
         normalAttribute.vertexBufferIndex = 0;
 
         auto& tangentAttribute = attributes.emplace_back();
@@ -386,7 +387,7 @@ namespace Husky::SceneV1::Loader
         tangentAttribute.componentType = ComponentType::Float;
         tangentAttribute.attributeType = AttributeType::Vec4;
         tangentAttribute.format = Format::R32G32B32A32Sfloat;
-        tangentAttribute.offset = offsetof(InterleavedVertex, tangent);
+        tangentAttribute.offset = offsetof(Render::Vertex, tangent);
         tangentAttribute.vertexBufferIndex = 0;
 
         auto& texcoordAttribute = attributes.emplace_back();
@@ -394,7 +395,7 @@ namespace Husky::SceneV1::Loader
         texcoordAttribute.componentType = ComponentType::Float;
         texcoordAttribute.attributeType = AttributeType::Vec2;
         texcoordAttribute.format = Format::R32G32Sfloat;
-        texcoordAttribute.offset = offsetof(InterleavedVertex, texcoord);
+        texcoordAttribute.offset = offsetof(Render::Vertex, texcoord);
         texcoordAttribute.vertexBufferIndex = 0;
 
         UnorderedMap<AttributeSemantic, glTF::Attribute> glTFAttributes;
@@ -419,7 +420,7 @@ namespace Husky::SceneV1::Loader
         HUSKY_ASSERT(glTFAttributes.count(AttributeSemantic::Texcoord_0) == 1);
 
         Vector<Byte> vertexBytes;
-        vertexBytes.resize(*vertexCount * sizeof(InterleavedVertex));
+        vertexBytes.resize(*vertexCount * sizeof(Render::Vertex));
 
         Optional<IndexBuffer> indexBuffer;
 
@@ -568,12 +569,12 @@ namespace Husky::SceneV1::Loader
 
         for(int32 i = 0; i < *vertexCount; i++)
         {
-            InterleavedVertex vertex;
+            Render::Vertex vertex;
             vertex.position = positions[i];
             vertex.normal = normals[i];
             vertex.tangent = tangents[i];
             vertex.texcoord = texcoords[i];
-            std::memcpy(vertexBytes.data() + i * sizeof(InterleavedVertex), &vertex, sizeof(InterleavedVertex));
+            std::memcpy(vertexBytes.data() + i * sizeof(Render::Vertex), &vertex, sizeof(Render::Vertex));
         }
 
         RefPtr<Buffer> buffer = MakeRef<Buffer>();
@@ -582,7 +583,7 @@ namespace Husky::SceneV1::Loader
         Vector<VertexBuffer> vertexBuffers;
         auto& vertexBuffer = vertexBuffers.emplace_back();
         vertexBuffer.backingBuffer = buffer;
-        vertexBuffer.stride = sizeof(InterleavedVertex);
+        vertexBuffer.stride = sizeof(Render::Vertex);
         vertexBuffer.byteOffset = 0;
         vertexBuffer.byteLength = vertexBytes.size();
 

@@ -9,7 +9,7 @@ namespace Husky::Metal
         MetalGraphicsDevice* device,
         const PipelineStateCreateInfo& aCreateInfo,
         mtlpp::RenderPipelineState aPipelineState,
-        mtlpp::DepthStencilState aDepthStencilState)
+        Optional<mtlpp::DepthStencilState> aDepthStencilState)
         : PipelineState(device)
         , createInfo(aCreateInfo)
         , pipelineState(aPipelineState)

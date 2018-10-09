@@ -34,10 +34,10 @@ namespace Husky::Render::Deferred
         RefPtr<DescriptorSetLayout> gbufferTextureDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> gbufferSamplerDescriptorSetLayout;
 
-        RefPtr<DescriptorSet> lightsDescriptorSet;
+        RefPtr<DescriptorSet> lightsBufferDescriptorSet;
 
-        RefPtr<DescriptorSetLayout> cameraDescriptorSetLayout;
-        RefPtr<DescriptorSetLayout> lightsDescriptorSetLayout;
+        RefPtr<DescriptorSetLayout> cameraBufferDescriptorSetLayout;
+        RefPtr<DescriptorSetLayout> lightsBufferDescriptorSetLayout;
 
         ColorAttachment colorAttachmentTemplate;
 

@@ -28,8 +28,11 @@ namespace Husky::Render::Deferred::ShadowMapping
         RefPtr<DescriptorSetLayout> meshBufferSetLayout;
         RefPtr<DescriptorSetLayout> cameraBufferSetLayout;
 
-        RefPtr<PipelineState> directionalLightPipelineState;
-        RefPtr<PipelineState> pointLightPipelineState;
-        RefPtr<PipelineState> spotlightPipelineState;
+        RefPtr<PipelineLayout> pipelineLayout;
+
+        //RefPtr<PipelineState> directionalLightPipelineState;
+        //RefPtr<PipelineState> pointLightPipelineState;
+        //RefPtr<PipelineState> spotlightPipelineState;
+        RefPtr<PipelineState> pipelineState;
     };
 }

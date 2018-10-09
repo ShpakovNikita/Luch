@@ -10,16 +10,6 @@
 
 namespace Husky::SceneV1::Loader
 {
-    #pragma pack(push, 1)
-    struct InterleavedVertex
-    {
-        Vec3 position;
-        Vec3 normal;
-        Vec4 tangent;
-        Vec2 texcoord;
-    };
-    #pragma pack(pop)
-
     class glTFLoader
     {
     public:
