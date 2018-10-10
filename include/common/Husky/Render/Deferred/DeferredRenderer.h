@@ -30,17 +30,6 @@ namespace Husky::Render::Deferred
         Vec2 texCoord;
     };
 
-    struct OffscreenTextures
-    {
-        RefPtr<Texture> baseColorTexture;
-        RefPtr<Texture> normalMapTexture;
-        RefPtr<Texture> depthStencilBuffer;
-
-        RefPtr<Sampler> baseColorSampler;
-        RefPtr<Sampler> normalMapSampler;
-        RefPtr<Sampler> depthStencilSampler;
-    };
-
     struct DeferredFrameResources
     {
         RefPtr<DescriptorSet> cameraBufferDescriptorSet;
@@ -49,11 +38,6 @@ namespace Husky::Render::Deferred
         RefPtr<Buffer> cameraUniformBuffer;
 
         RefPtr<CommandPool> commandPool;
-
-        OffscreenTextures offscreen;
-
-        RefPtr<Buffer> indexBuffer;
-        RefPtr<Buffer> vertexBuffer;
     };
 
     struct DeferredRendererContext
@@ -66,20 +50,11 @@ namespace Husky::Render::Deferred
         RefPtr<Swapchain> swapchain;
     };
 
-    struct DeferredDrawContext
-    {
-        Mat4x4 model;
-        Mat4x4 view;
-        Mat4x4 projection;
-        int32 frameIndex = 0;
-        DeferredFrameResources* frameResources = nullptr;
-    };
-
     struct DeferredPreparedScene
     {
         RefPtr<SceneV1::Scene> scene;
         RefPtr<SceneV1::Node> cameraNode;
-        RefPtrVector<SceneV1::Light> lights;
+        RefPtrVector<SceneV1::Node> lightNodes;
 
         RefPtr<PipelineLayout> pipelineLayout;
         RefPtr<DescriptorPool> descriptorPool;
@@ -117,7 +92,6 @@ namespace Husky::Render::Deferred
         void PrepareLightNode(const RefPtr<SceneV1::Node>& node, DeferredPreparedScene& scene);
         void PrepareNode(const RefPtr<SceneV1::Node>& node, DeferredPreparedScene& scene);
         void PrepareMesh(const RefPtr<SceneV1::Mesh>& mesh, DeferredPreparedScene& scene);
-        void PrepareLight(const RefPtr<SceneV1::Light>& light, DeferredPreparedScene& scene);
         void PrepareMaterial(const RefPtr<SceneV1::PbrMaterial>& mesh, DeferredPreparedScene& scene);
 
         void PrepareLights(DeferredPreparedScene& scene);
@@ -132,7 +106,8 @@ namespace Husky::Render::Deferred
         void DrawMesh(const RefPtr<SceneV1::Mesh>& mesh, const DeferredPreparedScene& scene, GraphicsCommandList* cmdBuffer);
         void DrawPrimitive(const RefPtr<SceneV1::Primitive>& primitive, const DeferredPreparedScene& scene, GraphicsCommandList* cmdBuffer);
 
-        MaterialUniform GetMaterialUniform(SceneV1::PbrMaterial *material);
+        MaterialUniform GetMaterialUniform(SceneV1::PbrMaterial *material) const;
+        CameraUniform GetCameraUniform(SceneV1::Camera *camera) const;
 
         Vector<Byte> LoadShaderSource(const FilePath& path);
 

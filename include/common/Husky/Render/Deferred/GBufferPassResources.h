@@ -8,6 +8,17 @@ namespace Husky::Render::Deferred
 {
     using namespace Graphics;
 
+    struct OffscreenTextures
+    {
+        RefPtr<Texture> baseColorTexture;
+        RefPtr<Texture> normalMapTexture;
+        RefPtr<Texture> depthStencilBuffer;
+
+        RefPtr<Sampler> baseColorSampler;
+        RefPtr<Sampler> normalMapSampler;
+        RefPtr<Sampler> depthStencilSampler;
+    };
+
     struct GBufferPassResources
     {
         RefPtr<PipelineLayout> pipelineLayout;
@@ -41,5 +52,7 @@ namespace Husky::Render::Deferred
         RefPtr<DescriptorSetLayout> materialTextureDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> materialBufferDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> materialSamplerDescriptorSetLayout;
+
+        Vector<OffscreenTextures> offscreen;
     };
 }

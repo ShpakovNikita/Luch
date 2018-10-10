@@ -1,6 +1,6 @@
 #import <QuartzCore/CAMetalLayer.h>
 #include "SampleViewController.h"
-#include "../../Common/Sample/SampleApplication.h"
+#include "../../common/Sample/SampleApplication.h"
 
 #pragma mark -
 #pragma mark SampleViewController

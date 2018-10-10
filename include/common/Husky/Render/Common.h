@@ -20,7 +20,7 @@ namespace Husky::Render
         Vec2 texcoord;
     };
 
-    struct CameraUniformBuffer
+    struct CameraUniform
     {
         Mat4x4 view;
         Mat4x4 inverseView;
@@ -32,15 +32,15 @@ namespace Husky::Render
         Vec2 zMinMax;
     };
 
-    static_assert(sizeof(CameraUniformBuffer) % 4 == 0);
+    static_assert(sizeof(CameraUniform) % 4 == 0);
 
-    struct MeshUniformBuffer
+    struct MeshUniform
     {
         Mat4x4 transform;
         Mat4x4 inverseTransform;
     };
 
-    static_assert(sizeof(MeshUniformBuffer) % 4 == 0);
+    static_assert(sizeof(MeshUniform) % 4 == 0);
 
     struct MaterialUniform
     {
@@ -62,7 +62,7 @@ namespace Husky::Render
         Vec4 positionVS = { 0.0, 0.0, 0.0, 1.0 };
         Vec4 directionVS = { 0.0, 0.0, 0.0, 0.01 };
         Vec4 color = { 1.0, 1.0, 1.0, 1.0 };
-        int32 enabled = 0;
+        int32 enabled = 1;
         int32 type = 0;
         float32 spotlightAngle = 0;
         float32 range = 0;

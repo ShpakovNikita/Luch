@@ -134,7 +134,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     light1->SetRange(15);
     light1->SetIndex(0);
     light1->SetColor({1.0, 0.0, 0.0});
-    light1->SetDirection({ 0.995037, -0.0995037, 0 });
+    light1->SetDirection({ 1, -0.2, 0 });
     light1->SetSpotlightAngle(0.3);
     light1->SetIntensity(0.2);
     lightNode1->SetLight(light1);
@@ -147,7 +147,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     light2->SetRange(15);
     light2->SetIndex(1);
     light2->SetColor({ 0.0, 0.0, 1.0 });
-    light2->SetDirection({ 0.995037, 0.0995037, 0 });
+    light2->SetDirection({ 1, 0.2, 0 });
     light2->SetSpotlightAngle(0.3);
     light2->SetIntensity(0.3);
 
@@ -163,21 +163,32 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     lightNode3->SetLight(light3);
 
+    auto light4 = MakeRef<SceneV1::Light>();
+    light4->SetType(SceneV1::LightType::Directional);
+    light4->SetIndex(4);
+    light4->SetDirection({ 1, -1, 0 });
+    light4->SetIntensity(0.3);
+
+    auto lightNode4 = MakeRef<SceneV1::Node>();
+    lightNode4->SetName("ln4");
+    lightNode4->SetLight(light4);
+
     SceneV1::TransformProperties light1Transform;
     light1Transform.translation = Vec3{ 0, 5, 0 };
-    lightNode1->SetTransform(light1Transform);
+    lightNode1->SetLocalTransform(light1Transform);
 
     SceneV1::TransformProperties light2Transform;
     light2Transform.translation = Vec3{ 0, 5, 0 };
-    lightNode2->SetTransform(light2Transform);
+    lightNode2->SetLocalTransform(light2Transform);
 
     SceneV1::TransformProperties light3Transform;
     light3Transform.translation = Vec3{ 4, 5, 0 };
-    lightNode3->SetTransform(light3Transform);
+    lightNode3->SetLocalTransform(light3Transform);
 
     scene->AddNode(lightNode1);
     scene->AddNode(lightNode2);
     scene->AddNode(lightNode3);
+    //scene->AddNode(lightNode4);
 
     auto [prepareSceneResult, prepScene] = deferredRenderer->PrepareScene(scene);
     HUSKY_ASSERT(prepareSceneResult);

@@ -284,37 +284,31 @@ namespace Husky::Render::Deferred
 
             frameResources.commandPool = std::move(createdFrameCommandPool);
 
-            auto [offscreenTexturesCreated, createdOffscreenTextures] = CreateOffscreenTextures();
-            if (!offscreenTexturesCreated)
-            {
-                return { false };
-            }
-
-            frameResources.offscreen = std::move(createdOffscreenTextures);
+            auto& offscreen = preparedScene.gbuffer.offscreen[i];
 
             frameResources.gbufferTextureDescriptorSet->WriteTexture(
                 &preparedScene.lighting.baseColorTextureBinding,
-                frameResources.offscreen.baseColorTexture);
+                offscreen.baseColorTexture);
 
             frameResources.gbufferTextureDescriptorSet->WriteTexture(
                 &preparedScene.lighting.normalMapTextureBinding,
-                frameResources.offscreen.normalMapTexture);
+                offscreen.normalMapTexture);
 
             frameResources.gbufferTextureDescriptorSet->WriteTexture(
                 &preparedScene.lighting.depthStencilTextureBinding,
-                frameResources.offscreen.depthStencilBuffer);
+                offscreen.depthStencilBuffer);
 
             frameResources.gbufferSamplerDescriptorSet->WriteSampler(
                 &preparedScene.lighting.baseColorSamplerBinding,
-                frameResources.offscreen.baseColorSampler);
+                offscreen.baseColorSampler);
 
             frameResources.gbufferSamplerDescriptorSet->WriteSampler(
                 &preparedScene.lighting.normalMapSamplerBinding,
-                frameResources.offscreen.normalMapSampler);
+                offscreen.normalMapSampler);
 
             frameResources.gbufferSamplerDescriptorSet->WriteSampler(
                 &preparedScene.lighting.depthStencilSamplerBinding,
-                frameResources.offscreen.depthStencilSampler);
+                offscreen.depthStencilSampler);
         }
 
         const auto& textures = sceneProperties.textures;
@@ -391,7 +385,17 @@ namespace Husky::Render::Deferred
         auto[acquireResult, acquiredTexture] = context->swapchain->GetNextAvailableTexture(nullptr);
         HUSKY_ASSERT(acquireResult == GraphicsResult::Success);
 
-        auto& frameResource = scene.frameResources[acquiredTexture.index];
+        int32 index = acquiredTexture.index;
+
+        auto& frameResource = scene.frameResources[index];
+
+        for(const auto& lightNode : scene.lightNodes)
+        {
+            const auto& light = lightNode->GetLight();
+            HUSKY_ASSERT(light != nullptr);
+
+            
+        }
 
         auto [allocateGBufferCommandListResult, gBufferCmdList] = frameResource.commandPool->AllocateGraphicsCommandList();
         HUSKY_ASSERT(allocateGBufferCommandListResult == GraphicsResult::Success);
@@ -402,14 +406,16 @@ namespace Husky::Render::Deferred
         Viewport viewport { 0, 0, (float32)framebufferWidth, (float32)framebufferHeight, 0.0f, 1.0f };
         IntRect scissorRect { {0, 0}, { framebufferWidth, framebufferHeight } };
 
+        auto& offscreen = scene.gbuffer.offscreen[index];
+
         ColorAttachment baseColorAttachment = scene.gbuffer.baseColorAttachmentTemplate;
-        baseColorAttachment.output.texture = frameResource.offscreen.baseColorTexture;
+        baseColorAttachment.output.texture = offscreen.baseColorTexture;
 
         ColorAttachment normalMapAttachment = scene.gbuffer.normalMapAttachmentTemplate;
-        normalMapAttachment.output.texture = frameResource.offscreen.normalMapTexture;
+        normalMapAttachment.output.texture = offscreen.normalMapTexture;
 
         DepthStencilAttachment depthStencilAttachment = scene.gbuffer.depthStencilAttachmentTemplate;
-        depthStencilAttachment.output.texture = frameResource.offscreen.depthStencilBuffer;
+        depthStencilAttachment.output.texture = offscreen.depthStencilBuffer;
 
         RenderPassCreateInfo gBufferRenderPassCreateInfo;
         gBufferRenderPassCreateInfo
@@ -468,14 +474,14 @@ namespace Husky::Render::Deferred
         const auto& camera = node->GetCamera();
 
         BufferCreateInfo bufferCreateInfo;
-        bufferCreateInfo.length = sizeof(CameraUniformBuffer);
+        bufferCreateInfo.length = sizeof(CameraUniform);
         bufferCreateInfo.storageMode = ResourceStorageMode::Shared;
         bufferCreateInfo.usage = BufferUsageFlags::Uniform;
 
         auto [createBufferResult, buffer] = context->device->CreateBuffer(bufferCreateInfo);
         HUSKY_ASSERT(createBufferResult == GraphicsResult::Success);
 
-        auto[mapMemoryResult, mappedMemory] = buffer->MapMemory(sizeof(CameraUniformBuffer), 0);
+        auto[mapMemoryResult, mappedMemory] = buffer->MapMemory(sizeof(CameraUniform), 0);
         HUSKY_ASSERT(mapMemoryResult == GraphicsResult::Success);
 
         auto[createVertexDescriptorSetResult, vertexDescriptorSet] = scene.descriptorPool->AllocateDescriptorSet(scene.gbuffer.cameraBufferDescriptorSetLayout);
@@ -518,7 +524,7 @@ namespace Husky::Render::Deferred
 
         if (light!= nullptr)
         {
-            PrepareLight(light, scene);
+            scene.lightNodes.push_back(node);
         }
 
         HUSKY_ASSERT_MSG(node->GetChildren().empty(), "Don't add children to light nodes");
@@ -541,7 +547,7 @@ namespace Husky::Render::Deferred
         }
 
         BufferCreateInfo bufferCreateInfo;
-        bufferCreateInfo.length = sizeof(MeshUniformBuffer);
+        bufferCreateInfo.length = sizeof(MeshUniform);
         bufferCreateInfo.storageMode = ResourceStorageMode::Shared;
         bufferCreateInfo.usage = BufferUsageFlags::Uniform;
 
@@ -549,7 +555,7 @@ namespace Husky::Render::Deferred
 
         HUSKY_ASSERT(createUniformBufferResult == GraphicsResult::Success);
 
-        auto[mapMemoryResult, mappedMemory] = createdUniformBuffer->MapMemory(sizeof(MeshUniformBuffer), 0);
+        auto[mapMemoryResult, mappedMemory] = createdUniformBuffer->MapMemory(sizeof(MeshUniform), 0);
         HUSKY_ASSERT(mapMemoryResult == GraphicsResult::Success);
 
         auto[allocateDescriptorSetResult, allocatedDescriptorSet] = scene.gbuffer.descriptorPool->AllocateDescriptorSet(scene.gbuffer.meshBufferDescriptorSetLayout);
@@ -560,11 +566,6 @@ namespace Husky::Render::Deferred
 
         allocatedDescriptorSet->WriteUniformBuffer(&scene.gbuffer.meshUniformBufferBinding, createdUniformBuffer );
         allocatedDescriptorSet->Update();
-    }
-
-    void DeferredRenderer::PrepareLight(const RefPtr<SceneV1::Light>& light, DeferredPreparedScene& scene)
-    {
-        scene.lights.push_back(light);
     }
 
     void DeferredRenderer::PrepareMaterial(const RefPtr<SceneV1::PbrMaterial>& material, DeferredPreparedScene& scene)
@@ -684,12 +685,16 @@ namespace Husky::Render::Deferred
         createdDescriptorSet->Update();
     }
 
-    void DeferredRenderer::UpdateNode(const RefPtr<SceneV1::Node>& node, const Mat4x4& parentTransform, DeferredPreparedScene& scene)
+    void DeferredRenderer::UpdateNode(
+        const RefPtr<SceneV1::Node>& node,
+        const Mat4x4& parentTransform,
+        DeferredPreparedScene& scene)
     {
         const auto& mesh = node->GetMesh();
 
         Mat4x4 localTransformMatrix;
-        const auto& localTransform = node->GetTransform();
+        const auto& localTransform = node->GetLocalTransform();
+
         if (std::holds_alternative<Mat4x4>(localTransform))
         {
             localTransformMatrix = std::get<Mat4x4>(localTransform);
@@ -704,104 +709,88 @@ namespace Husky::Render::Deferred
                 * glm::scale(transformProperties.scale);
         }
 
-        Mat4x4 transform = parentTransform * localTransformMatrix;
+        Mat4x4 worldTransform = parentTransform * localTransformMatrix;
+        node->SetWorldTransform(worldTransform);
 
         if (mesh != nullptr)
         {
-            UpdateMesh(mesh, transform, scene);
+            UpdateMesh(mesh, worldTransform, scene);
         }
 
         const auto& camera = node->GetCamera();
 
         if (camera != nullptr)
         {
-            UpdateCamera(camera, transform, scene);
+            UpdateCamera(camera, worldTransform, scene);
         }
 
         const auto& light = node->GetLight();
         if (light != nullptr)
         {
-            UpdateLight(light, transform, scene);
+            UpdateLight(light, worldTransform, scene);
         }
 
         for (const auto& child : node->GetChildren())
         {
-            UpdateNode(child, transform, scene);
+            UpdateNode(child, worldTransform, scene);
         }
     }
 
-    void DeferredRenderer::UpdateMesh(const RefPtr<SceneV1::Mesh>& mesh, const Mat4x4& transform, DeferredPreparedScene& scene)
+    void DeferredRenderer::UpdateMesh(
+        const RefPtr<SceneV1::Mesh>& mesh,
+        const Mat4x4& transform,
+        DeferredPreparedScene& scene)
     {
         const auto& buffer = mesh->GetUniformBuffer();
 
-        MeshUniformBuffer meshUniformBuffer;
-        meshUniformBuffer.transform = transform;
-        meshUniformBuffer.inverseTransform = glm::inverse(transform);
+        MeshUniform meshUniform;
+        meshUniform.transform = transform;
+        meshUniform.inverseTransform = glm::inverse(transform);
 
         // TODO template function member in buffer to write updates
-        memcpy(buffer->GetMappedMemory(), &meshUniformBuffer, sizeof(MeshUniformBuffer));
+        memcpy(buffer->GetMappedMemory(), &meshUniform, sizeof(MeshUniform));
     }
 
-    void DeferredRenderer::UpdateCamera(const RefPtr<SceneV1::Camera>& camera, const Mat4x4& transform, DeferredPreparedScene& scene)
+    void DeferredRenderer::UpdateCamera(
+        const RefPtr<SceneV1::Camera>& camera,
+        const Mat4x4& transform,
+        DeferredPreparedScene& scene)
     {
-        const auto& buffer = camera->GetUniformBuffer();
-
         camera->SetCameraViewMatrix(glm::inverse(transform));
 
-        CameraUniformBuffer cameraUniformBuffer;
-        cameraUniformBuffer.view = camera->GetCameraViewMatrix();
-        cameraUniformBuffer.inverseView = glm::inverse(cameraUniformBuffer.view);
-        cameraUniformBuffer.projection = camera->GetCameraProjectionMatrix();
-        cameraUniformBuffer.inverseProjection = glm::inverse(cameraUniformBuffer.projection);
-        cameraUniformBuffer.inverseProjection = glm::inverse(cameraUniformBuffer.projection);
-        cameraUniformBuffer.viewProjection = cameraUniformBuffer.projection * cameraUniformBuffer.view;
-        cameraUniformBuffer.inverseViewProjection = glm::inverse(cameraUniformBuffer.viewProjection);
-        cameraUniformBuffer.position = Vec4{ camera->GetCameraPosition(), 1.0 };
-
-        Vec2 zMinMax;
-        auto cameraType = camera->GetCameraType();
-        if (cameraType == SceneV1::CameraType::Orthographic)
-        {
-            auto orthographicCamera = (SceneV1::OrthographicCamera*)camera.Get();
-            zMinMax.x = orthographicCamera->GetZNear();
-            zMinMax.y = orthographicCamera->GetZFar();
-        }
-        else if(cameraType == SceneV1::CameraType::Perspective)
-        {
-            auto perspectiveCamera = (SceneV1::PerspectiveCamera*)camera.Get();
-            zMinMax.x = perspectiveCamera->GetZNear();
-            zMinMax.y = perspectiveCamera->GetZFar().value_or(Limits<float>::infinity());
-        }
-
-        cameraUniformBuffer.zMinMax = zMinMax;
-
-        // TODO
-        memcpy(buffer->GetMappedMemory(), &cameraUniformBuffer, sizeof(CameraUniformBuffer));
+        const auto& buffer = camera->GetUniformBuffer();
+        auto cameraUniform = GetCameraUniform(camera);
+        memcpy(buffer->GetMappedMemory(), &cameraUniform, sizeof(CameraUniform));
     }
 
-    void DeferredRenderer::UpdateLight(const RefPtr<SceneV1::Light>& light, const Mat4x4& transform, DeferredPreparedScene& scene)
+    void DeferredRenderer::UpdateLight(
+        const RefPtr<SceneV1::Light>& light,
+        const Mat4x4& transform,
+        DeferredPreparedScene& scene)
     {
         auto viewTransform = scene.cameraNode->GetCamera()->GetCameraViewMatrix();
 
         LightUniform lightUniform;
 
         lightUniform.positionWS = transform * Vec4{ 0.0, 0.0, 0.0, 1.0 };
-        lightUniform.directionWS = transform * Vec4{ light->GetDirection().value_or(Vec3{0, 0, 1}), 0.0 };
+        lightUniform.directionWS = glm::normalize(transform * Vec4{ light->GetDirection().value_or(Vec3{0, 0, 1}), 0.0 });
         lightUniform.positionVS = viewTransform * lightUniform.positionWS;
-        lightUniform.directionVS = viewTransform * lightUniform.directionWS;
+        lightUniform.directionVS = glm::normalize(viewTransform * lightUniform.directionWS);
         lightUniform.color = Vec4{ light->GetColor().value_or(Vec3{1.0, 1.0, 1.0}), 1.0 };
         lightUniform.enabled = light->IsEnabled() ? 1 : 0;
         lightUniform.type = static_cast<int32>(light->GetType());
         lightUniform.spotlightAngle = light->GetSpotlightAngle().value_or(0.0);
         lightUniform.range = light->GetRange().value_or(0.0);
         lightUniform.intensity = light->GetIntensity();
-        lightUniform.enabled = true;
 
         int32 offset = sizeof(LightUniform)*light->GetIndex();
         memcpy((Byte*)scene.lighting.lightsBuffer->GetMappedMemory() + offset, &lightUniform, sizeof(LightUniform));
     }
 
-    void DeferredRenderer::DrawNode(const RefPtr<SceneV1::Node>& node, const DeferredPreparedScene& scene, GraphicsCommandList* commandList)
+    void DeferredRenderer::DrawNode(
+        const RefPtr<SceneV1::Node>& node,
+        const DeferredPreparedScene& scene,
+        GraphicsCommandList* commandList)
     {
         const auto& mesh = node->GetMesh();
         if (mesh != nullptr)
@@ -815,7 +804,10 @@ namespace Husky::Render::Deferred
         }
     }
 
-    void DeferredRenderer::DrawMesh(const RefPtr<SceneV1::Mesh>& mesh, const DeferredPreparedScene& scene, GraphicsCommandList* commandList)
+    void DeferredRenderer::DrawMesh(
+        const RefPtr<SceneV1::Mesh>& mesh,
+        const DeferredPreparedScene& scene,
+        GraphicsCommandList* commandList)
     {
         // TODO descriptor set indices
         commandList->BindBufferDescriptorSet(
@@ -841,7 +833,10 @@ namespace Husky::Render::Deferred
         }
     }
 
-    void DeferredRenderer::DrawPrimitive(const RefPtr<SceneV1::Primitive>& primitive, const DeferredPreparedScene& scene, GraphicsCommandList* commandList)
+    void DeferredRenderer::DrawPrimitive(
+        const RefPtr<SceneV1::Primitive>& primitive,
+        const DeferredPreparedScene& scene,
+        GraphicsCommandList* commandList)
     {
         auto& pipelineState = primitive->GetPipelineState();
 
@@ -875,9 +870,10 @@ namespace Husky::Render::Deferred
         commandList->DrawIndexedInstanced(indexBuffer.count, 0, 1, 0);
     }
 
-    MaterialUniform DeferredRenderer::GetMaterialUniform(SceneV1::PbrMaterial* material)
+    MaterialUniform DeferredRenderer::GetMaterialUniform(SceneV1::PbrMaterial* material) const
     {
         MaterialUniform materialUniform;
+
         materialUniform.baseColorFactor = material->metallicRoughness.baseColorFactor;
         materialUniform.metallicFactor = material->metallicRoughness.metallicFactor;
         materialUniform.roughnessFactor = material->metallicRoughness.roughnessFactor;
@@ -886,6 +882,37 @@ namespace Husky::Render::Deferred
         materialUniform.emissiveFactor = material->emissiveFactor;
         materialUniform.alphaCutoff = material->alphaCutoff;
         return materialUniform;
+    }
+
+    CameraUniform DeferredRenderer::GetCameraUniform(SceneV1::Camera* camera) const
+    {
+        CameraUniform cameraUniform;
+        cameraUniform.view = camera->GetCameraViewMatrix();
+        cameraUniform.inverseView = glm::inverse(cameraUniform.view);
+        cameraUniform.projection = camera->GetCameraProjectionMatrix();
+        cameraUniform.inverseProjection = glm::inverse(cameraUniform.projection);
+        cameraUniform.viewProjection = cameraUniform.projection * cameraUniform.view;
+        cameraUniform.inverseViewProjection = glm::inverse(cameraUniform.viewProjection);
+        cameraUniform.position = Vec4{ camera->GetCameraPosition(), 1.0 };
+
+        Vec2 zMinMax;
+        auto cameraType = camera->GetCameraType();
+        if (cameraType == SceneV1::CameraType::Orthographic)
+        {
+            auto orthographicCamera = (SceneV1::OrthographicCamera*)camera;
+            zMinMax.x = orthographicCamera->GetZNear();
+            zMinMax.y = orthographicCamera->GetZFar();
+        }
+        else if(cameraType == SceneV1::CameraType::Perspective)
+        {
+            auto perspectiveCamera = (SceneV1::PerspectiveCamera*)camera;
+            zMinMax.x = perspectiveCamera->GetZNear();
+            zMinMax.y = perspectiveCamera->GetZFar().value_or(Limits<float32>::infinity());
+        }
+
+        cameraUniform.zMinMax = zMinMax;
+
+        return cameraUniform;
     }
 
     Vector<Byte> DeferredRenderer::LoadShaderSource(const FilePath& path)
@@ -1115,6 +1142,20 @@ namespace Husky::Render::Deferred
     ResultValue<bool, GBufferPassResources> DeferredRenderer::PrepareGBufferPassResources(DeferredPreparedScene& scene)
     {
         GBufferPassResources resources;
+
+        auto swapchainInfo = context->swapchain->GetInfo();
+        resources.offscreen.reserve(swapchainInfo.imageCount);
+
+        for (int32 i = 0; i < swapchainInfo.imageCount; i++)
+        {
+            auto [offscreenTexturesCreated, createdOffscreenTextures] = CreateOffscreenTextures();
+            if (!offscreenTexturesCreated)
+            {
+                return { false };
+            }
+
+            resources.offscreen.push_back(createdOffscreenTextures);
+        }
 
         const auto& sceneProperties = scene.scene->GetSceneProperties();
 
@@ -1532,6 +1573,7 @@ namespace Husky::Render::Deferred
         DeferredPreparedScene& scene)
     {
         const auto& shadowMappingOptions = scene.options.GetShadowMappingOptions();
+
         ShadowMappingPassResources resources;
 
         resources.cameraUniformBufferBinding
