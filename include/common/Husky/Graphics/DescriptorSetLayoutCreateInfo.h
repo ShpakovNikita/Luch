@@ -25,12 +25,12 @@ namespace Husky::Graphics
         {
             binding->index = currentBindingIndex;
             currentBindingIndex++;
-            bindings.push_back(binding);
+            bindings.push_back(*binding);
             return *this;
         }
 
         DescriptorSetType type = DescriptorSetType::Unknown;
         int32 currentBindingIndex = 0;
-        Vector<DescriptorSetBinding*> bindings;
+        Vector<DescriptorSetBinding> bindings;
     };
 }
