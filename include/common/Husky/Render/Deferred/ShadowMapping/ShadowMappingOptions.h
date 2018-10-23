@@ -6,8 +6,10 @@
 namespace Husky::Render::Deferred::ShadowMapping
 {
     using namespace Graphics;
-    struct ShadowMappingOptions
+
+    class ShadowMappingOptions
     {
+    public:
         int32 shadowMapSize = 256;
         Format shadowMapFormat = Format::D32Sfloat;
     };

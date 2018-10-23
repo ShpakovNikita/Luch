@@ -14,5 +14,7 @@ namespace Husky::SceneV1
         RefPtrUnorderedSet<PbrMaterial> materials;
         RefPtrUnorderedSet<Texture> textures;
         RefPtrUnorderedSet<Sampler> samplers;
+        RefPtrUnorderedSet<Light> lights;
+        RefPtrUnorderedSet<Node> lightNodes;
     };
 }

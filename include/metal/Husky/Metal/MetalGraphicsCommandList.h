@@ -15,8 +15,11 @@ namespace Husky::Metal
             MetalGraphicsDevice* device,
             mtlpp::CommandBuffer commandBuffer);
 
-        void Begin(const RenderPassCreateInfo& renderPassCreateInfo) override;
-        void End() override;
+        inline void Begin() override {};
+        inline void End() override {};
+
+        void BeginRenderPass(const RenderPassCreateInfo& renderPassCreateInfo) override;
+        void EndRenderPass() override;
 
         void BindPipelineState(PipelineState* pipelineState) override;
 

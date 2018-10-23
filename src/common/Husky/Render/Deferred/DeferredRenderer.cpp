@@ -42,9 +42,12 @@
 #include <Husky/Graphics/IndexType.h>
 #include <Husky/Graphics/PipelineStateCreateInfo.h>
 
+#include <Husky/Render/RenderUtils.h>
+
 namespace Husky::Render::Deferred
 {
     using namespace Graphics;
+    using namespace ShadowMapping;
 
     // Fullscreen quad for triangle list
 //    static const Vector<QuadVertex> fullscreenQuadVertices =
@@ -59,11 +62,11 @@ namespace Husky::Render::Deferred
 //    };
 
     // One triangle that covers whole screen
-    static const Vector<QuadVertex> fullscreenQuadVertices =
+    constexpr Array<QuadVertex, 3> fullscreenQuadVertices =
     {
-        { {-1.0f, -1.0f, 0.0f}, {0.0f, 1.0f}},
-        { {+3.0f, -1.0f, 0.0f}, {2.0f, 1.0f}},
-        { {-1.0f, +3.0f, 0.0f}, {0.0f, -1.0f}},
+        QuadVertex { Vec3{-1.0f, -1.0f, 0.0f}, Vec2{0.0f, 1.0f} },
+        QuadVertex { Vec3{+3.0f, -1.0f, 0.0f}, Vec2{2.0f, 1.0f} },
+        QuadVertex { Vec3{-1.0f, +3.0f, 0.0f}, Vec2{0.0f, -1.0f} },
     };
 
     // Think about passing these numbers through shader defines
@@ -107,7 +110,7 @@ namespace Husky::Render::Deferred
         : width(aWidth)
         , height(aHeight)
     {
-        context = MakeUnique<DeferredRendererContext>();
+        context = MakeShared<RenderContext>();
         context->physicalDevice = physicalDevice;
         context->surface = surface;
     }
@@ -133,22 +136,6 @@ namespace Husky::Render::Deferred
         }
 
         context->commandQueue = std::move(createdCommandQueue);
-
-        auto[createCommandPoolResult, createdCommandPool] = context->commandQueue->CreateCommandPool();
-        if (createCommandPoolResult != GraphicsResult::Success)
-        {
-            // TODO
-            return false;
-        }
-
-        context->commandPool = std::move(createdCommandPool);
-
-//        auto[swapchainChooseCreateInfoResult, swapchainCreateInfo] = Swapchain::ChooseSwapchainCreateInfo(width, height, context->physicalDevice, context->surface);
-//        if (swapchainChooseCreateInfoResult != vk::Result::eSuccess)
-//        {
-//            // TODO
-//            return false;
-//        }
 
         SwapchainInfo swapchainCreateInfo;
         swapchainCreateInfo.format = swapchainFormat;
@@ -176,12 +163,14 @@ namespace Husky::Render::Deferred
         HUSKY_ASSERT_MSG(!depthFormats.empty(), "No supported depth formats");
         depthStencilFormat = depthFormats.front();
 
+        shadowRenderer = MakeUnique<ShadowRenderer>(context);
+
         return true;
     }
 
     bool DeferredRenderer::Deinitialize()
     {
-        context.release();
+        shadowRenderer.reset();
         return true;
     }
 
@@ -231,16 +220,6 @@ namespace Husky::Render::Deferred
         }
 
         preparedScene.options.SetShadowMappingEnabled(true);
-
-        auto[shadowMappingResourcesPrepared, shadowMappingResources] = PrepareShadowMappingPassResources(preparedScene);
-        if (shadowMappingResourcesPrepared)
-        {
-            preparedScene.shadowMapping = std::move(shadowMappingResources);
-        }
-        else
-        {
-            return { false };
-        }
 
         const auto& swapchainInfo = context->swapchain->GetInfo();
         preparedScene.frameResources.reserve(swapchainInfo.imageCount);
@@ -368,6 +347,9 @@ namespace Husky::Render::Deferred
 
         PrepareLights(preparedScene);
 
+        shadowRenderer->Prepare(scene);
+        shadowRenderer->SetOptions(preparedScene.options.GetShadowMappingOptions());
+
         return { true, preparedScene };
     }
 
@@ -380,22 +362,19 @@ namespace Husky::Render::Deferred
         }
     }
 
-    void DeferredRenderer::DrawScene(const DeferredPreparedScene& scene)
+    void DeferredRenderer::DrawScene(DeferredPreparedScene& scene)
     {
+        const auto& lightNodesMap = scene.scene->GetSceneProperties().lightNodes;
+        RefPtrVector<SceneV1::Node> lightNodes;
+        std::copy(lightNodesMap.begin(), lightNodesMap.end(), std::back_inserter(lightNodes));
+        auto shadowMaps = shadowRenderer->DrawShadows(scene.scene, lightNodes);
+
         auto[acquireResult, acquiredTexture] = context->swapchain->GetNextAvailableTexture(nullptr);
         HUSKY_ASSERT(acquireResult == GraphicsResult::Success);
 
         int32 index = acquiredTexture.index;
 
         auto& frameResource = scene.frameResources[index];
-
-        for(const auto& lightNode : scene.lightNodes)
-        {
-            const auto& light = lightNode->GetLight();
-            HUSKY_ASSERT(light != nullptr);
-
-            
-        }
 
         auto [allocateGBufferCommandListResult, gBufferCmdList] = frameResource.commandPool->AllocateGraphicsCommandList();
         HUSKY_ASSERT(allocateGBufferCommandListResult == GraphicsResult::Success);
@@ -427,16 +406,21 @@ namespace Husky::Render::Deferred
         auto[createGBufferRenderPassResult, createdGBufferRenderPass] = context->device->CreateRenderPass(gBufferRenderPassCreateInfo);
         HUSKY_ASSERT(createGBufferRenderPassResult == GraphicsResult::Success);
 
-        gBufferCmdList->Begin(gBufferRenderPassCreateInfo);
+        gBufferCmdList->Begin();
+        gBufferCmdList->BeginRenderPass(gBufferRenderPassCreateInfo);
         gBufferCmdList->SetViewports({viewport});
         gBufferCmdList->SetScissorRects({scissorRect});
-        gBufferCmdList->BindBufferDescriptorSet(ShaderStage::Vertex, scene.gbuffer.pipelineLayout, scene.cameraNode->GetCamera()->GetVertexDescriptorSet());
+        gBufferCmdList->BindBufferDescriptorSet(
+            ShaderStage::Vertex,
+            scene.gbuffer.pipelineLayout,
+            scene.cameraNode->GetCamera()->GetVertexDescriptorSet());
 
         for (const auto& node : scene.scene->GetNodes())
         {
             DrawNode(node, scene, gBufferCmdList);
         }
 
+        gBufferCmdList->EndRenderPass();
         gBufferCmdList->End();
 
         context->commandQueue->Submit(gBufferCmdList);
@@ -452,17 +436,35 @@ namespace Husky::Render::Deferred
             .WithNColorAttachments(1)
             .AddColorAttachment(&colorAttachment);
 
-        lightingCmdList->Begin(lightingRenderPassCreateInfo);
+        lightingCmdList->Begin();
+        lightingCmdList->BeginRenderPass(lightingRenderPassCreateInfo);
         lightingCmdList->BindPipelineState(scene.lighting.pipelineState);
         lightingCmdList->SetViewports({ viewport });
         lightingCmdList->SetScissorRects({ scissorRect });
-        lightingCmdList->BindTextureDescriptorSet(ShaderStage::Fragment, scene.lighting.pipelineLayout, frameResource.gbufferTextureDescriptorSet);
-        lightingCmdList->BindSamplerDescriptorSet(ShaderStage::Fragment, scene.lighting.pipelineLayout, frameResource.gbufferSamplerDescriptorSet);
-        lightingCmdList->BindBufferDescriptorSet(ShaderStage::Fragment, scene.lighting.pipelineLayout, scene.cameraNode->GetCamera()->GetFragmentDescriptorSet());
-        lightingCmdList->BindBufferDescriptorSet(ShaderStage::Fragment, scene.lighting.pipelineLayout, scene.lighting.lightsBufferDescriptorSet);
+
+        lightingCmdList->BindTextureDescriptorSet(
+            ShaderStage::Fragment,
+            scene.lighting.pipelineLayout,
+            frameResource.gbufferTextureDescriptorSet);
+
+        lightingCmdList->BindSamplerDescriptorSet(
+            ShaderStage::Fragment,
+            scene.lighting.pipelineLayout,
+            frameResource.gbufferSamplerDescriptorSet);
+
+        lightingCmdList->BindBufferDescriptorSet(
+            ShaderStage::Fragment,
+            scene.lighting.pipelineLayout,
+            scene.cameraNode->GetCamera()->GetFragmentDescriptorSet());
+
+        lightingCmdList->BindBufferDescriptorSet(
+            ShaderStage::Fragment,
+            scene.lighting.pipelineLayout,
+            scene.lighting.lightsBufferDescriptorSet);
 
         lightingCmdList->BindVertexBuffers({ scene.lighting.fullscreenQuadBuffer }, {0}, 0);
         lightingCmdList->Draw(0, fullscreenQuadVertices.size());
+        lightingCmdList->EndRenderPass();
         lightingCmdList->End();
 
         context->commandQueue->Submit(lightingCmdList);
@@ -492,8 +494,8 @@ namespace Husky::Render::Deferred
 
         camera->SetUniformBuffer(buffer);
 
-        vertexDescriptorSet->WriteUniformBuffer(&scene.gbuffer.cameraUniformBufferBinding, buffer );
-        fragmentDescriptorSet->WriteUniformBuffer(&scene.lighting.cameraUniformBufferBinding, buffer );
+        vertexDescriptorSet->WriteUniformBuffer(&scene.gbuffer.cameraUniformBufferBinding, buffer);
+        fragmentDescriptorSet->WriteUniformBuffer(&scene.lighting.cameraUniformBufferBinding, buffer);
 
         vertexDescriptorSet->Update();
         fragmentDescriptorSet->Update();
@@ -584,7 +586,7 @@ namespace Husky::Render::Deferred
         bufferCreateInfo.storageMode = ResourceStorageMode::Shared;
         bufferCreateInfo.usage = BufferUsageFlags::Uniform;
 
-        MaterialUniform materialUniform = GetMaterialUniform(material);
+        MaterialUniform materialUniform = RenderUtils::GetMaterialUniform(material);
 
         auto[createBufferResult, createdBuffer] = context->device->CreateBuffer(bufferCreateInfo, &materialUniform);
         HUSKY_ASSERT(createBufferResult == GraphicsResult::Success);
@@ -759,7 +761,7 @@ namespace Husky::Render::Deferred
         camera->SetCameraViewMatrix(glm::inverse(transform));
 
         const auto& buffer = camera->GetUniformBuffer();
-        auto cameraUniform = GetCameraUniform(camera);
+        auto cameraUniform = RenderUtils::GetCameraUniform(camera);
         memcpy(buffer->GetMappedMemory(), &cameraUniform, sizeof(CameraUniform));
     }
 
@@ -770,18 +772,7 @@ namespace Husky::Render::Deferred
     {
         auto viewTransform = scene.cameraNode->GetCamera()->GetCameraViewMatrix();
 
-        LightUniform lightUniform;
-
-        lightUniform.positionWS = transform * Vec4{ 0.0, 0.0, 0.0, 1.0 };
-        lightUniform.directionWS = glm::normalize(transform * Vec4{ light->GetDirection().value_or(Vec3{0, 0, 1}), 0.0 });
-        lightUniform.positionVS = viewTransform * lightUniform.positionWS;
-        lightUniform.directionVS = glm::normalize(viewTransform * lightUniform.directionWS);
-        lightUniform.color = Vec4{ light->GetColor().value_or(Vec3{1.0, 1.0, 1.0}), 1.0 };
-        lightUniform.enabled = light->IsEnabled() ? 1 : 0;
-        lightUniform.type = static_cast<int32>(light->GetType());
-        lightUniform.spotlightAngle = light->GetSpotlightAngle().value_or(0.0);
-        lightUniform.range = light->GetRange().value_or(0.0);
-        lightUniform.intensity = light->GetIntensity();
+        LightUniform lightUniform = RenderUtils::GetLightUniform(light, transform, viewTransform);
 
         int32 offset = sizeof(LightUniform)*light->GetIndex();
         memcpy((Byte*)scene.lighting.lightsBuffer->GetMappedMemory() + offset, &lightUniform, sizeof(LightUniform));
@@ -789,7 +780,7 @@ namespace Husky::Render::Deferred
 
     void DeferredRenderer::DrawNode(
         const RefPtr<SceneV1::Node>& node,
-        const DeferredPreparedScene& scene,
+        DeferredPreparedScene& scene,
         GraphicsCommandList* commandList)
     {
         const auto& mesh = node->GetMesh();
@@ -806,10 +797,9 @@ namespace Husky::Render::Deferred
 
     void DeferredRenderer::DrawMesh(
         const RefPtr<SceneV1::Mesh>& mesh,
-        const DeferredPreparedScene& scene,
+        DeferredPreparedScene& scene,
         GraphicsCommandList* commandList)
     {
-        // TODO descriptor set indices
         commandList->BindBufferDescriptorSet(
             ShaderStage::Vertex,
             scene.gbuffer.pipelineLayout,
@@ -817,8 +807,10 @@ namespace Husky::Render::Deferred
 
         for (const auto& primitive : mesh->GetPrimitives())
         {
-            if (primitive->GetMaterial()->alphaMode != SceneV1::AlphaMode::Blend)
+            const auto& material = primitive->GetMaterial();
+            if (material->alphaMode != SceneV1::AlphaMode::Blend)
             {
+                BindMaterial(material, scene, commandList);
                 DrawPrimitive(primitive, scene, commandList);
             }
         }
@@ -826,16 +818,39 @@ namespace Husky::Render::Deferred
         // TODO sort by distance to camera
         for (const auto& primitive : mesh->GetPrimitives())
         {
-            if (primitive->GetMaterial()->alphaMode == SceneV1::AlphaMode::Blend)
+            const auto& material = primitive->GetMaterial();
+            if (material->alphaMode == SceneV1::AlphaMode::Blend)
             {
+                BindMaterial(material, scene, commandList);
                 DrawPrimitive(primitive, scene, commandList);
             }
         }
     }
 
+    void DeferredRenderer::BindMaterial(
+        const RefPtr<SceneV1::PbrMaterial>& material,
+        DeferredPreparedScene& scene,
+        GraphicsCommandList* commandList)
+    {
+        commandList->BindTextureDescriptorSet(
+            ShaderStage::Fragment,
+            scene.gbuffer.pipelineLayout,
+            material->GetTextureDescriptorSet());
+
+        commandList->BindBufferDescriptorSet(
+            ShaderStage::Fragment,
+            scene.gbuffer.pipelineLayout,
+            material->GetBufferDescriptorSet());
+
+        commandList->BindSamplerDescriptorSet(
+            ShaderStage::Fragment,
+            scene.gbuffer.pipelineLayout,
+            material->GetSamplerDescriptorSet());
+    }
+
     void DeferredRenderer::DrawPrimitive(
         const RefPtr<SceneV1::Primitive>& primitive,
-        const DeferredPreparedScene& scene,
+        DeferredPreparedScene& scene,
         GraphicsCommandList* commandList)
     {
         auto& pipelineState = primitive->GetPipelineState();
@@ -856,74 +871,15 @@ namespace Husky::Render::Deferred
         HUSKY_ASSERT(primitive->GetIndexBuffer().has_value());
         const auto& indexBuffer = *primitive->GetIndexBuffer();
 
-        const auto& material = primitive->GetMaterial();
-
         commandList->BindPipelineState(pipelineState);
         commandList->BindVertexBuffers(graphicsVertexBuffers, offsets, 0);
-        commandList->BindTextureDescriptorSet(ShaderStage::Fragment, scene.gbuffer.pipelineLayout, material->GetTextureDescriptorSet());
-        commandList->BindBufferDescriptorSet(ShaderStage::Fragment, scene.gbuffer.pipelineLayout, material->GetBufferDescriptorSet());
-        commandList->BindSamplerDescriptorSet(ShaderStage::Fragment, scene.gbuffer.pipelineLayout, material->GetSamplerDescriptorSet());
+
         commandList->BindIndexBuffer(
                 indexBuffer.backingBuffer->GetDeviceBuffer(),
                 indexBuffer.indexType,
                 indexBuffer.byteOffset);
+
         commandList->DrawIndexedInstanced(indexBuffer.count, 0, 1, 0);
-    }
-
-    MaterialUniform DeferredRenderer::GetMaterialUniform(SceneV1::PbrMaterial* material) const
-    {
-        MaterialUniform materialUniform;
-
-        materialUniform.baseColorFactor = material->metallicRoughness.baseColorFactor;
-        materialUniform.metallicFactor = material->metallicRoughness.metallicFactor;
-        materialUniform.roughnessFactor = material->metallicRoughness.roughnessFactor;
-        materialUniform.normalScale = material->normalTexture.scale;
-        materialUniform.occlusionStrength = material->occlusionTexture.strength;
-        materialUniform.emissiveFactor = material->emissiveFactor;
-        materialUniform.alphaCutoff = material->alphaCutoff;
-        return materialUniform;
-    }
-
-    CameraUniform DeferredRenderer::GetCameraUniform(SceneV1::Camera* camera) const
-    {
-        CameraUniform cameraUniform;
-        cameraUniform.view = camera->GetCameraViewMatrix();
-        cameraUniform.inverseView = glm::inverse(cameraUniform.view);
-        cameraUniform.projection = camera->GetCameraProjectionMatrix();
-        cameraUniform.inverseProjection = glm::inverse(cameraUniform.projection);
-        cameraUniform.viewProjection = cameraUniform.projection * cameraUniform.view;
-        cameraUniform.inverseViewProjection = glm::inverse(cameraUniform.viewProjection);
-        cameraUniform.position = Vec4{ camera->GetCameraPosition(), 1.0 };
-
-        Vec2 zMinMax;
-        auto cameraType = camera->GetCameraType();
-        if (cameraType == SceneV1::CameraType::Orthographic)
-        {
-            auto orthographicCamera = (SceneV1::OrthographicCamera*)camera;
-            zMinMax.x = orthographicCamera->GetZNear();
-            zMinMax.y = orthographicCamera->GetZFar();
-        }
-        else if(cameraType == SceneV1::CameraType::Perspective)
-        {
-            auto perspectiveCamera = (SceneV1::PerspectiveCamera*)camera;
-            zMinMax.x = perspectiveCamera->GetZNear();
-            zMinMax.y = perspectiveCamera->GetZFar().value_or(Limits<float32>::infinity());
-        }
-
-        cameraUniform.zMinMax = zMinMax;
-
-        return cameraUniform;
-    }
-
-    Vector<Byte> DeferredRenderer::LoadShaderSource(const FilePath& path)
-    {
-        FileStream fileStream{ path, FileOpenModes::Read };
-        auto fileSize = fileStream.GetSize();
-        Vector<Byte> result;
-        result.resize(fileSize + 1); // +1 for null termination
-        auto bytesRead = fileStream.Read(result.data(), fileSize, sizeof(Byte));
-        HUSKY_ASSERT(bytesRead == fileSize);
-        return result;
     }
 
     RefPtr<PipelineState> DeferredRenderer::CreateGBufferPipelineState(const RefPtr<SceneV1::Primitive>& primitive, DeferredPreparedScene& scene)
@@ -1030,7 +986,8 @@ namespace Husky::Render::Deferred
             shaderDefines.AddFlag(DeferredShaderDefines::AlphaMask);
         }
 
-        auto[vertexShaderLibraryCreated, vertexShaderLibrary] = CreateShaderLibrary(
+        auto[vertexShaderLibraryCreated, vertexShaderLibrary] = RenderUtils::CreateShaderLibrary(
+            context->device,
 #if _WIN32
             "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\gbuffer.vert",
 #endif
@@ -1041,7 +998,7 @@ namespace Husky::Render::Deferred
             "/Users/spo1ler/Development/HuskyEngine/src/Vulkan/Husky/Render/Shaders/Deferred/gbuffer.vert",
     #endif
 #endif
-            shaderDefines);
+            shaderDefines.defines);
 
         if (!vertexShaderLibraryCreated)
         {
@@ -1055,7 +1012,8 @@ namespace Husky::Render::Deferred
 
         auto vertexShader = std::move(createdVertexShader);
 
-        auto[fragmentShaderLibraryCreated, fragmentShaderLibrary] = CreateShaderLibrary(
+        auto[fragmentShaderLibraryCreated, fragmentShaderLibrary] = RenderUtils::CreateShaderLibrary(
+            context->device,
 #if _WIN32
             "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\gbuffer.frag",
 #endif
@@ -1066,7 +1024,7 @@ namespace Husky::Render::Deferred
             "/Users/spo1ler/Development/HuskyEngine/src/Vulkan/Husky/Render/Shaders/Deferred/gbuffer.frag",
     #endif
 #endif
-            shaderDefines);
+            shaderDefines.defines);
 
         if (!fragmentShaderLibraryCreated)
         {
@@ -1348,7 +1306,8 @@ namespace Husky::Render::Deferred
         ShaderDefines<DeferredShaderDefines> shaderDefines;
         shaderDefines.mapping = &FlagToString;
 
-        auto [vertexShaderLibraryCreated, createdVertexShaderLibrary] = CreateShaderLibrary(
+        auto [vertexShaderLibraryCreated, createdVertexShaderLibrary] = RenderUtils::CreateShaderLibrary(
+            context->device,
 #if _WIN32
             "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\lighting.vert",
 #endif
@@ -1359,7 +1318,7 @@ namespace Husky::Render::Deferred
             "/Users/spo1ler/Development/HuskyEngine/src/Vulkan/Husky/Render/Shaders/Deferred/lighting.vert",
     #endif
 #endif
-            shaderDefines);
+            shaderDefines.defines);
 
         if (!vertexShaderLibraryCreated)
         {
@@ -1376,7 +1335,8 @@ namespace Husky::Render::Deferred
 
         resources.vertexShader = std::move(vertexShaderProgram);
 
-        auto[fragmentShaderLibraryCreated, createdFragmentShaderLibrary] = CreateShaderLibrary(
+        auto[fragmentShaderLibraryCreated, createdFragmentShaderLibrary] = RenderUtils::CreateShaderLibrary(
+            context->device,
 #if _WIN32
             "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\lighting.frag",
 #endif
@@ -1387,7 +1347,7 @@ namespace Husky::Render::Deferred
             "/Users/spo1ler/Development/HuskyEngine/src/Vulkan/Husky/Render/Shaders/Deferred/lighting.frag",
     #endif
 #endif
-            shaderDefines);
+            shaderDefines.defines);
 
         if (!fragmentShaderLibraryCreated)
         {
@@ -1569,133 +1529,6 @@ namespace Husky::Render::Deferred
         return { true, resources };
     }
 
-    ResultValue<bool, ShadowMappingPassResources> DeferredRenderer::PrepareShadowMappingPassResources(
-        DeferredPreparedScene& scene)
-    {
-        const auto& shadowMappingOptions = scene.options.GetShadowMappingOptions();
-
-        ShadowMappingPassResources resources;
-
-        resources.cameraUniformBufferBinding
-            .OfType(ResourceType::UniformBuffer)
-            .AtStage(ShaderStage::Vertex);
-
-        resources.meshUniformBufferBinding
-            .OfType(ResourceType::UniformBuffer)
-            .AtStage(ShaderStage::Vertex);
-
-        resources.depthStencilAttachmentTemplate.format = shadowMappingOptions.shadowMapFormat;
-        resources.depthStencilAttachmentTemplate.depthClearValue = 1.0f;
-        resources.depthStencilAttachmentTemplate.depthLoadOperation = AttachmentLoadOperation::Clear;
-        resources.depthStencilAttachmentTemplate.depthStoreOperation = AttachmentStoreOperation::Store;
-
-        DescriptorSetLayoutCreateInfo cameraBufferSetLayoutCreateInfo;
-        cameraBufferSetLayoutCreateInfo
-            .OfType(DescriptorSetType::Buffer)
-            .WithNBindings(1)
-            .AddBinding(&resources.cameraUniformBufferBinding);
-
-        auto [cameraBufferSetLayoutCreateResult, createdCameraBufferSetLayout] = context->device->CreateDescriptorSetLayout(
-            cameraBufferSetLayoutCreateInfo);
-        if(cameraBufferSetLayoutCreateResult != GraphicsResult::Success)
-        {
-            HUSKY_ASSERT(false);
-            return { false };
-        }
-
-        resources.cameraBufferSetLayout = std::move(createdCameraBufferSetLayout);
-
-        DescriptorSetLayoutCreateInfo meshBufferSetLayoutCreateInfo;
-        meshBufferSetLayoutCreateInfo
-            .OfType(DescriptorSetType::Buffer)
-            .WithNBindings(1)
-            .AddBinding(&resources.meshUniformBufferBinding);
-
-        auto [meshBufferSetLayoutCreateResult, createdMeshBufferSetLayout] = context->device->CreateDescriptorSetLayout(
-            meshBufferSetLayoutCreateInfo);
-        if(meshBufferSetLayoutCreateResult != GraphicsResult::Success)
-        {
-            HUSKY_ASSERT(false);
-            return { false };
-        }
-
-        resources.meshBufferSetLayout = std::move(createdMeshBufferSetLayout);
-
-        PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
-        pipelineLayoutCreateInfo
-            .AddSetLayout(ShaderStage::Vertex, resources.cameraBufferSetLayout)
-            .AddSetLayout(ShaderStage::Vertex, resources.meshBufferSetLayout);
-
-        auto [createPipelineLayoutResult, createdPipelineLayout] = context->device->CreatePipelineLayout(pipelineLayoutCreateInfo);
-        if(createPipelineLayoutResult != GraphicsResult::Success)
-        {
-            HUSKY_ASSERT(false);
-            return { false };
-        }
-
-        resources.pipelineLayout = std::move(createdPipelineLayout);
-
-        VertexInputAttributeDescription positionAttribute;
-        positionAttribute.format = Format::R32G32B32A32Sfloat;
-
-        VertexInputBindingDescription vertexBufferBinding;
-        vertexBufferBinding.stride = sizeof(Vertex);
-
-        ShaderDefines<DeferredShaderDefines> shaderDefines;
-
-        auto[vertexShaderLibraryCreated, vertexShaderLibrary] = CreateShaderLibrary(
-#if _WIN32
-            "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\todo.vert",
-#endif
-#if __APPLE__
-    #if HUSKY_USE_METAL
-            "/Users/spo1ler/Development/HuskyEngine/src/Metal/Husky/Render/Shaders/Deferred/shadowmap_vp.metal",
-    #elif HUSKY_USE_VULKAN
-            "/Users/spo1ler/Development/HuskyEngine/src/Vulkan/Husky/Render/Shaders/Deferred/todo.vert",
-    #endif
-#endif
-            shaderDefines);
-
-        if(!vertexShaderLibraryCreated)
-        {
-            HUSKY_ASSERT(false);
-            return { false };
-        }
-
-        auto [createVertexProgramResult, createdVertexProgram] = vertexShaderLibrary->CreateShaderProgram(
-            ShaderStage::Vertex,
-            "vp_main");
-
-        if(createVertexProgramResult != GraphicsResult::Success)
-        {
-            HUSKY_ASSERT(false);
-            return { false };
-        }
-
-        PipelineStateCreateInfo pipelineStateCreateInfo;
-
-        pipelineStateCreateInfo.inputAssembler.attributes.push_back(positionAttribute);
-        pipelineStateCreateInfo.inputAssembler.bindings.push_back(vertexBufferBinding);
-        // todo primitive topology pipelineStateCreateInfo.inputAssembler
-        pipelineStateCreateInfo.vertexProgram = createdVertexProgram;
-        pipelineStateCreateInfo.depthStencil.depthTestEnable = true;
-        pipelineStateCreateInfo.depthStencil.depthWriteEnable = true;
-        pipelineStateCreateInfo.depthStencil.depthCompareFunction = CompareFunction::Less;
-        pipelineStateCreateInfo.depthStencil.depthStencilFormat = Format::D32Sfloat;
-        pipelineStateCreateInfo.pipelineLayout = resources.pipelineLayout;
-
-        auto [createPipelineStateResult, createdPipelineState] = context->device->CreatePipelineState(pipelineStateCreateInfo);
-        if(createPipelineStateResult != GraphicsResult::Success)
-        {
-            HUSKY_ASSERT(false);
-            return { false };
-        }
-
-        resources.pipelineState = std::move(createdPipelineState);
-
-        return { true, resources };
-    }
-
     ResultValue<bool, OffscreenTextures> DeferredRenderer::CreateOffscreenTextures()
     {
         OffscreenTextures textures;
@@ -1763,7 +1596,7 @@ namespace Husky::Render::Deferred
         depthBufferCreateInfo.width = textureWidth;
         depthBufferCreateInfo.height = textureHeight;
         depthBufferCreateInfo.usage =
-              TextureUsageFlags::DethpStencilAttachment
+              TextureUsageFlags::DepthStencilAttachment
             | TextureUsageFlags::ShaderRead
             | TextureUsageFlags::TransferSource;
 
@@ -1785,23 +1618,5 @@ namespace Husky::Render::Deferred
         textures.depthStencilSampler = std::move(createdDepthStencilSampler);
 
         return { true, textures };
-    }
-
-    ResultValue<bool, RefPtr<ShaderLibrary>> DeferredRenderer::CreateShaderLibrary(
-        const String& path,
-        const ShaderDefines<DeferredShaderDefines>& defines)
-    {
-        auto shaderSource = LoadShaderSource(path);
-
-        auto [createLibraryResult, library] = context->device->CreateShaderLibraryFromSource(shaderSource, defines.defines);
-        if(createLibraryResult != GraphicsResult::Success && createLibraryResult != GraphicsResult::CompilerWarning)
-        {
-            HUSKY_ASSERT(false);
-            return { false };
-        }
-        else
-        {
-            return { true, library };
-        }
     }
 }

@@ -51,7 +51,7 @@ namespace Husky::Metal
             bits |= (uint32)mtlpp::TextureUsage::RenderTarget;
         }
 
-        if((flags & TextureUsageFlags::DethpStencilAttachment) == TextureUsageFlags::DethpStencilAttachment)
+        if((flags & TextureUsageFlags::DepthStencilAttachment) == TextureUsageFlags::DepthStencilAttachment)
         {
             bits |= (uint32)mtlpp::TextureUsage::RenderTarget;
         }

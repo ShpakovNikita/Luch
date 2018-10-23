@@ -22,6 +22,8 @@ namespace Husky::Metal
         return descriptorSetLayout;
     }
 
+    // TODO Resize based on descriptor set layout
+
     void MetalDescriptorSet::WriteTexture(DescriptorSetBinding* binding, Texture* texture)
     {
         HUSKY_ASSERT(binding != nullptr);

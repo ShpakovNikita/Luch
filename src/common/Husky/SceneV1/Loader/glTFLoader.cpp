@@ -260,12 +260,16 @@ namespace Husky::SceneV1::Loader
 
     RefPtr<PerspectiveCamera> glTFLoader::MakePerspectiveCamera(const String& name, const glTF::Perspective& camera)
     {
-        return MakeRef<PerspectiveCamera>(camera.yfov, camera.znear, camera.zfar, camera.aspectRatio, name);
+        auto result = MakeRef<PerspectiveCamera>(camera.yfov, camera.znear, camera.zfar, camera.aspectRatio);
+        result->SetName(name);
+        return result;
     }
 
     RefPtr<OrthographicCamera> glTFLoader::MakeOrthographicCamera(const String& name, const glTF::Orthographic& camera)
     {
-        return MakeRef<OrthographicCamera>(camera.xmag, camera.ymag, camera.zfar, camera.znear, name);
+        auto result = MakeRef<OrthographicCamera>(camera.xmag, camera.ymag, camera.zfar, camera.znear);
+        result->SetName(name);
+        return result;
     }
 
     RefPtr<Primitive> glTFLoader::MakePrimitive(const glTF::Primitive& primitive)

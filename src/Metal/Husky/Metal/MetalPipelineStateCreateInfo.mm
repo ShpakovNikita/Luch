@@ -91,6 +91,8 @@ namespace Husky::Metal
         if(ci.depthStencil.depthTestEnable || ci.depthStencil.stencilTestEnable)
         {
             auto format = ci.depthStencil.depthStencilFormat;
+
+            // TODO functions to check if format is depth or stencil only
             if(format != Format::S8Uint)
             {
                 d.SetDepthAttachmentPixelFormat(ToMetalPixelFormat(ci.depthStencil.depthStencilFormat));

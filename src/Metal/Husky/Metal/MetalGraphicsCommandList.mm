@@ -68,15 +68,17 @@ namespace Husky::Metal
     {
     }
 
-    void MetalGraphicsCommandList::Begin(const RenderPassCreateInfo& renderPassCreateInfo)
+    void MetalGraphicsCommandList::BeginRenderPass(const RenderPassCreateInfo& renderPassCreateInfo)
     {
+        HUSKY_ASSERT(!commandEncoder);
         auto renderPassDescriptor = ToMetalRenderPasDescriptor(renderPassCreateInfo);
         commandEncoder = commandBuffer.RenderCommandEncoder(renderPassDescriptor);
     }
 
-    void MetalGraphicsCommandList::End()
+    void MetalGraphicsCommandList::EndRenderPass()
     {
         commandEncoder.EndEncoding();
+        commandEncoder = { };
     }
 
     void MetalGraphicsCommandList::BindPipelineState(PipelineState* pipelineState)

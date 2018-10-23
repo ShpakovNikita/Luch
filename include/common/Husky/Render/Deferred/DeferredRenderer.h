@@ -4,6 +4,7 @@
 #include <Husky/VectorTypes.h>
 #include <Husky/RefPtr.h>
 #include <Husky/UniquePtr.h>
+#include <Husky/SharedPtr.h>
 #include <Husky/ResultValue.h>
 #include <Husky/Graphics/Format.h>
 #include <Husky/Graphics/GraphicsForwards.h>
@@ -12,11 +13,13 @@
 #include <Husky/SceneV1/SceneV1Forwards.h>
 #include <Husky/Render/Common.h>
 #include <Husky/Render/ShaderDefines.h>
+#include <Husky/Render/RenderContext.h>
 #include <Husky/Render/Deferred/GBufferPassResources.h>
 #include <Husky/Render/Deferred/LightingPassResources.h>
 #include <Husky/Render/Deferred/DeferredOptions.h>
 #include <Husky/Render/Deferred/DeferredShaderDefines.h>
 
+#include <Husky/Render/Deferred/ShadowMapping/ShadowRenderer.h>
 #include <Husky/Render/Deferred/ShadowMapping/ShadowMappingPassResources.h>
 
 namespace Husky::Render::Deferred
@@ -40,16 +43,6 @@ namespace Husky::Render::Deferred
         RefPtr<CommandPool> commandPool;
     };
 
-    struct DeferredRendererContext
-    {
-        RefPtr<PhysicalDevice> physicalDevice;
-        RefPtr<GraphicsDevice> device;
-        RefPtr<CommandQueue> commandQueue;
-        RefPtr<CommandPool> commandPool;
-        RefPtr<Surface> surface;
-        RefPtr<Swapchain> swapchain;
-    };
-
     struct DeferredPreparedScene
     {
         RefPtr<SceneV1::Scene> scene;
@@ -62,7 +55,6 @@ namespace Husky::Render::Deferred
 
         GBufferPassResources gbuffer;
         LightingPassResources lighting;
-        ShadowMappingPassResources shadowMapping;
 
         Vector<DeferredFrameResources> frameResources;
         DeferredOptions options;
@@ -84,7 +76,7 @@ namespace Husky::Render::Deferred
 
         ResultValue<bool, DeferredPreparedScene> PrepareScene(const RefPtr<SceneV1::Scene>& scene);
         void UpdateScene(DeferredPreparedScene& scene);
-        void DrawScene(const DeferredPreparedScene& scene);
+        void DrawScene(DeferredPreparedScene& scene);
 
     private:
         void PrepareCameraNode(const RefPtr<SceneV1::Node>& node, DeferredPreparedScene& scene);
@@ -102,29 +94,41 @@ namespace Husky::Render::Deferred
         void UpdateLight(const RefPtr<SceneV1::Light>& light, const Mat4x4& transform, DeferredPreparedScene& scene);
         //void UpdateMaterial(const RefPtr<SceneV1::PbrMaterial>& material, PreparedScene& scene);
 
-        void DrawNode(const RefPtr<SceneV1::Node>& node, const DeferredPreparedScene& scene, GraphicsCommandList* cmdBuffer);
-        void DrawMesh(const RefPtr<SceneV1::Mesh>& mesh, const DeferredPreparedScene& scene, GraphicsCommandList* cmdBuffer);
-        void DrawPrimitive(const RefPtr<SceneV1::Primitive>& primitive, const DeferredPreparedScene& scene, GraphicsCommandList* cmdBuffer);
+        void DrawNode(
+            const RefPtr<SceneV1::Node>& node,
+            DeferredPreparedScene& scene,
+            GraphicsCommandList* commandList);
 
-        MaterialUniform GetMaterialUniform(SceneV1::PbrMaterial *material) const;
-        CameraUniform GetCameraUniform(SceneV1::Camera *camera) const;
+        void DrawMesh(
+            const RefPtr<SceneV1::Mesh>& mesh,
+            DeferredPreparedScene& scene,
+            GraphicsCommandList* commandList);
 
-        Vector<Byte> LoadShaderSource(const FilePath& path);
+        void BindMaterial(
+            const RefPtr<SceneV1::PbrMaterial>& material,
+            DeferredPreparedScene& scene,
+            GraphicsCommandList* commandList);
 
-        RefPtr<PipelineState> CreateGBufferPipelineState(const RefPtr<SceneV1::Primitive>& primitive, DeferredPreparedScene& scene);
+        void DrawPrimitive(
+            const RefPtr<SceneV1::Primitive>& primitive,
+            DeferredPreparedScene& scene,
+            GraphicsCommandList* commandList);
+
+        RefPtr<PipelineState> CreateGBufferPipelineState(
+            const RefPtr<SceneV1::Primitive>& primitive,
+            DeferredPreparedScene& scene);
+
         RefPtr<PipelineState> CreateLightingPipelineState(const LightingPassResources& lighting);
-        RefPtr<PipelineState> CreateShadowPipeline(const RefPtr<SceneV1::Light>& light);
 
         Vector<const char8*> GetRequiredDeviceExtensionNames() const;
 
         ResultValue<bool, GBufferPassResources> PrepareGBufferPassResources(DeferredPreparedScene& scene);
         ResultValue<bool, LightingPassResources> PrepareLightingPassResources(DeferredPreparedScene& scene);
-        ResultValue<bool, ShadowMappingPassResources> PrepareShadowMappingPassResources(DeferredPreparedScene& scene);
 
         ResultValue<bool, OffscreenTextures> CreateOffscreenTextures();
-        ResultValue<bool, RefPtr<ShaderLibrary>> CreateShaderLibrary(const String& path, const ShaderDefines<DeferredShaderDefines>& defines);
 
-        UniquePtr<DeferredRendererContext> context;
+        SharedPtr<RenderContext> context;
+        UniquePtr<ShadowRenderer> shadowRenderer;
 
         int32 width = 0;
         int32 height = 0;

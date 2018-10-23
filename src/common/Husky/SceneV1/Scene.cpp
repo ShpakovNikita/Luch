@@ -1,5 +1,7 @@
 #include <Husky/SceneV1/Scene.h>
 #include <Husky/SceneV1/Node.h>
+#include <Husky/SceneV1/Mesh.h>
+#include <Husky/SceneV1/Light.h>
 
 namespace Husky::SceneV1
 {
@@ -19,6 +21,17 @@ namespace Husky::SceneV1
     {
         nodes.push_back(node);
 
-        // TODO scene properties
+        const auto& mesh = node->GetMesh();
+        if(mesh != nullptr)
+        {
+            sceneProperties.meshes.insert(mesh);
+        }
+
+        const auto& light = node->GetLight();
+        if(light != nullptr)
+        {
+            sceneProperties.lightNodes.insert(node);
+            sceneProperties.lights.insert(light);
+        }
     }
 }
