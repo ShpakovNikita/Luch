@@ -218,7 +218,7 @@ namespace Husky::Render::Deferred
         return true;
     }
 
-    void DeferredRenderer::PrepareScene(const RefPtr<SceneV1::Scene>& scene)
+    void DeferredRenderer::PrepareScene(SceneV1::Scene* scene)
     {
         const auto& sceneProperties = scene->GetSceneProperties();
         const auto& textures = sceneProperties.textures;
@@ -340,7 +340,7 @@ namespace Husky::Render::Deferred
         return { true, std::move(resources) };
     }
 
-    void DeferredRenderer::UpdateScene(const RefPtr<SceneV1::Scene>& scene)
+    void DeferredRenderer::UpdateScene(SceneV1::Scene* scene)
     {
         Mat4x4 identity = glm::mat4(1.0f);
         for (const auto& node : scene->GetNodes())
@@ -351,7 +351,7 @@ namespace Husky::Render::Deferred
         shadowRenderer->UpdateScene(scene);
     }
 
-    void DeferredRenderer::DrawScene(const RefPtr<SceneV1::Scene>& scene, const RefPtr<SceneV1::Camera>& camera)
+    void DeferredRenderer::DrawScene(SceneV1::Scene* scene, SceneV1::Camera* camera)
     {
         const auto& lightNodesMap = scene->GetSceneProperties().lightNodes;
         RefPtrVector<SceneV1::Node> lightNodes;
@@ -456,7 +456,7 @@ namespace Husky::Render::Deferred
         context->commandQueue->Present(acquiredTexture.index, context->swapchain);
     }
 
-    void DeferredRenderer::PrepareCameraNode(const RefPtr<SceneV1::Node>& node)
+    void DeferredRenderer::PrepareCameraNode(SceneV1::Node* node)
     {
         const auto& camera = node->GetCamera();
 
@@ -467,7 +467,7 @@ namespace Husky::Render::Deferred
         camera->SetDescriptorSet(RendererName, vertexDescriptorSet);
     }
 
-    void DeferredRenderer::PrepareMeshNode(const RefPtr<SceneV1::Node>& node)
+    void DeferredRenderer::PrepareMeshNode(SceneV1::Node* node)
     {
         const auto& mesh = node->GetMesh();
 
@@ -483,16 +483,16 @@ namespace Husky::Render::Deferred
         }
     }
 
-    void DeferredRenderer::PrepareLightNode(const RefPtr<SceneV1::Node>& node)
+    void DeferredRenderer::PrepareLightNode(SceneV1::Node* node)
     {
         HUSKY_ASSERT_MSG(node->GetChildren().empty(), "Don't add children to light nodes");
     }
 
-    void DeferredRenderer::PrepareNode(const RefPtr<SceneV1::Node>& node)
+    void DeferredRenderer::PrepareNode(SceneV1::Node* node)
     {
     }
 
-    void DeferredRenderer::PreparePrimitive(const RefPtr<SceneV1::Primitive>& primitive)
+    void DeferredRenderer::PreparePrimitive(SceneV1::Primitive* primitive)
     {
         RefPtr<PipelineState> pipelineState = primitive->GetPipelineState(RendererName);
         if (pipelineState == nullptr)
@@ -502,7 +502,7 @@ namespace Husky::Render::Deferred
         }
     }
 
-    void DeferredRenderer::PrepareMesh(const RefPtr<SceneV1::Mesh>& mesh)
+    void DeferredRenderer::PrepareMesh(SceneV1::Mesh* mesh)
     {
         for (const auto& primitive : mesh->GetPrimitives())
         {
@@ -517,7 +517,7 @@ namespace Husky::Render::Deferred
         mesh->SetBufferDescriptorSet(RendererName, allocatedDescriptorSet);
     }
 
-    void DeferredRenderer::PrepareMaterial(const RefPtr<SceneV1::PbrMaterial>& material)
+    void DeferredRenderer::PrepareMaterial(SceneV1::PbrMaterial* material)
     {
         auto[allocateTextureDescriptorSetResult, textureDescriptorSet] = gbuffer->descriptorPool->AllocateDescriptorSet(
             gbuffer->materialTextureDescriptorSetLayout);
@@ -538,7 +538,7 @@ namespace Husky::Render::Deferred
         UpdateMaterial(material);
     }
 
-    void DeferredRenderer::PrepareLights(const RefPtr<SceneV1::Scene>& scene)
+    void DeferredRenderer::PrepareLights(SceneV1::Scene* scene)
     {
         constexpr int MAX_LIGHTS_COUNT = 8;
         int32 lightsBufferSize = sizeof(LightUniform) * MAX_LIGHTS_COUNT;
@@ -565,9 +565,7 @@ namespace Husky::Render::Deferred
         createdDescriptorSet->Update();
     }
 
-    void DeferredRenderer::UpdateNode(
-        const RefPtr<SceneV1::Node>& node,
-        const Mat4x4& parentTransform)
+    void DeferredRenderer::UpdateNode(SceneV1::Node* node, const Mat4x4& parentTransform)
     {
         const auto& mesh = node->GetMesh();
 
@@ -615,9 +613,7 @@ namespace Husky::Render::Deferred
         }
     }
 
-    void DeferredRenderer::UpdateMesh(
-        const RefPtr<SceneV1::Mesh>& mesh,
-        const Mat4x4& transform)
+    void DeferredRenderer::UpdateMesh(SceneV1::Mesh* mesh, const Mat4x4& transform)
     {
         MeshUniform meshUniform;
         meshUniform.transform = transform;
@@ -636,9 +632,7 @@ namespace Husky::Render::Deferred
         memcpy(suballocation.offsetMemory, &meshUniform, sizeof(MeshUniform));
     }
 
-    void DeferredRenderer::UpdateCamera(
-        const RefPtr<SceneV1::Camera>& camera,
-        const Mat4x4& transform)
+    void DeferredRenderer::UpdateCamera(SceneV1::Camera* camera, const Mat4x4& transform)
     {
         camera->SetCameraViewMatrix(glm::inverse(transform));
         auto cameraUniform = RenderUtils::GetCameraUniform(camera);
@@ -657,8 +651,7 @@ namespace Husky::Render::Deferred
         memcpy(suballocation.offsetMemory, &cameraUniform, sizeof(CameraUniform));
     }
 
-    void DeferredRenderer::UpdateMaterial(
-        const RefPtr<SceneV1::PbrMaterial>& material)
+    void DeferredRenderer::UpdateMaterial(SceneV1::PbrMaterial* material)
     {
         auto textureDescriptorSet = material->GetTextureDescriptorSet(RendererName);
         auto samplerDescriptorSet = material->GetSamplerDescriptorSet(RendererName);
@@ -736,18 +729,14 @@ namespace Husky::Render::Deferred
         bufferDescriptorSet->Update();
     }
 
-    void DeferredRenderer::UpdateLight(
-        const RefPtr<SceneV1::Light>& light,
-        const Mat4x4& transform)
+    void DeferredRenderer::UpdateLight(SceneV1::Light* light, const Mat4x4& transform)
     {
         LightUniform lightUniform = RenderUtils::GetLightUniform(light, transform);
 
         memcpy((LightUniform*)lighting->lightsBuffer->GetMappedMemory() + light->GetIndex(), &lightUniform, sizeof(LightUniform));
     }
 
-    void DeferredRenderer::DrawNode(
-        const RefPtr<SceneV1::Node>& node,
-        GraphicsCommandList* commandList)
+    void DeferredRenderer::DrawNode(SceneV1::Node* node, GraphicsCommandList* commandList)
     {
         const auto& mesh = node->GetMesh();
         if (mesh != nullptr)
@@ -761,9 +750,7 @@ namespace Husky::Render::Deferred
         }
     }
 
-    void DeferredRenderer::DrawMesh(
-        const RefPtr<SceneV1::Mesh>& mesh,
-        GraphicsCommandList* commandList)
+    void DeferredRenderer::DrawMesh(SceneV1::Mesh* mesh, GraphicsCommandList* commandList)
     {
         commandList->BindBufferDescriptorSet(
             ShaderStage::Vertex,
@@ -792,9 +779,7 @@ namespace Husky::Render::Deferred
         }
     }
 
-    void DeferredRenderer::BindMaterial(
-        const RefPtr<SceneV1::PbrMaterial>& material,
-        GraphicsCommandList* commandList)
+    void DeferredRenderer::BindMaterial(SceneV1::PbrMaterial* material, GraphicsCommandList* commandList)
     {
         commandList->BindTextureDescriptorSet(
             ShaderStage::Fragment,
@@ -812,9 +797,7 @@ namespace Husky::Render::Deferred
             material->GetSamplerDescriptorSet(RendererName));
     }
 
-    void DeferredRenderer::DrawPrimitive(
-        const RefPtr<SceneV1::Primitive>& primitive,
-        GraphicsCommandList* commandList)
+    void DeferredRenderer::DrawPrimitive(SceneV1::Primitive* primitive, GraphicsCommandList* commandList)
     {
         auto& pipelineState = primitive->GetPipelineState(RendererName);
 
@@ -845,8 +828,7 @@ namespace Husky::Render::Deferred
         commandList->DrawIndexedInstanced(indexBuffer.count, 0, 1, 0);
     }
 
-    RefPtr<PipelineState> DeferredRenderer::CreateGBufferPipelineState(
-        const RefPtr<SceneV1::Primitive>& primitive)
+    RefPtr<PipelineState> DeferredRenderer::CreateGBufferPipelineState(SceneV1::Primitive* primitive)
     {
         PipelineStateCreateInfo ci;
 

@@ -59,45 +59,33 @@ namespace Husky::Render::Deferred
         bool Initialize();
         bool Deinitialize();
 
-        void PrepareScene(const RefPtr<SceneV1::Scene>& scene);
-        void UpdateScene(const RefPtr<SceneV1::Scene>& scene);
-        void DrawScene(const RefPtr<SceneV1::Scene>& scene, const RefPtr<SceneV1::Camera>& camera);
+        void PrepareScene(SceneV1::Scene* scene);
+        void UpdateScene(SceneV1::Scene* scene);
+        void DrawScene(SceneV1::Scene* scene, SceneV1::Camera* camera);
     private:
-        void PrepareCameraNode(const RefPtr<SceneV1::Node>& node);
-        void PrepareMeshNode(const RefPtr<SceneV1::Node>& node);
-        void PrepareLightNode(const RefPtr<SceneV1::Node>& node);
-        void PrepareNode(const RefPtr<SceneV1::Node>& node);
-        void PrepareMesh(const RefPtr<SceneV1::Mesh>& mesh);
-        void PreparePrimitive(const RefPtr<SceneV1::Primitive>& primitive);
-        void PrepareMaterial(const RefPtr<SceneV1::PbrMaterial>& mesh);
-        void PrepareLights(const RefPtr<SceneV1::Scene>& scene);
+        void PrepareCameraNode(SceneV1::Node* node);
+        void PrepareMeshNode(SceneV1::Node* node);
+        void PrepareLightNode(SceneV1::Node* node);
+        void PrepareNode(SceneV1::Node* node);
+        void PrepareMesh(SceneV1::Mesh* mesh);
+        void PreparePrimitive(SceneV1::Primitive* primitive);
+        void PrepareMaterial(SceneV1::PbrMaterial* mesh);
+        void PrepareLights(SceneV1::Scene* scene);
 
-        void UpdateNode(const RefPtr<SceneV1::Node>& node, const Mat4x4& parentTransform);
-        void UpdateMesh(const RefPtr<SceneV1::Mesh>& mesh, const Mat4x4& transform);
-        void UpdateCamera(const RefPtr<SceneV1::Camera>& camera, const Mat4x4& transform);
-        void UpdateLight(const RefPtr<SceneV1::Light>& light, const Mat4x4& transform);
-        void UpdateMaterial(const RefPtr<SceneV1::PbrMaterial>& material);
+        void UpdateNode(SceneV1::Node* node, const Mat4x4& parentTransform);
+        void UpdateMesh(SceneV1::Mesh* mesh, const Mat4x4& transform);
+        void UpdateCamera(SceneV1::Camera* camera, const Mat4x4& transform);
+        void UpdateLight(SceneV1::Light* light, const Mat4x4& transform);
+        void UpdateMaterial(SceneV1::PbrMaterial* material);
 
-        void DrawNode(
-            const RefPtr<SceneV1::Node>& node,
-            GraphicsCommandList* commandList);
+        void DrawNode(SceneV1::Node* node, GraphicsCommandList* commandList);
+        void DrawMesh(SceneV1::Mesh* mesh, GraphicsCommandList* commandList);
+        void DrawPrimitive(SceneV1::Primitive* primitive, GraphicsCommandList* commandList);
 
-        void DrawMesh(
-            const RefPtr<SceneV1::Mesh>& mesh,
-            GraphicsCommandList* commandList);
+        void BindMaterial(SceneV1::PbrMaterial* material, GraphicsCommandList* commandList);
 
-        void BindMaterial(
-            const RefPtr<SceneV1::PbrMaterial>& material,
-            GraphicsCommandList* commandList);
-
-        void DrawPrimitive(
-            const RefPtr<SceneV1::Primitive>& primitive,
-            GraphicsCommandList* commandList);
-
-        RefPtr<PipelineState> CreateGBufferPipelineState(const RefPtr<SceneV1::Primitive>& primitive);
+        RefPtr<PipelineState> CreateGBufferPipelineState(SceneV1::Primitive* primitive);
         RefPtr<PipelineState> CreateLightingPipelineState(LightingPassResources* lighting);
-
-        Vector<const char8*> GetRequiredDeviceExtensionNames() const;
 
         ResultValue<bool, UniquePtr<DeferredRendererResources>> PrepareResources();
 
@@ -126,6 +114,5 @@ namespace Husky::Render::Deferred
         Format depthStencilFormat = Format::D24UnormS8Uint;
         float32 minDepth = 0.0;
         float32 maxDepth = 1.0;
-        int32 frameIndex = 0;
     };
 }
