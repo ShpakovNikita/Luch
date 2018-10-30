@@ -13,7 +13,7 @@ namespace Husky::Render
     {
         MaterialUniform GetMaterialUniform(SceneV1::PbrMaterial *material);
         CameraUniform GetCameraUniform(SceneV1::Camera *camera);
-        LightUniform GetLightUniform(SceneV1::Light* light, Mat4x4 worldTransform, Mat4x4 viewTransform);
+        LightUniform GetLightUniform(SceneV1::Light* light, Mat4x4 worldTransform);
 
         ResultValue<bool, RefPtr<ShaderLibrary>> CreateShaderLibrary(
             GraphicsDevice* device,

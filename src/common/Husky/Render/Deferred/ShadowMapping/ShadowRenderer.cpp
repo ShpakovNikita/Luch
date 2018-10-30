@@ -36,17 +36,19 @@ namespace Husky::Render::Deferred::ShadowMapping
 {
     using namespace Graphics;
 
+    const String ShadowRenderer::RendererName{"Shadow"};
+
     ShadowRenderer::ShadowRenderer(SharedPtr<RenderContext> aContext)
         : context(aContext)
     {
     }
 
-    bool ShadowRenderer::Prepare(SceneV1::Scene* scene)
+    bool ShadowRenderer::Initialize()
     {
-        auto[prepareResourcesResult, preparedResources] = PrepareShadowMappingPassResources(scene);
+        auto[prepareResourcesResult, preparedResources] = PrepareShadowMappingPassResources();
         if(prepareResourcesResult)
         {
-            resources = preparedResources;
+            resources = std::move(preparedResources);
             return true;
         }
         else
@@ -55,11 +57,38 @@ namespace Husky::Render::Deferred::ShadowMapping
         }
     }
 
+    bool ShadowRenderer::Deinitialize()
+    {
+        resources.reset();
+        return true;
+    }
+
+    void ShadowRenderer::PrepareScene(SceneV1::Scene* scene)
+    {
+        const auto& nodes = scene->GetNodes();
+
+        for (const auto& node : nodes)
+        {
+            if(node->GetMesh() != nullptr)
+            {
+                PrepareMeshNode(node);
+            }
+        }
+    }
+
+    void ShadowRenderer::UpdateScene(SceneV1::Scene* scene)
+    {
+        for (const auto& node : scene->GetNodes())
+        {
+            UpdateNode(node);
+        }
+    }
+
     const ShadowRenderer::ShadowMaps& ShadowRenderer::DrawShadows(
         SceneV1::Scene* scene,
         const RefPtrVector<SceneV1::Node>& lightNodes)
     {
-        auto [createCommandListResult, commandList] = resources.commandPool->AllocateGraphicsCommandList();
+        auto [createCommandListResult, commandList] = resources->commandPool->AllocateGraphicsCommandList();
         HUSKY_ASSERT(createCommandListResult == GraphicsResult::Success);
 
         shadowMaps.clear();
@@ -70,7 +99,10 @@ namespace Husky::Render::Deferred::ShadowMapping
             const auto& light = lightNode->GetLight();
             HUSKY_ASSERT(light != nullptr);
 
-            shadowMaps[light] = DrawSceneForLight(light, lightNode->GetWorldTransform(), scene, commandList);
+            if(light->IsShadowEnabled())
+            {
+                shadowMaps[light] = DrawSceneForLight(light, lightNode->GetWorldTransform(), scene, commandList);
+            }
         }
 
         commandList->End();
@@ -173,20 +205,20 @@ namespace Husky::Render::Deferred::ShadowMapping
             return nullptr;
         }
 
-        DepthStencilAttachment attachment = resources.depthStencilAttachmentTemplate;
+        DepthStencilAttachment attachment = resources->depthStencilAttachmentTemplate;
         attachment.output.texture = createdDepthBuffer;
-        attachment.depthLoadOperation = AttachmentLoadOperation::Clear;
-        attachment.depthStoreOperation = AttachmentStoreOperation::Store;
-        attachment.format = textureCreateInfo.format;
 
         RenderPassCreateInfo renderPassCreateInfo;
-        renderPassCreateInfo.WithDepthStencilAttachment(&attachment);
+        renderPassCreateInfo
+            .WithDepthStencilAttachment(&attachment);
 
         commandList->BeginRenderPass(renderPassCreateInfo);
+        commandList->BindPipelineState(resources->pipelineState);
+
         commandList->BindBufferDescriptorSet(
             ShaderStage::Vertex,
-            resources.pipelineLayout,
-            camera->GetVertexDescriptorSet());
+            resources->pipelineLayout,
+            camera->GetDescriptorSet(RendererName));
 
         for(const auto& node : scene->GetNodes())
         {
@@ -220,8 +252,8 @@ namespace Husky::Render::Deferred::ShadowMapping
     {
         commandList->BindBufferDescriptorSet(
             ShaderStage::Vertex,
-            resources.pipelineLayout,
-            mesh->GetBufferDescriptorSet());
+            resources->pipelineLayout,
+            mesh->GetBufferDescriptorSet(RendererName));
 
         for (const auto& primitive : mesh->GetPrimitives())
         {
@@ -275,24 +307,70 @@ namespace Husky::Render::Deferred::ShadowMapping
 
     void ShadowRenderer::PrepareCamera(SceneV1::Camera* camera)
     {
-        BufferCreateInfo bufferCreateInfo;
-        bufferCreateInfo.length = sizeof(CameraUniform);
-        bufferCreateInfo.storageMode = ResourceStorageMode::Shared;
-        bufferCreateInfo.usage = BufferUsageFlags::Uniform;
-
-        auto [createBufferResult, buffer] = context->device->CreateBuffer(bufferCreateInfo);
-        HUSKY_ASSERT(createBufferResult == GraphicsResult::Success);
-
-        auto[mapMemoryResult, mappedMemory] = buffer->MapMemory(sizeof(CameraUniform), 0);
-        HUSKY_ASSERT(mapMemoryResult == GraphicsResult::Success);
-
-        auto[createVertexDescriptorSetResult, vertexDescriptorSet] = resources.descriptorPool->AllocateDescriptorSet(resources.cameraBufferSetLayout);
+        auto[createVertexDescriptorSetResult, vertexDescriptorSet] = resources->descriptorPool->AllocateDescriptorSet(
+            resources->cameraBufferSetLayout);
         HUSKY_ASSERT(createVertexDescriptorSetResult == GraphicsResult::Success);
 
-        camera->SetUniformBuffer(buffer);
-        vertexDescriptorSet->WriteUniformBuffer(&resources.cameraUniformBufferBinding, buffer);
-        vertexDescriptorSet->Update();
-        camera->SetVertexDescriptorSet(vertexDescriptorSet);
+        camera->SetDescriptorSet(RendererName, vertexDescriptorSet);
+    }
+
+    void ShadowRenderer::PrepareMesh(SceneV1::Mesh* mesh)
+    {
+        auto[allocateDescriptorSetResult, allocatedDescriptorSet] = resources->descriptorPool->AllocateDescriptorSet(
+            resources->meshBufferSetLayout);
+
+        HUSKY_ASSERT(allocateDescriptorSetResult == GraphicsResult::Success);
+
+        mesh->SetBufferDescriptorSet(RendererName, allocatedDescriptorSet);
+    }
+
+    void ShadowRenderer::PrepareMeshNode(SceneV1::Node* meshNode)
+    {
+        const auto& mesh = meshNode->GetMesh();
+
+        if (mesh != nullptr)
+        {
+            PrepareMesh(mesh);
+        }
+
+        // TODO sort out node hierarchy
+        for (const auto& child : meshNode->GetChildren())
+        {
+            PrepareMeshNode(child);
+        }
+    }
+
+    void ShadowRenderer::UpdateNode(SceneV1::Node* node)
+    {
+        auto worldTransform = node->GetWorldTransform();
+        const auto& mesh = node->GetMesh();
+        if(mesh != nullptr)
+        {
+            UpdateMesh(mesh, worldTransform);
+        }
+        for (const auto& child : node->GetChildren())
+        {
+            UpdateNode(child);
+        }
+    }
+
+    void ShadowRenderer::UpdateMesh(SceneV1::Mesh* mesh, Mat4x4 transform)
+    {
+        MeshUniform meshUniform;
+        meshUniform.transform = transform;
+        meshUniform.inverseTransform = glm::inverse(transform);
+
+        // TODO
+        auto suballocation = resources->sharedBuffer->Suballocate(sizeof(MeshUniform), 16);
+        auto descriptorSet = mesh->GetBufferDescriptorSet(RendererName);
+
+        descriptorSet->WriteUniformBuffer(
+            resources->meshUniformBufferBinding,
+            suballocation.buffer,
+            suballocation.offset);
+        descriptorSet->Update();
+
+        memcpy(suballocation.offsetMemory, &meshUniform, sizeof(MeshUniform));
     }
 
     void ShadowRenderer::UpdateSpotLightCamera(
@@ -307,9 +385,10 @@ namespace Husky::Render::Deferred::ShadowMapping
 
         camera->SetYFOV(light->GetSpotlightAngle().value());
         camera->SetAspectRatio(1);
+        camera->SetZNear(0.1);
         camera->SetZFar(light->GetRange().value());
 
-        UpdateCameraBuffer(camera);
+        UpdateCamera(camera);
     }
 
     void ShadowRenderer::UpdateDirectionalLightCamera(
@@ -321,7 +400,7 @@ namespace Husky::Render::Deferred::ShadowMapping
 
         HUSKY_ASSERT_MSG(false, "Not implemented");
 
-        UpdateCameraBuffer(camera);
+        UpdateCamera(camera);
     }
 
     void ShadowRenderer::UpdatePointLightCamera(
@@ -330,71 +409,74 @@ namespace Husky::Render::Deferred::ShadowMapping
         SceneV1::PerspectiveCamera* camera,
         int32 index)
     {
+        // TODO
         camera->SetCameraViewMatrix(glm::inverse(transform));
 
         HUSKY_ASSERT(light->GetRange().has_value());
 
         camera->SetYFOV(glm::pi<float32>() / 2);
         camera->SetAspectRatio(1);
+        camera->SetZNear(0.1);
         camera->SetZFar(light->GetRange().value());
 
-        UpdateCameraBuffer(camera);
+        UpdateCamera(camera);
     }
 
-    void ShadowRenderer::UpdateCameraBuffer(SceneV1::Camera* camera)
+    void ShadowRenderer::UpdateCamera(SceneV1::Camera* camera)
     {
-        const auto& buffer = camera->GetUniformBuffer();
         auto cameraUniform = RenderUtils::GetCameraUniform(camera);
-        memcpy(buffer->GetMappedMemory(), &cameraUniform, sizeof(CameraUniform));
+        auto descriptorSet = camera->GetDescriptorSet(RendererName);
+
+        // TODO
+        auto suballocation = resources->sharedBuffer->Suballocate(sizeof(CameraUniform), 16);
+
+        descriptorSet->WriteUniformBuffer(
+            resources->cameraUniformBufferBinding,
+            suballocation.buffer,
+            suballocation.offset);
+
+        descriptorSet->Update();
+
+        memcpy(suballocation.offsetMemory, &cameraUniform, sizeof(CameraUniform));
     }
 
-    ResultValue<bool, ShadowMappingPassResources> ShadowRenderer::PrepareShadowMappingPassResources(SceneV1::Scene* scene)
+    ResultValue<bool, UniquePtr<ShadowMappingPassResources>> ShadowRenderer::PrepareShadowMappingPassResources()
     {
-        ShadowMappingPassResources resources;
-
-        const auto& sceneProperties = scene->GetSceneProperties();
-
-        const int32 camerasPerLight = 6;
-
-        int32 camerasCount = sceneProperties.lights.size() * camerasPerLight;
-        int32 perMeshBufferCount = sceneProperties.meshes.size();
+        UniquePtr<ShadowMappingPassResources> resources = MakeUnique<ShadowMappingPassResources>();
 
         DescriptorPoolCreateInfo descriptorPoolCreateInfo;
         // two sets per material, one set per mesh
-        descriptorPoolCreateInfo.maxDescriptorSets = camerasCount + sceneProperties.meshes.size();
+        descriptorPoolCreateInfo.maxDescriptorSets = MaxDescriptorSetCount;
 
         descriptorPoolCreateInfo.descriptorCount =
         {
-            { ResourceType::UniformBuffer, camerasCount + perMeshBufferCount + 1 },
+            { ResourceType::UniformBuffer, MaxDescriptorCount },
         };
 
-        auto[createDescriptorPoolResult, createdDescriptorPool] = context->device->CreateDescriptorPool(descriptorPoolCreateInfo);
+        auto[createDescriptorPoolResult, createdDescriptorPool] = context->device->CreateDescriptorPool(
+            descriptorPoolCreateInfo);
+
         if (createDescriptorPoolResult != GraphicsResult::Success)
         {
             HUSKY_ASSERT(false);
             return { false };
         }
 
-        resources.descriptorPool = std::move(createdDescriptorPool);
+        resources->descriptorPool = std::move(createdDescriptorPool);
 
-        resources.cameraUniformBufferBinding
-            .OfType(ResourceType::UniformBuffer)
-            .AtStage(ShaderStage::Vertex);
+        resources->cameraUniformBufferBinding.OfType(ResourceType::UniformBuffer);
+        resources->meshUniformBufferBinding.OfType(ResourceType::UniformBuffer);
 
-        resources.meshUniformBufferBinding
-            .OfType(ResourceType::UniformBuffer)
-            .AtStage(ShaderStage::Vertex);
-
-        resources.depthStencilAttachmentTemplate.format = options.shadowMapFormat;
-        resources.depthStencilAttachmentTemplate.depthClearValue = 1.0f;
-        resources.depthStencilAttachmentTemplate.depthLoadOperation = AttachmentLoadOperation::Clear;
-        resources.depthStencilAttachmentTemplate.depthStoreOperation = AttachmentStoreOperation::Store;
+        resources->depthStencilAttachmentTemplate.format = options.shadowMapFormat;
+        resources->depthStencilAttachmentTemplate.depthClearValue = 1.0f;
+        resources->depthStencilAttachmentTemplate.depthLoadOperation = AttachmentLoadOperation::Clear;
+        resources->depthStencilAttachmentTemplate.depthStoreOperation = AttachmentStoreOperation::Store;
 
         DescriptorSetLayoutCreateInfo cameraBufferSetLayoutCreateInfo;
         cameraBufferSetLayoutCreateInfo
             .OfType(DescriptorSetType::Buffer)
             .WithNBindings(1)
-            .AddBinding(&resources.cameraUniformBufferBinding);
+            .AddBinding(&resources->cameraUniformBufferBinding);
 
         auto [cameraBufferSetLayoutCreateResult, createdCameraBufferSetLayout] = context->device->CreateDescriptorSetLayout(
             cameraBufferSetLayoutCreateInfo);
@@ -404,13 +486,13 @@ namespace Husky::Render::Deferred::ShadowMapping
             return { false };
         }
 
-        resources.cameraBufferSetLayout = std::move(createdCameraBufferSetLayout);
+        resources->cameraBufferSetLayout = std::move(createdCameraBufferSetLayout);
 
         DescriptorSetLayoutCreateInfo meshBufferSetLayoutCreateInfo;
         meshBufferSetLayoutCreateInfo
             .OfType(DescriptorSetType::Buffer)
             .WithNBindings(1)
-            .AddBinding(&resources.meshUniformBufferBinding);
+            .AddBinding(&resources->meshUniformBufferBinding);
 
         auto [meshBufferSetLayoutCreateResult, createdMeshBufferSetLayout] = context->device->CreateDescriptorSetLayout(
             meshBufferSetLayoutCreateInfo);
@@ -420,12 +502,12 @@ namespace Husky::Render::Deferred::ShadowMapping
             return { false };
         }
 
-        resources.meshBufferSetLayout = std::move(createdMeshBufferSetLayout);
+        resources->meshBufferSetLayout = std::move(createdMeshBufferSetLayout);
 
         PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
         pipelineLayoutCreateInfo
-            .AddSetLayout(ShaderStage::Vertex, resources.cameraBufferSetLayout)
-            .AddSetLayout(ShaderStage::Vertex, resources.meshBufferSetLayout);
+            .AddSetLayout(ShaderStage::Vertex, resources->cameraBufferSetLayout)
+            .AddSetLayout(ShaderStage::Vertex, resources->meshBufferSetLayout);
 
         auto [createPipelineLayoutResult, createdPipelineLayout] = context->device->CreatePipelineLayout(pipelineLayoutCreateInfo);
         if(createPipelineLayoutResult != GraphicsResult::Success)
@@ -434,7 +516,7 @@ namespace Husky::Render::Deferred::ShadowMapping
             return { false };
         }
 
-        resources.pipelineLayout = std::move(createdPipelineLayout);
+        resources->pipelineLayout = std::move(createdPipelineLayout);
 
         VertexInputAttributeDescription positionAttribute;
         positionAttribute.format = Format::R32G32B32A32Sfloat;
@@ -481,8 +563,8 @@ namespace Husky::Render::Deferred::ShadowMapping
         pipelineStateCreateInfo.depthStencil.depthTestEnable = true;
         pipelineStateCreateInfo.depthStencil.depthWriteEnable = true;
         pipelineStateCreateInfo.depthStencil.depthCompareFunction = CompareFunction::Less;
-        pipelineStateCreateInfo.depthStencil.depthStencilFormat = Format::D32Sfloat;
-        pipelineStateCreateInfo.pipelineLayout = resources.pipelineLayout;
+        pipelineStateCreateInfo.depthStencil.depthStencilFormat = options.shadowMapFormat;
+        pipelineStateCreateInfo.pipelineLayout = resources->pipelineLayout;
 
         auto [createPipelineStateResult, createdPipelineState] = context->device->CreatePipelineState(pipelineStateCreateInfo);
         if(createPipelineStateResult != GraphicsResult::Success)
@@ -491,7 +573,7 @@ namespace Husky::Render::Deferred::ShadowMapping
             return { false };
         }
 
-        resources.pipelineState = std::move(createdPipelineState);
+        resources->pipelineState = std::move(createdPipelineState);
 
         auto [createCommandPoolResult, createdCommandPool] = context->commandQueue->CreateCommandPool();
         if(createCommandPoolResult != GraphicsResult::Success)
@@ -500,9 +582,22 @@ namespace Husky::Render::Deferred::ShadowMapping
             return { false };
         }
 
-        resources.commandPool = std::move(createdCommandPool);
+        resources->commandPool = std::move(createdCommandPool);
 
-        return { true, resources };
+        BufferCreateInfo bufferCreateInfo;
+        bufferCreateInfo.length = SharedUniformBufferSize;
+        bufferCreateInfo.usage = BufferUsageFlags::Uniform;
+        bufferCreateInfo.storageMode = ResourceStorageMode::Shared;
+
+        auto [createSharedBufferResult, createdSharedBuffer] = context->device->CreateBuffer(bufferCreateInfo);
+        if(createSharedBufferResult != GraphicsResult::Success)
+        {
+            return { false };
+        }
+
+        resources->sharedBuffer = MakeUnique<SharedBuffer>(createdSharedBuffer);
+
+        return { true, std::move(resources) };
     }
 
 }

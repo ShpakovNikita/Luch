@@ -66,8 +66,17 @@ namespace Husky::SceneV1
         const Optional<IndexBuffer>& GetIndexBuffer() const { return indexBuffer; }
         const RefPtr<PbrMaterial>& GetMaterial() const { return material; }
         inline PrimitiveTopology GetTopology() const { return topology; }
-        inline const RefPtr<Graphics::PipelineState>& GetPipelineState() const { return pipelineState; }
-        inline void SetPipelineState(const RefPtr<Graphics::PipelineState>& aPipelineState) { pipelineState = aPipelineState; }
+
+        inline const RefPtr<Graphics::PipelineState>& GetPipelineState(const String& key) const
+        {
+            return pipelineStates[key];
+        }
+
+        inline void SetPipelineState(const String& key, const RefPtr<Graphics::PipelineState>& pipelineState)
+        {
+            pipelineStates[key] = pipelineState;
+        }
+
         inline void AddShaderProgram(const RefPtr<Graphics::ShaderProgram>& shaderProgram) { shaderPrograms.push_back(shaderProgram); }
     private:
         Vector<PrimitiveAttribute> attributes;
@@ -76,6 +85,6 @@ namespace Husky::SceneV1
         RefPtr<PbrMaterial> material;
         PrimitiveTopology topology = PrimitiveTopology::TriangleList;
         RefPtrVector<Graphics::ShaderProgram> shaderPrograms;
-        RefPtr<Graphics::PipelineState> pipelineState;
+        mutable UnorderedMap<String, RefPtr<Graphics::PipelineState>> pipelineStates;
     };
 }

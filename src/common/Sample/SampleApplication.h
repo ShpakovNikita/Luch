@@ -88,7 +88,8 @@ private:
 #if WIN32
     VulkanAllocator allocator;
 #endif
-    Husky::Render::Deferred::DeferredPreparedScene preparedScene;
 
     Husky::UniquePtr<Husky::Render::Deferred::DeferredRenderer> deferredRenderer;
+    Husky::RefPtr<Husky::SceneV1::Scene> scene;
+    Husky::RefPtr<Husky::SceneV1::Camera> camera;
 };

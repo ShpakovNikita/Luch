@@ -24,9 +24,6 @@ namespace Husky::Render::Deferred
         RefPtr<PipelineLayout> pipelineLayout;
         RefPtr<DescriptorPool> descriptorPool;
 
-        // Camera bindings
-        DescriptorSetBinding cameraUniformBufferBinding;
-
         // Mesh bindings
         DescriptorSetBinding meshUniformBufferBinding;
 
@@ -48,11 +45,10 @@ namespace Husky::Render::Deferred
         DepthStencilAttachment depthStencilAttachmentTemplate;
 
         RefPtr<DescriptorSetLayout> meshBufferDescriptorSetLayout;
-        RefPtr<DescriptorSetLayout> cameraBufferDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> materialTextureDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> materialBufferDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> materialSamplerDescriptorSetLayout;
 
-        Vector<OffscreenTextures> offscreen;
+        OffscreenTextures offscreen;
     };
 }

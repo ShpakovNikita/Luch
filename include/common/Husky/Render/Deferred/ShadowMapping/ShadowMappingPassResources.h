@@ -2,6 +2,7 @@
 
 
 #include <Husky/Render/Deferred/DeferredForwards.h>
+#include <Husky/Render/SharedBuffer.h>
 #include <Husky/Graphics/GraphicsForwards.h>
 #include <Husky/Graphics/DescriptorSetBinding.h>
 #include <Husky/Graphics/Attachment.h>
@@ -16,6 +17,7 @@ namespace Husky::Render::Deferred::ShadowMapping
     // if I want to shadow map objects with alpha mask
     struct ShadowMappingPassResources
     {
+        UniquePtr<SharedBuffer> sharedBuffer;
         DescriptorSetBinding cameraUniformBufferBinding;
         DescriptorSetBinding meshUniformBufferBinding;
 

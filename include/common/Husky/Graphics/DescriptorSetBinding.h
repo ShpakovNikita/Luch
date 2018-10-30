@@ -17,16 +17,9 @@ namespace Husky::Graphics
             return *this;
         }
 
-        inline DescriptorSetBinding& AtStage(ShaderStage stage)
-        {
-            shaderStage = stage;
-            return *this;
-        }
-
         int32 GetIndex() const { return index; }
     private:
         int32 index = -1;
         ResourceType type;
-        ShaderStage shaderStage;
     };
 }

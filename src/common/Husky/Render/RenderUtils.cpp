@@ -55,14 +55,12 @@ namespace Husky::Render::RenderUtils
         return materialUniform;
     }
 
-    LightUniform GetLightUniform(SceneV1::Light* light, Mat4x4 worldTransform, Mat4x4 viewTransform)
+    LightUniform GetLightUniform(SceneV1::Light* light, Mat4x4 worldTransform)
     {
         LightUniform lightUniform;
 
         lightUniform.positionWS = worldTransform * Vec4{ 0.0, 0.0, 0.0, 1.0 };
         lightUniform.directionWS = glm::normalize(worldTransform * Vec4{ light->GetDirection().value_or(Vec3{0, 0, 1}), 0.0 });
-        lightUniform.positionVS = viewTransform * lightUniform.positionWS;
-        lightUniform.directionVS = glm::normalize(viewTransform * lightUniform.directionWS);
         lightUniform.color = Vec4{ light->GetColor().value_or(Vec3{1.0, 1.0, 1.0}), 1.0 };
         lightUniform.enabled = light->IsEnabled() ? 1 : 0;
         lightUniform.type = static_cast<int32>(light->GetType());

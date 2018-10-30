@@ -70,7 +70,7 @@ namespace Husky::Render::Deferred
     };
 
     // Think about passing these numbers through shader defines
-    static const Map<SceneV1::AttributeSemantic, int32> SemanticToLocation =
+    static const UnorderedMap<SceneV1::AttributeSemantic, int32> SemanticToLocation =
     {
         { SceneV1::AttributeSemantic::Position, 0 },
         { SceneV1::AttributeSemantic::Normal, 1 },
@@ -80,7 +80,7 @@ namespace Husky::Render::Deferred
         { SceneV1::AttributeSemantic::Color_0, 5 },
     };
 
-    static const Map<SceneV1::AttributeSemantic, DeferredShaderDefines> SemanticToFlag =
+    static const UnorderedMap<SceneV1::AttributeSemantic, DeferredShaderDefines> SemanticToFlag =
     {
         { SceneV1::AttributeSemantic::Position, DeferredShaderDefines::Empty },
         { SceneV1::AttributeSemantic::Normal, DeferredShaderDefines::HasNormal},
@@ -101,6 +101,8 @@ namespace Husky::Render::Deferred
         { DeferredShaderDefines::HasEmissiveTexture, "HAS_EMISSIVE_TEXTURE" },
         { DeferredShaderDefines::AlphaMask, "ALPHA_MASK" },
     };
+
+    const String DeferredRenderer::RendererName{"Deferred"};
 
     DeferredRenderer::DeferredRenderer(
         const RefPtr<PhysicalDevice>& physicalDevice,
@@ -164,132 +166,61 @@ namespace Husky::Render::Deferred
         depthStencilFormat = depthFormats.front();
 
         shadowRenderer = MakeUnique<ShadowRenderer>(context);
+        bool shadowRendererInitialized = shadowRenderer->Initialize();
+        if(!shadowRendererInitialized)
+        {
+            return false;
+        }
+
+        auto [prepareResourcesResult, preparedResources] = PrepareResources();
+        if(prepareResourcesResult)
+        {
+            resources = std::move(preparedResources);
+        }
+        else
+        {
+            return false;
+        }
+
+        auto [gBufferResourcesPrepared, preparedGBufferResources] = PrepareGBufferPassResources();
+        if (gBufferResourcesPrepared)
+        {
+            gbuffer = std::move(preparedGBufferResources);
+        }
+        else
+        {
+            return  false;
+        }
+
+        auto[lightingResourcesPrepared, preparedLightingResources] = PrepareLightingPassResources(gbuffer.get());
+        if (lightingResourcesPrepared)
+        {
+            lighting = std::move(preparedLightingResources);
+        }
+        else
+        {
+            return  false ;
+        }
 
         return true;
     }
 
     bool DeferredRenderer::Deinitialize()
     {
-        shadowRenderer.reset();
+        resources.reset();
+
+        bool shadowRendererDeinitialized = shadowRenderer->Deinitialize();
+        if(!shadowRendererDeinitialized)
+        {
+            return false;
+        }
+
         return true;
     }
 
-    ResultValue<bool, DeferredPreparedScene> DeferredRenderer::PrepareScene(const RefPtr<SceneV1::Scene>& scene)
+    void DeferredRenderer::PrepareScene(const RefPtr<SceneV1::Scene>& scene)
     {
-        DeferredPreparedScene preparedScene;
-
-        preparedScene.scene = scene;
-
         const auto& sceneProperties = scene->GetSceneProperties();
-
-        int32 perCameraUBOCount = 1;
-
-        DescriptorPoolCreateInfo descriptorPoolCreateInfo;
-        descriptorPoolCreateInfo.descriptorCount =
-        {
-            { ResourceType::UniformBuffer, perCameraUBOCount + 1 },
-        };
-        descriptorPoolCreateInfo.maxDescriptorSets = 1;
-
-        auto[createDescriptorPoolResult, createdDescriptorPool] = context->device->CreateDescriptorPool(descriptorPoolCreateInfo);
-        if (createDescriptorPoolResult != GraphicsResult::Success)
-        {
-            return { false };
-        }
-
-        preparedScene.descriptorPool = std::move(createdDescriptorPool);
-
-        auto [gBufferResourcesPrepared, preparedGBufferResources] = PrepareGBufferPassResources(preparedScene);
-        if (gBufferResourcesPrepared)
-        {
-            preparedScene.gbuffer = std::move(preparedGBufferResources);
-        }
-        else
-        {
-            return { false };
-        }
-
-        auto[lightingResourcesPrepared, preparedLightingResources] = PrepareLightingPassResources(preparedScene);
-        if (lightingResourcesPrepared)
-        {
-            preparedScene.lighting = std::move(preparedLightingResources);
-        }
-        else
-        {
-            return { false };
-        }
-
-        preparedScene.options.SetShadowMappingEnabled(true);
-
-        const auto& swapchainInfo = context->swapchain->GetInfo();
-        preparedScene.frameResources.reserve(swapchainInfo.imageCount);
-
-        auto[createdCommandPoolResult, createdCommandPool] = context->commandQueue->CreateCommandPool();
-        if (createdCommandPoolResult != GraphicsResult::Success)
-        {
-            // TODO
-            return { false };
-        }
-
-        preparedScene.commandPool = std::move(createdCommandPool);
-
-        for (int32 i = 0; i < swapchainInfo.imageCount; i++)
-        {
-            auto& frameResources = preparedScene.frameResources.emplace_back();
-
-            auto [allocateLightingTextureDescriptorSetResult, allocatedLightingTextureDescriptorSet] =
-                preparedScene.lighting.descriptorPool->AllocateDescriptorSet(preparedScene.lighting.gbufferTextureDescriptorSetLayout);
-            if (allocateLightingTextureDescriptorSetResult != GraphicsResult::Success)
-            {
-                return { false };
-            }
-
-            frameResources.gbufferTextureDescriptorSet = std::move(allocatedLightingTextureDescriptorSet);
-
-            auto [allocateLightingSamplerDescriptorSetResult, allocatedLightingSamplerDescriptorSet] =
-                preparedScene.lighting.descriptorPool->AllocateDescriptorSet(preparedScene.lighting.gbufferSamplerDescriptorSetLayout);
-            if (allocateLightingSamplerDescriptorSetResult != GraphicsResult::Success)
-            {
-                return { false };
-            }
-
-            frameResources.gbufferSamplerDescriptorSet = std::move(allocatedLightingSamplerDescriptorSet);
-
-            auto[createFrameCommandPoolResult, createdFrameCommandPool] = context->commandQueue->CreateCommandPool();
-            if (createFrameCommandPoolResult != GraphicsResult::Success)
-            {
-                return { false };
-            }
-
-            frameResources.commandPool = std::move(createdFrameCommandPool);
-
-            auto& offscreen = preparedScene.gbuffer.offscreen[i];
-
-            frameResources.gbufferTextureDescriptorSet->WriteTexture(
-                &preparedScene.lighting.baseColorTextureBinding,
-                offscreen.baseColorTexture);
-
-            frameResources.gbufferTextureDescriptorSet->WriteTexture(
-                &preparedScene.lighting.normalMapTextureBinding,
-                offscreen.normalMapTexture);
-
-            frameResources.gbufferTextureDescriptorSet->WriteTexture(
-                &preparedScene.lighting.depthStencilTextureBinding,
-                offscreen.depthStencilBuffer);
-
-            frameResources.gbufferSamplerDescriptorSet->WriteSampler(
-                &preparedScene.lighting.baseColorSamplerBinding,
-                offscreen.baseColorSampler);
-
-            frameResources.gbufferSamplerDescriptorSet->WriteSampler(
-                &preparedScene.lighting.normalMapSamplerBinding,
-                offscreen.normalMapSampler);
-
-            frameResources.gbufferSamplerDescriptorSet->WriteSampler(
-                &preparedScene.lighting.depthStencilSamplerBinding,
-                offscreen.depthStencilSampler);
-        }
-
         const auto& textures = sceneProperties.textures;
 
         Vector<SceneV1::Texture*> texturesVector;
@@ -298,13 +229,10 @@ namespace Husky::Render::Deferred
             texturesVector.push_back(texture);
         }
 
-        TextureUploader textureUploader{ context->device, preparedScene.commandPool };
+        TextureUploader textureUploader{ context->device, resources->commandPool };
         auto [uploadTexturesSucceeded, uploadTexturesResult] = textureUploader.UploadTextures(texturesVector);
 
-        if(!uploadTexturesSucceeded)
-        {
-            return { false };
-        }
+        HUSKY_ASSERT(uploadTexturesSucceeded);
 
         for (const auto& commandList : uploadTexturesResult.commandLists)
         {
@@ -314,10 +242,8 @@ namespace Husky::Render::Deferred
         const auto& buffers = sceneProperties.buffers;
         for(const auto& buffer : buffers)
         {
-            if(!buffer->UploadToDevice(context->device))
-            {
-                return { false };
-            }
+            bool uploadSucceeded = buffer->UploadToDevice(context->device);
+            HUSKY_ASSERT(uploadSucceeded);
         }
 
         const auto& nodes = scene->GetNodes();
@@ -326,57 +252,116 @@ namespace Husky::Render::Deferred
         {
             if (node->GetCamera() != nullptr)
             {
-                HUSKY_ASSERT_MSG(preparedScene.cameraNode == nullptr, "Only one camera node is allowed");
-                preparedScene.cameraNode = node;
-                PrepareCameraNode(node, preparedScene);
+                PrepareCameraNode(node);
             }
             else if(node->GetMesh() != nullptr)
             {
-                PrepareMeshNode(node, preparedScene);
+                PrepareMeshNode(node);
             }
             else if (node->GetLight() != nullptr)
             {
-                PrepareLightNode(node, preparedScene);
+                PrepareLightNode(node);
             }
         }
 
         for (const auto& material : sceneProperties.materials)
         {
-            PrepareMaterial(material, preparedScene);
+            PrepareMaterial(material);
         }
 
-        PrepareLights(preparedScene);
+        PrepareLights(scene);
 
-        shadowRenderer->Prepare(scene);
-        shadowRenderer->SetOptions(preparedScene.options.GetShadowMappingOptions());
-
-        return { true, preparedScene };
+        shadowRenderer->PrepareScene(scene);
     }
 
-    void DeferredRenderer::UpdateScene(DeferredPreparedScene& scene)
+    ResultValue<bool, UniquePtr<DeferredRendererResources>> DeferredRenderer::PrepareResources()
+    {
+        auto resources = MakeUnique<DeferredRendererResources>();
+
+        DescriptorPoolCreateInfo descriptorPoolCreateInfo;
+        descriptorPoolCreateInfo.descriptorCount =
+        {
+            { ResourceType::Texture, MaxDescriptorCount },
+            { ResourceType::Sampler, MaxDescriptorCount },
+            { ResourceType::UniformBuffer, MaxDescriptorCount },
+        };
+        descriptorPoolCreateInfo.maxDescriptorSets = MaxDescriptorSetCount;
+
+        auto[createDescriptorPoolResult, createdDescriptorPool] = context->device->CreateDescriptorPool(
+            descriptorPoolCreateInfo);
+
+        if (createDescriptorPoolResult != GraphicsResult::Success)
+        {
+            return { false };
+        }
+
+        resources->descriptorPool = std::move(createdDescriptorPool);
+
+        resources->cameraUniformBufferBinding.OfType(ResourceType::UniformBuffer);
+
+        DescriptorSetLayoutCreateInfo cameraDescriptorSetLayoutCreateInfo;
+        cameraDescriptorSetLayoutCreateInfo
+            .OfType(DescriptorSetType::Buffer)
+            .WithNBindings(1)
+            .AddBinding(&resources->cameraUniformBufferBinding);
+
+        auto[createCameraDescriptorSetLayoutResult, createdCameraDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(
+            cameraDescriptorSetLayoutCreateInfo);
+
+        if (createCameraDescriptorSetLayoutResult != GraphicsResult::Success)
+        {
+            HUSKY_ASSERT(false);
+            return { false };
+        }
+
+        resources->cameraBufferDescriptorSetLayout = std::move(createdCameraDescriptorSetLayout);
+
+        auto[createdCommandPoolResult, createdCommandPool] = context->commandQueue->CreateCommandPool();
+        if (createdCommandPoolResult != GraphicsResult::Success)
+        {
+            return { false };
+        }
+
+        resources->commandPool = std::move(createdCommandPool);
+
+        BufferCreateInfo bufferCreateInfo;
+        bufferCreateInfo.length = SharedUniformBufferSize;
+        bufferCreateInfo.usage = BufferUsageFlags::Uniform;
+        bufferCreateInfo.storageMode = ResourceStorageMode::Shared;
+
+        auto [createSharedBufferResult, createdSharedBuffer] = context->device->CreateBuffer(bufferCreateInfo);
+        if(createSharedBufferResult != GraphicsResult::Success)
+        {
+            return { false };
+        }
+
+        resources->sharedBuffer = MakeUnique<SharedBuffer>(createdSharedBuffer);
+
+        return { true, std::move(resources) };
+    }
+
+    void DeferredRenderer::UpdateScene(const RefPtr<SceneV1::Scene>& scene)
     {
         Mat4x4 identity = glm::mat4(1.0f);
-        for (const auto& node : scene.scene->GetNodes())
+        for (const auto& node : scene->GetNodes())
         {
-            UpdateNode(node, identity, scene);
+            UpdateNode(node, identity);
         }
+
+        shadowRenderer->UpdateScene(scene);
     }
 
-    void DeferredRenderer::DrawScene(DeferredPreparedScene& scene)
+    void DeferredRenderer::DrawScene(const RefPtr<SceneV1::Scene>& scene, const RefPtr<SceneV1::Camera>& camera)
     {
-        const auto& lightNodesMap = scene.scene->GetSceneProperties().lightNodes;
+        const auto& lightNodesMap = scene->GetSceneProperties().lightNodes;
         RefPtrVector<SceneV1::Node> lightNodes;
         std::copy(lightNodesMap.begin(), lightNodesMap.end(), std::back_inserter(lightNodes));
-        auto shadowMaps = shadowRenderer->DrawShadows(scene.scene, lightNodes);
+        auto shadowMaps = shadowRenderer->DrawShadows(scene, lightNodes);
 
         auto[acquireResult, acquiredTexture] = context->swapchain->GetNextAvailableTexture(nullptr);
         HUSKY_ASSERT(acquireResult == GraphicsResult::Success);
 
-        int32 index = acquiredTexture.index;
-
-        auto& frameResource = scene.frameResources[index];
-
-        auto [allocateGBufferCommandListResult, gBufferCmdList] = frameResource.commandPool->AllocateGraphicsCommandList();
+        auto [allocateGBufferCommandListResult, gBufferCmdList] = resources->commandPool->AllocateGraphicsCommandList();
         HUSKY_ASSERT(allocateGBufferCommandListResult == GraphicsResult::Success);
 
         int32 framebufferWidth = context->swapchain->GetInfo().width;
@@ -385,16 +370,14 @@ namespace Husky::Render::Deferred
         Viewport viewport { 0, 0, (float32)framebufferWidth, (float32)framebufferHeight, 0.0f, 1.0f };
         IntRect scissorRect { {0, 0}, { framebufferWidth, framebufferHeight } };
 
-        auto& offscreen = scene.gbuffer.offscreen[index];
+        ColorAttachment baseColorAttachment = gbuffer->baseColorAttachmentTemplate;
+        baseColorAttachment.output.texture = gbuffer->offscreen.baseColorTexture;
 
-        ColorAttachment baseColorAttachment = scene.gbuffer.baseColorAttachmentTemplate;
-        baseColorAttachment.output.texture = offscreen.baseColorTexture;
+        ColorAttachment normalMapAttachment = gbuffer->normalMapAttachmentTemplate;
+        normalMapAttachment.output.texture = gbuffer->offscreen.normalMapTexture;
 
-        ColorAttachment normalMapAttachment = scene.gbuffer.normalMapAttachmentTemplate;
-        normalMapAttachment.output.texture = offscreen.normalMapTexture;
-
-        DepthStencilAttachment depthStencilAttachment = scene.gbuffer.depthStencilAttachmentTemplate;
-        depthStencilAttachment.output.texture = offscreen.depthStencilBuffer;
+        DepthStencilAttachment depthStencilAttachment = gbuffer->depthStencilAttachmentTemplate;
+        depthStencilAttachment.output.texture = gbuffer->offscreen.depthStencilBuffer;
 
         RenderPassCreateInfo gBufferRenderPassCreateInfo;
         gBufferRenderPassCreateInfo
@@ -403,7 +386,9 @@ namespace Husky::Render::Deferred
             .AddColorAttachment(&normalMapAttachment)
             .WithDepthStencilAttachment(&depthStencilAttachment);
 
-        auto[createGBufferRenderPassResult, createdGBufferRenderPass] = context->device->CreateRenderPass(gBufferRenderPassCreateInfo);
+        auto[createGBufferRenderPassResult, createdGBufferRenderPass] = context->device->CreateRenderPass(
+            gBufferRenderPassCreateInfo);
+
         HUSKY_ASSERT(createGBufferRenderPassResult == GraphicsResult::Success);
 
         gBufferCmdList->Begin();
@@ -412,12 +397,12 @@ namespace Husky::Render::Deferred
         gBufferCmdList->SetScissorRects({scissorRect});
         gBufferCmdList->BindBufferDescriptorSet(
             ShaderStage::Vertex,
-            scene.gbuffer.pipelineLayout,
-            scene.cameraNode->GetCamera()->GetVertexDescriptorSet());
+            gbuffer->pipelineLayout,
+            camera->GetDescriptorSet(RendererName));
 
-        for (const auto& node : scene.scene->GetNodes())
+        for (const auto& node : scene->GetNodes())
         {
-            DrawNode(node, scene, gBufferCmdList);
+            DrawNode(node, gBufferCmdList);
         }
 
         gBufferCmdList->EndRenderPass();
@@ -425,10 +410,10 @@ namespace Husky::Render::Deferred
 
         context->commandQueue->Submit(gBufferCmdList);
 
-        auto [allocateLightingCommandListResult, lightingCmdList] = frameResource.commandPool->AllocateGraphicsCommandList();
+        auto [allocateLightingCommandListResult, lightingCmdList] = resources->commandPool->AllocateGraphicsCommandList();
         HUSKY_ASSERT(allocateLightingCommandListResult == GraphicsResult::Success);
 
-        ColorAttachment colorAttachment = scene.lighting.colorAttachmentTemplate;
+        ColorAttachment colorAttachment = lighting->colorAttachmentTemplate;
         colorAttachment.output.texture = acquiredTexture.texture;
 
         RenderPassCreateInfo lightingRenderPassCreateInfo;
@@ -438,31 +423,31 @@ namespace Husky::Render::Deferred
 
         lightingCmdList->Begin();
         lightingCmdList->BeginRenderPass(lightingRenderPassCreateInfo);
-        lightingCmdList->BindPipelineState(scene.lighting.pipelineState);
+        lightingCmdList->BindPipelineState(lighting->pipelineState);
         lightingCmdList->SetViewports({ viewport });
         lightingCmdList->SetScissorRects({ scissorRect });
 
         lightingCmdList->BindTextureDescriptorSet(
             ShaderStage::Fragment,
-            scene.lighting.pipelineLayout,
-            frameResource.gbufferTextureDescriptorSet);
+            lighting->pipelineLayout,
+            lighting->gbufferTextureDescriptorSet);
 
         lightingCmdList->BindSamplerDescriptorSet(
             ShaderStage::Fragment,
-            scene.lighting.pipelineLayout,
-            frameResource.gbufferSamplerDescriptorSet);
+            lighting->pipelineLayout,
+            lighting->gbufferSamplerDescriptorSet);
 
         lightingCmdList->BindBufferDescriptorSet(
             ShaderStage::Fragment,
-            scene.lighting.pipelineLayout,
-            scene.cameraNode->GetCamera()->GetFragmentDescriptorSet());
+            lighting->pipelineLayout,
+            camera->GetDescriptorSet(RendererName));
 
         lightingCmdList->BindBufferDescriptorSet(
             ShaderStage::Fragment,
-            scene.lighting.pipelineLayout,
-            scene.lighting.lightsBufferDescriptorSet);
+            lighting->pipelineLayout,
+            lighting->lightsBufferDescriptorSet);
 
-        lightingCmdList->BindVertexBuffers({ scene.lighting.fullscreenQuadBuffer }, {0}, 0);
+        lightingCmdList->BindVertexBuffers({ lighting->fullscreenQuadBuffer }, {0}, 0);
         lightingCmdList->Draw(0, fullscreenQuadVertices.size());
         lightingCmdList->EndRenderPass();
         lightingCmdList->End();
@@ -471,195 +456,89 @@ namespace Husky::Render::Deferred
         context->commandQueue->Present(acquiredTexture.index, context->swapchain);
     }
 
-    void DeferredRenderer::PrepareCameraNode(const RefPtr<SceneV1::Node>& node, DeferredPreparedScene& scene)
+    void DeferredRenderer::PrepareCameraNode(const RefPtr<SceneV1::Node>& node)
     {
         const auto& camera = node->GetCamera();
 
-        BufferCreateInfo bufferCreateInfo;
-        bufferCreateInfo.length = sizeof(CameraUniform);
-        bufferCreateInfo.storageMode = ResourceStorageMode::Shared;
-        bufferCreateInfo.usage = BufferUsageFlags::Uniform;
-
-        auto [createBufferResult, buffer] = context->device->CreateBuffer(bufferCreateInfo);
-        HUSKY_ASSERT(createBufferResult == GraphicsResult::Success);
-
-        auto[mapMemoryResult, mappedMemory] = buffer->MapMemory(sizeof(CameraUniform), 0);
-        HUSKY_ASSERT(mapMemoryResult == GraphicsResult::Success);
-
-        auto[createVertexDescriptorSetResult, vertexDescriptorSet] = scene.descriptorPool->AllocateDescriptorSet(scene.gbuffer.cameraBufferDescriptorSetLayout);
+        auto[createVertexDescriptorSetResult, vertexDescriptorSet] = resources->descriptorPool->AllocateDescriptorSet(
+            resources->cameraBufferDescriptorSetLayout);
         HUSKY_ASSERT(createVertexDescriptorSetResult == GraphicsResult::Success);
 
-        auto[createFragmentDescriptorSetResult, fragmentDescriptorSet] = scene.descriptorPool->AllocateDescriptorSet(scene.lighting.cameraBufferDescriptorSetLayout);
-        HUSKY_ASSERT(createFragmentDescriptorSetResult == GraphicsResult::Success);
-
-        camera->SetUniformBuffer(buffer);
-
-        vertexDescriptorSet->WriteUniformBuffer(&scene.gbuffer.cameraUniformBufferBinding, buffer);
-        fragmentDescriptorSet->WriteUniformBuffer(&scene.lighting.cameraUniformBufferBinding, buffer);
-
-        vertexDescriptorSet->Update();
-        fragmentDescriptorSet->Update();
-
-        camera->SetVertexDescriptorSet(vertexDescriptorSet);
-        camera->SetFragmentDescriptorSet(fragmentDescriptorSet);
+        camera->SetDescriptorSet(RendererName, vertexDescriptorSet);
     }
 
-    void DeferredRenderer::PrepareMeshNode(const RefPtr<SceneV1::Node>& node, DeferredPreparedScene& scene)
+    void DeferredRenderer::PrepareMeshNode(const RefPtr<SceneV1::Node>& node)
     {
         const auto& mesh = node->GetMesh();
 
         if (mesh != nullptr)
         {
-            PrepareMesh(mesh, scene);
+            PrepareMesh(mesh);
         }
 
         // TODO sort out node hierarchy
         for (const auto& child : node->GetChildren())
         {
-            PrepareMeshNode(child, scene);
+            PrepareMeshNode(child);
         }
     }
 
-    void DeferredRenderer::PrepareLightNode(const RefPtr<SceneV1::Node>& node, DeferredPreparedScene& scene)
+    void DeferredRenderer::PrepareLightNode(const RefPtr<SceneV1::Node>& node)
     {
-        const auto& light = node->GetLight();
-
-        if (light!= nullptr)
-        {
-            scene.lightNodes.push_back(node);
-        }
-
         HUSKY_ASSERT_MSG(node->GetChildren().empty(), "Don't add children to light nodes");
     }
 
-    void DeferredRenderer::PrepareNode(const RefPtr<SceneV1::Node>& node, DeferredPreparedScene& scene)
+    void DeferredRenderer::PrepareNode(const RefPtr<SceneV1::Node>& node)
     {
     }
 
-    void DeferredRenderer::PrepareMesh(const RefPtr<SceneV1::Mesh>& mesh, DeferredPreparedScene& scene)
+    void DeferredRenderer::PreparePrimitive(const RefPtr<SceneV1::Primitive>& primitive)
+    {
+        RefPtr<PipelineState> pipelineState = primitive->GetPipelineState(RendererName);
+        if (pipelineState == nullptr)
+        {
+            pipelineState = CreateGBufferPipelineState(primitive);
+            primitive->SetPipelineState(RendererName, pipelineState);
+        }
+    }
+
+    void DeferredRenderer::PrepareMesh(const RefPtr<SceneV1::Mesh>& mesh)
     {
         for (const auto& primitive : mesh->GetPrimitives())
         {
-            RefPtr<PipelineState> pipelineState = primitive->GetPipelineState();
-            if (pipelineState == nullptr)
-            {
-                pipelineState = CreateGBufferPipelineState(primitive, scene);
-                primitive->SetPipelineState(pipelineState);
-            }
+            PreparePrimitive(primitive);
         }
 
-        BufferCreateInfo bufferCreateInfo;
-        bufferCreateInfo.length = sizeof(MeshUniform);
-        bufferCreateInfo.storageMode = ResourceStorageMode::Shared;
-        bufferCreateInfo.usage = BufferUsageFlags::Uniform;
+        auto[allocateDescriptorSetResult, allocatedDescriptorSet] = gbuffer->descriptorPool->AllocateDescriptorSet(
+            gbuffer->meshBufferDescriptorSetLayout);
 
-        auto[createUniformBufferResult, createdUniformBuffer] = context->device->CreateBuffer(bufferCreateInfo);
-
-        HUSKY_ASSERT(createUniformBufferResult == GraphicsResult::Success);
-
-        auto[mapMemoryResult, mappedMemory] = createdUniformBuffer->MapMemory(sizeof(MeshUniform), 0);
-        HUSKY_ASSERT(mapMemoryResult == GraphicsResult::Success);
-
-        auto[allocateDescriptorSetResult, allocatedDescriptorSet] = scene.gbuffer.descriptorPool->AllocateDescriptorSet(scene.gbuffer.meshBufferDescriptorSetLayout);
         HUSKY_ASSERT(allocateDescriptorSetResult == GraphicsResult::Success);
 
-        mesh->SetUniformBuffer(createdUniformBuffer);
-        mesh->SetBufferDescriptorSet(allocatedDescriptorSet);
-
-        allocatedDescriptorSet->WriteUniformBuffer(&scene.gbuffer.meshUniformBufferBinding, createdUniformBuffer );
-        allocatedDescriptorSet->Update();
+        mesh->SetBufferDescriptorSet(RendererName, allocatedDescriptorSet);
     }
 
-    void DeferredRenderer::PrepareMaterial(const RefPtr<SceneV1::PbrMaterial>& material, DeferredPreparedScene& scene)
+    void DeferredRenderer::PrepareMaterial(const RefPtr<SceneV1::PbrMaterial>& material)
     {
-        auto[allocateTextureDescriptorSetResult, textureDescriptorSet] = scene.gbuffer.descriptorPool->AllocateDescriptorSet(scene.gbuffer.materialTextureDescriptorSetLayout);
+        auto[allocateTextureDescriptorSetResult, textureDescriptorSet] = gbuffer->descriptorPool->AllocateDescriptorSet(
+            gbuffer->materialTextureDescriptorSetLayout);
         HUSKY_ASSERT(allocateTextureDescriptorSetResult == GraphicsResult::Success);
 
-        auto[allocateBufferDescriptorSetResult, bufferDescriptorSet] = scene.gbuffer.descriptorPool->AllocateDescriptorSet(scene.gbuffer.materialBufferDescriptorSetLayout);
+        auto[allocateBufferDescriptorSetResult, bufferDescriptorSet] = gbuffer->descriptorPool->AllocateDescriptorSet(
+            gbuffer->materialBufferDescriptorSetLayout);
         HUSKY_ASSERT(allocateBufferDescriptorSetResult == GraphicsResult::Success);
 
-        auto[allocateSamplerDescriptorSetResult, samplerDescriptorSet] = scene.gbuffer.descriptorPool->AllocateDescriptorSet(scene.gbuffer.materialSamplerDescriptorSetLayout);
+        auto[allocateSamplerDescriptorSetResult, samplerDescriptorSet] = gbuffer->descriptorPool->AllocateDescriptorSet(
+            gbuffer->materialSamplerDescriptorSetLayout);
         HUSKY_ASSERT(allocateSamplerDescriptorSetResult == GraphicsResult::Success);
 
-        BufferCreateInfo bufferCreateInfo;
-        bufferCreateInfo.length = sizeof(MaterialUniform);
-        bufferCreateInfo.storageMode = ResourceStorageMode::Shared;
-        bufferCreateInfo.usage = BufferUsageFlags::Uniform;
+        material->SetTextureDescriptorSet(RendererName, textureDescriptorSet);
+        material->SetBufferDescriptorSet(RendererName, bufferDescriptorSet);
+        material->SetSamplerDescriptorSet(RendererName, samplerDescriptorSet);
 
-        MaterialUniform materialUniform = RenderUtils::GetMaterialUniform(material);
-
-        auto[createBufferResult, createdBuffer] = context->device->CreateBuffer(bufferCreateInfo, &materialUniform);
-        HUSKY_ASSERT(createBufferResult == GraphicsResult::Success);
-
-        material->SetDeviceBuffer(createdBuffer);
-
-        bufferDescriptorSet->WriteUniformBuffer(&scene.gbuffer.materialUniformBufferBinding, createdBuffer);
-
-        if (material->HasBaseColorTexture())
-        {
-            textureDescriptorSet->WriteTexture(
-                &scene.gbuffer.baseColorTextureBinding,
-                material->metallicRoughness.baseColorTexture.texture->GetDeviceTexture());
-
-            samplerDescriptorSet->WriteSampler(
-                &scene.gbuffer.baseColorSamplerBinding,
-                material->metallicRoughness.baseColorTexture.texture->GetDeviceSampler());
-        }
-
-        if (material->HasMetallicRoughnessTexture())
-        {
-            textureDescriptorSet->WriteTexture(
-                &scene.gbuffer.metallicRoughnessTextureBinding,
-                material->metallicRoughness.metallicRoughnessTexture.texture->GetDeviceTexture());
-
-            samplerDescriptorSet->WriteSampler(
-                &scene.gbuffer.metallicRoughnessSamplerBinding,
-                material->metallicRoughness.metallicRoughnessTexture.texture->GetDeviceSampler());
-        }
-
-        if (material->HasNormalTexture())
-        {
-            textureDescriptorSet->WriteTexture(
-                &scene.gbuffer.normalTextureBinding,
-                material->normalTexture.texture->GetDeviceTexture());
-
-            samplerDescriptorSet->WriteSampler(
-                &scene.gbuffer.normalSamplerBinding,
-                material->normalTexture.texture->GetDeviceSampler());
-        }
-
-        if (material->HasOcclusionTexture())
-        {
-            textureDescriptorSet->WriteTexture(
-                &scene.gbuffer.occlusionTextureBinding,
-                material->occlusionTexture.texture->GetDeviceTexture());
-
-            samplerDescriptorSet->WriteSampler(
-                &scene.gbuffer.occlusionSamplerBinding,
-                material->occlusionTexture.texture->GetDeviceSampler());
-        }
-
-        if (material->HasEmissiveTexture())
-        {
-            textureDescriptorSet->WriteTexture(
-                &scene.gbuffer.emissiveTextureBinding,
-                material->emissiveTexture.texture->GetDeviceTexture());
-
-            samplerDescriptorSet->WriteSampler(
-                &scene.gbuffer.emissiveSamplerBinding,
-                material->emissiveTexture.texture->GetDeviceSampler());
-        }
-
-        textureDescriptorSet->Update();
-        samplerDescriptorSet->Update();
-        bufferDescriptorSet->Update();
-
-        material->SetTextureDescriptorSet(textureDescriptorSet);
-        material->SetBufferDescriptorSet(bufferDescriptorSet);
-        material->SetSamplerDescriptorSet(samplerDescriptorSet);
+        UpdateMaterial(material);
     }
 
-    void DeferredRenderer::PrepareLights(DeferredPreparedScene& scene)
+    void DeferredRenderer::PrepareLights(const RefPtr<SceneV1::Scene>& scene)
     {
         constexpr int MAX_LIGHTS_COUNT = 8;
         int32 lightsBufferSize = sizeof(LightUniform) * MAX_LIGHTS_COUNT;
@@ -669,28 +548,26 @@ namespace Husky::Render::Deferred
         bufferCreateInfo.storageMode = ResourceStorageMode::Shared;
         bufferCreateInfo.usage = BufferUsageFlags::Uniform;
 
-        auto[createLightsBufferResult, createdLightsBuffer] = context->device->CreateBuffer(bufferCreateInfo);
-
-        auto[mapMemoryResult, mappedMemory] = createdLightsBuffer->MapMemory(lightsBufferSize, 0);
-        HUSKY_ASSERT(mapMemoryResult == GraphicsResult::Success);
-
-        memset(mappedMemory, 0, lightsBufferSize);
+        auto [createLightsBufferResult, createdLightsBuffer] = context->device->CreateBuffer(bufferCreateInfo);
 
         HUSKY_ASSERT(createLightsBufferResult == GraphicsResult::Success);
-        scene.lighting.lightsBuffer = createdLightsBuffer;
+        lighting->lightsBuffer = createdLightsBuffer;
 
-        auto[createDescriptorSetResult, createdDescriptorSet] = scene.lighting.descriptorPool->AllocateDescriptorSet(scene.lighting.lightsBufferDescriptorSetLayout);
+        auto [mapMemoryResult, _] = lighting->lightsBuffer->MapMemory(lightsBufferSize, 0);
+        HUSKY_ASSERT(mapMemoryResult == GraphicsResult::Success);
+
+        auto [createDescriptorSetResult, createdDescriptorSet] = lighting->descriptorPool->AllocateDescriptorSet(
+            lighting->lightsBufferDescriptorSetLayout);
         HUSKY_ASSERT(createDescriptorSetResult == GraphicsResult::Success);
-        scene.lighting.lightsBufferDescriptorSet = createdDescriptorSet;
+        lighting->lightsBufferDescriptorSet = createdDescriptorSet;
 
-        createdDescriptorSet->WriteUniformBuffer(&scene.lighting.lightsUniformBufferBinding, createdLightsBuffer);
+        createdDescriptorSet->WriteUniformBuffer(lighting->lightsUniformBufferBinding, createdLightsBuffer, 0);
         createdDescriptorSet->Update();
     }
 
     void DeferredRenderer::UpdateNode(
         const RefPtr<SceneV1::Node>& node,
-        const Mat4x4& parentTransform,
-        DeferredPreparedScene& scene)
+        const Mat4x4& parentTransform)
     {
         const auto& mesh = node->GetMesh();
 
@@ -716,102 +593,190 @@ namespace Husky::Render::Deferred
 
         if (mesh != nullptr)
         {
-            UpdateMesh(mesh, worldTransform, scene);
+            UpdateMesh(mesh, worldTransform);
         }
 
         const auto& camera = node->GetCamera();
 
         if (camera != nullptr)
         {
-            UpdateCamera(camera, worldTransform, scene);
+            UpdateCamera(camera, worldTransform);
         }
 
         const auto& light = node->GetLight();
         if (light != nullptr)
         {
-            UpdateLight(light, worldTransform, scene);
+            UpdateLight(light, worldTransform);
         }
 
         for (const auto& child : node->GetChildren())
         {
-            UpdateNode(child, worldTransform, scene);
+            UpdateNode(child, worldTransform);
         }
     }
 
     void DeferredRenderer::UpdateMesh(
         const RefPtr<SceneV1::Mesh>& mesh,
-        const Mat4x4& transform,
-        DeferredPreparedScene& scene)
+        const Mat4x4& transform)
     {
-        const auto& buffer = mesh->GetUniformBuffer();
-
         MeshUniform meshUniform;
         meshUniform.transform = transform;
         meshUniform.inverseTransform = glm::inverse(transform);
 
-        // TODO template function member in buffer to write updates
-        memcpy(buffer->GetMappedMemory(), &meshUniform, sizeof(MeshUniform));
+        // TODO
+        auto suballocation = resources->sharedBuffer->Suballocate(sizeof(MeshUniform), 16);
+        auto descriptorSet = mesh->GetBufferDescriptorSet(RendererName);
+
+        descriptorSet->WriteUniformBuffer(
+            gbuffer->meshUniformBufferBinding,
+            suballocation.buffer,
+            suballocation.offset);
+        descriptorSet->Update();
+
+        memcpy(suballocation.offsetMemory, &meshUniform, sizeof(MeshUniform));
     }
 
     void DeferredRenderer::UpdateCamera(
         const RefPtr<SceneV1::Camera>& camera,
-        const Mat4x4& transform,
-        DeferredPreparedScene& scene)
+        const Mat4x4& transform)
     {
         camera->SetCameraViewMatrix(glm::inverse(transform));
-
-        const auto& buffer = camera->GetUniformBuffer();
         auto cameraUniform = RenderUtils::GetCameraUniform(camera);
-        memcpy(buffer->GetMappedMemory(), &cameraUniform, sizeof(CameraUniform));
+        auto descriptorSet = camera->GetDescriptorSet(RendererName);
+
+        // TODO
+        auto suballocation = resources->sharedBuffer->Suballocate(sizeof(CameraUniform), 16);
+
+        descriptorSet->WriteUniformBuffer(
+            resources->cameraUniformBufferBinding,
+            suballocation.buffer,
+            suballocation.offset);
+
+        descriptorSet->Update();
+
+        memcpy(suballocation.offsetMemory, &cameraUniform, sizeof(CameraUniform));
+    }
+
+    void DeferredRenderer::UpdateMaterial(
+        const RefPtr<SceneV1::PbrMaterial>& material)
+    {
+        auto textureDescriptorSet = material->GetTextureDescriptorSet(RendererName);
+        auto samplerDescriptorSet = material->GetSamplerDescriptorSet(RendererName);
+        auto bufferDescriptorSet = material->GetBufferDescriptorSet(RendererName);
+
+        if (material->HasBaseColorTexture())
+        {
+            textureDescriptorSet->WriteTexture(
+                gbuffer->baseColorTextureBinding,
+                material->metallicRoughness.baseColorTexture.texture->GetDeviceTexture());
+
+            samplerDescriptorSet->WriteSampler(
+                gbuffer->baseColorSamplerBinding,
+                material->metallicRoughness.baseColorTexture.texture->GetDeviceSampler());
+        }
+
+        if (material->HasMetallicRoughnessTexture())
+        {
+            textureDescriptorSet->WriteTexture(
+                gbuffer->metallicRoughnessTextureBinding,
+                material->metallicRoughness.metallicRoughnessTexture.texture->GetDeviceTexture());
+
+            samplerDescriptorSet->WriteSampler(
+                gbuffer->metallicRoughnessSamplerBinding,
+                material->metallicRoughness.metallicRoughnessTexture.texture->GetDeviceSampler());
+        }
+
+        if (material->HasNormalTexture())
+        {
+            textureDescriptorSet->WriteTexture(
+                gbuffer->normalTextureBinding,
+                material->normalTexture.texture->GetDeviceTexture());
+
+            samplerDescriptorSet->WriteSampler(
+                gbuffer->normalSamplerBinding,
+                material->normalTexture.texture->GetDeviceSampler());
+        }
+
+        if (material->HasOcclusionTexture())
+        {
+            textureDescriptorSet->WriteTexture(
+                gbuffer->occlusionTextureBinding,
+                material->occlusionTexture.texture->GetDeviceTexture());
+
+            samplerDescriptorSet->WriteSampler(
+                gbuffer->occlusionSamplerBinding,
+                material->occlusionTexture.texture->GetDeviceSampler());
+        }
+
+        if (material->HasEmissiveTexture())
+        {
+            textureDescriptorSet->WriteTexture(
+                gbuffer->emissiveTextureBinding,
+                material->emissiveTexture.texture->GetDeviceTexture());
+
+            samplerDescriptorSet->WriteSampler(
+                gbuffer->emissiveSamplerBinding,
+                material->emissiveTexture.texture->GetDeviceSampler());
+        }
+
+        MaterialUniform materialUniform = RenderUtils::GetMaterialUniform(material);
+
+        // TODO
+        auto suballocation = resources->sharedBuffer->Suballocate(sizeof(MaterialUniform), 16);
+
+        bufferDescriptorSet->WriteUniformBuffer(
+            gbuffer->materialUniformBufferBinding,
+            suballocation.buffer,
+            suballocation.offset);
+
+        memcpy(suballocation.offsetMemory, &materialUniform, sizeof(MaterialUniform));
+
+        textureDescriptorSet->Update();
+        samplerDescriptorSet->Update();
+        bufferDescriptorSet->Update();
     }
 
     void DeferredRenderer::UpdateLight(
         const RefPtr<SceneV1::Light>& light,
-        const Mat4x4& transform,
-        DeferredPreparedScene& scene)
+        const Mat4x4& transform)
     {
-        auto viewTransform = scene.cameraNode->GetCamera()->GetCameraViewMatrix();
+        LightUniform lightUniform = RenderUtils::GetLightUniform(light, transform);
 
-        LightUniform lightUniform = RenderUtils::GetLightUniform(light, transform, viewTransform);
-
-        int32 offset = sizeof(LightUniform)*light->GetIndex();
-        memcpy((Byte*)scene.lighting.lightsBuffer->GetMappedMemory() + offset, &lightUniform, sizeof(LightUniform));
+        memcpy((LightUniform*)lighting->lightsBuffer->GetMappedMemory() + light->GetIndex(), &lightUniform, sizeof(LightUniform));
     }
 
     void DeferredRenderer::DrawNode(
         const RefPtr<SceneV1::Node>& node,
-        DeferredPreparedScene& scene,
         GraphicsCommandList* commandList)
     {
         const auto& mesh = node->GetMesh();
         if (mesh != nullptr)
         {
-            DrawMesh(mesh, scene, commandList);
+            DrawMesh(mesh, commandList);
         }
 
         for (const auto& child : node->GetChildren())
         {
-            DrawNode(child, scene, commandList);
+            DrawNode(child, commandList);
         }
     }
 
     void DeferredRenderer::DrawMesh(
         const RefPtr<SceneV1::Mesh>& mesh,
-        DeferredPreparedScene& scene,
         GraphicsCommandList* commandList)
     {
         commandList->BindBufferDescriptorSet(
             ShaderStage::Vertex,
-            scene.gbuffer.pipelineLayout,
-            mesh->GetBufferDescriptorSet());
+            gbuffer->pipelineLayout,
+            mesh->GetBufferDescriptorSet(RendererName));
 
         for (const auto& primitive : mesh->GetPrimitives())
         {
             const auto& material = primitive->GetMaterial();
             if (material->alphaMode != SceneV1::AlphaMode::Blend)
             {
-                BindMaterial(material, scene, commandList);
-                DrawPrimitive(primitive, scene, commandList);
+                BindMaterial(material, commandList);
+                DrawPrimitive(primitive, commandList);
             }
         }
 
@@ -821,39 +786,37 @@ namespace Husky::Render::Deferred
             const auto& material = primitive->GetMaterial();
             if (material->alphaMode == SceneV1::AlphaMode::Blend)
             {
-                BindMaterial(material, scene, commandList);
-                DrawPrimitive(primitive, scene, commandList);
+                BindMaterial(material, commandList);
+                DrawPrimitive(primitive, commandList);
             }
         }
     }
 
     void DeferredRenderer::BindMaterial(
         const RefPtr<SceneV1::PbrMaterial>& material,
-        DeferredPreparedScene& scene,
         GraphicsCommandList* commandList)
     {
         commandList->BindTextureDescriptorSet(
             ShaderStage::Fragment,
-            scene.gbuffer.pipelineLayout,
-            material->GetTextureDescriptorSet());
+            gbuffer->pipelineLayout,
+            material->GetTextureDescriptorSet(RendererName));
 
         commandList->BindBufferDescriptorSet(
             ShaderStage::Fragment,
-            scene.gbuffer.pipelineLayout,
-            material->GetBufferDescriptorSet());
+            gbuffer->pipelineLayout,
+            material->GetBufferDescriptorSet(RendererName));
 
         commandList->BindSamplerDescriptorSet(
             ShaderStage::Fragment,
-            scene.gbuffer.pipelineLayout,
-            material->GetSamplerDescriptorSet());
+            gbuffer->pipelineLayout,
+            material->GetSamplerDescriptorSet(RendererName));
     }
 
     void DeferredRenderer::DrawPrimitive(
         const RefPtr<SceneV1::Primitive>& primitive,
-        DeferredPreparedScene& scene,
         GraphicsCommandList* commandList)
     {
-        auto& pipelineState = primitive->GetPipelineState();
+        auto& pipelineState = primitive->GetPipelineState(RendererName);
 
         const auto& vertexBuffers = primitive->GetVertexBuffers();
 
@@ -882,7 +845,8 @@ namespace Husky::Render::Deferred
         commandList->DrawIndexedInstanced(indexBuffer.count, 0, 1, 0);
     }
 
-    RefPtr<PipelineState> DeferredRenderer::CreateGBufferPipelineState(const RefPtr<SceneV1::Primitive>& primitive, DeferredPreparedScene& scene)
+    RefPtr<PipelineState> DeferredRenderer::CreateGBufferPipelineState(
+        const RefPtr<SceneV1::Primitive>& primitive)
     {
         PipelineStateCreateInfo ci;
 
@@ -954,7 +918,7 @@ namespace Husky::Render::Deferred
 
         // TODO
         //ci.renderPass = scene.gbuffer.renderPass;
-        ci.pipelineLayout = scene.gbuffer.pipelineLayout;
+        ci.pipelineLayout = gbuffer->pipelineLayout;
 
         if (material->HasBaseColorTexture())
         {
@@ -1031,7 +995,9 @@ namespace Husky::Render::Deferred
             HUSKY_ASSERT(false);
         }
 
-        auto[fragmentShaderCreateResult, createdFragmentShader] = fragmentShaderLibrary->CreateShaderProgram(ShaderStage::Fragment, "fp_main");
+        auto[fragmentShaderCreateResult, createdFragmentShader] = fragmentShaderLibrary->CreateShaderProgram(
+            ShaderStage::Fragment,
+            "fp_main");
         HUSKY_ASSERT(fragmentShaderCreateResult == GraphicsResult::Success);
 
         auto fragmentShader = std::move(createdFragmentShader);
@@ -1052,7 +1018,7 @@ namespace Husky::Render::Deferred
         return createdPipeline;
     }
 
-    RefPtr<PipelineState> DeferredRenderer::CreateLightingPipelineState(const LightingPassResources& lighting)
+    RefPtr<PipelineState> DeferredRenderer::CreateLightingPipelineState(LightingPassResources* lighting)
     {
         PipelineStateCreateInfo ci;
 
@@ -1084,9 +1050,9 @@ namespace Husky::Render::Deferred
         ci.depthStencil.depthStencilFormat = Format::Undefined;
 
         //pipelineState.renderPass = lighting.renderPass;
-        ci.pipelineLayout = lighting.pipelineLayout;
-        ci.vertexProgram = lighting.vertexShader;
-        ci.fragmentProgram = lighting.fragmentShader;
+        ci.pipelineLayout = lighting->pipelineLayout;
+        ci.vertexProgram = lighting->vertexShader;
+        ci.fragmentProgram = lighting->fragmentShader;
 
         auto[createPipelineResult, createdPipeline] = context->device->CreatePipelineState(ci);
         if (createPipelineResult != GraphicsResult::Success)
@@ -1097,192 +1063,174 @@ namespace Husky::Render::Deferred
         return createdPipeline;
     }
 
-    ResultValue<bool, GBufferPassResources> DeferredRenderer::PrepareGBufferPassResources(DeferredPreparedScene& scene)
+    ResultValue<bool, UniquePtr<GBufferPassResources>> DeferredRenderer::PrepareGBufferPassResources()
     {
-        GBufferPassResources resources;
+        UniquePtr<GBufferPassResources> gbufferResources = MakeUnique<GBufferPassResources>();
 
-        auto swapchainInfo = context->swapchain->GetInfo();
-        resources.offscreen.reserve(swapchainInfo.imageCount);
-
-        for (int32 i = 0; i < swapchainInfo.imageCount; i++)
+        auto [offscreenTexturesCreated, createdOffscreenTextures] = CreateOffscreenTextures();
+        if (!offscreenTexturesCreated)
         {
-            auto [offscreenTexturesCreated, createdOffscreenTextures] = CreateOffscreenTextures();
-            if (!offscreenTexturesCreated)
-            {
-                return { false };
-            }
-
-            resources.offscreen.push_back(createdOffscreenTextures);
+            return { false };
         }
 
-        const auto& sceneProperties = scene.scene->GetSceneProperties();
-
-        const int32 texturesPerMaterial = 5;
-
-        int32 textureDescriptorCount = sceneProperties.materials.size() * texturesPerMaterial;
-        int32 perMeshUBOCount = sceneProperties.meshes.size();
+        gbufferResources->offscreen = std::move(createdOffscreenTextures);
 
         DescriptorPoolCreateInfo descriptorPoolCreateInfo;
-        // two sets per material, one set per mesh
-        descriptorPoolCreateInfo.maxDescriptorSets = sceneProperties.materials.size() + sceneProperties.meshes.size();
-
+        descriptorPoolCreateInfo.maxDescriptorSets = MaxDescriptorSetCount;
         descriptorPoolCreateInfo.descriptorCount =
         {
-            { ResourceType::Texture, textureDescriptorCount + 1 },
-            { ResourceType::UniformBuffer, perMeshUBOCount + 1 },
-            { ResourceType::Sampler, textureDescriptorCount + 1 },
+            { ResourceType::Texture, MaxDescriptorSetCount },
+            { ResourceType::UniformBuffer, MaxDescriptorSetCount },
+            { ResourceType::Sampler, MaxDescriptorSetCount },
         };
 
-        auto[createDescriptorPoolResult, createdDescriptorPool] = context->device->CreateDescriptorPool(descriptorPoolCreateInfo);
+        auto[createDescriptorPoolResult, createdDescriptorPool] = context->device->CreateDescriptorPool(
+            descriptorPoolCreateInfo);
+
         if (createDescriptorPoolResult != GraphicsResult::Success)
         {
             HUSKY_ASSERT(false);
             return { false };
         }
 
-        resources.descriptorPool = std::move(createdDescriptorPool);
+        gbufferResources->descriptorPool = std::move(createdDescriptorPool);
 
-        resources.materialUniformBufferBinding.OfType(ResourceType::UniformBuffer).AtStage(ShaderStage::Fragment);
+        gbufferResources->materialUniformBufferBinding.OfType(ResourceType::UniformBuffer);
+        gbufferResources->meshUniformBufferBinding.OfType(ResourceType::UniformBuffer);
 
-        resources.meshUniformBufferBinding.OfType(ResourceType::UniformBuffer).AtStage(ShaderStage::Vertex);
+        gbufferResources->baseColorTextureBinding.OfType(ResourceType::Texture);
+        gbufferResources->baseColorSamplerBinding.OfType(ResourceType::Sampler);
 
-        resources.baseColorTextureBinding.OfType(ResourceType::Texture).AtStage(ShaderStage::Fragment);
-        resources.baseColorSamplerBinding.OfType(ResourceType::Sampler).AtStage(ShaderStage::Fragment);
+        gbufferResources->metallicRoughnessTextureBinding.OfType(ResourceType::Texture);
+        gbufferResources->metallicRoughnessSamplerBinding.OfType(ResourceType::Sampler);
 
-        resources.metallicRoughnessTextureBinding.OfType(ResourceType::Texture).AtStage(ShaderStage::Fragment);
-        resources.metallicRoughnessSamplerBinding.OfType(ResourceType::Sampler).AtStage(ShaderStage::Fragment);
+        gbufferResources->normalTextureBinding.OfType(ResourceType::Texture);
+        gbufferResources->normalSamplerBinding.OfType(ResourceType::Sampler);
 
-        resources.normalTextureBinding.OfType(ResourceType::Texture).AtStage(ShaderStage::Fragment);
-        resources.normalSamplerBinding.OfType(ResourceType::Sampler).AtStage(ShaderStage::Fragment);
+        gbufferResources->occlusionTextureBinding.OfType(ResourceType::Texture);
+        gbufferResources->occlusionSamplerBinding.OfType(ResourceType::Sampler);
 
-        resources.occlusionTextureBinding.OfType(ResourceType::Texture).AtStage(ShaderStage::Fragment);
-        resources.occlusionSamplerBinding.OfType(ResourceType::Sampler).AtStage(ShaderStage::Fragment);
-
-        resources.emissiveTextureBinding.OfType(ResourceType::Texture).AtStage(ShaderStage::Fragment);
-        resources.emissiveSamplerBinding.OfType(ResourceType::Sampler).AtStage(ShaderStage::Fragment);
+        gbufferResources->emissiveTextureBinding.OfType(ResourceType::Texture);
+        gbufferResources->emissiveSamplerBinding.OfType(ResourceType::Sampler);
 
         DescriptorSetLayoutCreateInfo meshDescriptorSetLayoutCreateInfo;
         meshDescriptorSetLayoutCreateInfo
             .OfType(DescriptorSetType::Buffer)
-            .AddBinding(&resources.meshUniformBufferBinding);
+            .AddBinding(&gbufferResources->meshUniformBufferBinding);
 
         DescriptorSetLayoutCreateInfo materialBufferDescriptorSetLayoutCreateInfo;
         materialBufferDescriptorSetLayoutCreateInfo
             .OfType(DescriptorSetType::Buffer)
-            .AddBinding(&resources.materialUniformBufferBinding);
+            .AddBinding(&gbufferResources->materialUniformBufferBinding);
 
         DescriptorSetLayoutCreateInfo materialTextureDescriptorSetLayoutCreateInfo;
         materialTextureDescriptorSetLayoutCreateInfo
             .OfType(DescriptorSetType::Texture)
             .WithNBindings(5)
-            .AddBinding(&resources.baseColorTextureBinding)
-            .AddBinding(&resources.metallicRoughnessTextureBinding)
-            .AddBinding(&resources.normalTextureBinding)
-            .AddBinding(&resources.occlusionTextureBinding)
-            .AddBinding(&resources.emissiveTextureBinding);
+            .AddBinding(&gbufferResources->baseColorTextureBinding)
+            .AddBinding(&gbufferResources->metallicRoughnessTextureBinding)
+            .AddBinding(&gbufferResources->normalTextureBinding)
+            .AddBinding(&gbufferResources->occlusionTextureBinding)
+            .AddBinding(&gbufferResources->emissiveTextureBinding);
 
         DescriptorSetLayoutCreateInfo materialSamplerDescriptorSetLayoutCreateInfo;
         materialSamplerDescriptorSetLayoutCreateInfo
             .OfType(DescriptorSetType::Sampler)
             .WithNBindings(5)
-            .AddBinding(&resources.baseColorSamplerBinding)
-            .AddBinding(&resources.metallicRoughnessSamplerBinding)
-            .AddBinding(&resources.normalSamplerBinding)
-            .AddBinding(&resources.occlusionSamplerBinding)
-            .AddBinding(&resources.emissiveSamplerBinding);
+            .AddBinding(&gbufferResources->baseColorSamplerBinding)
+            .AddBinding(&gbufferResources->metallicRoughnessSamplerBinding)
+            .AddBinding(&gbufferResources->normalSamplerBinding)
+            .AddBinding(&gbufferResources->occlusionSamplerBinding)
+            .AddBinding(&gbufferResources->emissiveSamplerBinding);
 
-        auto[createMeshDescriptorSetLayoutResult, createdMeshDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(meshDescriptorSetLayoutCreateInfo);
+        auto[createMeshDescriptorSetLayoutResult, createdMeshDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(
+            meshDescriptorSetLayoutCreateInfo);
+
         if (createMeshDescriptorSetLayoutResult != GraphicsResult::Success)
         {
             HUSKY_ASSERT(false);
             return { false };
         }
 
-        resources.meshBufferDescriptorSetLayout = std::move(createdMeshDescriptorSetLayout);
+        gbufferResources->meshBufferDescriptorSetLayout = std::move(createdMeshDescriptorSetLayout);
 
-        auto[createMaterialTextureDescriptorSetLayoutResult, createdMaterialTextureDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(materialTextureDescriptorSetLayoutCreateInfo);
+        auto[createMaterialTextureDescriptorSetLayoutResult, createdMaterialTextureDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(
+            materialTextureDescriptorSetLayoutCreateInfo);
+
         if (createMaterialTextureDescriptorSetLayoutResult != GraphicsResult::Success)
         {
             HUSKY_ASSERT(false);
             return { false };
         }
 
-        resources.materialTextureDescriptorSetLayout = std::move(createdMaterialTextureDescriptorSetLayout);
+        gbufferResources->materialTextureDescriptorSetLayout = std::move(createdMaterialTextureDescriptorSetLayout);
 
-        auto[createMaterialBufferDescriptorSetLayoutResult, createdMaterialBufferDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(materialBufferDescriptorSetLayoutCreateInfo);
+        auto[createMaterialBufferDescriptorSetLayoutResult, createdMaterialBufferDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(
+            materialBufferDescriptorSetLayoutCreateInfo);
+
         if (createMaterialBufferDescriptorSetLayoutResult != GraphicsResult::Success)
         {
             HUSKY_ASSERT(false);
             return { false };
         }
 
-        resources.materialBufferDescriptorSetLayout = std::move(createdMaterialBufferDescriptorSetLayout);
+        gbufferResources->materialBufferDescriptorSetLayout = std::move(createdMaterialBufferDescriptorSetLayout);
 
-        auto[createMaterialSamplerDescriptorSetLayoutResult, createdMaterialSamplerDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(materialSamplerDescriptorSetLayoutCreateInfo);
+        auto[createMaterialSamplerDescriptorSetLayoutResult, createdMaterialSamplerDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(
+            materialSamplerDescriptorSetLayoutCreateInfo);
+
         if (createMaterialSamplerDescriptorSetLayoutResult != GraphicsResult::Success)
         {
             HUSKY_ASSERT(false);
             return { false };
         }
 
-        resources.materialSamplerDescriptorSetLayout = std::move(createdMaterialSamplerDescriptorSetLayout);
-
-        DescriptorSetLayoutCreateInfo cameraDescriptorSetLayoutCreateInfo;
-        cameraDescriptorSetLayoutCreateInfo
-            .OfType(DescriptorSetType::Buffer)
-            .WithNBindings(1)
-            .AddBinding(&resources.cameraUniformBufferBinding);
-
-        auto[createCameraDescriptorSetLayoutResult, createdCameraDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(cameraDescriptorSetLayoutCreateInfo);
-        if (createCameraDescriptorSetLayoutResult != GraphicsResult::Success)
-        {
-            HUSKY_ASSERT(false);
-            return { false };
-        }
-
-        resources.cameraBufferDescriptorSetLayout = std::move(createdCameraDescriptorSetLayout);
+        gbufferResources->materialSamplerDescriptorSetLayout = std::move(createdMaterialSamplerDescriptorSetLayout);
 
         PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
         pipelineLayoutCreateInfo
-            .AddSetLayout(ShaderStage::Vertex, resources.cameraBufferDescriptorSetLayout)
-            .AddSetLayout(ShaderStage::Vertex, resources.meshBufferDescriptorSetLayout)
-            .AddSetLayout(ShaderStage::Fragment, resources.materialTextureDescriptorSetLayout)
-            .AddSetLayout(ShaderStage::Fragment, resources.materialBufferDescriptorSetLayout)
-            .AddSetLayout(ShaderStage::Fragment, resources.materialSamplerDescriptorSetLayout);
+            .AddSetLayout(ShaderStage::Vertex, resources->cameraBufferDescriptorSetLayout)
+            .AddSetLayout(ShaderStage::Vertex, gbufferResources->meshBufferDescriptorSetLayout)
+            .AddSetLayout(ShaderStage::Fragment, gbufferResources->materialTextureDescriptorSetLayout)
+            .AddSetLayout(ShaderStage::Fragment, gbufferResources->materialBufferDescriptorSetLayout)
+            .AddSetLayout(ShaderStage::Fragment, gbufferResources->materialSamplerDescriptorSetLayout);
 
-        auto[createPipelineLayoutResult, createdPipelineLayout] = context->device->CreatePipelineLayout(pipelineLayoutCreateInfo);
+        auto[createPipelineLayoutResult, createdPipelineLayout] = context->device->CreatePipelineLayout(
+            pipelineLayoutCreateInfo);
+
         if (createPipelineLayoutResult != GraphicsResult::Success)
         {
             HUSKY_ASSERT(false);
             return { false };
         }
 
-        resources.pipelineLayout = std::move(createdPipelineLayout);
+        gbufferResources->pipelineLayout = std::move(createdPipelineLayout);
 
-        resources.baseColorAttachmentTemplate.format = baseColorFormat;
-        resources.baseColorAttachmentTemplate.colorLoadOperation = AttachmentLoadOperation::Clear;
-        resources.baseColorAttachmentTemplate.colorStoreOperation = AttachmentStoreOperation::Store;
-        resources.baseColorAttachmentTemplate.clearValue = { 0.0f, 0.0f, 0.0f, 1.0f };
+        gbufferResources->baseColorAttachmentTemplate.format = baseColorFormat;
+        gbufferResources->baseColorAttachmentTemplate.colorLoadOperation = AttachmentLoadOperation::Clear;
+        gbufferResources->baseColorAttachmentTemplate.colorStoreOperation = AttachmentStoreOperation::Store;
+        gbufferResources->baseColorAttachmentTemplate.clearValue = { 0.0f, 0.0f, 0.0f, 1.0f };
 
-        resources.normalMapAttachmentTemplate.format = normalMapFormat;
-        resources.normalMapAttachmentTemplate.colorLoadOperation = AttachmentLoadOperation::Clear;
-        resources.normalMapAttachmentTemplate.colorStoreOperation = AttachmentStoreOperation::Store;
-        resources.normalMapAttachmentTemplate.clearValue = { 0.0f, 0.0f, 0.0f, 0.0f };
+        gbufferResources->normalMapAttachmentTemplate.format = normalMapFormat;
+        gbufferResources->normalMapAttachmentTemplate.colorLoadOperation = AttachmentLoadOperation::Clear;
+        gbufferResources->normalMapAttachmentTemplate.colorStoreOperation = AttachmentStoreOperation::Store;
+        gbufferResources->normalMapAttachmentTemplate.clearValue = { 0.0f, 0.0f, 0.0f, 0.0f };
 
-        resources.depthStencilAttachmentTemplate.format = depthStencilFormat;
-        resources.depthStencilAttachmentTemplate.depthLoadOperation = AttachmentLoadOperation::Clear;
-        resources.depthStencilAttachmentTemplate.depthStoreOperation = AttachmentStoreOperation::Store;
-        resources.depthStencilAttachmentTemplate.stencilLoadOperation = AttachmentLoadOperation::Clear;
-        resources.depthStencilAttachmentTemplate.stencilStoreOperation = AttachmentStoreOperation::Store;
-        resources.depthStencilAttachmentTemplate.depthClearValue = maxDepth;
-        resources.depthStencilAttachmentTemplate.stencilClearValue = 0xffffffff;
+        gbufferResources->depthStencilAttachmentTemplate.format = depthStencilFormat;
+        gbufferResources->depthStencilAttachmentTemplate.depthLoadOperation = AttachmentLoadOperation::Clear;
+        gbufferResources->depthStencilAttachmentTemplate.depthStoreOperation = AttachmentStoreOperation::Store;
+        gbufferResources->depthStencilAttachmentTemplate.stencilLoadOperation = AttachmentLoadOperation::Clear;
+        gbufferResources->depthStencilAttachmentTemplate.stencilStoreOperation = AttachmentStoreOperation::Store;
+        gbufferResources->depthStencilAttachmentTemplate.depthClearValue = maxDepth;
+        gbufferResources->depthStencilAttachmentTemplate.stencilClearValue = 0xffffffff;
 
-        return { true, resources };
+        return { true, std::move(gbufferResources) };
     }
 
-    ResultValue<bool, LightingPassResources> DeferredRenderer::PrepareLightingPassResources(DeferredPreparedScene& scene)
+    ResultValue<bool, UniquePtr<LightingPassResources>> DeferredRenderer::PrepareLightingPassResources(
+        GBufferPassResources* gbufferPassResources)
     {
-        LightingPassResources resources;
+        UniquePtr<LightingPassResources> lightingResources = MakeUnique<LightingPassResources>();
         int32 swapchainLength = context->swapchain->GetInfo().imageCount;
 
         DescriptorPoolCreateInfo descriptorPoolCreateInfo;
@@ -1290,18 +1238,19 @@ namespace Husky::Render::Deferred
         descriptorPoolCreateInfo.descriptorCount =
         {
             { ResourceType::UniformBuffer, 1 },
-            { ResourceType::Texture, swapchainLength * OffscreenImagesCount + 1 },
-            { ResourceType::Sampler, swapchainLength * OffscreenImagesCount + 1 },
+            { ResourceType::Texture, swapchainLength * OffscreenImageCount + 1 },
+            { ResourceType::Sampler, swapchainLength * OffscreenImageCount + 1 },
         };
 
-        auto[createDescriptorPoolResult, createdDescriptorPool] = context->device->CreateDescriptorPool(descriptorPoolCreateInfo);
+        auto[createDescriptorPoolResult, createdDescriptorPool] = context->device->CreateDescriptorPool(
+            descriptorPoolCreateInfo);
         if (createDescriptorPoolResult != GraphicsResult::Success)
         {
             HUSKY_ASSERT(false);
             return { false };
         }
 
-        resources.descriptorPool = std::move(createdDescriptorPool);
+        lightingResources->descriptorPool = std::move(createdDescriptorPool);
 
         ShaderDefines<DeferredShaderDefines> shaderDefines;
         shaderDefines.mapping = &FlagToString;
@@ -1333,7 +1282,7 @@ namespace Husky::Render::Deferred
             return { false };
         }
 
-        resources.vertexShader = std::move(vertexShaderProgram);
+        lightingResources->vertexShader = std::move(vertexShaderProgram);
 
         auto[fragmentShaderLibraryCreated, createdFragmentShaderLibrary] = RenderUtils::CreateShaderLibrary(
             context->device,
@@ -1365,32 +1314,15 @@ namespace Husky::Render::Deferred
             return { false };
         }
 
-        resources.fragmentShader = std::move(fragmentShaderProgram);
+        lightingResources->fragmentShader = std::move(fragmentShaderProgram);
 
-        resources.lightsUniformBufferBinding
-            .OfType(ResourceType::UniformBuffer)
-            .AtStage(ShaderStage::Fragment);
-
-        DescriptorSetLayoutCreateInfo cameraDescriptorSetLayoutCreateInfo;
-        cameraDescriptorSetLayoutCreateInfo
-            .OfType(DescriptorSetType::Buffer)
-            .WithNBindings(1)
-            .AddBinding(&resources.cameraUniformBufferBinding);
-
-        auto[createCameraDescriptorSetLayoutResult, createdCameraDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(cameraDescriptorSetLayoutCreateInfo);
-        if (createCameraDescriptorSetLayoutResult != GraphicsResult::Success)
-        {
-            HUSKY_ASSERT(false);
-            return { false };
-        }
-
-        resources.cameraBufferDescriptorSetLayout = std::move(createdCameraDescriptorSetLayout);
+        lightingResources->lightsUniformBufferBinding.OfType(ResourceType::UniformBuffer);
 
         DescriptorSetLayoutCreateInfo lightsDescriptorSetLayoutCreateInfo;
         lightsDescriptorSetLayoutCreateInfo
             .OfType(DescriptorSetType::Buffer)
             .WithNBindings(1)
-            .AddBinding(&resources.lightsUniformBufferBinding);
+            .AddBinding(&lightingResources->lightsUniformBufferBinding);
 
         auto[createLightsDescriptorSetLayoutResult, createdLightsDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(lightsDescriptorSetLayoutCreateInfo);
         if (createLightsDescriptorSetLayoutResult != GraphicsResult::Success)
@@ -1399,39 +1331,22 @@ namespace Husky::Render::Deferred
             return { false };
         }
 
-        resources.lightsBufferDescriptorSetLayout = std::move(createdLightsDescriptorSetLayout);
+        lightingResources->lightsBufferDescriptorSetLayout = std::move(createdLightsDescriptorSetLayout);
 
-        resources.baseColorTextureBinding
-            .OfType(ResourceType::Texture)
-            .AtStage(ShaderStage::Fragment);
-
-        resources.baseColorSamplerBinding
-            .OfType(ResourceType::Sampler)
-            .AtStage(ShaderStage::Fragment);
-
-        resources.normalMapTextureBinding
-            .OfType(ResourceType::Texture)
-            .AtStage(ShaderStage::Fragment);
-
-        resources.normalMapSamplerBinding
-            .OfType(ResourceType::Sampler)
-            .AtStage(ShaderStage::Fragment);
-
-        resources.depthStencilTextureBinding
-            .OfType(ResourceType::Texture)
-            .AtStage(ShaderStage::Fragment);
-
-        resources.depthStencilSamplerBinding
-            .OfType(ResourceType::Sampler)
-            .AtStage(ShaderStage::Fragment);
+        lightingResources->baseColorTextureBinding.OfType(ResourceType::Texture);
+        lightingResources->baseColorSamplerBinding.OfType(ResourceType::Sampler);
+        lightingResources->normalMapTextureBinding.OfType(ResourceType::Texture);
+        lightingResources->normalMapSamplerBinding.OfType(ResourceType::Sampler);
+        lightingResources->depthStencilTextureBinding.OfType(ResourceType::Texture);
+        lightingResources->depthStencilSamplerBinding.OfType(ResourceType::Sampler);
 
         DescriptorSetLayoutCreateInfo gbufferTextureDescriptorSetLayoutCreateInfo;
         gbufferTextureDescriptorSetLayoutCreateInfo
             .OfType(DescriptorSetType::Texture)
             .WithNBindings(3)
-            .AddBinding(&resources.baseColorTextureBinding)
-            .AddBinding(&resources.normalMapTextureBinding)
-            .AddBinding(&resources.depthStencilTextureBinding);
+            .AddBinding(&lightingResources->baseColorTextureBinding)
+            .AddBinding(&lightingResources->normalMapTextureBinding)
+            .AddBinding(&lightingResources->depthStencilTextureBinding);
 
         auto[createGBufferTextureDescriptorSetLayoutResult, createdGBufferTextureDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(gbufferTextureDescriptorSetLayoutCreateInfo);
         if (createGBufferTextureDescriptorSetLayoutResult != GraphicsResult::Success)
@@ -1440,15 +1355,15 @@ namespace Husky::Render::Deferred
             return { false };
         }
 
-        resources.gbufferTextureDescriptorSetLayout = std::move(createdGBufferTextureDescriptorSetLayout);
+        lightingResources->gbufferTextureDescriptorSetLayout = std::move(createdGBufferTextureDescriptorSetLayout);
 
         DescriptorSetLayoutCreateInfo gbufferSamplerDescriptorSetLayoutCreateInfo;
         gbufferSamplerDescriptorSetLayoutCreateInfo
             .OfType(DescriptorSetType::Sampler)
             .WithNBindings(3)
-            .AddBinding(&resources.baseColorSamplerBinding)
-            .AddBinding(&resources.normalMapSamplerBinding)
-            .AddBinding(&resources.depthStencilSamplerBinding);
+            .AddBinding(&lightingResources->baseColorSamplerBinding)
+            .AddBinding(&lightingResources->normalMapSamplerBinding)
+            .AddBinding(&lightingResources->depthStencilSamplerBinding);
 
         auto[createGBufferSamplerDescriptorSetLayoutResult, createdGBufferSamplerDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(gbufferSamplerDescriptorSetLayoutCreateInfo);
         if (createGBufferSamplerDescriptorSetLayoutResult != GraphicsResult::Success)
@@ -1457,7 +1372,7 @@ namespace Husky::Render::Deferred
             return { false };
         }
 
-        resources.gbufferSamplerDescriptorSetLayout = std::move(createdGBufferSamplerDescriptorSetLayout);
+        lightingResources->gbufferSamplerDescriptorSetLayout = std::move(createdGBufferSamplerDescriptorSetLayout);
 
         SamplerCreateInfo samplerCreateInfo;
 
@@ -1468,7 +1383,7 @@ namespace Husky::Render::Deferred
             return { false };
         }
 
-        resources.baseColorSampler = std::move(createdBaseColorSampler);
+        lightingResources->baseColorSampler = std::move(createdBaseColorSampler);
 
         auto[createNormalMapSamplerResult, createdNormalMapSampler] = context->device->CreateSampler(samplerCreateInfo);
         if (createNormalMapSamplerResult != GraphicsResult::Success)
@@ -1477,7 +1392,7 @@ namespace Husky::Render::Deferred
             return { false };
         }
 
-        resources.normalMapSampler = std::move(createdNormalMapSampler);
+        lightingResources->normalMapSampler = std::move(createdNormalMapSampler);
 
         auto[createDepthSamplerResult, createdDepthSampler] = context->device->CreateSampler(samplerCreateInfo);
         if (createDepthSamplerResult != GraphicsResult::Success)
@@ -1486,14 +1401,14 @@ namespace Husky::Render::Deferred
             return { false };
         }
 
-        resources.depthBufferSampler = std::move(createdDepthSampler);
+        lightingResources->depthBufferSampler = std::move(createdDepthSampler);
 
         PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
         pipelineLayoutCreateInfo
-            .AddSetLayout(ShaderStage::Fragment, resources.cameraBufferDescriptorSetLayout)
-            .AddSetLayout(ShaderStage::Fragment, resources.lightsBufferDescriptorSetLayout)
-            .AddSetLayout(ShaderStage::Fragment, resources.gbufferTextureDescriptorSetLayout)
-            .AddSetLayout(ShaderStage::Fragment, resources.gbufferSamplerDescriptorSetLayout);
+            .AddSetLayout(ShaderStage::Fragment, resources->cameraBufferDescriptorSetLayout)
+            .AddSetLayout(ShaderStage::Fragment, lightingResources->lightsBufferDescriptorSetLayout)
+            .AddSetLayout(ShaderStage::Fragment, lightingResources->gbufferTextureDescriptorSetLayout)
+            .AddSetLayout(ShaderStage::Fragment, lightingResources->gbufferSamplerDescriptorSetLayout);
 
         auto[createPipelineLayoutResult, createdPipelineLayout] = context->device->CreatePipelineLayout(pipelineLayoutCreateInfo);
         if (createPipelineLayoutResult != GraphicsResult::Success)
@@ -1502,21 +1417,23 @@ namespace Husky::Render::Deferred
             return { false };
         }
 
-        resources.pipelineLayout = std::move(createdPipelineLayout);
+        lightingResources->pipelineLayout = std::move(createdPipelineLayout);
 
-        resources.colorAttachmentTemplate.format = context->swapchain->GetInfo().format;
-        resources.colorAttachmentTemplate.colorLoadOperation = AttachmentLoadOperation::Clear;
-        resources.colorAttachmentTemplate.colorStoreOperation = AttachmentStoreOperation::Store;
+        lightingResources->colorAttachmentTemplate.format = context->swapchain->GetInfo().format;
+        lightingResources->colorAttachmentTemplate.colorLoadOperation = AttachmentLoadOperation::Clear;
+        lightingResources->colorAttachmentTemplate.colorStoreOperation = AttachmentStoreOperation::Store;
 
         // TODO result
-        resources.pipelineState = CreateLightingPipelineState(resources);
+        lightingResources->pipelineState = CreateLightingPipelineState(lightingResources.get());
 
         BufferCreateInfo bufferCreateInfo;
         bufferCreateInfo.length = fullscreenQuadVertices.size() * sizeof(QuadVertex);
         bufferCreateInfo.storageMode = ResourceStorageMode::Shared;
         bufferCreateInfo.usage = BufferUsageFlags::VertexBuffer;
 
-        auto[createQuadBufferResult, createdQuadBuffer] = context->device->CreateBuffer(bufferCreateInfo, fullscreenQuadVertices.data());
+        auto[createQuadBufferResult, createdQuadBuffer] = context->device->CreateBuffer(
+            bufferCreateInfo,
+            fullscreenQuadVertices.data());
 
         if (createQuadBufferResult != GraphicsResult::Success)
         {
@@ -1524,9 +1441,53 @@ namespace Husky::Render::Deferred
             return { false };
         }
 
-        resources.fullscreenQuadBuffer = std::move(createdQuadBuffer);
+        lightingResources->fullscreenQuadBuffer = std::move(createdQuadBuffer);
 
-        return { true, resources };
+        auto [allocateTextureSetResult, allocatedTextureSet] = lightingResources->descriptorPool->AllocateDescriptorSet(
+                lightingResources->gbufferTextureDescriptorSetLayout);
+
+        if (allocateTextureSetResult != GraphicsResult::Success)
+        {
+            return { false };
+        }
+
+        lightingResources->gbufferTextureDescriptorSet = std::move(allocatedTextureSet);
+
+        auto [allocateSamplerSetResult, allocatedSamplerSet] = lightingResources->descriptorPool->AllocateDescriptorSet(
+            lightingResources->gbufferSamplerDescriptorSetLayout);
+
+        if (allocateSamplerSetResult != GraphicsResult::Success)
+        {
+            return { false };
+        }
+
+        lightingResources->gbufferSamplerDescriptorSet = std::move(allocatedSamplerSet);
+
+        lightingResources->gbufferTextureDescriptorSet->WriteTexture(
+            lightingResources->baseColorTextureBinding,
+            gbufferPassResources->offscreen.baseColorTexture);
+
+        lightingResources->gbufferTextureDescriptorSet->WriteTexture(
+            lightingResources->normalMapTextureBinding,
+            gbufferPassResources->offscreen.normalMapTexture);
+
+        lightingResources->gbufferTextureDescriptorSet->WriteTexture(
+            lightingResources->depthStencilTextureBinding,
+            gbufferPassResources->offscreen.depthStencilBuffer);
+
+        lightingResources->gbufferSamplerDescriptorSet->WriteSampler(
+            lightingResources->baseColorSamplerBinding,
+            gbufferPassResources->offscreen.baseColorSampler);
+
+        lightingResources->gbufferSamplerDescriptorSet->WriteSampler(
+            lightingResources->normalMapSamplerBinding,
+            gbufferPassResources->offscreen.normalMapSampler);
+
+        lightingResources->gbufferSamplerDescriptorSet->WriteSampler(
+            lightingResources->depthStencilSamplerBinding,
+            gbufferPassResources->offscreen.depthStencilSampler);
+
+        return { true, std::move(lightingResources) };
     }
 
     ResultValue<bool, OffscreenTextures> DeferredRenderer::CreateOffscreenTextures()

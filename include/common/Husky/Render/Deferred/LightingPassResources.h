@@ -19,7 +19,6 @@ namespace Husky::Render::Deferred
         DescriptorSetBinding lightsUniformBufferBinding;
         RefPtr<Buffer> lightsBuffer;
 
-        DescriptorSetBinding cameraUniformBufferBinding;
         DescriptorSetBinding baseColorTextureBinding;
         DescriptorSetBinding baseColorSamplerBinding;
         DescriptorSetBinding normalMapTextureBinding;
@@ -31,12 +30,14 @@ namespace Husky::Render::Deferred
         RefPtr<Sampler> normalMapSampler;
         RefPtr<Sampler> depthBufferSampler;
 
+        RefPtr<DescriptorSet> gbufferTextureDescriptorSet;
+        RefPtr<DescriptorSet> gbufferSamplerDescriptorSet;
+
         RefPtr<DescriptorSetLayout> gbufferTextureDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> gbufferSamplerDescriptorSetLayout;
 
         RefPtr<DescriptorSet> lightsBufferDescriptorSet;
 
-        RefPtr<DescriptorSetLayout> cameraBufferDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> lightsBufferDescriptorSetLayout;
 
         ColorAttachment colorAttachmentTemplate;

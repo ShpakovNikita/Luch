@@ -124,7 +124,15 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     deferredRenderer->Initialize();
 
-    auto& scene = scenes[0];
+    scene = scenes[0];
+
+    auto cameraIt = std::find_if(
+        scene->GetNodes().begin(),
+        scene->GetNodes().end(),
+        [](const auto& node) { return node->GetCamera() != nullptr; });
+
+    HUSKY_ASSERT(cameraIt != scene->GetNodes().end());
+    camera = (*cameraIt)->GetCamera();
 
     auto lightNode1 = MakeRef<SceneV1::Node>();
     lightNode1->SetName("ln1");
@@ -190,11 +198,8 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     scene->AddNode(lightNode3);
     //scene->AddNode(lightNode4);
 
-    auto [prepareSceneResult, prepScene] = deferredRenderer->PrepareScene(scene);
-    HUSKY_ASSERT(prepareSceneResult);
-    preparedScene = std::move(prepScene);
-
-    deferredRenderer->UpdateScene(preparedScene);
+    deferredRenderer->PrepareScene(scene);
+    deferredRenderer->UpdateScene(scene);
 
     return true;
 }
@@ -218,7 +223,7 @@ void SampleApplication::Run()
         }
         else
         {
-            deferredRenderer->DrawScene(preparedScene);
+            deferredRenderer->DrawScene(scene);
         }
     }
 #endif
@@ -226,7 +231,7 @@ void SampleApplication::Run()
 
 void SampleApplication::Process()
 {
-    deferredRenderer->DrawScene(preparedScene);
+    deferredRenderer->DrawScene(scene, camera);
 }
 
 #ifdef _WIN32

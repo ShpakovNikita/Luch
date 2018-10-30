@@ -19,17 +19,18 @@ namespace Husky::SceneV1
         inline const String& GetName() const { return name; }
         inline const RefPtrVector<Primitive>& GetPrimitives() const { return primitives; }
 
-        inline const RefPtr<Graphics::Buffer>& GetUniformBuffer() const { return uniformBuffer; }
-        inline void SetUniformBuffer(const RefPtr<Graphics::Buffer>& aUniformBuffer) { uniformBuffer = aUniformBuffer; }
+        inline const RefPtr<Graphics::DescriptorSet>& GetBufferDescriptorSet(const String& key) const
+        {
+            return descriptorSets[key];
+        }
 
-        inline const RefPtr<Graphics::DescriptorSet>& GetBufferDescriptorSet() const { return descriptorSet; }
-        inline void SetBufferDescriptorSet(const RefPtr<Graphics::DescriptorSet>& aDescriptorSet) { descriptorSet = aDescriptorSet; }
+        inline void SetBufferDescriptorSet(const String& key, const RefPtr<Graphics::DescriptorSet>& descriptorSet)
+        {
+            descriptorSets[key] = descriptorSet;
+        }
     private:
-        String name;
-
         RefPtrVector<Primitive> primitives;
-
-        RefPtr<Graphics::Buffer> uniformBuffer;
-        RefPtr<Graphics::DescriptorSet> descriptorSet;
+        String name;
+        mutable UnorderedMap<String, RefPtr<Graphics::DescriptorSet>> descriptorSets;
     };
 }

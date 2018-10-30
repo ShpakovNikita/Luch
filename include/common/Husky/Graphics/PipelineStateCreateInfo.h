@@ -110,6 +110,8 @@ namespace Husky::Graphics
         PipelineDepthStencilStateCreateInfo depthStencil;
         PipelineColorAttachmentsStateCreateInfo colorAttachments;
         PipelineLayout* pipelineLayout = nullptr;
-        RenderPass* renderPass = nullptr;
+        // TODO
+        //RenderPass* renderPass = nullptr;
+        String name = "";
     };
 }

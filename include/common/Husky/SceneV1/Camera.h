@@ -23,22 +23,16 @@ namespace Husky::SceneV1
 
         virtual Mat4x4 GetCameraProjectionMatrix() const = 0;
 
-        inline const RefPtr<Graphics::Buffer>& GetUniformBuffer() const { return uniformBuffer; }
-        inline void SetUniformBuffer(const RefPtr<Graphics::Buffer>& aUniformBuffer)
+        inline const RefPtr<Graphics::DescriptorSet>& GetDescriptorSet(const String& key) const
         {
-            uniformBuffer = aUniformBuffer;
+            return descriptorSets[key];
         }
 
-        inline const RefPtr<Graphics::DescriptorSet>& GetVertexDescriptorSet() const { return vertexDescriptorSet; }
-        inline void SetVertexDescriptorSet(const RefPtr<Graphics::DescriptorSet>& aVertexDescriptorSet)
+        inline void SetDescriptorSet(
+            const String& key,
+            const RefPtr<Graphics::DescriptorSet>& descriptorSet)
         {
-            vertexDescriptorSet = aVertexDescriptorSet;
-        }
-
-        inline const RefPtr<Graphics::DescriptorSet>& GetFragmentDescriptorSet() const { return fragmentDescriptorSet; }
-        inline void SetFragmentDescriptorSet(const RefPtr<Graphics::DescriptorSet>& aFragmentDescriptorSet)
-        {
-            fragmentDescriptorSet = aFragmentDescriptorSet;
+            descriptorSets[key] = descriptorSet;
         }
 
         inline const String& GetName() const { return name; }
@@ -48,10 +42,7 @@ namespace Husky::SceneV1
     private:
         CameraType type = CameraType::Perspective;
         String name;
-
-        RefPtr<Graphics::DescriptorSet> vertexDescriptorSet;
-        RefPtr<Graphics::DescriptorSet> fragmentDescriptorSet;
-        RefPtr<Graphics::Buffer> uniformBuffer;
+        mutable UnorderedMap<String, RefPtr<Graphics::DescriptorSet>> descriptorSets;
     };
 
     class PerspectiveCamera : public Camera

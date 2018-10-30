@@ -22,7 +22,7 @@ namespace Husky::Metal
 
         const BufferCreateInfo& GetCreateInfo() const override { return createInfo; }
 
-        void* GetMappedMemory() override { return mappedMemory; }
+        void* GetMappedMemory() override;
         GraphicsResultValue<void*> MapMemory(int32 size, int32 offset) override;
         GraphicsResult UnmapMemory() override;
     private:

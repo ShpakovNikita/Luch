@@ -6,8 +6,8 @@
 namespace Husky::SceneV1
 {
     Mesh::Mesh(RefPtrVector<Primitive>&& aPrimitives, const String &aName)
-        : name(aName)
-        , primitives(aPrimitives)
+        : primitives(aPrimitives)
+        , name(aName)
     {
     }
 

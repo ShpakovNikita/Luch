@@ -6,6 +6,7 @@
 #include <Husky/Render/Deferred/ShadowMapping/ShadowMappingOptions.h>
 #include <Husky/VectorTypes.h>
 #include <Husky/RefPtr.h>
+#include <Husky/UniquePtr.h>
 #include <Husky/SharedPtr.h>
 #include <Husky/ResultValue.h>
 
@@ -18,17 +19,24 @@ namespace Husky::Render::Deferred::ShadowMapping
     class ShadowRenderer
     {
     public:
+        static const String RendererName;
+        static constexpr int32 SharedUniformBufferSize = 4 * 1024 * 1024;
+        static constexpr int32 MaxDescriptorSetCount = 1024;
+        static constexpr int32 MaxDescriptorCount = 1024;
         // unordered map stores vectors of depth textures for each light
         // vector stores either one (for directional and spot lights) or six (for point lights) depth textures
         using ShadowMaps = UnorderedMap<SceneV1::Light*, RefPtrVector<Texture>>;
 
         ShadowRenderer(SharedPtr<RenderContext> context);
 
-        bool Prepare(SceneV1::Scene* scene);
+        bool Initialize();
+        bool Deinitialize();
 
         const ShadowMappingOptions& GetOptions() const { return options; }
         void SetOptions(const ShadowMappingOptions& aOptions) { options = aOptions; }
 
+        void PrepareScene(SceneV1::Scene* scene);
+        void UpdateScene(SceneV1::Scene* scene);
         const ShadowMaps& DrawShadows(SceneV1::Scene* scene, const RefPtrVector<SceneV1::Node>& lightNodes);
     private:
         RefPtrVector<Texture> DrawSceneForLight(
@@ -55,6 +63,12 @@ namespace Husky::Render::Deferred::ShadowMapping
             GraphicsCommandList* commandList);
 
         void PrepareCamera(SceneV1::Camera* camera);
+        void PrepareMesh(SceneV1::Mesh* mesh);
+
+        void PrepareMeshNode(SceneV1::Node* meshNode);
+
+        void UpdateNode(SceneV1::Node* node);
+        void UpdateMesh(SceneV1::Mesh* mesh, Mat4x4 transform);
 
         void UpdateSpotLightCamera(
             SceneV1::Light* light,
@@ -72,12 +86,12 @@ namespace Husky::Render::Deferred::ShadowMapping
             SceneV1::PerspectiveCamera* camera,
             int32 index);
 
-        void UpdateCameraBuffer(SceneV1::Camera* camera);
+        void UpdateCamera(SceneV1::Camera* camera);
 
-        ResultValue<bool, ShadowMappingPassResources> PrepareShadowMappingPassResources(SceneV1::Scene* scene);
+        ResultValue<bool, UniquePtr<ShadowMappingPassResources>> PrepareShadowMappingPassResources();
 
         SharedPtr<RenderContext> context;
-        ShadowMappingPassResources resources;
+        UniquePtr<ShadowMappingPassResources> resources;
         ShadowMappingOptions options;
 
         ShadowMaps shadowMaps;

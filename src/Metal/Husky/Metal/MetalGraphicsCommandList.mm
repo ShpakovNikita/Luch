@@ -146,7 +146,10 @@ namespace Husky::Metal
 
         HUSKY_ASSERT(mtlDescriptorSetLayout->createInfo.type == DescriptorSetType::Texture);
         auto textures = mtlDescriptorSet->textures.data();
-        auto range = ns::Range { start, (uint32)mtlDescriptorSet->textures.size() };
+        auto length = (uint32)mtlDescriptorSet->textures.size();
+
+        HUSKY_ASSERT(length != 0);
+        auto range = ns::Range { start, length };
 
         switch(stage)
         {
@@ -183,7 +186,10 @@ namespace Husky::Metal
         HUSKY_ASSERT(mtlDescriptorSetLayout->createInfo.type == DescriptorSetType::Buffer);
         auto buffers = mtlDescriptorSet->buffers.data();
         auto bufferOffsets = (uint32*)mtlDescriptorSet->bufferOffsets.data();
-        auto range = ns::Range { start, (uint32)mtlDescriptorSet->buffers.size() };
+        auto length = (uint32)mtlDescriptorSet->buffers.size();
+
+        HUSKY_ASSERT(length != 0);
+        auto range = ns::Range { start, length };
 
         switch(stage)
         {
@@ -219,7 +225,10 @@ namespace Husky::Metal
 
         HUSKY_ASSERT(mtlDescriptorSetLayout->createInfo.type == DescriptorSetType::Sampler);
         auto samplers = mtlDescriptorSet->samplers.data();
-        auto range = ns::Range { start, (uint32)mtlDescriptorSet->samplers.size() };
+        auto length = (uint32)mtlDescriptorSet->samplers.size();
+
+        HUSKY_ASSERT(length != 0);
+        auto range = ns::Range { start, length };
 
         switch(stage)
         {

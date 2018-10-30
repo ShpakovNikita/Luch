@@ -24,14 +24,13 @@ namespace Husky::Metal
 
     // TODO Resize based on descriptor set layout
 
-    void MetalDescriptorSet::WriteTexture(DescriptorSetBinding* binding, Texture* texture)
+    void MetalDescriptorSet::WriteTexture(const DescriptorSetBinding& binding, Texture* texture)
     {
-        HUSKY_ASSERT(binding != nullptr);
         HUSKY_ASSERT(texture != nullptr);
         HUSKY_ASSERT(samplers.empty());
         HUSKY_ASSERT(buffers.empty());
 
-        auto index = binding->GetIndex();
+        auto index = binding.GetIndex();
         if(index >= textures.size())
         {
             textures.resize(index + 1);
@@ -41,14 +40,13 @@ namespace Husky::Metal
         textures[index] = mtlTexture->texture;
     }
 
-    void MetalDescriptorSet::WriteUniformBuffer(DescriptorSetBinding* binding, Buffer* buffer)
+    void MetalDescriptorSet::WriteUniformBuffer(const DescriptorSetBinding& binding, Buffer* buffer, int32 offset)
     {
-        HUSKY_ASSERT(binding != nullptr);
         HUSKY_ASSERT(buffer != nullptr);
         HUSKY_ASSERT(textures.empty());
         HUSKY_ASSERT(samplers.empty());
 
-        auto index = binding->GetIndex();
+        auto index = binding.GetIndex();
         if(index >= buffers.size())
         {
             buffers.resize(index + 1);
@@ -57,17 +55,16 @@ namespace Husky::Metal
 
         auto mtlBuffer = static_cast<MetalBuffer*>(buffer);
         buffers[index] = mtlBuffer->buffer;
-        bufferOffsets[index] = 0;
+        bufferOffsets[index] = offset;
     }
 
-    void MetalDescriptorSet::WriteSampler(DescriptorSetBinding* binding, Sampler* sampler)
+    void MetalDescriptorSet::WriteSampler(const DescriptorSetBinding& binding, Sampler* sampler)
     {
-        HUSKY_ASSERT(binding != nullptr);
         HUSKY_ASSERT(sampler != nullptr);
         HUSKY_ASSERT(textures.empty());
         HUSKY_ASSERT(buffers.empty());
 
-        auto index = binding->GetIndex();
+        auto index = binding.GetIndex();
         if(index >= samplers.size())
         {
             samplers.resize(index + 1);
