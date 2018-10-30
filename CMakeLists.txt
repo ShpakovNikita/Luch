@@ -42,7 +42,7 @@ endif()
 add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
 
 # Theese libs are always used
-include_directories(AFTER SYSTEM
+include_directories(BEFORE SYSTEM
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/stb/
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/glm/
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/json/src/
@@ -172,6 +172,13 @@ endif()
 file(GLOB_RECURSE ENGINE_COMMON_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Husky/*.cpp)
 file(GLOB_RECURSE ENGINE_COMMON_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/Common/Husky/*.h)
 
+include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/include/common/)
+
+add_library(HuskyEngine
+    ${ENGINE_COMMON_CPP_FILES}
+    ${ENGINE_COMMON_HEADER_FILES})
+
+
 # Add Husky Engine library
 if(APPLE)
     file(GLOB_RECURSE ENGINE_MACOS_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Husky/*.cpp)
@@ -179,16 +186,13 @@ if(APPLE)
     file(GLOB_RECURSE ENGINE_MACOS_OBJCPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Husky/*.mm)
     file(GLOB_RECURSE ENGINE_MACOS_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/macOS/Husky/*.h)
 
-    include_directories(BEFORE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/common/
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/macOS/)
+    include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/include/macOS/)
 
-    add_library(HuskyEngine
-        ${ENGINE_COMMON_CPP_FILES}
+    target_sources(HuskyEngine
+        PRIVATE
         ${ENGINE_MACOS_CPP_FILES}
         ${ENGINE_MACOS_OBJC_FILES}
         ${ENGINE_MACOS_OBJCPP_FILES}
-        ${ENGINE_COMMON_HEADER_FILES}
         ${ENGINE_MACOS_HEADER_FILES})
 endif()
 
@@ -196,22 +200,18 @@ if(WIN32)
     file(GLOB_RECURSE ENGINE_WIN32_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Win32/Husky/*.cpp)
     file(GLOB_RECURSE ENGINE_WIN32_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/Win32/Husky/*.h)
 
-    include_directories(AFTER
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/Common/
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/Win32/)
+    include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/include/Win32/)
 
-    add_library(HuskyEngine
-        ${ENGINE_COMMON_CPP_FILES}
+    target_sources(HuskyEngine
         ${ENGINE_WIN32_CPP_FILES}
-        ${ENGINE_COMMON_HEADER_FILES}
         ${ENGINE_WIN32_HEADER_FILES})
 endif()
 
-# Add Metal implementation is it's used
+# Add Metal implementation if it's used
 if(USE_METAL)
     add_compile_definitions(GLM_FORCE_LEFT_HANDED)
     # Add mtlpp library and includes
-    include_directories(AFTER
+    include_directories(AFTER SYSTEM
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/mtlpp/)
 
     add_library(mtlpp

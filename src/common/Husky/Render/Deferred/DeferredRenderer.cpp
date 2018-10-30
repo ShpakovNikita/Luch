@@ -942,6 +942,8 @@ namespace Husky::Render::Deferred
             "/Users/spo1ler/Development/HuskyEngine/src/Metal/Husky/Render/Shaders/Deferred/gbuffer_vp.metal",
     #elif HUSKY_USE_VULKAN
             "/Users/spo1ler/Development/HuskyEngine/src/Vulkan/Husky/Render/Shaders/Deferred/gbuffer.vert",
+    #else
+            "",
     #endif
 #endif
             shaderDefines.defines);
@@ -968,6 +970,8 @@ namespace Husky::Render::Deferred
             "/Users/spo1ler/Development/HuskyEngine/src/Metal/Husky/Render/Shaders/Deferred/gbuffer_fp.metal",
     #elif HUSKY_USE_VULKAN
             "/Users/spo1ler/Development/HuskyEngine/src/Vulkan/Husky/Render/Shaders/Deferred/gbuffer.frag",
+    #else
+            "",
     #endif
 #endif
             shaderDefines.defines);
@@ -1247,6 +1251,8 @@ namespace Husky::Render::Deferred
             "/Users/spo1ler/Development/HuskyEngine/src/Metal/Husky/Render/Shaders/Deferred/lighting_vp.metal",
     #elif HUSKY_USE_VULKAN
             "/Users/spo1ler/Development/HuskyEngine/src/Vulkan/Husky/Render/Shaders/Deferred/lighting.vert",
+    #else
+            "",
     #endif
 #endif
             shaderDefines.defines);
@@ -1276,6 +1282,8 @@ namespace Husky::Render::Deferred
             "/Users/spo1ler/Development/HuskyEngine/src/Metal/Husky/Render/Shaders/Deferred/lighting_fp.metal",
     #elif HUSKY_USE_VULKAN
             "/Users/spo1ler/Development/HuskyEngine/src/Vulkan/Husky/Render/Shaders/Deferred/lighting.frag",
+    #else
+            "",
     #endif
 #endif
             shaderDefines.defines);

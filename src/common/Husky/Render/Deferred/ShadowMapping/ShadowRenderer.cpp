@@ -536,6 +536,8 @@ namespace Husky::Render::Deferred::ShadowMapping
             "/Users/spo1ler/Development/HuskyEngine/src/Metal/Husky/Render/Shaders/Deferred/shadowmap_vp.metal",
     #elif HUSKY_USE_VULKAN
             "/Users/spo1ler/Development/HuskyEngine/src/Vulkan/Husky/Render/Shaders/Deferred/todo.vert",
+    #else
+            "",
     #endif
 #endif
             {});
