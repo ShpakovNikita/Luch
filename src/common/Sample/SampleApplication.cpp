@@ -139,13 +139,15 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     auto light1 = MakeRef<SceneV1::Light>();
 
     light1->SetType(SceneV1::LightType::Spot);
+    light1->SetShadowEnabled(true);
     light1->SetRange(15);
     light1->SetIndex(0);
-    light1->SetColor({1.0, 0.0, 0.0});
-    light1->SetDirection({ 1, -0.2, 0 });
+    light1->SetColor({ 1.0, 0.0, 0.0 });
+    light1->SetDirection({ 1, 0, 0 });
     light1->SetSpotlightAngle(0.3);
     light1->SetIntensity(0.2);
     lightNode1->SetLight(light1);
+    lightNode1->SetLocalTransform(glm::translate(Vec3{ 0, 1, 0 }));
 
     auto lightNode2 = MakeRef<SceneV1::Node>();
     lightNode2->SetName("ln2");

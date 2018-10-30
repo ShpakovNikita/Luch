@@ -378,7 +378,9 @@ namespace Husky::Render::Deferred::ShadowMapping
         Mat4x4 transform,
         SceneV1::PerspectiveCamera* camera)
     {
-        camera->SetCameraViewMatrix(glm::inverse(transform));
+        HUSKY_ASSERT(light->GetDirection().has_value());
+        auto lookAt = glm::lookAt(Vec3{ 0, 0, 0 }, *light->GetDirection(), Vec3 { 0, 1, 0 });
+        camera->SetCameraViewMatrix(glm::inverse(transform * lookAt));
 
         HUSKY_ASSERT(light->GetSpotlightAngle().has_value());
         HUSKY_ASSERT(light->GetRange().has_value());
