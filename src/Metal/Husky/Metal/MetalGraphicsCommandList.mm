@@ -68,15 +68,17 @@ namespace Husky::Metal
     {
     }
 
-    void MetalGraphicsCommandList::Begin(const RenderPassCreateInfo& renderPassCreateInfo)
+    void MetalGraphicsCommandList::BeginRenderPass(const RenderPassCreateInfo& renderPassCreateInfo)
     {
+        HUSKY_ASSERT(!commandEncoder);
         auto renderPassDescriptor = ToMetalRenderPasDescriptor(renderPassCreateInfo);
         commandEncoder = commandBuffer.RenderCommandEncoder(renderPassDescriptor);
     }
 
-    void MetalGraphicsCommandList::End()
+    void MetalGraphicsCommandList::EndRenderPass()
     {
         commandEncoder.EndEncoding();
+        commandEncoder = { };
     }
 
     void MetalGraphicsCommandList::BindPipelineState(PipelineState* pipelineState)
@@ -87,7 +89,17 @@ namespace Husky::Metal
         primitiveType = ToMetalPrimitiveType(ci.inputAssembler.primitiveTopology);
 
         commandEncoder.SetRenderPipelineState(mtlPipelineState->pipelineState);
-        commandEncoder.SetDepthStencilState(mtlPipelineState->depthStencilState);
+
+        if(mtlPipelineState->depthStencilState.has_value())
+        {
+            HUSKY_ASSERT(mtlPipelineState->GetCreateInfo().depthStencil.depthTestEnable == true);
+            commandEncoder.SetDepthStencilState(mtlPipelineState->depthStencilState.value());
+        }
+        else
+        {
+            HUSKY_ASSERT(mtlPipelineState->GetCreateInfo().depthStencil.depthTestEnable == false);
+        }
+        // TODO stencil reference
         commandEncoder.SetCullMode(ToMetalCullMode(ci.rasterization.cullMode));
         commandEncoder.SetFrontFacingWinding(ToMetalWinding(ci.rasterization.frontFace));
 
@@ -134,7 +146,10 @@ namespace Husky::Metal
 
         HUSKY_ASSERT(mtlDescriptorSetLayout->createInfo.type == DescriptorSetType::Texture);
         auto textures = mtlDescriptorSet->textures.data();
-        auto range = ns::Range { start, (uint32)mtlDescriptorSet->textures.size() };
+        auto length = (uint32)mtlDescriptorSet->textures.size();
+
+        HUSKY_ASSERT(length != 0);
+        auto range = ns::Range { start, length };
 
         switch(stage)
         {
@@ -171,7 +186,10 @@ namespace Husky::Metal
         HUSKY_ASSERT(mtlDescriptorSetLayout->createInfo.type == DescriptorSetType::Buffer);
         auto buffers = mtlDescriptorSet->buffers.data();
         auto bufferOffsets = (uint32*)mtlDescriptorSet->bufferOffsets.data();
-        auto range = ns::Range { start, (uint32)mtlDescriptorSet->buffers.size() };
+        auto length = (uint32)mtlDescriptorSet->buffers.size();
+
+        HUSKY_ASSERT(length != 0);
+        auto range = ns::Range { start, length };
 
         switch(stage)
         {
@@ -207,7 +225,10 @@ namespace Husky::Metal
 
         HUSKY_ASSERT(mtlDescriptorSetLayout->createInfo.type == DescriptorSetType::Sampler);
         auto samplers = mtlDescriptorSet->samplers.data();
-        auto range = ns::Range { start, (uint32)mtlDescriptorSet->samplers.size() };
+        auto length = (uint32)mtlDescriptorSet->samplers.size();
+
+        HUSKY_ASSERT(length != 0);
+        auto range = ns::Range { start, length };
 
         switch(stage)
         {

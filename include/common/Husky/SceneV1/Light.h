@@ -44,15 +44,19 @@ namespace Husky::SceneV1
 
         int32 GetIndex() const { return index; }
         void SetIndex(int32 aIndex) { index = aIndex; }
+
+        bool IsShadowEnabled() const { return shadowEnabled; }
+        void SetShadowEnabled(bool aShadowEnabled) { shadowEnabled = aShadowEnabled; }
     private:
         LightType type;
-        Optional<Vec3> color = Vec3{ 1.0, 1.0, 1.0 };
+        Optional<Vec3> color;
         Optional<Vec3> direction;
-        Optional<float32> spotlightAngle = 0;
-        Optional<float32> range = 0;
-        bool enabled = false;
+        Optional<float32> spotlightAngle;
+        Optional<float32> range;
+        bool enabled = true;
         float32 intensity = 1.0;
         int32 index = 0;
+        bool shadowEnabled = false;
         String name;
     };
 }

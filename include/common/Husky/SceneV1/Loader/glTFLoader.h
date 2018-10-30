@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Husky/VectorTypes.h>
 #include <Husky/RefPtr.h>
 #include <Husky/SharedPtr.h>
 #include <Husky/glTF2/glTFForwards.h>
@@ -14,6 +15,8 @@ namespace Husky::SceneV1::Loader
     public:
         glTFLoader(const String& rootFolder, SharedPtr<glTF::glTFRoot> glTFRoot);
 
+        bool IsInterleaveEnabled() const { return interleave; }
+        void SetInterleaveEnabled(bool aInterleave) { interleave = aInterleave; }
         RefPtrVector<Scene> LoadScenes();
     private:
         void LoadProperties();
@@ -24,6 +27,7 @@ namespace Husky::SceneV1::Loader
         RefPtr<Camera> MakeCamera(const glTF::Camera& camera);
         RefPtr<PerspectiveCamera> MakePerspectiveCamera(const String& name, const glTF::Perspective& camera);
         RefPtr<OrthographicCamera> MakeOrthographicCamera(const String& name, const glTF::Orthographic& camera);
+        RefPtr<Primitive> MakePrimitiveInterleaved(const glTF::Primitive& primitive);
         RefPtr<Primitive> MakePrimitive(const glTF::Primitive& primitive);
         Optional<IndexBuffer> MakeIndexBuffer(const glTF::Accessor& indices);
         RefPtr<PbrMaterial> MakePbrMaterial(const glTF::Material& material);
@@ -37,6 +41,7 @@ namespace Husky::SceneV1::Loader
         SharedPtr<glTF::glTFRoot> root;
 
         bool loaded = false;
+        bool interleave = true;
         RefPtrVector<Mesh> loadedMeshes;
         RefPtrVector<Camera> loadedCameras;
         RefPtrVector<Buffer> loadedBuffers;

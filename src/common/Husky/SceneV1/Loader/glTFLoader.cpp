@@ -17,17 +17,20 @@
 #include <Husky/SceneV1/VertexBuffer.h>
 #include <Husky/SceneV1/PbrMaterial.h>
 #include <Husky/SceneV1/Sampler.h>
+#include <Husky/Render/Common.h>
+#include <cstring>
+#include <cmath>
 
 namespace Husky::SceneV1::Loader
 {
     Map<glTF::ComponentType, ComponentType> ComponentTypes = 
     {
-        { glTF::ComponentType:: Int8, ComponentType:: Int8 },
-        { glTF::ComponentType:: UInt8, ComponentType:: UInt8 },
-        { glTF::ComponentType:: Int16, ComponentType:: Int16 },
-        { glTF::ComponentType:: UInt16, ComponentType:: UInt16 },
-        { glTF::ComponentType:: UInt, ComponentType:: UInt },
-        { glTF::ComponentType:: Float, ComponentType:: Float },
+        { glTF::ComponentType::Int8, ComponentType::Int8 },
+        { glTF::ComponentType::UInt8, ComponentType::UInt8 },
+        { glTF::ComponentType::Int16, ComponentType::Int16 },
+        { glTF::ComponentType::UInt16, ComponentType::UInt16 },
+        { glTF::ComponentType::UInt, ComponentType::UInt },
+        { glTF::ComponentType::Float, ComponentType::Float },
     };
 
     glTFLoader::glTFLoader(const String& aRootFolder, SharedPtr<glTF::glTFRoot> glTFRoot)
@@ -229,7 +232,14 @@ namespace Husky::SceneV1::Loader
 
         for (const auto& primitive : mesh.primitives)
         {
-            primitives.emplace_back(MakePrimitive(primitive));
+            if(interleave)
+            {
+                primitives.emplace_back(MakePrimitiveInterleaved(primitive));
+            }
+            else
+            {
+                primitives.emplace_back(MakePrimitive(primitive));
+            }
         }
 
         return MakeRef<Mesh>(move(primitives), name);
@@ -250,12 +260,16 @@ namespace Husky::SceneV1::Loader
 
     RefPtr<PerspectiveCamera> glTFLoader::MakePerspectiveCamera(const String& name, const glTF::Perspective& camera)
     {
-        return MakeRef<PerspectiveCamera>(camera.yfov, camera.znear, camera.zfar, camera.aspectRatio, name);
+        auto result = MakeRef<PerspectiveCamera>(camera.yfov, camera.znear, camera.zfar, camera.aspectRatio);
+        result->SetName(name);
+        return result;
     }
 
     RefPtr<OrthographicCamera> glTFLoader::MakeOrthographicCamera(const String& name, const glTF::Orthographic& camera)
     {
-        return MakeRef<OrthographicCamera>(camera.xmag, camera.ymag, camera.zfar, camera.znear, name);
+        auto result = MakeRef<OrthographicCamera>(camera.xmag, camera.ymag, camera.zfar, camera.znear);
+        result->SetName(name);
+        return result;
     }
 
     RefPtr<Primitive> glTFLoader::MakePrimitive(const glTF::Primitive& primitive)
@@ -298,7 +312,7 @@ namespace Husky::SceneV1::Loader
                 }
                 else
                 {
-                    stride = CalculateStride(attribute.componentType, attribute.attributeType);
+                    stride = CalculateStride(attribute.attributeType, attribute.componentType);
                 }
 
                 auto it = vertexBuffersMap.find(*bufferViewIndex);
@@ -336,6 +350,246 @@ namespace Husky::SceneV1::Loader
         {
             indexBuffer = MakeIndexBuffer(root->accessors[*primitive.indices]);
         }
+
+        RefPtr<PbrMaterial> pbrMaterial;
+        if (primitive.material.has_value())
+        {
+            pbrMaterial = loadedMaterials[*primitive.material];
+        }
+
+        return MakeRef<Primitive>(
+            move(attributes),
+            move(vertexBuffers),
+            indexBuffer,
+            pbrMaterial,
+            PrimitiveTopology::TriangleList);
+    }
+
+    RefPtr<Primitive> glTFLoader::MakePrimitiveInterleaved(const glTF::Primitive& primitive)
+    {
+        HUSKY_ASSERT(primitive.mode == glTF::PrimitiveMode::Triangles);
+
+        Vector<PrimitiveAttribute> attributes;
+        auto& positionAttribute = attributes.emplace_back();
+        positionAttribute.semantic = AttributeSemantic::Position;
+        positionAttribute.componentType = ComponentType::Float;
+        positionAttribute.attributeType = AttributeType::Vec4;
+        positionAttribute.format = Format::R32G32B32A32Sfloat;
+        positionAttribute.offset = offsetof(Render::Vertex, position);
+        positionAttribute.vertexBufferIndex = 0;
+
+        auto& normalAttribute = attributes.emplace_back();
+        normalAttribute.semantic = AttributeSemantic::Normal;
+        normalAttribute.componentType = ComponentType::Float;
+        normalAttribute.attributeType = AttributeType::Vec4;
+        normalAttribute.format = Format::R32G32B32A32Sfloat;
+        normalAttribute.offset = offsetof(Render::Vertex, normal);
+        normalAttribute.vertexBufferIndex = 0;
+
+        auto& tangentAttribute = attributes.emplace_back();
+        tangentAttribute.semantic = AttributeSemantic::Tangent;
+        tangentAttribute.componentType = ComponentType::Float;
+        tangentAttribute.attributeType = AttributeType::Vec4;
+        tangentAttribute.format = Format::R32G32B32A32Sfloat;
+        tangentAttribute.offset = offsetof(Render::Vertex, tangent);
+        tangentAttribute.vertexBufferIndex = 0;
+
+        auto& texcoordAttribute = attributes.emplace_back();
+        texcoordAttribute.semantic = AttributeSemantic::Texcoord_0;
+        texcoordAttribute.componentType = ComponentType::Float;
+        texcoordAttribute.attributeType = AttributeType::Vec2;
+        texcoordAttribute.format = Format::R32G32Sfloat;
+        texcoordAttribute.offset = offsetof(Render::Vertex, texcoord);
+        texcoordAttribute.vertexBufferIndex = 0;
+
+        UnorderedMap<AttributeSemantic, glTF::Attribute> glTFAttributes;
+        Optional<int32> vertexCount;
+        for (const auto& glTFAttribute : primitive.attributes)
+        {
+            auto semantic = (AttributeSemantic)glTFAttribute.semantic;
+            const auto& accessor = root->accessors[glTFAttribute.accessor];
+            if(vertexCount.has_value())
+            {
+                HUSKY_ASSERT(accessor.count == *vertexCount);
+            }
+            else
+            {
+                vertexCount = accessor.count;
+            }
+            glTFAttributes[semantic] = glTFAttribute;
+        }
+
+        HUSKY_ASSERT(glTFAttributes.count(AttributeSemantic::Position) == 1);
+        HUSKY_ASSERT(glTFAttributes.count(AttributeSemantic::Normal) == 1);
+        HUSKY_ASSERT(glTFAttributes.count(AttributeSemantic::Texcoord_0) == 1);
+
+        Vector<Byte> vertexBytes;
+        vertexBytes.resize(*vertexCount * sizeof(Render::Vertex));
+
+        Optional<IndexBuffer> indexBuffer;
+
+        Vector<Vec3> positions;
+        positions.resize(*vertexCount);
+
+        Vector<Vec3> normals;
+        normals.resize(*vertexCount);
+
+        Vector<Vec4> tangents;
+        tangents.resize(*vertexCount);
+
+        Vector<Vec2> texcoords;
+        texcoords.resize(*vertexCount);
+
+        Vector<uint32> indices;
+        if (primitive.indices.has_value())
+        {
+            indexBuffer = MakeIndexBuffer(root->accessors[*primitive.indices]);
+            indexBuffer->backingBuffer->ReadToHost();
+
+            indices.resize(indexBuffer->count);
+            const Byte* indexBytes = indexBuffer->backingBuffer->GetHostBuffer().data() + indexBuffer->byteOffset;
+            for(int32 i = 0; i < indexBuffer->count; i++)
+            {
+                if(indexBuffer->indexType == Graphics::IndexType::UInt16)
+                {
+                    const uint16* index = reinterpret_cast<const uint16*>(indexBytes) + i;
+                    indices.push_back(*index);
+                }
+                else if(indexBuffer->indexType == Graphics::IndexType::UInt32)
+                {
+                    const uint32* index = reinterpret_cast<const uint32*>(indexBytes) + i;
+                    indices.push_back(*index);
+                }
+                else
+                {
+                    HUSKY_ASSERT(false);
+                }
+            }
+        }
+        else
+        {
+            indices.resize(*vertexCount);
+            for(int32 i = 0; i < *vertexCount; i++)
+            {
+                indices[i] = i;
+            }
+        }
+
+        for(const auto& kv : glTFAttributes)
+        {
+            AttributeSemantic semantic = kv.first;
+            const auto& glTFAttribute = kv.second;
+
+            const auto& accessor = root->accessors[glTFAttribute.accessor];
+            HUSKY_ASSERT(accessor.bufferView.has_value());
+            const auto& bufferView = root->bufferViews[*accessor.bufferView];
+            const auto& buffer = loadedBuffers[bufferView.buffer];
+
+            buffer->ReadToHost();
+
+            const auto& bufferBytes = buffer->GetHostBuffer();
+
+            const Byte* attributeBytesStart = bufferBytes.data() + bufferView.byteOffset;
+            for(int32 i = 0; i < *vertexCount; i++)
+            {
+                auto attributeType = (AttributeType)accessor.type;
+                auto componentType = ComponentTypes.at(accessor.componentType);
+                int32 stride = CalculateStride(attributeType, componentType);
+
+                const Byte* attributeBytes =
+                      attributeBytesStart
+                    + accessor.byteOffset
+                    + i * bufferView.byteStride.value_or(stride);
+
+                switch(semantic)
+                {
+                case AttributeSemantic::Position:
+                {
+                    HUSKY_ASSERT(attributeType == AttributeType::Vec3);
+                    HUSKY_ASSERT(componentType == ComponentType::Float);
+                    std::memcpy(&positions[i], attributeBytes, sizeof(Vec3));
+                    break;
+                }
+                case AttributeSemantic::Normal:
+                {
+                    HUSKY_ASSERT(attributeType == AttributeType::Vec3);
+                    HUSKY_ASSERT(componentType == ComponentType::Float);
+                    std::memcpy(&normals[i], attributeBytes, sizeof(Vec3));
+                    break;
+                }
+                case AttributeSemantic::Tangent:
+                {
+                    HUSKY_ASSERT(attributeType == AttributeType::Vec4);
+                    HUSKY_ASSERT(componentType == ComponentType::Float);
+                    std::memcpy(&tangents[i], attributeBytes, sizeof(Vec4));
+                    break;
+                }
+                case AttributeSemantic::Texcoord_0:
+                {
+                    HUSKY_ASSERT(attributeType == AttributeType::Vec2);
+
+                    if(accessor.componentType == glTF::ComponentType::Float)
+                    {
+                        std::memcpy(&texcoords[i], attributeBytes, sizeof(Vec2));
+                    }
+                    else if(accessor.componentType == glTF::ComponentType::UInt8)
+                    {
+                        Array<uint8, 2> uv;
+                        std::memcpy(&uv, attributeBytes, sizeof(uint8) * 2);
+                        texcoords[i].x = (float32)uv[0] / Limits<uint8>::max();
+                        texcoords[i].y = (float32)uv[1] / Limits<uint8>::max();
+                    }
+                    else if(accessor.componentType == glTF::ComponentType::UInt16)
+                    {
+                        Array<uint16, 2> uv;
+                        std::memcpy(&uv, attributeBytes, sizeof(uint16) * 2);
+                        texcoords[i].x = (float32)uv[0] / Limits<uint16>::max();
+                        texcoords[i].y = (float32)uv[1] / Limits<uint16>::max();
+                    }
+                    else
+                    {
+                        HUSKY_ASSERT_MSG(false, "Invalid texcoord component type");
+                    }
+                    break;
+                }
+                default:
+                    HUSKY_ASSERT_MSG(false, "Unknown semantic for interleaved");
+                }
+            }
+        }
+
+        bool hasTangent = glTFAttributes.count(AttributeSemantic::Tangent) == 1;
+        if(!hasTangent)
+        {
+            GenerateTangents(
+                primitive.mode,
+                indices.size(),
+                indices.data(),
+                positions.data(),
+                normals.data(),
+                texcoords.data(),
+                tangents.data());
+        }
+
+        for(int32 i = 0; i < *vertexCount; i++)
+        {
+            Render::Vertex vertex;
+            vertex.position = positions[i];
+            vertex.normal = normals[i];
+            vertex.tangent = tangents[i];
+            vertex.texcoord = texcoords[i];
+            std::memcpy(vertexBytes.data() + i * sizeof(Render::Vertex), &vertex, sizeof(Render::Vertex));
+        }
+
+        RefPtr<Buffer> buffer = MakeRef<Buffer>();
+        buffer->SetHostBuffer(std::move(vertexBytes));
+
+        Vector<VertexBuffer> vertexBuffers;
+        auto& vertexBuffer = vertexBuffers.emplace_back();
+        vertexBuffer.backingBuffer = buffer;
+        vertexBuffer.stride = sizeof(Render::Vertex);
+        vertexBuffer.byteOffset = 0;
+        vertexBuffer.byteLength = vertexBytes.size();
 
         RefPtr<PbrMaterial> pbrMaterial;
         if (primitive.material.has_value())

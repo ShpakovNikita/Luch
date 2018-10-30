@@ -85,34 +85,40 @@ namespace Husky::Metal
 
     //        auto mtlResolveDepthStencilBuffer = static_cast<MetalTexture*>(createInfo.depthStencilAttachment->resolve.texture);
 
-            d.GetDepthAttachment().SetTexture(mtlDepthStencilBuffer->GetNativeTexture());
-            d.GetDepthAttachment().SetLevel(createInfo.depthStencilAttachment->output.mipmapLevel);
-            d.GetDepthAttachment().SetSlice(createInfo.depthStencilAttachment->output.slice);
-            d.GetDepthAttachment().SetDepthPlane(createInfo.depthStencilAttachment->output.depthPlane);
+            if(createInfo.depthStencilAttachment->format != Format::S8Uint)
+            {
+                d.GetDepthAttachment().SetTexture(mtlDepthStencilBuffer->GetNativeTexture());
+                d.GetDepthAttachment().SetLevel(createInfo.depthStencilAttachment->output.mipmapLevel);
+                d.GetDepthAttachment().SetSlice(createInfo.depthStencilAttachment->output.slice);
+                d.GetDepthAttachment().SetDepthPlane(createInfo.depthStencilAttachment->output.depthPlane);
 
-    //        if(mtlResolveDepthStencilBuffer != nullptr)
-    //        {
-    //            d.GetDepthAttachment().SetResolveTexture(mtlResolveDepthStencilBuffer->GetNativeTexture());
-    //        }
-    //        d.GetDepthAttachment().SetResolveLevel(createInfo.depthStencilAttachment->resolve.mipmapLevel);
-    //        d.GetDepthAttachment().SetResolveSlice(createInfo.depthStencilAttachment->resolve.slice);
-    //        d.GetDepthAttachment().SetResolveDepthPlane(createInfo.depthStencilAttachment->resolve.depthPlane);
-    //
-            d.GetDepthAttachment().SetClearDepth(createInfo.depthStencilAttachment->depthClearValue);
-            d.GetDepthAttachment().SetLoadAction(ToMetalLoadAction(createInfo.depthStencilAttachment->depthLoadOperation));
-            d.GetDepthAttachment().SetStoreAction(ToMetalStoreAction(createInfo.depthStencilAttachment->depthStoreOperation));
+        //        if(mtlResolveDepthStencilBuffer != nullptr)
+        //        {
+        //            d.GetDepthAttachment().SetResolveTexture(mtlResolveDepthStencilBuffer->GetNativeTexture());
+        //        }
+        //        d.GetDepthAttachment().SetResolveLevel(createInfo.depthStencilAttachment->resolve.mipmapLevel);
+        //        d.GetDepthAttachment().SetResolveSlice(createInfo.depthStencilAttachment->resolve.slice);
+        //        d.GetDepthAttachment().SetResolveDepthPlane(createInfo.depthStencilAttachment->resolve.depthPlane);
+        //
+                d.GetDepthAttachment().SetClearDepth(createInfo.depthStencilAttachment->depthClearValue);
+                d.GetDepthAttachment().SetLoadAction(ToMetalLoadAction(createInfo.depthStencilAttachment->depthLoadOperation));
+                d.GetDepthAttachment().SetStoreAction(ToMetalStoreAction(createInfo.depthStencilAttachment->depthStoreOperation));
+            }
 
-            d.GetStencilAttachment().SetTexture(mtlDepthStencilBuffer->GetNativeTexture());
-            d.GetStencilAttachment().SetLevel(createInfo.depthStencilAttachment->output.mipmapLevel);
-            d.GetStencilAttachment().SetSlice(createInfo.depthStencilAttachment->output.slice);
-            d.GetStencilAttachment().SetDepthPlane(createInfo.depthStencilAttachment->output.depthPlane);
-    //        d.GetStencilAttachment().SetResolveTexture(mtlResolveDepthStencilBuffer->GetNativeTexture());
-    //        d.GetStencilAttachment().SetResolveLevel(createInfo.depthStencilAttachment->resolve.mipmapLevel);
-    //        d.GetStencilAttachment().SetResolveSlice(createInfo.depthStencilAttachment->resolve.slice);
-    //        d.GetStencilAttachment().SetResolveDepthPlane(createInfo.depthStencilAttachment->resolve.depthPlane);
-            d.GetStencilAttachment().SetClearStencil(createInfo.depthStencilAttachment->stencilClearValue);
-            d.GetStencilAttachment().SetLoadAction(ToMetalLoadAction(createInfo.depthStencilAttachment->stencilLoadOperation));
-            d.GetStencilAttachment().SetStoreAction(ToMetalStoreAction(createInfo.depthStencilAttachment->stencilStoreOperation));
+            if(createInfo.depthStencilAttachment->format != Format::D16Unorm && createInfo.depthStencilAttachment->format != Format::D32Sfloat)
+            {
+                d.GetStencilAttachment().SetTexture(mtlDepthStencilBuffer->GetNativeTexture());
+                d.GetStencilAttachment().SetLevel(createInfo.depthStencilAttachment->output.mipmapLevel);
+                d.GetStencilAttachment().SetSlice(createInfo.depthStencilAttachment->output.slice);
+                d.GetStencilAttachment().SetDepthPlane(createInfo.depthStencilAttachment->output.depthPlane);
+        //        d.GetStencilAttachment().SetResolveTexture(mtlResolveDepthStencilBuffer->GetNativeTexture());
+        //        d.GetStencilAttachment().SetResolveLevel(createInfo.depthStencilAttachment->resolve.mipmapLevel);
+        //        d.GetStencilAttachment().SetResolveSlice(createInfo.depthStencilAttachment->resolve.slice);
+        //        d.GetStencilAttachment().SetResolveDepthPlane(createInfo.depthStencilAttachment->resolve.depthPlane);
+                d.GetStencilAttachment().SetClearStencil(createInfo.depthStencilAttachment->stencilClearValue);
+                d.GetStencilAttachment().SetLoadAction(ToMetalLoadAction(createInfo.depthStencilAttachment->stencilLoadOperation));
+                d.GetStencilAttachment().SetStoreAction(ToMetalStoreAction(createInfo.depthStencilAttachment->stencilStoreOperation));
+            }
         }
 
         return d;

@@ -13,9 +13,9 @@ namespace Husky::Graphics
 
         virtual DescriptorSetLayout* GetDescriptorSetLayout() = 0;
 
-        virtual void WriteTexture(DescriptorSetBinding* binding, Texture* texture) = 0;
-        virtual void WriteUniformBuffer(DescriptorSetBinding* binding, Buffer* buffer) = 0;
-        virtual void WriteSampler(DescriptorSetBinding* binding, Sampler* sampler) = 0;
+        virtual void WriteTexture(const DescriptorSetBinding& binding, Texture* texture) = 0;
+        virtual void WriteUniformBuffer(const DescriptorSetBinding& binding, Buffer* buffer, int32 offset) = 0;
+        virtual void WriteSampler(const DescriptorSetBinding& binding, Sampler* sampler) = 0;
         virtual void Update() = 0;
     };
 

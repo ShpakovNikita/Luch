@@ -57,20 +57,44 @@ namespace Husky::SceneV1
         inline bool HasOcclusionTexture() const { return occlusionTexture.texture != nullptr; }
         inline bool HasEmissiveTexture() const { return emissiveTexture.texture != nullptr; }
 
-        inline const RefPtr<Graphics::DescriptorSet>& GetTextureDescriptorSet() { return textureDescriptorSet; }
-        inline const RefPtr<Graphics::DescriptorSet>& GetBufferDescriptorSet() { return bufferDescriptorSet; }
-        inline const RefPtr<Graphics::DescriptorSet>& GetSamplerDescriptorSet() { return samplerDescriptorSet; }
+        inline const RefPtr<Graphics::DescriptorSet>& GetTextureDescriptorSet(const String& key)
+        {
+            return textureDescriptorSets.at(key);
+        }
 
-        inline void SetTextureDescriptorSet(const RefPtr<Graphics::DescriptorSet>& aTextureDescriptorSet) { textureDescriptorSet = aTextureDescriptorSet; }
-        inline void SetBufferDescriptorSet(const RefPtr<Graphics::DescriptorSet>& aBufferDescriptorSet) { bufferDescriptorSet = aBufferDescriptorSet; }
-        inline void SetSamplerDescriptorSet(const RefPtr<Graphics::DescriptorSet>& aSamplerDescriptorSet) { samplerDescriptorSet = aSamplerDescriptorSet; }
+        inline const RefPtr<Graphics::DescriptorSet>& GetBufferDescriptorSet(const String& key)
+        {
+            return bufferDescriptorSets.at(key);
+        }
 
-        inline const RefPtr<Graphics::Buffer>& GetDeviceBuffer() { return uniformBuffer; }
-        inline void SetDeviceBuffer(const RefPtr<Graphics::Buffer>& aUniformBuffer) { uniformBuffer = aUniformBuffer; }
+        inline const RefPtr<Graphics::DescriptorSet>& GetSamplerDescriptorSet(const String& key)
+        {
+            return samplerDescriptorSets.at(key);
+        }
+
+        inline void SetTextureDescriptorSet(
+            const String& key,
+            const RefPtr<Graphics::DescriptorSet>& textureDescriptorSet)
+        {
+            textureDescriptorSets[key] = textureDescriptorSet;
+        }
+
+        inline void SetBufferDescriptorSet(
+            const String& key,
+            const RefPtr<Graphics::DescriptorSet>& bufferDescriptorSet)
+        {
+            bufferDescriptorSets[key] = bufferDescriptorSet;
+        }
+
+        inline void SetSamplerDescriptorSet(
+            const String& key,
+            const RefPtr<Graphics::DescriptorSet>& samplerDescriptorSet)
+        {
+            samplerDescriptorSets[key] = samplerDescriptorSet;
+        }
     private:
-        RefPtr<Graphics::DescriptorSet> textureDescriptorSet;
-        RefPtr<Graphics::DescriptorSet> bufferDescriptorSet;
-        RefPtr<Graphics::DescriptorSet> samplerDescriptorSet;
-        RefPtr<Graphics::Buffer> uniformBuffer;
+        UnorderedMap<String, RefPtr<Graphics::DescriptorSet>> textureDescriptorSets;
+        UnorderedMap<String, RefPtr<Graphics::DescriptorSet>> bufferDescriptorSets;
+        UnorderedMap<String, RefPtr<Graphics::DescriptorSet>> samplerDescriptorSets;
     };
 }

@@ -11,20 +11,26 @@ namespace Husky::SceneV1
     class Buffer : public BaseObject
     {
     public:
+        Buffer() = default;
         Buffer(const BufferSource& source);
         ~Buffer() override;
 
-        inline Vector<uint8> GetHostBuffer() { return hostBuffer; }
+        inline Vector<Byte> GetHostBuffer() { return hostBuffer; }
         inline RefPtr<Graphics::Buffer> GetDeviceBuffer() { return deviceBuffer; }
 
+        void SetHostBuffer(Vector<Byte> buffer);
         void ReadToHost();
         void ReleaseHostBuffer();
 
         bool UploadToDevice(Graphics::GraphicsDevice* device);
         void ReleaseDeviceBuffer();
+
+        bool IsResidentOnHost() const;
+        bool IsResidentOnDevice() const;
     private:
-        BufferSource source;
-        Vector<uint8> hostBuffer;
+        Optional<BufferSource> source;
+        Vector<Byte> hostBuffer;
         RefPtr<Graphics::Buffer> deviceBuffer;
+        bool residentOnHost = false;
     };
 }

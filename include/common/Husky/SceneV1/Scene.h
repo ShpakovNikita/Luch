@@ -26,14 +26,10 @@ namespace Husky::SceneV1
         inline const SceneProperties& GetSceneProperties() const { return sceneProperties; }
         inline const RefPtrVector<Node>& GetNodes() const { return nodes; }
 
-        inline const RefPtr<Light>& GetAmbientLight() const { return ambientLight; }
-        inline void SetAmbientLight(const RefPtr<Light>& aAmbientLight) { ambientLight = aAmbientLight; }
-
         void AddNode(const RefPtr<Node>& node);
     private:
         String name;
         RefPtrVector<Node> nodes;
-        RefPtr<Light> ambientLight;
         SceneProperties sceneProperties;
     };
 }

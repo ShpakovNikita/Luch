@@ -14,24 +14,40 @@ namespace Husky::SceneV1
 
     Buffer::~Buffer() = default;
 
+    void Buffer::SetHostBuffer(Vector<Byte> buffer)
+    {
+        hostBuffer = std::move(buffer);
+        residentOnHost = true;
+    }
+
     void Buffer::ReadToHost()
     {
-        UniquePtr<FileStream> stream = MakeUnique<FileStream>(source.root + "/" + source.filename, FileOpenModes::Read);
-        hostBuffer.resize(source.byteLength);
+        if(residentOnHost)
+        {
+            return;
+        }
 
-        stream->Read(hostBuffer.data(), source.byteLength, 1);
+        HUSKY_ASSERT(source.has_value());
+
+        UniquePtr<FileStream> stream = MakeUnique<FileStream>(source->root + "/" + source->filename, FileOpenModes::Read);
+        hostBuffer.resize(source->byteLength);
+
+        stream->Read(hostBuffer.data(), source->byteLength, 1);
+
+        residentOnHost = true;
     }
 
     void Buffer::ReleaseHostBuffer()
     {
         hostBuffer.clear();
         hostBuffer.shrink_to_fit();
+        residentOnHost = false;
     }
 
     bool Buffer::UploadToDevice(Graphics::GraphicsDevice* device)
     {
         Graphics::BufferCreateInfo ci;
-        ci.length = source.byteLength;
+        ci.length = hostBuffer.size();
         ci.usage = Graphics::BufferUsageFlags::VertexBuffer | Graphics::BufferUsageFlags::IndexBuffer;
         ci.storageMode = Graphics::ResourceStorageMode::Shared;
 
@@ -47,5 +63,15 @@ namespace Husky::SceneV1
         deviceBuffer = createdBuffer;
 
         return true;
+    }
+
+    bool Buffer::IsResidentOnHost() const
+    {
+        return residentOnHost;
+    }
+
+    bool Buffer::IsResidentOnDevice() const
+    {
+        return deviceBuffer != nullptr;
     }
 }

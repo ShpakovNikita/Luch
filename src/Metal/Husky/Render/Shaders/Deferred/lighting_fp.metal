@@ -22,8 +22,6 @@ struct Light
 {
     float4 positionWS;
     float4 directionWS;
-    float4 positionVS;
-    float4 directionVS;
     float4 color;
     int state;
     int type;
@@ -111,12 +109,20 @@ float Attenuation(Light light, float d)
     return 1.0f - smoothstep(light.range * 0.75f, light.range, d);
 }
 
-LightingResult ApplyDirectionalLight(Light light, float3 V, float3 N, float3 F0, float metallic, float roughness)
+LightingResult ApplyDirectionalLight(
+    CameraUniform camera,
+    Light light,
+    float3 V,
+    float3 N,
+    float3 F0,
+    float metallic,
+    float roughness)
 {
     LightingResult result;
 
     float3 color = light.color.xyz;
-    float3 L = light.directionVS.xyz;
+    float3 directionVS = (camera.view * light.directionWS).xyz;
+    float3 L = directionVS.xyz;
     float NdotV = saturate(dot(N, V));
 
     float3 F = F_Schlick(NdotV, F0);
@@ -128,7 +134,16 @@ LightingResult ApplyDirectionalLight(Light light, float3 V, float3 N, float3 F0,
     return result;
 }
 
-LightingResult ApplyPointlLightImpl(Light light, float3 L, float dist, float3 V, float3 P, float3 N, float3 F0, float metallic, float roughness)
+LightingResult ApplyPointlLightImpl(
+    Light light,
+    float3 L,
+    float dist,
+    float3 V,
+    float3 P,
+    float3 N,
+    float3 F0,
+    float metallic,
+    float roughness)
 {
     LightingResult result;
 
@@ -146,33 +161,52 @@ LightingResult ApplyPointlLightImpl(Light light, float3 L, float dist, float3 V,
     return result;
 }
 
-LightingResult ApplyPointlLight(Light light, float3 V, float3 P, float3 N, float3 F0, float metallic, float roughness)
+LightingResult ApplyPointlLight(
+    CameraUniform camera,
+    Light light,
+    float3 V,
+    float3 P,
+    float3 N,
+    float3 F0,
+    float metallic,
+    float roughness)
 {
-    float3 L = light.positionVS.xyz - P;
+    float3 positionVS = (camera.view * light.positionWS).xyz;
+    float3 L = positionVS.xyz - P;
     float dist = length(L);
     L = L/dist;
 
     return ApplyPointlLightImpl(light, L, dist, V, P, N, F0, metallic, roughness);
 }
 
-float SpotCone(Light light, float3 L)
+float SpotCone(float spotlightAngle, float3 directionVS, float3 L)
 {
-    float minCos = cos(light.spotlightAngle);
+    float minCos = cos(spotlightAngle);
     float maxCos = mix(minCos, 1, 0.5f);
-    float cosAngle = dot(light.directionVS.xyz, -L);
+    float cosAngle = dot(directionVS, -L);
     return smoothstep(minCos, maxCos, cosAngle);
 }
 
-LightingResult ApplySpotLight(Light light, float3 V, float3 P, float3 N, float3 F0, float metallic, float roughness)
+LightingResult ApplySpotLight(
+    CameraUniform camera,
+    Light light,
+    float3 V,
+    float3 P,
+    float3 N,
+    float3 F0,
+    float metallic,
+    float roughness)
 {
     LightingResult result;
 
-    float3 L = light.positionVS.xyz - P;
+    float3 positionVS = (camera.view * light.positionWS).xyz;
+    float3 directionVS = (camera.view * light.directionWS).xyz;
+    float3 L = positionVS - P;
     float dist = length(L);
     L = L/dist;
 
     LightingResult pointLighting = ApplyPointlLightImpl(light, L, dist, V, P, N, F0, metallic, roughness);
-    float spotIntensity = SpotCone(light, L);
+    float spotIntensity = SpotCone(light.spotlightAngle, directionVS, L);
 
     result.diffuse = pointLighting.diffuse * spotIntensity;
     result.specular = pointLighting.specular * spotIntensity;
@@ -298,13 +332,13 @@ fragment float4 fp_main(
         switch(light.type)
         {
         case LIGHT_DIRECTIONAL:
-            intermediateResult = ApplyDirectionalLight(light, V, N, F0, metallic, roughness);
+            intermediateResult = ApplyDirectionalLight(camera, light, V, N, F0, metallic, roughness);
             break;
         case LIGHT_POINT:
-            intermediateResult = ApplyPointlLight(light, V, P, N, F0, metallic, roughness);
+            intermediateResult = ApplyPointlLight(camera, light, V, P, N, F0, metallic, roughness);
             break;
         case LIGHT_SPOT:
-            intermediateResult = ApplySpotLight(light, V, P, N, F0, metallic, roughness);
+            intermediateResult = ApplySpotLight(camera, light, V, P, N, F0, metallic, roughness);
             break;
         default:
             intermediateResult = { NAN, NAN };

@@ -198,6 +198,9 @@ namespace Husky
     template<typename T>
     using RefPtrVector = Vector<RefPtr<T>>;
 
+    template<typename T, int32 N>
+    using RefPtrArray = Array<RefPtr<T>, N>;
+
     //template<typename T>
     //using RefPtrVectorSet = VectorSet<RefPtr<T>>;
 

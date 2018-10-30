@@ -218,7 +218,6 @@ if(USE_METAL)
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/mtlpp/mtlpp.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/mtlpp/mtlpp.mm)
 
-
     target_link_libraries(mtlpp "-framework Foundation")
     target_link_libraries(mtlpp "-framework CoreVideo")
     target_link_libraries(mtlpp "-framework QuartzCore")
@@ -243,17 +242,17 @@ if(USE_METAL)
         ${ENGINE_METAL_HEADER_FILES})
 
     # Add metal shaders to Xcode project for easy editing
-    file(GLOB_RECURSE MACOS_METAL_SHADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Metal/*.metal)
+    # file(GLOB_RECURSE MACOS_METAL_SHADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Metal/*.metal)
 
-    set_source_files_properties(
-        ${MACOS_METAL_SHADER_FILES}
-        PROPERTIES
-        HEADER_FILE_ONLY TRUE)
+    # set_source_files_properties(
+    #     ${MACOS_METAL_SHADER_FILES}
+    #     PROPERTIES
+    #     HEADER_FILE_ONLY TRUE)
 
-    source_group(
-        "Shaders" FILES ${MACOS_METAL_SHADER_FILES})
+    # source_group(
+    #     "Shaders" FILES ${MACOS_METAL_SHADER_FILES})
 
-    target_sources(HuskyEngine PUBLIC ${MACOS_METAL_SHADER_FILES})
+    # target_sources(HuskyEngine PUBLIC ${MACOS_METAL_SHADER_FILES})
 endif()
 
 # TODO Add vulkan implementation

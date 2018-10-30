@@ -64,18 +64,18 @@ namespace Husky::Graphics
         StencilOperation stencilFailOperation = StencilOperation::Keep;
         StencilOperation depthStencilPassOperation = StencilOperation::Keep;
         CompareFunction compareFunction = CompareFunction::Never;
-        uint32 compareMask = 0;
-        uint32 writeMask = 0;
+        uint32 readMask = 0xfffffff;
+        uint32 writeMask = 0xffffffff;
         uint32 reference = 0;
     };
 
     struct PipelineDepthStencilStateCreateInfo
     {
         bool depthTestEnable = false;
+        bool stencilTestEnable = false;
         bool depthWriteEnable = false;
         CompareFunction depthCompareFunction = CompareFunction::Always;
         bool depthBoundsTestEnable = false;
-        bool stencilTestEnable = false;
         Format depthStencilFormat = Format::D32SfloatS8Uint;
         PipelineStencilStateCreateInfo front;
         PipelineStencilStateCreateInfo back;
@@ -110,6 +110,8 @@ namespace Husky::Graphics
         PipelineDepthStencilStateCreateInfo depthStencil;
         PipelineColorAttachmentsStateCreateInfo colorAttachments;
         PipelineLayout* pipelineLayout = nullptr;
-        RenderPass* renderPass = nullptr;
+        // TODO
+        //RenderPass* renderPass = nullptr;
+        String name = "";
     };
 }

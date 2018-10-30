@@ -61,8 +61,15 @@ namespace Husky::Metal
         auto mtlVertexProgram = static_cast<MetalShaderProgram*>(ci.vertexProgram);
         auto mtlFragmentProgram = static_cast<MetalShaderProgram*>(ci.fragmentProgram);
         d.SetVertexDescriptor(ToMetalVertexDescriptor(ci.inputAssembler));
+
+        HUSKY_ASSERT(mtlVertexProgram != nullptr);
         d.SetVertexFunction(mtlVertexProgram->GetMetalFunction());
-        d.SetFragmentFunction(mtlFragmentProgram->GetMetalFunction());
+
+        if(mtlFragmentProgram != nullptr)
+        {
+            d.SetFragmentFunction(mtlFragmentProgram->GetMetalFunction());
+        }
+        
         d.SetInputPrimitiveTopology(ToMetalPrimitiveTopologyClass(ci.inputAssembler.primitiveTopology));
         // TODO multisampling
         d.SetRasterizationEnabled(!ci.rasterization.rasterizerDiscardEnable);
@@ -81,8 +88,21 @@ namespace Husky::Metal
             d.GetColorAttachments()[i].SetWriteMask(ToMetalColorWriteMask(colorAttachment.colorWriteMask));
         }
 
-        d.SetDepthAttachmentPixelFormat(ToMetalPixelFormat(ci.depthStencil.depthStencilFormat));
-        d.SetStencilAttachmentPixelFormat(ToMetalPixelFormat(ci.depthStencil.depthStencilFormat));
+        if(ci.depthStencil.depthTestEnable || ci.depthStencil.stencilTestEnable)
+        {
+            auto format = ci.depthStencil.depthStencilFormat;
+
+            // TODO functions to check if format is depth or stencil only
+            if(format != Format::S8Uint)
+            {
+                d.SetDepthAttachmentPixelFormat(ToMetalPixelFormat(ci.depthStencil.depthStencilFormat));
+            }
+
+            if(format != Format::D32Sfloat && format != Format::D16Unorm)
+            {
+                d.SetStencilAttachmentPixelFormat(ToMetalPixelFormat(ci.depthStencil.depthStencilFormat));
+            }
+        }
 
         return d;
     }
@@ -107,10 +127,17 @@ namespace Husky::Metal
 
         const auto& ci = createInfo.depthStencil;
 
-        d.SetDepthCompareFunction(ToMetalCompareFunction(ci.depthCompareFunction));
-        d.SetDepthWriteEnabled(ci.depthWriteEnable);
-        //d.SetBackFaceStencil(ToMetalStencilDescriptor(ci.back));
-        //d.SetFrontFaceStencil(ToMetalStencilDescriptor(ci.front));
+        if(ci.depthWriteEnable)
+        {
+            d.SetDepthCompareFunction(ToMetalCompareFunction(ci.depthCompareFunction));
+            d.SetDepthWriteEnabled(ci.depthWriteEnable);
+        }
+
+        if(ci.stencilTestEnable)
+        {
+            d.SetBackFaceStencil(ToMetalStencilDescriptor(ci.back));
+            d.SetFrontFaceStencil(ToMetalStencilDescriptor(ci.front));
+        }
 
         return d;
     }

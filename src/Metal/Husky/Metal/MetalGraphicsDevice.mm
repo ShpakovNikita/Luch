@@ -80,11 +80,17 @@ namespace Husky::Metal
         const PipelineStateCreateInfo& createInfo)
     {
         auto mtlPipelineDescriptor = ToMetalPipelineStateCreateInfo(createInfo);
-        auto mtlDepthStencilDescriptor = ToMetalDepthStencilDescriptor(createInfo);
+
+        Optional<mtlpp::DepthStencilState> mtlDepthStencilState;
+        if(createInfo.depthStencil.depthTestEnable || createInfo.depthStencil.stencilTestEnable)
+        {
+            auto mtlDepthStencilDescriptor = ToMetalDepthStencilDescriptor(createInfo);
+            mtlDepthStencilState = device.NewDepthStencilState(mtlDepthStencilDescriptor);
+        }
+
         ns::Error error;
 
         auto mtlPipelineState = device.NewRenderPipelineState(mtlPipelineDescriptor, &error);
-        auto mtlDepthStencilState = device.NewDepthStencilState(mtlDepthStencilDescriptor);
 
         auto result = PipelineErrorToGraphicsResult(error);
 
@@ -200,7 +206,7 @@ namespace Husky::Metal
         }
         else
         {
-            auto description = error.GetLocalizedDescription().GetCStr();
+            [[maybe_unused]] auto description = error.GetLocalizedDescription().GetCStr();
             HUSKY_ASSERT(false);
             return { result };
         }

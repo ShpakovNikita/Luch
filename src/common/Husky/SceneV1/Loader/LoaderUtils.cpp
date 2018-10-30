@@ -1,4 +1,5 @@
 #include <Husky/SceneV1/Loader/LoaderUtils.h>
+#include <cmath>
 
 namespace Husky::SceneV1::Loader
 {
@@ -72,7 +73,7 @@ namespace Husky::SceneV1::Loader
         return filter;
     }
 
-    int32 CalculateStride(ComponentType componentType, AttributeType attributeType)
+    int32 CalculateStride(AttributeType attributeType, ComponentType componentType)
     {
         int32 componentSize = 0;
         int32 componentCount = 0;
@@ -119,5 +120,72 @@ namespace Husky::SceneV1::Loader
         }
 
         return componentSize * componentCount;
+    }
+
+    void GenerateTangents(
+        glTF::PrimitiveMode mode,
+        int32 indexCount,
+        uint32* indices,
+        Vec3* positions,
+        Vec3* normals,
+        Vec2* texcoords,
+        Vec4* outTangents)
+    {
+        //HUSKY_ASSERT(mode == glTF::PrimitiveMode::Triangles || mode == glTF::PrimitiveMode::TriangleStrip);
+        HUSKY_ASSERT(mode == glTF::PrimitiveMode::Triangles);
+        //int32 verticesCount = mode == glTF::PrimitiveMode::Triangles ? indexCount * 3 : indexCount + 2;
+        int32 verticesCount = indexCount / 3;
+        HUSKY_ASSERT(verticesCount % 3 == 0);
+
+        Vector<Vec3> tangents;
+        tangents.resize(verticesCount);
+        Vector<Vec3> bitangents;
+        bitangents.resize(verticesCount);
+
+        for(int32 i = 0; i < indexCount; i += 3)
+        {
+            Array<uint32, 3> ti = { indices[i], indices[i + 1], indices[i + 2] };
+
+            Vec3 p0 = positions[ti[0]];
+            Vec3 p1 = positions[ti[1]];
+            Vec3 p2 = positions[ti[2]];
+
+            Vec2 uv0 = texcoords[ti[0]];
+            Vec2 uv1 = texcoords[ti[1]];
+            Vec2 uv2 = texcoords[ti[2]];
+
+            Vec3 dp0 = p1 - p0;
+            Vec3 dp1 = p2 - p0;
+
+            Vec2 duv0 = uv1 - uv0;
+            Vec2 duv1 = uv2 - uv0;
+
+            float32 r = 1.0f / (duv0.x * duv1.y - duv0.y * duv1.x);
+
+            Vec3 t = (duv1.y * dp0 - duv0.y * dp1) * r;
+            Vec3 bt = (duv0.x * dp0 - duv1.x * dp1) * r;
+
+            tangents[ti[0]] += t;
+            tangents[ti[1]] += t;
+            tangents[ti[2]] += t;
+
+            bitangents[ti[0]] += bt;
+            bitangents[ti[1]] += bt;
+            bitangents[ti[2]] += bt;
+        }
+
+        for (int32 i = 0; i < verticesCount; i++)
+        {
+            Vec3 n = normals[i];
+            Vec3 t = tangents[i];
+
+            // Gram-Schmidt orthogonalize
+            Vec3 orthoT = glm::normalize((t - n * glm::dot(n, t)));
+
+            auto NxT = glm::cross(n, t);
+            auto dot = glm::dot(NxT, bitangents[i]);
+
+            outTangents[i] = Vec4 { orthoT, std::copysign(1, dot) };
+        }
     }
 }

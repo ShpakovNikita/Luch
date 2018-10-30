@@ -3,11 +3,8 @@
 
 namespace Husky::SceneV1
 {
-    Camera::Camera(
-        CameraType aType,
-        const String &aName)
+    Camera::Camera(CameraType aType)
         : type(aType)
-        , name(aName)
     {
     }
 
@@ -26,13 +23,17 @@ namespace Husky::SceneV1
         return viewMatrix[3];
     }
 
+    PerspectiveCamera::PerspectiveCamera()
+        : Camera(CameraType::Perspective)
+    {
+    }
+
     PerspectiveCamera::PerspectiveCamera(
         float32 aYfov,
         float32 aZnear,
         Optional<float32> aZfar,
-        Optional<float32> aAspectRatio,
-        const String &aName)
-        : Camera(CameraType::Perspective, aName)
+        Optional<float32> aAspectRatio)
+        : Camera(CameraType::Perspective)
         , yfov(aYfov)
         , znear(aZnear)
         , zfar(aZfar)
@@ -88,13 +89,17 @@ namespace Husky::SceneV1
         
     }
 
+    OrthographicCamera::OrthographicCamera()
+        : Camera(CameraType::Orthographic)
+    {
+    }
+
     OrthographicCamera::OrthographicCamera(
         float32 aXmag,
         float32 aYmag,
         float32 aZfar,
-        float32 aZnear,
-        const String& name)
-        : Camera(CameraType::Orthographic, name)
+        float32 aZnear)
+        : Camera(CameraType::Orthographic)
         , xmag(aXmag)
         , ymag(aYmag)
         , zfar(aZfar)

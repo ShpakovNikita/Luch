@@ -25,7 +25,7 @@ namespace Husky::SceneV1
             RefPtrVector<Node> children,
             const RefPtr<Mesh>& mesh,
             const RefPtr<Camera>& camera,
-            const TransformType& transform,
+            const TransformType& localTransform,
             const String& name);
 
         ~Node();
@@ -48,9 +48,11 @@ namespace Husky::SceneV1
         inline const RefPtr<Light>& GetLight() const { return light; }
         void SetLight(const RefPtr<Light>& aLight);
 
-        inline const TransformType& GetTransform() const { return transform; }
-        void SetTransform(const TransformProperties& transform);
-        void SetTransform(const Mat4x4& matrix);
+        inline const TransformType& GetLocalTransform() const { return localTransform; }
+        void SetLocalTransform(const TransformType& aLocalTransform) { localTransform = aLocalTransform; }
+
+        Mat4x4 GetWorldTransform() const { return worldTransform; }
+        void SetWorldTransform(const Mat4x4 aWorldTransform)  { worldTransform = aWorldTransform; }
     private:
         String name;
         Node *parent = nullptr;
@@ -60,6 +62,7 @@ namespace Husky::SceneV1
         RefPtr<Camera> camera;
         RefPtr<Light> light;
 
-        TransformType transform = Mat4x4{1.0};
+        TransformType localTransform = Mat4x4{ 1.0 };
+        Mat4x4 worldTransform = Mat4x4 { 1.0 };
     };
 }

@@ -29,9 +29,16 @@ namespace Husky::Graphics
             return *this;
         }
 
+        RenderPassCreateInfo& WithName(const String& aName)
+        {
+            name = aName;
+            return *this;
+        }
+
         int32 currentColorAttachmentIndex = 0;
         int32 totalColorAttachmentsCount = 0;
         Vector<ColorAttachment*> colorAttachments;
         DepthStencilAttachment* depthStencilAttachment = nullptr;
+        String name = "";
     };
 }

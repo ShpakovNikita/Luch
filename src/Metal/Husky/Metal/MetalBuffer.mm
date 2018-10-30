@@ -21,6 +21,12 @@ namespace Husky::Metal
         return { GraphicsResult::Success, mappedMemory };
     }
 
+    void* MetalBuffer::GetMappedMemory()
+    {
+        HUSKY_ASSERT(mappedMemory != nullptr);
+        return mappedMemory;
+    }
+
     GraphicsResult MetalBuffer::UnmapMemory()
     {
         mappedMemory = nullptr;

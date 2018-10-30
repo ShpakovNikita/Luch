@@ -16,8 +16,11 @@ namespace Husky::Graphics
     public:
         GraphicsCommandList(GraphicsDevice* device) : GraphicsObject(device) {}
 
-        virtual void Begin(const RenderPassCreateInfo& renderPassCreateInfo) = 0;
+        virtual void Begin() = 0;
         virtual void End() = 0;
+
+        virtual void BeginRenderPass(const RenderPassCreateInfo& renderPassCreateInfo) = 0;
+        virtual void EndRenderPass() = 0;
 
         virtual void BindPipelineState(PipelineState* pipelineState) = 0;
 

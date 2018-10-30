@@ -4,7 +4,7 @@
 #include <Husky/glTF2/glTFParser.h>
 #include <Husky/glTF2/glTF.h>
 
-#include <Husky/Render/DeferredRenderer.h>
+#include <Husky/Render/Deferred/DeferredRenderer.h>
 
 #ifdef _WIN32
     #if HUSKY_USE_VULKAN
@@ -88,7 +88,8 @@ private:
 #if WIN32
     VulkanAllocator allocator;
 #endif
-    Husky::Render::DeferredPreparedScene preparedScene;
 
-    Husky::UniquePtr<Husky::Render::DeferredRenderer> deferredRenderer;
+    Husky::UniquePtr<Husky::Render::Deferred::DeferredRenderer> deferredRenderer;
+    Husky::RefPtr<Husky::SceneV1::Scene> scene;
+    Husky::RefPtr<Husky::SceneV1::Camera> camera;
 };

@@ -11,39 +11,52 @@ namespace Husky::Render
 {
     using namespace Husky::Graphics;
 
-#pragma pack(push)
-#pragma pack(1)
-    struct CameraUniformBuffer
+#pragma pack(push, 1)
+    struct QuadVertex
     {
-        Mat4x4 view;
-        Mat4x4 inverseView;
-        Mat4x4 projection;
-        Mat4x4 inverseProjection;
-        Mat4x4 viewProjection;
-        Mat4x4 inverseViewProjection;
-        Vec4 position;
-        Vec2 zMinMax;
+        Vec3 position;
+        Vec2 texCoord;
     };
 
-    static_assert(sizeof(CameraUniformBuffer) % 4 == 0);
-
-    struct MeshUniformBuffer
+    struct Vertex
     {
-        Mat4x4 transform;
-        Mat4x4 inverseTransform;
+        Vec3 position;
+        Vec3 normal;
+        Vec4 tangent;
+        Vec2 texcoord;
     };
 
-    static_assert(sizeof(MeshUniformBuffer) % 4 == 0);
+    struct CameraUniform
+    {
+        Mat4x4 view = Mat4x4 { 1.0f };;
+        Mat4x4 inverseView = Mat4x4 { 1.0f };;
+        Mat4x4 projection = Mat4x4 { 1.0f };;
+        Mat4x4 inverseProjection = Mat4x4 { 1.0f };;
+        Mat4x4 viewProjection = Mat4x4 { 1.0f };;
+        Mat4x4 inverseViewProjection = Mat4x4 { 1.0f };;
+        Vec4 position = Vec4 { 0.0, 0.0, 0.0, 1.0 };
+        Vec2 zMinMax = Vec2 { 0.0, 1.0 };
+    };
+
+    static_assert(sizeof(CameraUniform) % 4 == 0);
+
+    struct MeshUniform
+    {
+        Mat4x4 transform = Mat4x4 { 1.0f };
+        Mat4x4 inverseTransform = Mat4x4 { 1.0f };;
+    };
+
+    static_assert(sizeof(MeshUniform) % 4 == 0);
 
     struct MaterialUniform
     {
-        Vec4 baseColorFactor;
-        Vec3 emissiveFactor;
-        float32 alphaCutoff;
-        float32 metallicFactor;
-        float32 roughnessFactor;
-        float32 normalScale;
-        float32 occlusionStrength;
+        Vec4 baseColorFactor = Vec4 { 1.0 };
+        Vec3 emissiveFactor = Vec3 { 1.0 };
+        float32 alphaCutoff = 0.0f;
+        float32 metallicFactor = 1.0f;
+        float32 roughnessFactor = 1.0f;
+        float32 normalScale = 1.0f;
+        float32 occlusionStrength = 1.0f;
     };
 
     static_assert(sizeof(MaterialUniform) % 4 == 0);
@@ -52,10 +65,8 @@ namespace Husky::Render
     {
         Vec4 positionWS = { 0.0, 0.0, 0.0, 1.0 };
         Vec4 directionWS = { 0.0, 0.0, 0.0, 0.0 };
-        Vec4 positionVS = { 0.0, 0.0, 0.0, 1.0 };
-        Vec4 directionVS = { 0.0, 0.0, 0.0, 0.01 };
         Vec4 color = { 1.0, 1.0, 1.0, 1.0 };
-        int32 enabled = 0;
+        int32 enabled = 1;
         int32 type = 0;
         float32 spotlightAngle = 0;
         float32 range = 0;
@@ -68,12 +79,5 @@ namespace Husky::Render
     static_assert(sizeof(LightUniform) % 4 == 0);
 #pragma pack(pop)
 
-//    struct CommandPoolCreateResult
-//    {
-//        vk::ResultValue<vk::CommandPool> graphicsCommandPool;
-//        vk::ResultValue<vk::CommandPool> presentCommandPool;
-//        vk::ResultValue<vk::CommandPool> computeCommandPool;
-//
-//        Vector<vk::CommandPool> uniqueCommandPools;
-//    };
+
 }

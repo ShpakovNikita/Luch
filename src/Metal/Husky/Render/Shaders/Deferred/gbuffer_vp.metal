@@ -29,11 +29,7 @@ struct VertexIn
     #endif
 
     #if HAS_TANGENT
-        #if HAS_BITANGENT_DIRECTION
-            float4 tangentLS [[ attribute(2) ]];
-        #else
-            float3 tangentLS [[ attribute(2) ]];
-        #endif
+        float4 tangentLS [[ attribute(2) ]];
     #endif
 
     #if HAS_TEXCOORD_0
@@ -92,11 +88,7 @@ vertex VertexOut vp_main(
     #if HAS_TANGENT
         // Normal matrix or viewmodel matrix?
         out.tangentVS.xyz = (normalMatrix * float4(in.tangentLS.xyz, 0.0)).xyz;
-        #if HAS_BITANGENT_DIRECTION
-            out.tangentVS.w = in.tangentLS.w;
-        #else
-            out.tangentVS.w = 1.0;
-        #endif
+        out.tangentVS.w = in.tangentLS.w;
     #endif
 
     out.positionCS = camera.projection * positionVS;
