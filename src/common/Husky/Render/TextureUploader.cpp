@@ -7,6 +7,7 @@
 #include <Husky/Graphics/BufferCreateInfo.h>
 #include <Husky/Graphics/CommandPool.h>
 #include <Husky/Graphics/CopyCommandList.h>
+#include <Husky/Render/FormatUtils.h>
 
 namespace Husky::Render
 {
@@ -72,32 +73,9 @@ namespace Husky::Render
 
         SceneV1::Image* hostImage = texture->GetHostImage();
 
-        int32 hostImageComponentCount = hostImage->GetComponentCount();
-
-        int32 pixelSizeInBytes = hostImageComponentCount;
-        Graphics::Format format = Graphics::Format::Undefined;
-
-        switch (hostImageComponentCount)
-        {
-        case 1:
-            format = Graphics::Format::R8Unorm;
-            break;
-        case 2:
-            format = Graphics::Format::R8G8Unorm;
-            break;
-        case 3:
-            format = Graphics::Format::R8G8B8Unorm;
-            break;
-        case 4:
-            format = Graphics::Format::R8G8B8A8Unorm;
-            break;
-        default:
-            HUSKY_ASSERT(false);
-        }
-
         Graphics::TextureCreateInfo textureCreateInfo;
         textureCreateInfo.textureType = Graphics::TextureType::Texture2D;
-        textureCreateInfo.format = format;
+        textureCreateInfo.format = texture->IsSRGB() ? FormatUtils::GetSRGBFormat(hostImage->GetFormat()) : hostImage->GetFormat();
         textureCreateInfo.width = hostImage->GetWidth();
         textureCreateInfo.height = hostImage->GetHeight();
         textureCreateInfo.usage = Graphics::TextureUsageFlags::ShaderRead | Graphics::TextureUsageFlags::TransferDestination;
@@ -138,7 +116,7 @@ namespace Husky::Render
         int32 width = hostImage->GetWidth();
         int32 height = hostImage->GetHeight();
 
-        result.copy.bytesPerRow = pixelSizeInBytes * width;
+        result.copy.bytesPerRow = hostImage->GetBytesPerPixel() * width;
         result.copy.bytesPerImage = result.copy.bytesPerRow * height;
         result.copy.sourceSize = { width, height };
 

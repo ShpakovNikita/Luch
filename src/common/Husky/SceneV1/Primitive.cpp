@@ -32,8 +32,6 @@ namespace Husky::SceneV1
         { { AttributeType::Vec4, ComponentType::UInt16},Format::R16G16B16A16Uint },
         { { AttributeType::Vec4, ComponentType::UInt},  Format::R32G32B32A32Uint },
         { { AttributeType::Vec4, ComponentType::Float}, Format::R32G32B32A32Sfloat },
-        
-        // TODO
     };
 
     Primitive::Primitive(

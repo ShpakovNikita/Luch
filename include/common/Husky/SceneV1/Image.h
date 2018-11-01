@@ -2,6 +2,7 @@
 
 #include <Husky/BaseObject.h>
 #include <Husky/RefPtr.h>
+#include <Husky/Graphics/Format.h>
 
 namespace Husky::SceneV1
 {
@@ -10,24 +11,29 @@ namespace Husky::SceneV1
     public:
         static RefPtr<Image> LoadFromFile(const String& filename);
 
-        Image(
-            int32 width,
-            int32 height,
-            int32 componentCount,
-            Vector<uint8>&& buffer);
-
+        Image() = default;
         ~Image() = default;
 
-        int32 GetWidth() const { return width; }
-        int32 GetHeight() const { return height; }
-        int32 GetComponentCount() const { return componentCount; }
+        inline int32 GetWidth() const { return width; }
+        inline void SetWidth(int32 aWidth) { width = aWidth; }
 
-        const Vector<uint8>& GetBuffer() const { return  buffer; }
+        inline int32 GetHeight() const { return height; }
+        inline void SetHeight(int32 aHeight) { height = aHeight; }
+
+        inline const Vector<Byte>& GetBuffer() const { return  buffer; }
+        inline void SetBuffer(Vector<Byte> aBuffer) { buffer = std::move(aBuffer); }
+
+        inline int32 GetBytesPerPixel() const { return bytesPerPixel; }
+        inline void SetBytesPerPixel(int32 bpp) { bytesPerPixel = bpp; }
+
+        inline Graphics::Format GetFormat() const { return format; }
+        inline void SetFormat(Graphics::Format aFormat) { format = aFormat; }
     private:
-        int32 width;
-        int32 height;
-        int32 componentCount;
+        int32 width = 0;
+        int32 height = 0;
+        int32 bytesPerPixel = 0;
+        Graphics::Format format = Graphics::Format::Undefined;
 
-        Vector<uint8> buffer;
+        Vector<Byte> buffer;
     };
 }

@@ -80,11 +80,15 @@ namespace Husky::Metal
             return mtlpp::PixelFormat::R8Unorm;
         case Format::R8G8Unorm:
             return mtlpp::PixelFormat::RG8Unorm;
+        case Format::R8G8Unorm_sRGB:
+            return mtlpp::PixelFormat::RG8Unorm_sRGB;
         case Format::R8G8B8Unorm:
             HUSKY_ASSERT_MSG(false, "R8G8B8 is not supported in metal");
             return mtlpp::PixelFormat::Invalid;
         case Format::R8G8B8A8Unorm:
             return mtlpp::PixelFormat::RGBA8Unorm;
+        case Format::R8G8B8A8Unorm_sRGB:
+            return mtlpp::PixelFormat::RGBA8Unorm_sRGB;
         case Format::B8G8R8A8Unorm:
             return mtlpp::PixelFormat::BGRA8Unorm;
         case Format::D16Unorm:

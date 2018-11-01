@@ -17,27 +17,42 @@ namespace Husky::SceneV1
         if (data)
         {
             int32 sizeInBytes = width * height * requiredComponentCount;
-            Vector<uint8> imageBuffer;
+            Vector<Byte> imageBuffer;
             imageBuffer.resize(sizeInBytes);
             memcpy(imageBuffer.data(), data, sizeInBytes);
 
-            return MakeRef<Image>(width, height, 4, move(imageBuffer));
+            Graphics::Format format = Graphics::Format::Undefined;
+
+            switch (requiredComponentCount)
+            {
+            case 1:
+                format = Graphics::Format::R8Unorm;
+                break;
+            case 2:
+                format = Graphics::Format::R8G8Unorm;
+                break;
+            case 3:
+                format = Graphics::Format::R8G8B8Unorm;
+                break;
+            case 4:
+                format = Graphics::Format::R8G8B8A8Unorm;
+                break;
+            default:
+                HUSKY_ASSERT(false);
+            }
+
+            auto image = MakeRef<Image>();
+            image->SetWidth(width);
+            image->SetHeight(height);
+            image->SetBuffer(std::move(imageBuffer));
+            image->SetBytesPerPixel(requiredComponentCount); // 8 bites per channel (component)
+            image->SetFormat(format);
+
+            return image;
         }
         else
         {
             return nullptr;
         }
-    }
-
-    Image::Image(
-        int32 aWidth,
-        int32 aHeight,
-        int32 aComponentCount,
-        Vector<uint8>&& aBuffer)
-        : width(aWidth)
-        , height(aHeight)
-        , componentCount(aComponentCount)
-        , buffer(move(aBuffer))
-    {
     }
 }
