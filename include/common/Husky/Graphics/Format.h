@@ -8,15 +8,19 @@ namespace Husky::Graphics
 
         // Color (R)
         R8Unorm,
+        R8Unorm_sRGB,
 
         // Color (RG)
         R8G8Unorm,
+        R8G8Unorm_sRGB,
 
         // Color (RGB)
         R8G8B8Unorm,
+        R8G8B8Unorm_sRGB,
 
         // Color RGBA
         R8G8B8A8Unorm,
+        R8G8B8A8Unorm_sRGB,
         B8G8R8A8Unorm,
 
         // Depth

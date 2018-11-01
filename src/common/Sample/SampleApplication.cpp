@@ -170,6 +170,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     light3->SetType(SceneV1::LightType::Point);
     light3->SetRange(15);
     light3->SetIndex(2);
+    light3->SetIntensity(3);
 
     lightNode3->SetLight(light3);
 

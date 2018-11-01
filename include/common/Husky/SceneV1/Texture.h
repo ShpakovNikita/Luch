@@ -30,11 +30,15 @@ namespace Husky::SceneV1
 
         inline const RefPtr<Sampler>& GetSampler() const { return sampler; }
         inline const RefPtr<Graphics::Sampler>& GetDeviceSampler() const { return sampler->GetDeviceSampler(); }
+
+        inline bool IsSRGB() const { return isSRGB; }
+        inline void SetSRGB(bool srgb) { isSRGB = srgb; }
     private:
         String name;
 
         RefPtr<Image> hostImage;
         RefPtr<Graphics::Texture> deviceTexture;
+        bool isSRGB = false;
 
         RefPtr<Sampler> sampler;
     };

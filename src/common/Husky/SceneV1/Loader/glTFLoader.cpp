@@ -656,6 +656,7 @@ namespace Husky::SceneV1::Loader
             const auto& textureInfo = *glTFMaterial.pbrMetallicRoughness.baseColorTexture;
             material->metallicRoughness.baseColorTexture.texCoord = textureInfo.texCoord;
             material->metallicRoughness.baseColorTexture.texture = loadedTextures[textureInfo.index];
+            material->metallicRoughness.baseColorTexture.texture->SetSRGB(true);
         }
 
         if (glTFMaterial.pbrMetallicRoughness.metallicRoughnessTexture.has_value())
@@ -686,6 +687,7 @@ namespace Husky::SceneV1::Loader
             const auto& textureInfo = *glTFMaterial.emissiveTexture;
             material->emissiveTexture.texCoord = textureInfo.texCoord;
             material->emissiveTexture.texture = loadedTextures[textureInfo.index];
+            material->metallicRoughness.baseColorTexture.texture->SetSRGB(true);
         }
 
         material->emissiveFactor = glTFMaterial.emissiveFactor;
