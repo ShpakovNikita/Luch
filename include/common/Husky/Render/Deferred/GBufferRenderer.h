@@ -12,25 +12,16 @@
 #include <Husky/Graphics/Attachment.h>
 #include <Husky/SceneV1/SceneV1Forwards.h>
 #include <Husky/Render/Common.h>
-#include <Husky/Render/ShaderDefines.h>
 #include <Husky/Render/RenderContext.h>
-#include <Husky/Render/Deferred/DeferredResources.h>
-#include <Husky/Render/Deferred/GBufferPassResources.h>
-#include <Husky/Render/Deferred/LightingPassResources.h>
-#include <Husky/Render/Deferred/ResolvePassResources.h>
-#include <Husky/Render/Deferred/DeferredOptions.h>
-#include <Husky/Render/Deferred/DeferredShaderDefines.h>
+#include <Husky/Render/Deferred/DeferredForwards.h>
 
 #include <Husky/Render/SharedBuffer.h>
-#include <Husky/Render/Deferred/ShadowMapping/ShadowRenderer.h>
-#include <Husky/Render/Deferred/ShadowMapping/ShadowMappingPassResources.h>
 
 namespace Husky::Render::Deferred
 {
     using namespace Graphics;
-    using namespace ShadowMapping;
 
-    class DeferredRenderer
+    class GBufferRenderer
     {
     public:
         static constexpr int32 SharedUniformBufferSize = 16 * 1024 * 1024;
@@ -39,11 +30,13 @@ namespace Husky::Render::Deferred
         static constexpr int32 OffscreenImageCount = 3;
         static const String RendererName;
 
-        DeferredRenderer(
-            const RefPtr<PhysicalDevice>& physicalDevice,
-            const RefPtr<Surface>& surface,
-            int32 width,
-            int32 height);
+        GBufferRenderer();
+
+        const SharedPtr<RenderContext>& GetRenderContext() { return renderContext; }
+        void SetRenderContext(const SharedPtr<RenderContext>& aContext) { context = aContext; }
+
+        const SharedPtr<DeferredRendererResources>& GetDeferredResources() { return resources; }
+        void SetDeferredResources(const SharedPtr<DeferredRendererResources>& aResources) { resources = aResources; }
 
         bool Initialize();
         bool Deinitialize();
@@ -59,17 +52,11 @@ namespace Husky::Render::Deferred
         void PrepareMesh(SceneV1::Mesh* mesh);
         void PreparePrimitive(SceneV1::Primitive* primitive);
         void PrepareMaterial(SceneV1::PbrMaterial* mesh);
-        void PrepareLights(SceneV1::Scene* scene);
 
         void UpdateNode(SceneV1::Node* node, const Mat4x4& parentTransform);
         void UpdateMesh(SceneV1::Mesh* mesh, const Mat4x4& transform);
         void UpdateCamera(SceneV1::Camera* camera, const Mat4x4& transform);
-        void UpdateLight(SceneV1::Light* light, const Mat4x4& transform);
         void UpdateMaterial(SceneV1::PbrMaterial* material);
-
-        void FillGBuffer(SceneV1::Scene* scene);
-        void CalculateLighting(SceneV1::Scene* scene);
-        void ResolveColor();
 
         void BindMaterial(SceneV1::PbrMaterial* material, GraphicsCommandList* commandList);
         void DrawNode(SceneV1::Node* node, GraphicsCommandList* commandList);
@@ -77,32 +64,16 @@ namespace Husky::Render::Deferred
         void DrawPrimitive(SceneV1::Primitive* primitive, GraphicsCommandList* commandList);
 
         RefPtr<PipelineState> CreateGBufferPipelineState(SceneV1::Primitive* primitive);
-        RefPtr<PipelineState> CreateLightingPipelineState(LightingPassResources* lighting);
 
-        ResultValue<bool, UniquePtr<DeferredResources>> PrepareResources();
-
+        ResultValue<bool, UniquePtr<DeferredRendererResources>> PrepareResources();
         ResultValue<bool, UniquePtr<GBufferPassResources>> PrepareGBufferPassResources();
-
-        ResultValue<bool, UniquePtr<LightingPassResources>> PrepareLightingPassResources(
-            GBufferPassResources* gbufferResources);
-
-        ResultValue<bool, UniquePtr<ResolvePassResources>> PrepareResolvePassResources();
-
         ResultValue<bool, OffscreenTextures> CreateOffscreenTextures();
 
         SharedPtr<RenderContext> context;
 
-        UniquePtr<ShadowRenderer> shadowRenderer;
-
         SharedPtr<DeferredResources> resources;
         UniquePtr<GBufferPassResources> gbuffer;
-        UniquePtr<LightingPassResources> lighting;
 
-        DeferredOptions options;
-
-        int32 width = 0;
-        int32 height = 0;
-        Format swapchainFormat = Format::B8G8R8A8Unorm;
         Format baseColorFormat = Format::R8G8B8A8Unorm;
         Format normalMapFormat = Format::R32G32B32A32Sfloat;
         Format depthStencilFormat = Format::D24UnormS8Uint;

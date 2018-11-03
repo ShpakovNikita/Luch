@@ -86,7 +86,7 @@ namespace Husky::Render::Deferred::ShadowMapping
             SceneV1::PerspectiveCamera* camera,
             int32 index);
 
-        void UpdateCamera(SceneV1::Camera* camera);
+        void UpdateCamera(SceneV1::Camera* camera, const Mat4x4& transform);
 
         ResultValue<bool, UniquePtr<ShadowMappingPassResources>> PrepareShadowMappingPassResources();
 

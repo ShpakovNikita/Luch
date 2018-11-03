@@ -380,7 +380,6 @@ namespace Husky::Render::Deferred::ShadowMapping
     {
         HUSKY_ASSERT(light->GetDirection().has_value());
         auto lookAt = glm::lookAt(Vec3{ 0, 0, 0 }, *light->GetDirection(), Vec3 { 0, 1, 0 });
-        camera->SetCameraViewMatrix(glm::inverse(transform * lookAt));
 
         HUSKY_ASSERT(light->GetSpotlightAngle().has_value());
         HUSKY_ASSERT(light->GetRange().has_value());
@@ -390,7 +389,7 @@ namespace Husky::Render::Deferred::ShadowMapping
         camera->SetZNear(0.1);
         camera->SetZFar(light->GetRange().value());
 
-        UpdateCamera(camera);
+        UpdateCamera(camera, transform * lookAt);
     }
 
     void ShadowRenderer::UpdateDirectionalLightCamera(
@@ -398,11 +397,9 @@ namespace Husky::Render::Deferred::ShadowMapping
         Mat4x4 transform,
         SceneV1::OrthographicCamera* camera)
     {
-        camera->SetCameraViewMatrix(glm::inverse(transform));
-
         HUSKY_ASSERT_MSG(false, "Not implemented");
 
-        UpdateCamera(camera);
+        UpdateCamera(camera, transform);
     }
 
     void ShadowRenderer::UpdatePointLightCamera(
@@ -412,7 +409,6 @@ namespace Husky::Render::Deferred::ShadowMapping
         int32 index)
     {
         // TODO
-        camera->SetCameraViewMatrix(glm::inverse(transform));
 
         HUSKY_ASSERT(light->GetRange().has_value());
 
@@ -421,11 +417,12 @@ namespace Husky::Render::Deferred::ShadowMapping
         camera->SetZNear(0.1);
         camera->SetZFar(light->GetRange().value());
 
-        UpdateCamera(camera);
+        UpdateCamera(camera, transform);
     }
 
-    void ShadowRenderer::UpdateCamera(SceneV1::Camera* camera)
+    void ShadowRenderer::UpdateCamera(SceneV1::Camera* camera, const Mat4x4& transform)
     {
+        camera->SetCameraViewMatrix(glm::inverse(transform));
         auto cameraUniform = RenderUtils::GetCameraUniform(camera);
         auto descriptorSet = camera->GetDescriptorSet(RendererName);
 

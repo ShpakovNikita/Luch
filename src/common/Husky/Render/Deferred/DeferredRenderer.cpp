@@ -90,7 +90,6 @@ namespace Husky::Render::Deferred
 
     static UnorderedMap<DeferredShaderDefines, String> FlagToString =
     {
-        //{ ShaderDefine::HasPosition, "HAS_POSITION" },
         { DeferredShaderDefines::HasNormal, "HAS_NORMAL" },
         { DeferredShaderDefines::HasTangent, "HAS_TANGENT" },
         { DeferredShaderDefines::HasTexCoord0, "HAS_TEXCOORD_0" },
@@ -274,18 +273,16 @@ namespace Husky::Render::Deferred
         shadowRenderer->PrepareScene(scene);
     }
 
-    ResultValue<bool, UniquePtr<DeferredRendererResources>> DeferredRenderer::PrepareResources()
+    ResultValue<bool, UniquePtr<DeferredResources>> DeferredRenderer::PrepareResources()
     {
-        auto resources = MakeUnique<DeferredRendererResources>();
+        auto resources = MakeUnique<DeferredResources>();
 
         DescriptorPoolCreateInfo descriptorPoolCreateInfo;
         descriptorPoolCreateInfo.descriptorCount =
         {
-            { ResourceType::Texture, MaxDescriptorCount },
-            { ResourceType::Sampler, MaxDescriptorCount },
-            { ResourceType::UniformBuffer, MaxDescriptorCount },
+            { ResourceType::UniformBuffer, 1 },
         };
-        descriptorPoolCreateInfo.maxDescriptorSets = MaxDescriptorSetCount;
+        descriptorPoolCreateInfo.maxDescriptorSets = 1;
 
         auto[createDescriptorPoolResult, createdDescriptorPool] = context->device->CreateDescriptorPool(
             descriptorPoolCreateInfo);
@@ -316,27 +313,6 @@ namespace Husky::Render::Deferred
 
         resources->cameraBufferDescriptorSetLayout = std::move(createdCameraDescriptorSetLayout);
 
-        auto[createdCommandPoolResult, createdCommandPool] = context->commandQueue->CreateCommandPool();
-        if (createdCommandPoolResult != GraphicsResult::Success)
-        {
-            return { false };
-        }
-
-        resources->commandPool = std::move(createdCommandPool);
-
-        BufferCreateInfo bufferCreateInfo;
-        bufferCreateInfo.length = SharedUniformBufferSize;
-        bufferCreateInfo.usage = BufferUsageFlags::Uniform;
-        bufferCreateInfo.storageMode = ResourceStorageMode::Shared;
-
-        auto [createSharedBufferResult, createdSharedBuffer] = context->device->CreateBuffer(bufferCreateInfo);
-        if(createSharedBufferResult != GraphicsResult::Success)
-        {
-            return { false };
-        }
-
-        resources->sharedBuffer = MakeUnique<SharedBuffer>(createdSharedBuffer);
-
         return { true, std::move(resources) };
     }
 
@@ -361,7 +337,7 @@ namespace Husky::Render::Deferred
         auto[acquireResult, acquiredTexture] = context->swapchain->GetNextAvailableTexture(nullptr);
         HUSKY_ASSERT(acquireResult == GraphicsResult::Success);
 
-        auto [allocateGBufferCommandListResult, gBufferCmdList] = resources->commandPool->AllocateGraphicsCommandList();
+        auto [allocateGBufferCommandListResult, gBufferCmdList] = gbuffer->commandPool->AllocateGraphicsCommandList();
         HUSKY_ASSERT(allocateGBufferCommandListResult == GraphicsResult::Success);
 
         int32 framebufferWidth = context->swapchain->GetInfo().width;
@@ -410,7 +386,7 @@ namespace Husky::Render::Deferred
 
         context->commandQueue->Submit(gBufferCmdList);
 
-        auto [allocateLightingCommandListResult, lightingCmdList] = resources->commandPool->AllocateGraphicsCommandList();
+        auto [allocateLightingCommandListResult, lightingCmdList] = lighting->commandPool->AllocateGraphicsCommandList();
         HUSKY_ASSERT(allocateLightingCommandListResult == GraphicsResult::Success);
 
         ColorAttachment colorAttachment = lighting->colorAttachmentTemplate;
@@ -777,6 +753,21 @@ namespace Husky::Render::Deferred
                 DrawPrimitive(primitive, commandList);
             }
         }
+    }
+
+    void DeferredRenderer::FillGBuffer(SceneV1::Scene* scene)
+    {
+
+    }
+
+    void DeferredRenderer::CalculateLighting(SceneV1::Scene* scene)
+    {
+
+    }
+
+    void DeferredRenderer::ResolveColor()
+    {
+        
     }
 
     void DeferredRenderer::BindMaterial(SceneV1::PbrMaterial* material, GraphicsCommandList* commandList)
