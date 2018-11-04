@@ -77,7 +77,7 @@ namespace Husky::Render::RenderUtils
         auto fileSize = fileStream.GetSize();
         Vector<Byte> result;
         result.resize(fileSize + 1); // +1 for null termination
-        auto bytesRead = fileStream.Read(result.data(), fileSize, sizeof(Byte));
+        [[maybe_unused]] auto bytesRead = fileStream.Read(result.data(), fileSize, sizeof(Byte));
         HUSKY_ASSERT(bytesRead == fileSize);
         return result;
     }

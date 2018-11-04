@@ -5,6 +5,8 @@
 #include <Husky/UniquePtr.h>
 #include <Husky/Graphics/GraphicsForwards.h>
 #include <Husky/Graphics/DescriptorSetBinding.h>
+#include <Husky/Render/RenderForwards.h>
+#include <Husky/Render/Deferred/DeferredForwards.h>
 
 namespace Husky::Render::Deferred
 {
@@ -16,5 +18,7 @@ namespace Husky::Render::Deferred
         RefPtr<DescriptorSetLayout> cameraBufferDescriptorSetLayout;
         RefPtr<DescriptorSet> cameraBufferDescriptorSet;
         DescriptorSetBinding cameraUniformBufferBinding;
+
+        UniquePtr<SharedBuffer> sharedBuffer;
     };
 }

@@ -30,7 +30,9 @@
 #include <Husky/SceneV1/PbrMaterial.h>
 #include <Husky/SceneV1/Light.h>
 
+#include <Husky/Render/RenderContext.h>
 #include <Husky/Render/RenderUtils.h>
+#include <Husky/Render/SharedBuffer.h>
 
 namespace Husky::Render::Deferred::ShadowMapping
 {
@@ -38,10 +40,7 @@ namespace Husky::Render::Deferred::ShadowMapping
 
     const String ShadowRenderer::RendererName{"Shadow"};
 
-    ShadowRenderer::ShadowRenderer(SharedPtr<RenderContext> aContext)
-        : context(aContext)
-    {
-    }
+    ShadowRenderer::ShadowRenderer() = default;
 
     bool ShadowRenderer::Initialize()
     {
@@ -362,15 +361,17 @@ namespace Husky::Render::Deferred::ShadowMapping
 
         // TODO
         auto suballocation = resources->sharedBuffer->Suballocate(sizeof(MeshUniform), 16);
+
+        memcpy(suballocation.offsetMemory, &meshUniform, sizeof(MeshUniform));
+
         auto descriptorSet = mesh->GetBufferDescriptorSet(RendererName);
 
         descriptorSet->WriteUniformBuffer(
             resources->meshUniformBufferBinding,
             suballocation.buffer,
             suballocation.offset);
-        descriptorSet->Update();
 
-        memcpy(suballocation.offsetMemory, &meshUniform, sizeof(MeshUniform));
+        descriptorSet->Update();
     }
 
     void ShadowRenderer::UpdateSpotLightCamera(

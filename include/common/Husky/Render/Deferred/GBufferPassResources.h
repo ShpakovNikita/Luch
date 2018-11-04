@@ -1,26 +1,18 @@
 #pragma once
 
-#include <Husky/Render/Deferred/DeferredForwards.h>
-#include <Husky/Graphics/GraphicsForwards.h>
 #include <Husky/RefPtr.h>
+#include <Husky/UniquePtr.h>
+#include <Husky/Graphics/GraphicsForwards.h>
+#include <Husky/Render/RenderForwards.h>
+#include <Husky/Render/Deferred/DeferredForwards.h>
 
 namespace Husky::Render::Deferred
 {
     using namespace Graphics;
 
-    struct OffscreenTextures
-    {
-        RefPtr<Texture> baseColorTexture;
-        RefPtr<Texture> normalMapTexture;
-        RefPtr<Texture> depthStencilBuffer;
-
-        RefPtr<Sampler> baseColorSampler;
-        RefPtr<Sampler> normalMapSampler;
-        RefPtr<Sampler> depthStencilSampler;
-    };
-
     struct GBufferPassResources
     {
+        RefPtr<CommandPool> commandPool;
         RefPtr<PipelineLayout> pipelineLayout;
         RefPtr<DescriptorPool> descriptorPool;
 
@@ -49,6 +41,6 @@ namespace Husky::Render::Deferred
         RefPtr<DescriptorSetLayout> materialBufferDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> materialSamplerDescriptorSetLayout;
 
-        OffscreenTextures offscreen;
+        UniquePtr<SharedBuffer> sharedBuffer;
     };
 }

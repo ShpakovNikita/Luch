@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Husky/SceneV1/SceneV1Forwards.h>
-#include <Husky/Render/RenderContext.h>
+#include <Husky/Render/RenderForwards.h>
 #include <Husky/Render/Deferred/ShadowMapping/ShadowMappingPassResources.h>
 #include <Husky/Render/Deferred/ShadowMapping/ShadowMappingOptions.h>
 #include <Husky/VectorTypes.h>
@@ -27,7 +27,10 @@ namespace Husky::Render::Deferred::ShadowMapping
         // vector stores either one (for directional and spot lights) or six (for point lights) depth textures
         using ShadowMaps = UnorderedMap<SceneV1::Light*, RefPtrVector<Texture>>;
 
-        ShadowRenderer(SharedPtr<RenderContext> context);
+        ShadowRenderer();
+
+        const SharedPtr<RenderContext>& GetRenderContext() { return context; }
+        void SetRenderContext(const SharedPtr<RenderContext>& aContext) { context = aContext; }
 
         bool Initialize();
         bool Deinitialize();

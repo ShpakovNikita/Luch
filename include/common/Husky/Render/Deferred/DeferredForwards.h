@@ -9,6 +9,8 @@ namespace Husky::Render::Deferred
 
     struct DeferredResources;
     struct GBufferPassResources;
+    struct GBufferTextures;
     struct LightingPassResources;
+    struct LightingTextures;
     struct ResolvePassResources;
 }

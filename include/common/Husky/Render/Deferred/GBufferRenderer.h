@@ -12,7 +12,7 @@
 #include <Husky/Graphics/Attachment.h>
 #include <Husky/SceneV1/SceneV1Forwards.h>
 #include <Husky/Render/Common.h>
-#include <Husky/Render/RenderContext.h>
+#include <Husky/Render/RenderForwards.h>
 #include <Husky/Render/Deferred/DeferredForwards.h>
 
 #include <Husky/Render/SharedBuffer.h>
@@ -31,29 +31,28 @@ namespace Husky::Render::Deferred
         static const String RendererName;
 
         GBufferRenderer();
+        ~GBufferRenderer();
 
-        const SharedPtr<RenderContext>& GetRenderContext() { return renderContext; }
+        const SharedPtr<RenderContext>& GetRenderContext() { return context; }
         void SetRenderContext(const SharedPtr<RenderContext>& aContext) { context = aContext; }
 
-        const SharedPtr<DeferredRendererResources>& GetDeferredResources() { return resources; }
-        void SetDeferredResources(const SharedPtr<DeferredRendererResources>& aResources) { resources = aResources; }
+        const SharedPtr<DeferredResources>& GetDeferredResources() { return commonResources; }
+        void SetDeferredResources(const SharedPtr<DeferredResources>& aResources) { commonResources = aResources; }
 
         bool Initialize();
         bool Deinitialize();
 
         void PrepareScene(SceneV1::Scene* scene);
         void UpdateScene(SceneV1::Scene* scene);
-        void DrawScene(SceneV1::Scene* scene, SceneV1::Camera* camera);
+        GBufferTextures* DrawScene(SceneV1::Scene* scene, SceneV1::Camera* camera);
     private:
-        void PrepareCameraNode(SceneV1::Node* node);
         void PrepareMeshNode(SceneV1::Node* node);
-        void PrepareLightNode(SceneV1::Node* node);
         void PrepareNode(SceneV1::Node* node);
         void PrepareMesh(SceneV1::Mesh* mesh);
         void PreparePrimitive(SceneV1::Primitive* primitive);
         void PrepareMaterial(SceneV1::PbrMaterial* mesh);
 
-        void UpdateNode(SceneV1::Node* node, const Mat4x4& parentTransform);
+        void UpdateNode(SceneV1::Node* node);
         void UpdateMesh(SceneV1::Mesh* mesh, const Mat4x4& transform);
         void UpdateCamera(SceneV1::Camera* camera, const Mat4x4& transform);
         void UpdateMaterial(SceneV1::PbrMaterial* material);
@@ -65,14 +64,14 @@ namespace Husky::Render::Deferred
 
         RefPtr<PipelineState> CreateGBufferPipelineState(SceneV1::Primitive* primitive);
 
-        ResultValue<bool, UniquePtr<DeferredRendererResources>> PrepareResources();
         ResultValue<bool, UniquePtr<GBufferPassResources>> PrepareGBufferPassResources();
-        ResultValue<bool, OffscreenTextures> CreateOffscreenTextures();
+        ResultValue<bool, UniquePtr<GBufferTextures>> CreateGBufferTextures();
 
         SharedPtr<RenderContext> context;
 
-        SharedPtr<DeferredResources> resources;
-        UniquePtr<GBufferPassResources> gbuffer;
+        SharedPtr<DeferredResources> commonResources;
+        UniquePtr<GBufferPassResources> resources;
+        UniquePtr<GBufferTextures> gbuffer;
 
         Format baseColorFormat = Format::R8G8B8A8Unorm;
         Format normalMapFormat = Format::R32G32B32A32Sfloat;

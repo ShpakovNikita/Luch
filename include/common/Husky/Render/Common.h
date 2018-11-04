@@ -61,6 +61,14 @@ namespace Husky::Render
 
     static_assert(sizeof(MaterialUniform) % 4 == 0);
 
+    struct LightingParamsUniform
+    {
+        int32 lightCount = 0;
+        int32 __padding0 = 0;
+        int32 __padding1 = 0;
+        int32 __padding2 = 0;
+    };
+
     struct LightUniform
     {
         Vec4 positionWS = { 0.0, 0.0, 0.0, 1.0 };

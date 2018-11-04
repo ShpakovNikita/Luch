@@ -141,7 +141,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     light1->SetType(SceneV1::LightType::Spot);
     light1->SetShadowEnabled(true);
     light1->SetRange(15);
-    light1->SetIndex(0);
+    light1->SetIndex(2);
     light1->SetColor({ 1.0, 0.0, 0.0 });
     light1->SetDirection({ 1, 0, 0 });
     light1->SetSpotlightAngle(0.3);
@@ -169,7 +169,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     light3->SetType(SceneV1::LightType::Point);
     light3->SetRange(15);
-    light3->SetIndex(2);
+    light3->SetIndex(0);
     light3->SetIntensity(3);
 
     lightNode3->SetLight(light3);
@@ -234,6 +234,7 @@ void SampleApplication::Run()
 
 void SampleApplication::Process()
 {
+    deferredRenderer->UpdateScene(scene);
     deferredRenderer->DrawScene(scene, camera);
 }
 
