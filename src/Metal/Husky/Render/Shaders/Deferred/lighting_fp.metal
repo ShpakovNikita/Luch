@@ -50,9 +50,12 @@ struct CameraUniform
     float4 positionWS;
 };
 
-struct LightsUniform
+struct LightingParamsUniform
 {
-    Light lights[MAX_LIGHTS_COUNT];
+    int lightCount;
+    int padding0;
+    int padding1;
+    int padding2;
 };
 
 float D_GGX(float NdotH, float roughness)
@@ -272,10 +275,17 @@ float3 PackVector(float3 v)
     return v*0.5 + float3(0.5);
 }
 
-fragment float4 fp_main(
+struct FragmentOut
+{
+    float4 diffuse [[color(0)]];
+    float4 specular [[color(1)]];
+};
+
+fragment FragmentOut fp_main(
     VertexOut in [[stage_in]],
     device CameraUniform& camera [[buffer(0)]],
-    device LightsUniform& lights [[buffer(1)]],
+    device LightingParamsUniform& lightingParams [[buffer(1)]],
+    device Light* lights [[buffer(2)]],
     texture2d<float> baseColorMap [[texture(0)]],
     texture2d<float> normalMap [[texture(1)]],
     depth2d<float> depthBuffer [[texture(2)]],
@@ -319,13 +329,9 @@ fragment float4 fp_main(
 
     LightingResult lightingResult;
 
-    for(int i = 0; i < MAX_LIGHTS_COUNT; i++)
+    for(int i = 0; i < lightingParams.lightCount; i++)
     {
-        Light light = lights.lights[i];
-        if(light.state == LIGHT_DISABLED)
-        {
-            continue;
-        }
+        Light light = lights[i];
 
         LightingResult intermediateResult;
 
@@ -348,24 +354,10 @@ fragment float4 fp_main(
         lightingResult.specular += intermediateResult.specular;
     }
 
-    float3 resultColor = baseColorSample.xyz * (lightingResult.diffuse + lightingResult.specular);
+    FragmentOut result;
 
-//    Light light = lights.lights[2];
-//
-//    float3 L = light.positionVS.xyz - P;
-//    float dist = length(L);
-//    L = L/dist;
-//
-//    float3 color = light.color.xyz;
-//    float attenuation = Attenuation(light, dist);
-//
-//    float NdotV = saturate(dot(N, V));
-//
-//    float3 F = F_Schlick(NdotV, F0);
-//    float3 kD = (1 - metallic)*(float3(1.0) - F);
-//
-//    float3 diffuse = kD * DiffuseLighting(color, L, N) * light.intensity * attenuation;
-//    float3 specular = SpecularLighting(color, V, L, N, F, roughness) * light.intensity * attenuation;
+    result.diffuse = float4(lightingResult.diffuse, 1.0);
+    result.specular = float4(lightingResult.specular, 1.0);
 
-    return float4(resultColor, 1.0);
+    return result;
 }

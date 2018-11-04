@@ -14,8 +14,10 @@
 #include <Husky/Render/Common.h>
 #include <Husky/Render/ShaderDefines.h>
 #include <Husky/Render/RenderContext.h>
+#include <Husky/Render/Deferred/DeferredResources.h>
 #include <Husky/Render/Deferred/GBufferPassResources.h>
 #include <Husky/Render/Deferred/LightingPassResources.h>
+#include <Husky/Render/Deferred/ResolvePassResources.h>
 #include <Husky/Render/Deferred/DeferredOptions.h>
 #include <Husky/Render/Deferred/DeferredShaderDefines.h>
 
@@ -28,26 +30,10 @@ namespace Husky::Render::Deferred
     using namespace Graphics;
     using namespace ShadowMapping;
 
-    struct DeferredRendererResources
-    {
-        RefPtr<PipelineLayout> pipelineLayout;
-        RefPtr<DescriptorPool> descriptorPool;
-        RefPtr<CommandPool> commandPool;
-
-        RefPtr<DescriptorSetLayout> cameraBufferDescriptorSetLayout;
-        RefPtr<DescriptorSet> cameraBufferDescriptorSet;
-        DescriptorSetBinding cameraUniformBufferBinding;
-
-        UniquePtr<SharedBuffer> sharedBuffer;
-    };
-
     class DeferredRenderer
     {
     public:
-        static constexpr int32 SharedUniformBufferSize = 16 * 1024 * 1024;
-        static constexpr int32 MaxDescriptorSetCount = 4096;
-        static constexpr int32 MaxDescriptorCount = 4096;
-        static constexpr int32 OffscreenImageCount = 3;
+        static constexpr int32 SharedBufferSize = 1024 * 1024;
         static const String RendererName;
 
         DeferredRenderer(
@@ -55,6 +41,8 @@ namespace Husky::Render::Deferred
             const RefPtr<Surface>& surface,
             int32 width,
             int32 height);
+
+        ~DeferredRenderer();
 
         bool Initialize();
         bool Deinitialize();
@@ -64,54 +52,28 @@ namespace Husky::Render::Deferred
         void DrawScene(SceneV1::Scene* scene, SceneV1::Camera* camera);
     private:
         void PrepareCameraNode(SceneV1::Node* node);
-        void PrepareMeshNode(SceneV1::Node* node);
-        void PrepareLightNode(SceneV1::Node* node);
         void PrepareNode(SceneV1::Node* node);
-        void PrepareMesh(SceneV1::Mesh* mesh);
-        void PreparePrimitive(SceneV1::Primitive* primitive);
-        void PrepareMaterial(SceneV1::PbrMaterial* mesh);
-        void PrepareLights(SceneV1::Scene* scene);
 
-        void UpdateNode(SceneV1::Node* node, const Mat4x4& parentTransform);
+        void UpdateNodeRecursive(SceneV1::Node* node, const Mat4x4& transform);
         void UpdateMesh(SceneV1::Mesh* mesh, const Mat4x4& transform);
         void UpdateCamera(SceneV1::Camera* camera, const Mat4x4& transform);
-        void UpdateLight(SceneV1::Light* light, const Mat4x4& transform);
-        void UpdateMaterial(SceneV1::PbrMaterial* material);
 
-        void DrawNode(SceneV1::Node* node, GraphicsCommandList* commandList);
-        void DrawMesh(SceneV1::Mesh* mesh, GraphicsCommandList* commandList);
-        void DrawPrimitive(SceneV1::Primitive* primitive, GraphicsCommandList* commandList);
-
-        void BindMaterial(SceneV1::PbrMaterial* material, GraphicsCommandList* commandList);
-
-        RefPtr<PipelineState> CreateGBufferPipelineState(SceneV1::Primitive* primitive);
-        RefPtr<PipelineState> CreateLightingPipelineState(LightingPassResources* lighting);
-
-        ResultValue<bool, UniquePtr<DeferredRendererResources>> PrepareResources();
-
-        ResultValue<bool, UniquePtr<GBufferPassResources>> PrepareGBufferPassResources();
-
-        ResultValue<bool, UniquePtr<LightingPassResources>> PrepareLightingPassResources(
-            GBufferPassResources* gbufferResources);
-
-        ResultValue<bool, OffscreenTextures> CreateOffscreenTextures();
+        ResultValue<bool, UniquePtr<DeferredResources>> PrepareResources();
 
         SharedPtr<RenderContext> context;
 
+        UniquePtr<GBufferRenderer> gbufferRenderer;
+        UniquePtr<LightingRenderer> lightingRenderer;
+        UniquePtr<ResolveRenderer> resolveRenderer;
         UniquePtr<ShadowRenderer> shadowRenderer;
 
-        UniquePtr<DeferredRendererResources> resources;
-        UniquePtr<GBufferPassResources> gbuffer;
-        UniquePtr<LightingPassResources> lighting;
+        SharedPtr<DeferredResources> resources;
 
         DeferredOptions options;
 
         int32 width = 0;
         int32 height = 0;
         Format swapchainFormat = Format::B8G8R8A8Unorm;
-        Format baseColorFormat = Format::R8G8B8A8Unorm;
-        Format normalMapFormat = Format::R32G32B32A32Sfloat;
-        Format depthStencilFormat = Format::D24UnormS8Uint;
         float32 minDepth = 0.0;
         float32 maxDepth = 1.0;
     };

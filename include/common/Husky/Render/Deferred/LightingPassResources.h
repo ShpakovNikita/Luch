@@ -13,10 +13,12 @@ namespace Husky::Render::Deferred
         RefPtr<PipelineState> pipelineState;
         RefPtr<PipelineLayout> pipelineLayout;
         RefPtr<DescriptorPool> descriptorPool;
+        RefPtr<CommandPool> commandPool;
 
         RefPtr<Buffer> fullscreenQuadBuffer;
 
-        DescriptorSetBinding lightsUniformBufferBinding;
+        DescriptorSetBinding lightingParamsBinding;
+        DescriptorSetBinding lightsBufferBinding;
         RefPtr<Buffer> lightsBuffer;
 
         DescriptorSetBinding baseColorTextureBinding;
@@ -28,7 +30,7 @@ namespace Husky::Render::Deferred
 
         RefPtr<Sampler> baseColorSampler;
         RefPtr<Sampler> normalMapSampler;
-        RefPtr<Sampler> depthBufferSampler;
+        RefPtr<Sampler> depthStencilSampler;
 
         RefPtr<DescriptorSet> gbufferTextureDescriptorSet;
         RefPtr<DescriptorSet> gbufferSamplerDescriptorSet;
@@ -40,9 +42,12 @@ namespace Husky::Render::Deferred
 
         RefPtr<DescriptorSetLayout> lightsBufferDescriptorSetLayout;
 
-        ColorAttachment colorAttachmentTemplate;
+        ColorAttachment diffuseAttachmentTemplate;
+        ColorAttachment specularAttachmentTemplate;
 
         RefPtr<ShaderProgram> vertexShader;
         RefPtr<ShaderProgram> fragmentShader;
+
+        UniquePtr<SharedBuffer> sharedBuffer;
     };
 }

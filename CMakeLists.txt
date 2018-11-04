@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.9.0)
 project(Husky VERSION 0.1 LANGUAGES CXX)
 set(CXX_STANDARD 17)
 
-set_property(GLOBAL PROPERTY USE_FOLDERS On) 
+# set_property(GLOBAL PROPERTY USE_FOLDERS On) 
 
 if(MSVC)
     if (MSVC_VERSION GREATER_EQUAL "1900")
@@ -211,7 +211,7 @@ endif()
 if(USE_METAL)
     add_compile_definitions(GLM_FORCE_LEFT_HANDED)
     # Add mtlpp library and includes
-    include_directories(AFTER SYSTEM
+    include_directories(AFTER
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/mtlpp/)
 
     add_library(mtlpp
@@ -273,15 +273,16 @@ endif()
 file(GLOB_RECURSE SAMPLE_COMMON_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Sample/*.cpp)
 file(GLOB_RECURSE SAMPLE_COMMON_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Sample/*.h)
 
+add_executable(HuskyEngineSample
+        ${SAMPLE_COMMON_CPP_FILES}
+        ${SAMPLE_COMMON_HEADER_FILES})
+
 if(WIN32)
     file(GLOB_RECURSE SAMPLE_WIN32_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Win32/Sample/*.cpp)
     file(GLOB_RECURSE SAMPLE_WIN32_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Win32/Sample/*.h)
 
-    add_executable(HuskyEngineSample
-        # WIN32
-        ${SAMPLE_COMMON_CPP_FILES}
+    target_sources(HuskyEngineSample PUBLIC
         ${SAMPLE_WIN32_CPP_FILES}
-        ${SAMPLE_COMMON_HEADER_FILES}
         ${SAMPLE_WIN32_HEADER_FILES})
 endif()
 
@@ -292,13 +293,10 @@ if(APPLE)
     file(GLOB_RECURSE SAMPLE_MACOS_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Sample/*.h)
     set(SAMPLE_MACOS_RESOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/res/macOS/Sample/Main.storyboard)
 
-    add_executable(HuskyEngineSample
-        MACOSX_BUNDLE
-        ${SAMPLE_COMMON_CPP_FILES}
+    target_sources(HuskyEngineSample PUBLIC
         ${SAMPLE_MACOS_CPP_FILES}
         ${SAMPLE_MACOS_OBJC_FILES}
         ${SAMPLE_MACOS_OBJCPP_FILES}
-        ${SAMPLE_COMMON_HEADER_FILES}
         ${SAMPLE_MACOS_HEADER_FILES}
         ${SAMPLE_MACOS_RESOURCE_FILES})
 

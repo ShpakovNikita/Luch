@@ -30,7 +30,7 @@
     app = new SampleApplication();
     app->SetViewSize(static_cast<Husky::int32>(backingSize.width), static_cast<Husky::int32>(backingSize.height));
     app->SetView(self.view.layer);
-    bool result = app->Initialize({});
+    [[maybe_unused]] bool result = app->Initialize({});
     HUSKY_ASSERT(result);
 
     CVDisplayLinkCreateWithActiveCGDisplays(&displayLink);
