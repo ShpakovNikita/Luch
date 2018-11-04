@@ -284,7 +284,7 @@ struct FragmentOut
 fragment FragmentOut fp_main(
     VertexOut in [[stage_in]],
     device CameraUniform& camera [[buffer(0)]],
-    device LightingParamsUniform* lightingParams [[buffer(1)]],
+    device LightingParamsUniform& lightingParams [[buffer(1)]],
     device Light* lights [[buffer(2)]],
     texture2d<float> baseColorMap [[texture(0)]],
     texture2d<float> normalMap [[texture(1)]],
