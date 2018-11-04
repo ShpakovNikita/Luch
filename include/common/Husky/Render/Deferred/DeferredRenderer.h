@@ -64,6 +64,7 @@ namespace Husky::Render::Deferred
 
         UniquePtr<GBufferRenderer> gbufferRenderer;
         UniquePtr<LightingRenderer> lightingRenderer;
+        UniquePtr<ResolveRenderer> resolveRenderer;
         UniquePtr<ShadowRenderer> shadowRenderer;
 
         SharedPtr<DeferredResources> resources;

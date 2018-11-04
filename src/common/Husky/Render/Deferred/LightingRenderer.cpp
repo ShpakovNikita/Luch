@@ -72,7 +72,7 @@ namespace Husky::Render::Deferred
         auto[lightingResourcesPrepared, preparedLightingResources] = PrepareLightingPassResources();
         if (!lightingResourcesPrepared)
         {
-            return  false;
+            return false;
         }
 
         resources = std::move(preparedLightingResources);
@@ -279,15 +279,14 @@ namespace Husky::Render::Deferred
     ResultValue<bool, UniquePtr<LightingPassResources>> LightingRenderer::PrepareLightingPassResources()
     {
         UniquePtr<LightingPassResources> lightingResources = MakeUnique<LightingPassResources>();
-        int32 swapchainLength = context->swapchain->GetInfo().imageCount;
 
         DescriptorPoolCreateInfo descriptorPoolCreateInfo;
-        descriptorPoolCreateInfo.maxDescriptorSets = 1 + swapchainLength + 1;
+        descriptorPoolCreateInfo.maxDescriptorSets = 3;
         descriptorPoolCreateInfo.descriptorCount =
         {
             { ResourceType::UniformBuffer, 1 },
-            { ResourceType::Texture, swapchainLength * OffscreenImageCount + 1 },
-            { ResourceType::Sampler, swapchainLength * OffscreenImageCount + 1 },
+            { ResourceType::Texture, OffscreenImageCount + 1 },
+            { ResourceType::Sampler, OffscreenImageCount + 1 },
         };
 
         auto[createDescriptorPoolResult, createdDescriptorPool] = context->device->CreateDescriptorPool(

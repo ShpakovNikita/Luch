@@ -3,6 +3,7 @@
 #include <Husky/Render/ShaderDefines.h>
 #include <Husky/Render/Deferred/GBufferRenderer.h>
 #include <Husky/Render/Deferred/LightingRenderer.h>
+#include <Husky/Render/Deferred/ResolveRenderer.h>
 
 #include <Husky/FileStream.h>
 
@@ -63,6 +64,11 @@ namespace Husky::Render::Deferred
         context = MakeShared<RenderContext>();
         context->physicalDevice = physicalDevice;
         context->surface = surface;
+
+        gbufferRenderer = MakeUnique<GBufferRenderer>();
+        lightingRenderer = MakeUnique<LightingRenderer>();
+        shadowRenderer = MakeUnique<ShadowRenderer>();
+        resolveRenderer = MakeUnique<ResolveRenderer>();
     }
 
     DeferredRenderer::~DeferredRenderer() = default;
@@ -112,7 +118,6 @@ namespace Husky::Render::Deferred
 
         resources = std::move(preparedResources);
 
-        gbufferRenderer = MakeUnique<GBufferRenderer>();
         gbufferRenderer->SetRenderContext(context);
         gbufferRenderer->SetDeferredResources(resources);
         bool gbufferRendererInitialized = gbufferRenderer->Initialize();
@@ -121,7 +126,6 @@ namespace Husky::Render::Deferred
             return false;
         }
 
-        lightingRenderer = MakeUnique<LightingRenderer>();
         lightingRenderer->SetRenderContext(context);
         lightingRenderer->SetDeferredResources(resources);
         bool lightingRendererInitialized = lightingRenderer->Initialize();
@@ -130,7 +134,13 @@ namespace Husky::Render::Deferred
             return false;
         }
 
-        shadowRenderer = MakeUnique<ShadowRenderer>();
+        resolveRenderer->SetRenderContext(context);
+        bool resolveRendererInitialized = resolveRenderer->Initialize();
+        if(!resolveRendererInitialized)
+        {
+            return false;
+        }
+
         shadowRenderer->SetRenderContext(context);
         bool shadowRendererInitialized = shadowRenderer->Initialize();
         if(!shadowRendererInitialized)
@@ -149,8 +159,12 @@ namespace Husky::Render::Deferred
         bool gbufferRendererDeinitialized = gbufferRenderer->Deinitialize();
         bool shadowRendererDeinitialized = shadowRenderer->Deinitialize();
         bool lightingRendererDeinitialized = lightingRenderer->Deinitialize();
+        bool resolveRendererDeinitialized = resolveRenderer->Deinitialize();
 
-        return gbufferRendererDeinitialized && shadowRendererDeinitialized && lightingRendererDeinitialized;
+        return gbufferRendererDeinitialized
+          && shadowRendererDeinitialized
+          && lightingRendererDeinitialized
+          && resolveRendererDeinitialized;
     }
 
     void DeferredRenderer::PrepareScene(SceneV1::Scene* scene)
@@ -252,6 +266,8 @@ namespace Husky::Render::Deferred
 
         auto[acquireResult, acquiredTexture] = context->swapchain->GetNextAvailableTexture(nullptr);
         HUSKY_ASSERT(acquireResult == GraphicsResult::Success);
+
+        resolveRenderer->Resolve(acquiredTexture.texture, gbuffer, lighting);
 
         context->commandQueue->Present(acquiredTexture.index, context->swapchain);
     }

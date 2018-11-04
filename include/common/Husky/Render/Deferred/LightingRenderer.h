@@ -49,7 +49,6 @@ namespace Husky::Render::Deferred
         void UpdateLights(const RefPtrUnorderedSet<SceneV1::Node>& lightNodes);
 
         RefPtr<PipelineState> CreateLightingPipelineState(LightingPassResources* lighting);
-        ResultValue<bool, UniquePtr<GBufferPassResources>> PrepareGBufferPassResources();
         ResultValue<bool, UniquePtr<LightingPassResources>> PrepareLightingPassResources();
         ResultValue<bool, UniquePtr<LightingTextures>> CreateLightingTextures();
 
@@ -60,8 +59,5 @@ namespace Husky::Render::Deferred
 
         Format diffuseFormat = Format::R32G32B32A32Sfloat;
         Format specularFormat = Format::R32G32B32A32Sfloat;
-        float32 minDepth = 0.0;
-        float32 maxDepth = 1.0;
     };
 }
-
