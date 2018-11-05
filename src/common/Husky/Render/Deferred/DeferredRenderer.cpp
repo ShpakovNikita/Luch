@@ -2,8 +2,9 @@
 #include <Husky/Render/TextureUploader.h>
 #include <Husky/Render/ShaderDefines.h>
 #include <Husky/Render/Deferred/GBufferRenderer.h>
-#include <Husky/Render/Deferred/LightingRenderer.h>
 #include <Husky/Render/Deferred/ResolveRenderer.h>
+#include <Husky/Render/Deferred/TonemapRenderer.h>
+#include <Husky/Render/Deferred/ShadowMapping/ShadowRenderer.h>
 
 #include <Husky/FileStream.h>
 
@@ -66,9 +67,9 @@ namespace Husky::Render::Deferred
         context->surface = surface;
 
         gbufferRenderer = MakeUnique<GBufferRenderer>();
-        lightingRenderer = MakeUnique<LightingRenderer>();
-        shadowRenderer = MakeUnique<ShadowRenderer>();
         resolveRenderer = MakeUnique<ResolveRenderer>();
+        tonemapRenderer = MakeUnique<TonemapRenderer>();
+        shadowRenderer = MakeUnique<ShadowRenderer>();
     }
 
     DeferredRenderer::~DeferredRenderer() = default;
@@ -126,17 +127,17 @@ namespace Husky::Render::Deferred
             return false;
         }
 
-        lightingRenderer->SetRenderContext(context);
-        lightingRenderer->SetDeferredResources(resources);
-        bool lightingRendererInitialized = lightingRenderer->Initialize();
-        if(!lightingRendererInitialized)
+        resolveRenderer->SetRenderContext(context);
+        resolveRenderer->SetDeferredResources(resources);
+        bool resolveRendererInitialized = resolveRenderer->Initialize();
+        if(!resolveRendererInitialized)
         {
             return false;
         }
 
-        resolveRenderer->SetRenderContext(context);
-        bool resolveRendererInitialized = resolveRenderer->Initialize();
-        if(!resolveRendererInitialized)
+        tonemapRenderer->SetRenderContext(context);
+        bool tonemapRendererInitialized = tonemapRenderer->Initialize();
+        if(!tonemapRendererInitialized)
         {
             return false;
         }
@@ -158,12 +159,12 @@ namespace Husky::Render::Deferred
 
         bool gbufferRendererDeinitialized = gbufferRenderer->Deinitialize();
         bool shadowRendererDeinitialized = shadowRenderer->Deinitialize();
-        bool lightingRendererDeinitialized = lightingRenderer->Deinitialize();
         bool resolveRendererDeinitialized = resolveRenderer->Deinitialize();
+        bool tonemapRendererDeinitialized = tonemapRenderer->Deinitialize();
 
         return gbufferRendererDeinitialized
           && shadowRendererDeinitialized
-          && lightingRendererDeinitialized
+          && tonemapRendererDeinitialized
           && resolveRendererDeinitialized;
     }
 
@@ -180,7 +181,7 @@ namespace Husky::Render::Deferred
         }
 
         gbufferRenderer->PrepareScene(scene);
-        lightingRenderer->PrepareScene(scene);
+        resolveRenderer->PrepareScene(scene);
         shadowRenderer->PrepareScene(scene);
     }
 
@@ -250,24 +251,24 @@ namespace Husky::Render::Deferred
         }
 
         gbufferRenderer->UpdateScene(scene);
-        lightingRenderer->UpdateScene(scene);
+        resolveRenderer->UpdateScene(scene);
         shadowRenderer->UpdateScene(scene);
     }
 
     void DeferredRenderer::DrawScene(SceneV1::Scene* scene, SceneV1::Camera* camera)
     {
-        const auto& lightNodesMap = scene->GetSceneProperties().lightNodes;
-        RefPtrVector<SceneV1::Node> lightNodes;
-        std::copy(lightNodesMap.begin(), lightNodesMap.end(), std::back_inserter(lightNodes));
-        auto shadowMaps = shadowRenderer->DrawShadows(scene, lightNodes);
+//        const auto& lightNodesMap = scene->GetSceneProperties().lightNodes;
+//        RefPtrVector<SceneV1::Node> lightNodes;
+//        std::copy(lightNodesMap.begin(), lightNodesMap.end(), std::back_inserter(lightNodes));
+//        auto shadowMaps = shadowRenderer->DrawShadows(scene, lightNodes);
 
         GBufferTextures* gbuffer = gbufferRenderer->DrawScene(scene, camera);
-        LightingTextures* lighting = lightingRenderer->DrawScene(scene, camera, gbuffer);
+        Texture* resolved = resolveRenderer->Resolve(scene, camera, gbuffer);
 
         auto[acquireResult, acquiredTexture] = context->swapchain->GetNextAvailableTexture(nullptr);
         HUSKY_ASSERT(acquireResult == GraphicsResult::Success);
 
-        resolveRenderer->Resolve(acquiredTexture.texture, gbuffer, lighting);
+        tonemapRenderer->Tonemap(resolved, acquiredTexture.texture);
 
         context->commandQueue->Present(acquiredTexture.index, context->swapchain);
     }

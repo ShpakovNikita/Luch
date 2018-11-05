@@ -2,9 +2,13 @@
 #include <Husky/Render/RenderContext.h>
 #include <Husky/Render/RenderUtils.h>
 #include <Husky/Render/SharedBuffer.h>
+#include <Husky/Render/Deferred/DeferredResources.h>
 #include <Husky/Render/Deferred/GBufferTextures.h>
-#include <Husky/Render/Deferred/LightingTextures.h>
-#include <Husky/Render/Deferred/ResolvePassResources.h>
+
+#include <Husky/SceneV1/Scene.h>
+#include <Husky/SceneV1/Node.h>
+#include <Husky/SceneV1/Camera.h>
+#include <Husky/SceneV1/Light.h>
 
 #include <Husky/Graphics/BufferCreateInfo.h>
 #include <Husky/Graphics/TextureCreateInfo.h>
@@ -35,6 +39,17 @@ namespace Husky::Render::Deferred
     using namespace Graphics;
 
     // Fullscreen quad for triangle list
+//    static const Vector<QuadVertex> fullscreenQuadVertices =
+//    {
+//        {{-1.0f, +1.0f, 0.0f}, {0.0f, 1.0f}}, // bottom left
+//        {{+1.0f, +1.0f, 0.0f}, {1.0f, 1.0f}}, // bottom right
+//        {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}}, // top left
+//
+//        {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}},  // top left
+//        {{+1.0f, +1.0f, 0.0f}, {1.0f, 1.0f}},  // bottom right
+//        {{+1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}}, // top right
+//    };
+
     // One triangle that covers whole screen
     constexpr Array<QuadVertex, 3> fullscreenQuadVertices =
     {
@@ -51,14 +66,23 @@ namespace Husky::Render::Deferred
     bool ResolveRenderer::Initialize()
     {
         HUSKY_ASSERT(context != nullptr);
+        HUSKY_ASSERT(commonResources != nullptr);
 
-        auto[resolveResourcesPrepared, preparedResolveResources] = PrepareResolvePassResources(context.get());
-        if (!resolveResourcesPrepared)
+        auto[resourcesPrepared, preparedResources] = PrepareResolvePassResources();
+        if (!resourcesPrepared)
         {
             return false;
         }
 
-        resources = std::move(preparedResolveResources);
+        resources = std::move(preparedResources);
+
+        auto [resolveTextureCreated, createdResolveTexture] = CreateResolveTexture();
+        if(!resolveTextureCreated)
+        {
+            return false;
+        }
+
+        resolveTexture = std::move(createdResolveTexture);
 
         return true;
     }
@@ -66,32 +90,49 @@ namespace Husky::Render::Deferred
     bool ResolveRenderer::Deinitialize()
     {
         context.reset();
+        commonResources.reset();
         resources.reset();
 
         return true;
     }
 
-    void ResolveRenderer::Resolve(Texture* output, GBufferTextures* gbuffer, LightingTextures* lightingTextures)
+    void ResolveRenderer::PrepareScene(SceneV1::Scene* scene)
     {
-        resources->textureDescriptorSet->WriteTexture(
+    }
+
+    void ResolveRenderer::UpdateScene(SceneV1::Scene* scene)
+    {
+        resources->sharedBuffer->Reset();
+
+        const auto& sceneProperties = scene->GetSceneProperties();
+
+        UpdateLights(sceneProperties.lightNodes);
+    }
+
+    Texture* ResolveRenderer::Resolve(
+        SceneV1::Scene* scene,
+        SceneV1::Camera* camera,
+        GBufferTextures* gbuffer)
+    {
+        resources->gbufferTextureDescriptorSet->WriteTexture(
             resources->baseColorTextureBinding,
             gbuffer->baseColorTexture);
 
-        resources->textureDescriptorSet->WriteTexture(
-            resources->diffuseTextureBinding,
-            lightingTextures->diffuseLightingTexture);
+        resources->gbufferTextureDescriptorSet->WriteTexture(
+            resources->normalMapTextureBinding,
+            gbuffer->normalMapTexture);
 
-        resources->textureDescriptorSet->WriteTexture(
-            resources->specularTextureBinding,
-            lightingTextures->specularLightingTexture);
+        resources->gbufferTextureDescriptorSet->WriteTexture(
+            resources->depthStencilTextureBinding,
+            gbuffer->depthStencilBuffer);
 
-        resources->textureDescriptorSet->Update();
+        resources->gbufferTextureDescriptorSet->Update();
 
         auto [allocateCmdListResult, cmdList] = resources->commandPool->AllocateGraphicsCommandList();
         HUSKY_ASSERT(allocateCmdListResult == GraphicsResult::Success);
 
         ColorAttachment colorAttachment = resources->colorAttachmentTemplate;
-        colorAttachment.output.texture = output;
+        colorAttachment.output.texture = resolveTexture;
 
         int32 framebufferWidth = context->swapchain->GetInfo().width;
         int32 framebufferHeight = context->swapchain->GetInfo().height;
@@ -114,12 +155,22 @@ namespace Husky::Render::Deferred
         cmdList->BindTextureDescriptorSet(
             ShaderStage::Fragment,
             resources->pipelineLayout,
-            resources->textureDescriptorSet);
+            resources->gbufferTextureDescriptorSet);
 
         cmdList->BindSamplerDescriptorSet(
             ShaderStage::Fragment,
             resources->pipelineLayout,
-            resources->samplerDescriptorSet);
+            resources->gbufferSamplerDescriptorSet);
+
+        cmdList->BindBufferDescriptorSet(
+            ShaderStage::Fragment,
+            resources->pipelineLayout,
+            camera->GetDescriptorSet("Deferred"));
+
+        cmdList->BindBufferDescriptorSet(
+            ShaderStage::Fragment,
+            resources->pipelineLayout,
+            resources->lightsBufferDescriptorSet);
 
         cmdList->BindVertexBuffers({ resources->fullscreenQuadBuffer }, {0}, 0);
         cmdList->Draw(0, fullscreenQuadVertices.size());
@@ -127,11 +178,51 @@ namespace Husky::Render::Deferred
         cmdList->End();
 
         context->commandQueue->Submit(cmdList);
+
+        return resolveTexture;
     }
 
-    RefPtr<PipelineState> ResolveRenderer::CreateResolvePipelineState(
-        RenderContext* context,
-        ResolvePassResources* resources)
+    void ResolveRenderer::UpdateLights(const RefPtrUnorderedSet<SceneV1::Node>& lightNodes)
+    {
+        Vector<LightUniform> lightUniforms;
+
+        for(const auto& lightNode : lightNodes)
+        {
+            const auto& light = lightNode->GetLight();
+            HUSKY_ASSERT(light != nullptr);
+
+            if(light->IsEnabled())
+            {
+                LightUniform lightUniform = RenderUtils::GetLightUniform(light, lightNode->GetWorldTransform());
+                lightUniforms.push_back(lightUniform);
+            }
+        }
+
+        int32 enabledLightsCount = lightNodes.size();
+
+        LightingParamsUniform lightingParams;
+        lightingParams.lightCount = enabledLightsCount;
+
+        auto lightingParamsSuballocation = resources->sharedBuffer->Suballocate(sizeof(LightingParamsUniform), 16);
+        auto lightsSuballocation = resources->sharedBuffer->Suballocate(enabledLightsCount * sizeof(LightUniform), 16);
+
+        memcpy(lightingParamsSuballocation.offsetMemory, &lightingParams, sizeof(LightingParamsUniform));
+        memcpy(lightsSuballocation.offsetMemory, lightUniforms.data(), enabledLightsCount * sizeof(LightUniform));
+
+        resources->lightsBufferDescriptorSet->WriteUniformBuffer(
+            resources->lightingParamsBinding,
+            lightingParamsSuballocation.buffer,
+            lightingParamsSuballocation.offset);
+
+        resources->lightsBufferDescriptorSet->WriteUniformBuffer(
+            resources->lightsBufferBinding,
+            lightsSuballocation.buffer,
+            lightsSuballocation.offset);
+
+        resources->lightsBufferDescriptorSet->Update();
+    }
+
+    RefPtr<PipelineState> ResolveRenderer::CreateResolvePipelineState(ResolvePassResources* resolve)
     {
         PipelineStateCreateInfo ci;
 
@@ -157,15 +248,15 @@ namespace Husky::Render::Deferred
         ci.depthStencil.depthWriteEnable = false;
 
         auto& colorAttachment = ci.colorAttachments.attachments.emplace_back();
-        colorAttachment.format = context->swapchain->GetInfo().format;
+        colorAttachment.format = colorFormat;
         colorAttachment.blendEnable = false;
 
         ci.depthStencil.depthStencilFormat = Format::Undefined;
 
         //pipelineState.renderPass = lighting.renderPass;
-        ci.pipelineLayout = resources->pipelineLayout;
-        ci.vertexProgram = resources->vertexShader;
-        ci.fragmentProgram = resources->fragmentShader;
+        ci.pipelineLayout = resolve->pipelineLayout;
+        ci.vertexProgram = resolve->vertexShader;
+        ci.fragmentProgram = resolve->fragmentShader;
 
         auto[createPipelineResult, createdPipeline] = context->device->CreatePipelineState(ci);
         if (createPipelineResult != GraphicsResult::Success)
@@ -176,8 +267,7 @@ namespace Husky::Render::Deferred
         return createdPipeline;
     }
 
-    ResultValue<bool, UniquePtr<ResolvePassResources>> ResolveRenderer::PrepareResolvePassResources(
-        RenderContext* context)
+    ResultValue<bool, UniquePtr<ResolvePassResources>> ResolveRenderer::PrepareResolvePassResources()
     {
         UniquePtr<ResolvePassResources> resolveResources = MakeUnique<ResolvePassResources>();
 
@@ -186,8 +276,8 @@ namespace Husky::Render::Deferred
         descriptorPoolCreateInfo.descriptorCount =
         {
             { ResourceType::UniformBuffer, 1 },
-            { ResourceType::Texture, 3 },
-            { ResourceType::Sampler, 3 },
+            { ResourceType::Texture, OffscreenImageCount + 1 },
+            { ResourceType::Sampler, OffscreenImageCount + 1 },
         };
 
         auto[createDescriptorPoolResult, createdDescriptorPool] = context->device->CreateDescriptorPool(
@@ -210,7 +300,7 @@ namespace Husky::Render::Deferred
 
         auto [vertexShaderLibraryCreated, createdVertexShaderLibrary] = RenderUtils::CreateShaderLibrary(
             context->device,
-#if _WIN32 && HUSKY_USE_VULKAN
+#if _WIN32
             "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\resolve.vert",
 #endif
 #if __APPLE__
@@ -230,8 +320,7 @@ namespace Husky::Render::Deferred
             return { false };
         }
 
-        auto [vertexShaderProgramCreateResult, vertexShaderProgram] = createdVertexShaderLibrary->CreateShaderProgram(
-            ShaderStage::Vertex, "vp_main");
+        auto [vertexShaderProgramCreateResult, vertexShaderProgram] = createdVertexShaderLibrary->CreateShaderProgram(ShaderStage::Vertex, "vp_main");
         if(vertexShaderProgramCreateResult != GraphicsResult::Success)
         {
             HUSKY_ASSERT(false);
@@ -242,7 +331,7 @@ namespace Husky::Render::Deferred
 
         auto[fragmentShaderLibraryCreated, createdFragmentShaderLibrary] = RenderUtils::CreateShaderLibrary(
             context->device,
-#if _WIN32 && HUSKY_USE_VULKAN
+#if _WIN32
             "C:\\Development\\Husky\\src\\Husky\\Render\\Shaders\\Deferred\\resolve.frag",
 #endif
 #if __APPLE__
@@ -274,66 +363,101 @@ namespace Husky::Render::Deferred
 
         resolveResources->fragmentShader = std::move(fragmentShaderProgram);
 
+        resolveResources->lightingParamsBinding.OfType(ResourceType::UniformBuffer);
+        resolveResources->lightsBufferBinding.OfType(ResourceType::UniformBuffer);
+
+        DescriptorSetLayoutCreateInfo lightsDescriptorSetLayoutCreateInfo;
+        lightsDescriptorSetLayoutCreateInfo
+            .OfType(DescriptorSetType::Buffer)
+            .WithNBindings(2)
+            .AddBinding(&resolveResources->lightingParamsBinding)
+            .AddBinding(&resolveResources->lightsBufferBinding);
+
+        auto[createLightsDescriptorSetLayoutResult, createdLightsDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(lightsDescriptorSetLayoutCreateInfo);
+        if (createLightsDescriptorSetLayoutResult != GraphicsResult::Success)
+        {
+            HUSKY_ASSERT(false);
+            return { false };
+        }
+
+        resolveResources->lightsBufferDescriptorSetLayout = std::move(createdLightsDescriptorSetLayout);
+
         resolveResources->baseColorTextureBinding.OfType(ResourceType::Texture);
         resolveResources->baseColorSamplerBinding.OfType(ResourceType::Sampler);
-        resolveResources->diffuseTextureBinding.OfType(ResourceType::Texture);
-        resolveResources->diffuseSamplerBinding.OfType(ResourceType::Sampler);
-        resolveResources->specularTextureBinding.OfType(ResourceType::Texture);
-        resolveResources->specularSamplerBinding.OfType(ResourceType::Sampler);
+        resolveResources->normalMapTextureBinding.OfType(ResourceType::Texture);
+        resolveResources->normalMapSamplerBinding.OfType(ResourceType::Sampler);
+        resolveResources->depthStencilTextureBinding.OfType(ResourceType::Texture);
+        resolveResources->depthStencilSamplerBinding.OfType(ResourceType::Sampler);
 
-        DescriptorSetLayoutCreateInfo textureDescriptorSetLayoutCreateInfo;
-        textureDescriptorSetLayoutCreateInfo
+        DescriptorSetLayoutCreateInfo gbufferTextureDescriptorSetLayoutCreateInfo;
+        gbufferTextureDescriptorSetLayoutCreateInfo
             .OfType(DescriptorSetType::Texture)
             .WithNBindings(3)
             .AddBinding(&resolveResources->baseColorTextureBinding)
-            .AddBinding(&resolveResources->diffuseTextureBinding)
-            .AddBinding(&resolveResources->specularTextureBinding);
+            .AddBinding(&resolveResources->normalMapTextureBinding)
+            .AddBinding(&resolveResources->depthStencilTextureBinding);
 
-        auto[createTextureDescriptorSetLayoutResult, createdTextureDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(
-            textureDescriptorSetLayoutCreateInfo);
-
-        if (createTextureDescriptorSetLayoutResult != GraphicsResult::Success)
+        auto[createGBufferTextureDescriptorSetLayoutResult, createdGBufferTextureDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(gbufferTextureDescriptorSetLayoutCreateInfo);
+        if (createGBufferTextureDescriptorSetLayoutResult != GraphicsResult::Success)
         {
             HUSKY_ASSERT(false);
             return { false };
         }
 
-        resolveResources->textureDescriptorSetLayout = std::move(createdTextureDescriptorSetLayout);
+        resolveResources->gbufferTextureDescriptorSetLayout = std::move(createdGBufferTextureDescriptorSetLayout);
 
-        DescriptorSetLayoutCreateInfo samplerDescriptorSetLayoutCreateInfo;
-        samplerDescriptorSetLayoutCreateInfo
+        DescriptorSetLayoutCreateInfo gbufferSamplerDescriptorSetLayoutCreateInfo;
+        gbufferSamplerDescriptorSetLayoutCreateInfo
             .OfType(DescriptorSetType::Sampler)
             .WithNBindings(3)
             .AddBinding(&resolveResources->baseColorSamplerBinding)
-            .AddBinding(&resolveResources->diffuseSamplerBinding)
-            .AddBinding(&resolveResources->specularSamplerBinding);
+            .AddBinding(&resolveResources->normalMapSamplerBinding)
+            .AddBinding(&resolveResources->depthStencilSamplerBinding);
 
-        auto[createSamplerDescriptorSetLayoutResult, createdSamplerDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(
-            samplerDescriptorSetLayoutCreateInfo);
-
-        if (createSamplerDescriptorSetLayoutResult != GraphicsResult::Success)
+        auto[createGBufferSamplerDescriptorSetLayoutResult, createdGBufferSamplerDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(gbufferSamplerDescriptorSetLayoutCreateInfo);
+        if (createGBufferSamplerDescriptorSetLayoutResult != GraphicsResult::Success)
         {
             HUSKY_ASSERT(false);
             return { false };
         }
 
-        resolveResources->samplerDescriptorSetLayout = std::move(createdSamplerDescriptorSetLayout);
+        resolveResources->gbufferSamplerDescriptorSetLayout = std::move(createdGBufferSamplerDescriptorSetLayout);
 
         SamplerCreateInfo samplerCreateInfo;
 
-        auto[createSamplerResult, createdSampler] = context->device->CreateSampler(samplerCreateInfo);
-        if (createSamplerResult != GraphicsResult::Success)
+        auto[createBaseColorSamplerResult, createdBaseColorSampler] = context->device->CreateSampler(samplerCreateInfo);
+        if (createBaseColorSamplerResult != GraphicsResult::Success)
         {
             HUSKY_ASSERT(false);
             return { false };
         }
 
-        resolveResources->sampler = std::move(createdSampler);
+        resolveResources->baseColorSampler = std::move(createdBaseColorSampler);
+
+        auto[createNormalMapSamplerResult, createdNormalMapSampler] = context->device->CreateSampler(samplerCreateInfo);
+        if (createNormalMapSamplerResult != GraphicsResult::Success)
+        {
+            HUSKY_ASSERT(false);
+            return { false };
+        }
+
+        resolveResources->normalMapSampler = std::move(createdNormalMapSampler);
+
+        auto[createDepthSamplerResult, createdDepthSampler] = context->device->CreateSampler(samplerCreateInfo);
+        if (createDepthSamplerResult != GraphicsResult::Success)
+        {
+            HUSKY_ASSERT(false);
+            return { false };
+        }
+
+        resolveResources->depthStencilSampler = std::move(createdDepthSampler);
 
         PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
         pipelineLayoutCreateInfo
-            .AddSetLayout(ShaderStage::Fragment, resolveResources->textureDescriptorSetLayout)
-            .AddSetLayout(ShaderStage::Fragment, resolveResources->samplerDescriptorSetLayout);
+            .AddSetLayout(ShaderStage::Fragment, commonResources->cameraBufferDescriptorSetLayout)
+            .AddSetLayout(ShaderStage::Fragment, resolveResources->lightsBufferDescriptorSetLayout)
+            .AddSetLayout(ShaderStage::Fragment, resolveResources->gbufferTextureDescriptorSetLayout)
+            .AddSetLayout(ShaderStage::Fragment, resolveResources->gbufferSamplerDescriptorSetLayout);
 
         auto[createPipelineLayoutResult, createdPipelineLayout] = context->device->CreatePipelineLayout(pipelineLayoutCreateInfo);
         if (createPipelineLayoutResult != GraphicsResult::Success)
@@ -344,9 +468,12 @@ namespace Husky::Render::Deferred
 
         resolveResources->pipelineLayout = std::move(createdPipelineLayout);
 
-        resolveResources->colorAttachmentTemplate.format = context->swapchain->GetInfo().format;
+        resolveResources->colorAttachmentTemplate.format = colorFormat;
         resolveResources->colorAttachmentTemplate.colorLoadOperation = AttachmentLoadOperation::Clear;
         resolveResources->colorAttachmentTemplate.colorStoreOperation = AttachmentStoreOperation::Store;
+
+        // TODO result
+        resolveResources->pipelineState = CreateResolvePipelineState(resolveResources.get());
 
         BufferCreateInfo quadBufferCreateInfo;
         quadBufferCreateInfo.length = fullscreenQuadVertices.size() * sizeof(QuadVertex);
@@ -366,38 +493,48 @@ namespace Husky::Render::Deferred
         resolveResources->fullscreenQuadBuffer = std::move(createdQuadBuffer);
 
         auto [allocateTextureSetResult, allocatedTextureSet] = resolveResources->descriptorPool->AllocateDescriptorSet(
-            resolveResources->textureDescriptorSetLayout);
+                resolveResources->gbufferTextureDescriptorSetLayout);
 
         if (allocateTextureSetResult != GraphicsResult::Success)
         {
             return { false };
         }
 
-        resolveResources->textureDescriptorSet = std::move(allocatedTextureSet);
+        resolveResources->gbufferTextureDescriptorSet = std::move(allocatedTextureSet);
 
         auto [allocateSamplerSetResult, allocatedSamplerSet] = resolveResources->descriptorPool->AllocateDescriptorSet(
-            resolveResources->samplerDescriptorSetLayout);
+            resolveResources->gbufferSamplerDescriptorSetLayout);
 
         if (allocateSamplerSetResult != GraphicsResult::Success)
         {
             return { false };
         }
 
-        resolveResources->samplerDescriptorSet = std::move(allocatedSamplerSet);
+        resolveResources->gbufferSamplerDescriptorSet = std::move(allocatedSamplerSet);
 
-        resolveResources->samplerDescriptorSet->WriteSampler(
+        resolveResources->gbufferSamplerDescriptorSet->WriteSampler(
             resolveResources->baseColorSamplerBinding,
-            resolveResources->sampler);
+            resolveResources->baseColorSampler);
 
-        resolveResources->samplerDescriptorSet->WriteSampler(
-            resolveResources->diffuseSamplerBinding,
-            resolveResources->sampler);
+        resolveResources->gbufferSamplerDescriptorSet->WriteSampler(
+            resolveResources->normalMapSamplerBinding,
+            resolveResources->normalMapSampler);
 
-        resolveResources->samplerDescriptorSet->WriteSampler(
-            resolveResources->specularSamplerBinding,
-            resolveResources->sampler);
+        resolveResources->gbufferSamplerDescriptorSet->WriteSampler(
+            resolveResources->depthStencilSamplerBinding,
+            resolveResources->depthStencilSampler);
 
-        resolveResources->samplerDescriptorSet->Update();
+        resolveResources->gbufferSamplerDescriptorSet->Update();
+
+        auto [createDescriptorSetResult, createdDescriptorSet] = resolveResources->descriptorPool->AllocateDescriptorSet(
+            resolveResources->lightsBufferDescriptorSetLayout);
+
+        if(createDescriptorSetResult != GraphicsResult::Success)
+        {
+            return { false };
+        }
+
+        resolveResources->lightsBufferDescriptorSet = createdDescriptorSet;
 
         BufferCreateInfo bufferCreateInfo;
         bufferCreateInfo.length = SharedUniformBufferSize;
@@ -413,9 +550,32 @@ namespace Husky::Render::Deferred
 
         resolveResources->sharedBuffer = MakeUnique<SharedBuffer>(std::move(createdBuffer));
 
-        // TODO result
-        resolveResources->pipelineState = CreateResolvePipelineState(context, resolveResources.get());
-
         return { true, std::move(resolveResources) };
+    }
+
+    ResultValue<bool, RefPtr<Texture>> ResolveRenderer::CreateResolveTexture()
+    {
+        const auto& swapchainCreateInfo = context->swapchain->GetInfo();
+        int32 textureWidth = swapchainCreateInfo.width;
+        int32 textureHeight = swapchainCreateInfo.height;
+
+        TextureCreateInfo textureCreateInfo;
+        textureCreateInfo.format = colorFormat;
+        textureCreateInfo.width = textureWidth;
+        textureCreateInfo.height = textureHeight;
+        textureCreateInfo.usage =
+              TextureUsageFlags::ColorAttachment
+            | TextureUsageFlags::ShaderRead
+            | TextureUsageFlags::TransferSource;
+
+        auto[createTextureResult, createdTexture] = context->device->CreateTexture(
+            textureCreateInfo);
+
+        if (createTextureResult != GraphicsResult::Success)
+        {
+            return { false };
+        }
+
+        return { true, std::move(createdTexture) };
     }
 }

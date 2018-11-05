@@ -2,15 +2,19 @@
 
 namespace Husky::Render::Deferred
 {
+    namespace ShadowMapping
+    {
+        class ShadowRenderer;
+    }
+
     class DeferredRenderer;
     class GBufferRenderer;
-    class LightingRenderer;
     class ResolveRenderer;
+    class TonemapRenderer;
 
     struct DeferredResources;
     struct GBufferPassResources;
     struct GBufferTextures;
-    struct LightingPassResources;
-    struct LightingTextures;
     struct ResolvePassResources;
+    struct TonemapPassResources;
 }

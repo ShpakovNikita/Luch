@@ -19,18 +19,27 @@ namespace Husky::Render::Deferred
 
         DescriptorSetBinding baseColorTextureBinding;
         DescriptorSetBinding baseColorSamplerBinding;
-        DescriptorSetBinding diffuseTextureBinding;
-        DescriptorSetBinding diffuseSamplerBinding;
-        DescriptorSetBinding specularTextureBinding;
-        DescriptorSetBinding specularSamplerBinding;
+        DescriptorSetBinding normalMapTextureBinding;
+        DescriptorSetBinding normalMapSamplerBinding;
+        DescriptorSetBinding depthStencilTextureBinding;
+        DescriptorSetBinding depthStencilSamplerBinding;
 
-        RefPtr<Sampler> sampler;
+        RefPtr<Sampler> baseColorSampler;
+        RefPtr<Sampler> normalMapSampler;
+        RefPtr<Sampler> depthStencilSampler;
 
-        RefPtr<DescriptorSetLayout> textureDescriptorSetLayout;
-        RefPtr<DescriptorSetLayout> samplerDescriptorSetLayout;
+        RefPtr<DescriptorSet> gbufferTextureDescriptorSet;
+        RefPtr<DescriptorSet> gbufferSamplerDescriptorSet;
 
-        RefPtr<DescriptorSet> textureDescriptorSet;
-        RefPtr<DescriptorSet> samplerDescriptorSet;
+        RefPtr<DescriptorSetLayout> gbufferTextureDescriptorSetLayout;
+        RefPtr<DescriptorSetLayout> gbufferSamplerDescriptorSetLayout;
+
+        DescriptorSetBinding lightingParamsBinding;
+        DescriptorSetBinding lightsBufferBinding;
+        RefPtr<Buffer> lightsBuffer;
+
+        RefPtr<DescriptorSetLayout> lightsBufferDescriptorSetLayout;
+        RefPtr<DescriptorSet> lightsBufferDescriptorSet;
 
         ColorAttachment colorAttachmentTemplate;
 
@@ -40,4 +49,3 @@ namespace Husky::Render::Deferred
         UniquePtr<SharedBuffer> sharedBuffer;
     };
 }
-
