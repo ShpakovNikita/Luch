@@ -108,6 +108,13 @@ enum class WrapMode
     Repeat = 10497,
 };
 
+enum class LightType
+{
+    Directional,
+    Point,
+    Spot,
+};
+
 using AccessorValueHolder = Array<uint32, 16>;
 
 struct SparseValues
@@ -303,6 +310,16 @@ struct Skin
     String name;
 };
 
+struct NodeLightsPunctual
+{
+    int32 light = -1;
+};
+
+struct NodeExtensions
+{
+    Optional<NodeLightsPunctual> lights;
+};
+
 struct Node
 {
     Optional<int32> camera;
@@ -314,6 +331,7 @@ struct Node
     Optional<Vec3> scale;
     Optional<Vec3> translation;
     Vector<float32> weights;
+    Optional<NodeExtensions> extensions;
     String name;
 };
 
@@ -328,6 +346,32 @@ struct Texture
     Optional<int32> sampler;
     Optional<int32> source;
     String name;
+};
+
+struct Spot
+{
+    float32 innerConeAngle = 0;
+    float32 outerConeAngle = glm::pi<float32>() / 4.0;
+};
+
+struct LightPunctual
+{
+    String name = "";
+    Vec3 color = Vec3{ 1.0, 1.0, 1.0 };
+    float32 intensity = 1.0;
+    LightType type = LightType::Directional;
+    Optional<float32> range;
+    Optional<Spot> spot;
+};
+
+struct RootLightsPunctual
+{
+    Vector<LightPunctual> lights;
+};
+
+struct RootExtensions
+{
+    Optional<RootLightsPunctual> lights;
 };
 
 struct glTFRoot
