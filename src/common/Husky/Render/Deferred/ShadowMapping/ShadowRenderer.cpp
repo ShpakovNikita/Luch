@@ -378,19 +378,16 @@ namespace Husky::Render::Deferred::ShadowMapping
         SceneV1::Light* light,
         Mat4x4 transform,
         SceneV1::PerspectiveCamera* camera)
-    {
-        HUSKY_ASSERT(light->GetDirection().has_value());
-        auto lookAt = glm::lookAt(Vec3{ 0, 0, 0 }, *light->GetDirection(), Vec3 { 0, 1, 0 });
-
-        HUSKY_ASSERT(light->GetSpotlightAngle().has_value());
+    {;
+        HUSKY_ASSERT(light->GetOuterConeAngle().has_value());
         HUSKY_ASSERT(light->GetRange().has_value());
 
-        camera->SetYFOV(light->GetSpotlightAngle().value());
+        camera->SetYFOV(light->GetOuterConeAngle().value());
         camera->SetAspectRatio(1);
         camera->SetZNear(0.1);
         camera->SetZFar(light->GetRange().value());
 
-        UpdateCamera(camera, transform * lookAt);
+        UpdateCamera(camera, transform);
     }
 
     void ShadowRenderer::UpdateDirectionalLightCamera(

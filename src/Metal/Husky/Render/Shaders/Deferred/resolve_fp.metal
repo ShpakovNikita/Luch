@@ -23,12 +23,12 @@ struct Light
     float4 color;
     int state;
     int type;
-    float spotlightAngle;
+    float innerConeAngle;
+    float outerConeAngle;
     float range;
     float intensity;
     float padding0;
     float padding1;
-    float padding2;
 };
 
 struct LightingResult
@@ -180,12 +180,13 @@ LightingResult ApplyPointlLight(
     return ApplyPointlLightImpl(light, L, dist, V, P, N, F0, metallic, roughness);
 }
 
-float SpotCone(float spotlightAngle, float3 directionVS, float3 L)
+float SpotCone(float innerConeAngle, float outerConeAngle, float3 directionVS, float3 L)
 {
-    float minCos = cos(spotlightAngle);
-    float maxCos = mix(minCos, 1, 0.5f);
+    float lightAngleScale = 1.0f / max(0.001f, cos(innerConeAngle) - cos(outerConeAngle));
+    float lightAngleOffset = -cos(outerConeAngle) * lightAngleScale;
     float cosAngle = dot(directionVS, -L);
-    return smoothstep(minCos, maxCos, cosAngle);
+    float angularAttenuation = saturate(cosAngle * lightAngleScale + lightAngleOffset);
+    return angularAttenuation * angularAttenuation;
 }
 
 LightingResult ApplySpotLight(
@@ -207,7 +208,7 @@ LightingResult ApplySpotLight(
     L = L/dist;
 
     LightingResult pointLighting = ApplyPointlLightImpl(light, L, dist, V, P, N, F0, metallic, roughness);
-    float spotIntensity = SpotCone(light.spotlightAngle, directionVS, L);
+    float spotIntensity = SpotCone(light.innerConeAngle, light.outerConeAngle, directionVS, L);
 
     result.diffuse = pointLighting.diffuse * spotIntensity;
     result.specular = pointLighting.specular * spotIntensity;

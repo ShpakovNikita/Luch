@@ -30,5 +30,6 @@ namespace Husky::glTF
     struct Node;
     struct Target;
     struct Texture;
+    struct LightPunctual;
     struct glTFRoot;
 }

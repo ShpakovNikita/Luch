@@ -4,20 +4,6 @@
 
 namespace Husky::SceneV1
 {
-    Node::Node(
-        RefPtrVector<Node> aChildren,
-        const RefPtr<Mesh>& aMesh,
-        const RefPtr<Camera>& aCamera,
-        const TransformType &aLocalTransform,
-        const String &aName)
-        : name(aName)
-        , children(move(aChildren))
-        , mesh(aMesh)
-        , camera(aCamera)
-        , localTransform(aLocalTransform)
-    {
-    }
-
     Node::~Node() = default;
 
     void Node::SetMesh(const RefPtr<Mesh>& aMesh)

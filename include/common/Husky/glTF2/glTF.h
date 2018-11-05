@@ -393,6 +393,7 @@ struct glTFRoot
     Optional<int32> scene;
     Vector<Skin> skins;
     Vector<Texture> textures;
+    Optional<RootExtensions> extensions;
 };
 
 }

@@ -10,7 +10,6 @@ namespace Husky::SceneV1
         Point = 0,
         Spot = 1,
         Directional = 2,
-        Ambient = 3
     };
 
     class Light : public BaseObject
@@ -24,11 +23,11 @@ namespace Husky::SceneV1
         const Optional<Vec3>& GetColor() const { return color; }
         void SetColor(const Vec3& aColor) { color = aColor; }
 
-        const Optional<Vec3>& GetDirection() const { return direction; }
-        void SetDirection(const Vec3& aDirection) { direction = aDirection; }
+        const Optional<float32>& GetInnerConeAngle() const { return innerConeAngle; }
+        void SetInnerConeAngle(const Optional<float32>& aInnerConeAngle) { innerConeAngle = aInnerConeAngle; }
 
-        const Optional<float32>& GetSpotlightAngle() const { return spotlightAngle; }
-        void SetSpotlightAngle(const Optional<float32>& aSpotlightAngle) { spotlightAngle = aSpotlightAngle; }
+        const Optional<float32>& GetOuterConeAngle() const { return outerConeAngle; }
+        void SetOuterConeAngle(const Optional<float32>& aOuterConeAngle) { outerConeAngle = aOuterConeAngle; }
 
         const Optional<float32>& GetRange() const { return range; }
         void SetRange(const Optional<float32>& aRange) { range = aRange; }
@@ -50,8 +49,8 @@ namespace Husky::SceneV1
     private:
         LightType type;
         Optional<Vec3> color;
-        Optional<Vec3> direction;
-        Optional<float32> spotlightAngle;
+        Optional<float32> innerConeAngle;
+        Optional<float32> outerConeAngle;
         Optional<float32> range;
         bool enabled = true;
         float32 intensity = 1.0;

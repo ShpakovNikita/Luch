@@ -532,14 +532,14 @@ Skin ParseSkin(const json& j)
 NodeLightsPunctual ParseNodeLightsPunctual(const json& j)
 {
     NodeLightsPunctual lights;
-    lights.light = ParseBuiltin<int32>(j, "index");
+    lights.light = ParseBuiltin<int32>(j, "light");
     return lights;
 }
 
 NodeExtensions ParseNodeExtensions(const json& j)
 {
     NodeExtensions extensions;
-    extensions.lights = ParseOptional<NodeLightsPunctual, ParseNodeLightsPunctual>(j, "lights");
+    extensions.lights = ParseOptional<NodeLightsPunctual, ParseNodeLightsPunctual>(j, "KHR_lights_punctual");
     return extensions;
 }
 
@@ -643,7 +643,7 @@ SharedPtr<glTFRoot> glTFParser::ParseJSON(Stream* stream)
     root->scene = ParseOptionalIndex(j, "scene");
     root->skins = ParseArrayOrEmpty<Skin, ParseSkin>(j, "skins");
     root->textures = ParseArrayOrEmpty<Texture, ParseTexture>(j, "textures");
-
+    root->extensions = ParseOptional<RootExtensions, ParseRootExtensions>(j, "extensions");
     return root;
 }
 

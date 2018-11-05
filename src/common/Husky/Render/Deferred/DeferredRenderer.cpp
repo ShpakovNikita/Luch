@@ -244,6 +244,8 @@ namespace Husky::Render::Deferred
 
     void DeferredRenderer::UpdateScene(SceneV1::Scene* scene)
     {
+        resources->sharedBuffer->Reset();
+
         Mat4x4 identity = glm::mat4(1.0f);
         for (const auto& node : scene->GetNodes())
         {

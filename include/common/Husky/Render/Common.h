@@ -76,12 +76,12 @@ namespace Husky::Render
         Vec4 color = { 1.0, 1.0, 1.0, 1.0 };
         int32 enabled = 1;
         int32 type = 0;
-        float32 spotlightAngle = 0;
+        float32 innerConeAngle = 0;
+        float32 outerConeAngle = 0;
         float32 range = 0;
         float32 intensity = 1.0;
         float32 __padding0 = 0.0;
         float32 __padding1 = 0.0;
-        float32 __padding2 = 0.0;
     };
 
     static_assert(sizeof(LightUniform) % 4 == 0);
