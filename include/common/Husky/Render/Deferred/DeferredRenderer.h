@@ -15,15 +15,10 @@
 #include <Husky/Render/ShaderDefines.h>
 #include <Husky/Render/RenderContext.h>
 #include <Husky/Render/Deferred/DeferredResources.h>
-#include <Husky/Render/Deferred/GBufferPassResources.h>
-#include <Husky/Render/Deferred/LightingPassResources.h>
-#include <Husky/Render/Deferred/ResolvePassResources.h>
 #include <Husky/Render/Deferred/DeferredOptions.h>
 #include <Husky/Render/Deferred/DeferredShaderDefines.h>
 
 #include <Husky/Render/SharedBuffer.h>
-#include <Husky/Render/Deferred/ShadowMapping/ShadowRenderer.h>
-#include <Husky/Render/Deferred/ShadowMapping/ShadowMappingPassResources.h>
 
 namespace Husky::Render::Deferred
 {
@@ -63,8 +58,8 @@ namespace Husky::Render::Deferred
         SharedPtr<RenderContext> context;
 
         UniquePtr<GBufferRenderer> gbufferRenderer;
-        UniquePtr<LightingRenderer> lightingRenderer;
         UniquePtr<ResolveRenderer> resolveRenderer;
+        UniquePtr<TonemapRenderer> tonemapRenderer;
         UniquePtr<ShadowRenderer> shadowRenderer;
 
         SharedPtr<DeferredResources> resources;

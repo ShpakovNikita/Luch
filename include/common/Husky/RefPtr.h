@@ -13,8 +13,13 @@ namespace Husky
     public:
         RefPtr() = default;
 
-        RefPtr(T* aPtr)
+        explicit RefPtr(T* aPtr)
             : ptr(aPtr)
+        {
+        }
+
+        RefPtr(std::nullptr_t nptr)
+            : ptr(nullptr)
         {
         }
 
