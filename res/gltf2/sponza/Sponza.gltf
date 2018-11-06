@@ -19,23 +19,27 @@
             "lights": [
                 {
                     "color": [1.0, 1.0, 1.0],
-                    "intensity": 2,
+                    "intensity": 10,
                     "type": "point",
-                    "range": 10
+                    "range": 30
                 },
                 {
                     "color": [1.0, 0.0, 0.0],
-                    "intensity": 2,
+                    "intensity": 50,
                     "type": "spot",
-                    "range": 10,
-                    "spot": {}
+                    "range": 30,
+                    "spot": {
+                        "outerConeAngle": 0.4
+                    }
                 },
                 {
                     "color": [0.0, 1.0, 0.0],
-                    "intensity": 2,
+                    "intensity": 50,
                     "type": "spot",
-                    "range": 10,
-                    "spot": {}
+                    "range": 500,
+                    "spot": {
+                        "outerConeAngle": 0.6
+                    }
                 }
             ]
         }
@@ -70,9 +74,9 @@
         },
         {
             "translation": [
-                4,
-                5,
-                0
+                3,
+                3,
+                -1
             ],
             "extensions": {
                 "KHR_lights_punctual": {
@@ -81,10 +85,10 @@
             }
         },
         {
-            "rotation": [ 0, 0.7071068, 0, 0.7071068 ],
+            "rotation": [ 0, 0.7071068, 0, -0.7071068 ],
             "translation": [
-                0,
-                5,
+                3,
+                2,
                 0
             ],
             "extensions": {
@@ -94,10 +98,10 @@
             }
         },
         {
-            "rotation": [ 0, 0.7071068, 0, 0.7071068 ],
+            "rotation": [ 0, 0.7071068, 0, -0.7071068 ],
             "translation": [
-                0,
-                5,
+                3,
+                3.5,
                 0
             ],
             "extensions": {

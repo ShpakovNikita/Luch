@@ -78,8 +78,9 @@ static CVReturn DisplayLinkCallback(CVDisplayLinkRef displayLink,
 
 -(CALayer*) makeBackingLayer
 {
-    CALayer* layer = [self.class.layerClass layer];
+    CAMetalLayer* layer = [self.class.layerClass layer];
     layer.contentsScale = [[NSScreen mainScreen] backingScaleFactor];
+    layer.pixelFormat =  MTLPixelFormatBGRA8Unorm_sRGB;
     return layer;
 }
 

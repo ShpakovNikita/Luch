@@ -107,7 +107,12 @@ float3 SpecularLighting(float3 color, float3 V, float3 L, float3 N, float3 F, fl
 
 float Attenuation(Light light, float d)
 {
-    return 1.0f - smoothstep(light.range * 0.75f, light.range, d);
+    float d2 = d * d;
+    float d4 = d2 * d2;
+    float r2 = light.range * light.range;
+    float r4 = r2 * r2;
+    return max(min(1.0 - d4/r4, 1.0), 0.0) / d2;
+    //return 1.0f - smoothstep(light.range * 0.75f, light.range, d);
 }
 
 LightingResult ApplyDirectionalLight(

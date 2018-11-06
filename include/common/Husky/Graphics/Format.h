@@ -22,6 +22,7 @@ namespace Husky::Graphics
         R8G8B8A8Unorm,
         R8G8B8A8Unorm_sRGB,
         B8G8R8A8Unorm,
+        B8G8R8A8Unorm_sRGB,
 
         // Depth
         D16Unorm,
