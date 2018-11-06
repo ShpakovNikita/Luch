@@ -91,6 +91,8 @@ namespace Husky::Metal
             return mtlpp::PixelFormat::RGBA8Unorm_sRGB;
         case Format::B8G8R8A8Unorm:
             return mtlpp::PixelFormat::BGRA8Unorm;
+        case Format::B8G8R8A8Unorm_sRGB:
+            return mtlpp::PixelFormat::BGRA8Unorm_sRGB;
         case Format::D16Unorm:
             return mtlpp::PixelFormat::Depth16Unorm;
         case Format::D32Sfloat:

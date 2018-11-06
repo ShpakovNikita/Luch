@@ -33,6 +33,7 @@ namespace Husky::SceneV1::Loader
         RefPtr<PbrMaterial> MakePbrMaterial(const glTF::Material& material);
         RefPtr<Texture> MakeTexture(const glTF::Texture& texture);
         RefPtr<Sampler> MakeSampler(const glTF::Sampler& sampler);
+        RefPtr<Light> MakeLight(const glTF::LightPunctual& light);
 
         RefPtr<Buffer> ReadHostBuffer(const BufferSource& source);
         RefPtr<Image> ReadHostImage(const TextureSource& source);
@@ -48,5 +49,6 @@ namespace Husky::SceneV1::Loader
         RefPtrVector<PbrMaterial> loadedMaterials;
         RefPtrVector<Sampler> loadedSamplers;
         RefPtrVector<Texture> loadedTextures;
+        RefPtrVector<Light> loadedLights;
     };
 }

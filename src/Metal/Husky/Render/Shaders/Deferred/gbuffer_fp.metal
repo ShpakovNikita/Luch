@@ -82,7 +82,7 @@ fragment FragmentOut fp_main(
 #endif
 #if HAS_OCCLUSION_TEXTURE
     , texture2d<float> occlusionMap [[texture(3)]]         // greyscale,
-    , sampler occlusiionSampler [[sampler(3)]]
+    , sampler occlusionSampler [[sampler(3)]]
 #endif
 #if HAS_EMISSIVE_TEXTURE
     , texture2d<float> emissiveMap [[texture(4)]]          // RGB - light color, A unused

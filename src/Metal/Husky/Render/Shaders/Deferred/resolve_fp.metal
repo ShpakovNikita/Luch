@@ -23,12 +23,12 @@ struct Light
     float4 color;
     int state;
     int type;
-    float spotlightAngle;
+    float innerConeAngle;
+    float outerConeAngle;
     float range;
     float intensity;
     float padding0;
     float padding1;
-    float padding2;
 };
 
 struct LightingResult
@@ -107,7 +107,12 @@ float3 SpecularLighting(float3 color, float3 V, float3 L, float3 N, float3 F, fl
 
 float Attenuation(Light light, float d)
 {
-    return 1.0f - smoothstep(light.range * 0.75f, light.range, d);
+    float d2 = d * d;
+    float d4 = d2 * d2;
+    float r2 = light.range * light.range;
+    float r4 = r2 * r2;
+    return max(min(1.0 - d4/r4, 1.0), 0.0) / d2;
+    //return 1.0f - smoothstep(light.range * 0.75f, light.range, d);
 }
 
 LightingResult ApplyDirectionalLight(
@@ -180,12 +185,13 @@ LightingResult ApplyPointlLight(
     return ApplyPointlLightImpl(light, L, dist, V, P, N, F0, metallic, roughness);
 }
 
-float SpotCone(float spotlightAngle, float3 directionVS, float3 L)
+float SpotCone(float innerConeAngle, float outerConeAngle, float3 directionVS, float3 L)
 {
-    float minCos = cos(spotlightAngle);
-    float maxCos = mix(minCos, 1, 0.5f);
+    float lightAngleScale = 1.0f / max(0.001f, cos(innerConeAngle) - cos(outerConeAngle));
+    float lightAngleOffset = -cos(outerConeAngle) * lightAngleScale;
     float cosAngle = dot(directionVS, -L);
-    return smoothstep(minCos, maxCos, cosAngle);
+    float angularAttenuation = saturate(cosAngle * lightAngleScale + lightAngleOffset);
+    return angularAttenuation * angularAttenuation;
 }
 
 LightingResult ApplySpotLight(
@@ -207,7 +213,7 @@ LightingResult ApplySpotLight(
     L = L/dist;
 
     LightingResult pointLighting = ApplyPointlLightImpl(light, L, dist, V, P, N, F0, metallic, roughness);
-    float spotIntensity = SpotCone(light.spotlightAngle, directionVS, L);
+    float spotIntensity = SpotCone(light.innerConeAngle, light.outerConeAngle, directionVS, L);
 
     result.diffuse = pointLighting.diffuse * spotIntensity;
     result.specular = pointLighting.specular * spotIntensity;

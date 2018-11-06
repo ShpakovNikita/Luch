@@ -60,11 +60,12 @@ namespace Husky::Render::RenderUtils
         LightUniform lightUniform;
 
         lightUniform.positionWS = worldTransform * Vec4{ 0.0, 0.0, 0.0, 1.0 };
-        lightUniform.directionWS = glm::normalize(worldTransform * Vec4{ light->GetDirection().value_or(Vec3{0, 0, 1}), 0.0 });
+        lightUniform.directionWS = glm::normalize(worldTransform * Vec4{ 0.0, 0.0, -1.0, 0.0 });
         lightUniform.color = Vec4{ light->GetColor().value_or(Vec3{1.0, 1.0, 1.0}), 1.0 };
         lightUniform.enabled = light->IsEnabled() ? 1 : 0;
         lightUniform.type = static_cast<int32>(light->GetType());
-        lightUniform.spotlightAngle = light->GetSpotlightAngle().value_or(0.0);
+        lightUniform.innerConeAngle = light->GetInnerConeAngle().value_or(0.0);
+        lightUniform.outerConeAngle = light->GetOuterConeAngle().value_or(0.0);
         lightUniform.range = light->GetRange().value_or(0.0);
         lightUniform.intensity = light->GetIntensity();
 

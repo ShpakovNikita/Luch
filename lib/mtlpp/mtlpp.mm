@@ -707,11 +707,11 @@ namespace mtlpp
         return ns::Handle { (__bridge void*)[(__bridge id<MTLCommandQueue>)m_ptr commandBuffer] };
     }
 
-    void CommandQueue::InsertDebugCaptureBoundary()
-    {
-        Validate();
-        [(__bridge id<MTLCommandQueue>)m_ptr insertDebugCaptureBoundary];
-    }
+//    void CommandQueue::InsertDebugCaptureBoundary()
+//    {
+//        Validate();
+//        [(__bridge id<MTLCommandQueue>)m_ptr insertDebugCaptureBoundary];
+//    }
 }
 
 //////////////////////////////////////
@@ -2951,13 +2951,13 @@ namespace mtlpp
                                                       indirectBufferOffset:indirectBufferOffset];
     }
 
-    void RenderCommandEncoder::TextureBarrier()
-    {
-        Validate();
-#if MTLPP_IS_AVAILABLE_MAC(10_11)
-        [(__bridge id<MTLRenderCommandEncoder>)m_ptr textureBarrier];
-#endif
-    }
+//    void RenderCommandEncoder::TextureBarrier()
+//    {
+//        Validate();
+//#if MTLPP_IS_AVAILABLE_MAC(10_11)
+//        [(__bridge id<MTLRenderCommandEncoder>)m_ptr textureBarrier];
+//#endif
+//    }
 
     void RenderCommandEncoder::UpdateFence(const Fence& fence, RenderStages afterStages)
     {

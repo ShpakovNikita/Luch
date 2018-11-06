@@ -20,14 +20,6 @@ namespace Husky::SceneV1
         using TransformType = Variant<Mat4x4, TransformProperties>;
 
         Node() = default;
-
-        Node(
-            RefPtrVector<Node> children,
-            const RefPtr<Mesh>& mesh,
-            const RefPtr<Camera>& camera,
-            const TransformType& localTransform,
-            const String& name);
-
         ~Node();
 
         inline const String& GetName() const { return name; }

@@ -9,14 +9,14 @@ namespace Husky::glTF
 
 using json = nlohmann::json;
 
-Map<String, AlphaMode> alphaModeLookup = 
+UnorderedMap<String, AlphaMode> alphaModeLookup =
 {
     { "OPAQUE", AlphaMode::Opaque },
     { "MASK", AlphaMode::Mask },
     { "BLEND", AlphaMode::Blend },
 };
 
-Map<String, AnimationInterpolation> animationInterpolationLookup =
+UnorderedMap<String, AnimationInterpolation> animationInterpolationLookup =
 {
     { "LINEAR", AnimationInterpolation::Linear },
     { "STEP", AnimationInterpolation::Step },
@@ -24,7 +24,7 @@ Map<String, AnimationInterpolation> animationInterpolationLookup =
     { "CUBICSPLINE", AnimationInterpolation::CubicSpline },
 };
 
-Map<String, AttributeSemantic> attributeSemanticLookup =
+UnorderedMap<String, AttributeSemantic> attributeSemanticLookup =
 {
     { "POSITION", AttributeSemantic::Position },
     { "NORMAL", AttributeSemantic::Normal },
@@ -35,7 +35,7 @@ Map<String, AttributeSemantic> attributeSemanticLookup =
     { "JOINTS_0", AttributeSemantic::Joints_0 },
 };
 
-Map<String, AttributeType> attributeTypeLookup =
+UnorderedMap<String, AttributeType> attributeTypeLookup =
 {
     {"SCALAR", AttributeType::Scalar},
     {"VEC2", AttributeType::Vec2},
@@ -46,18 +46,25 @@ Map<String, AttributeType> attributeTypeLookup =
     {"MAT4", AttributeType::Mat4x4},
 };
 
-Map<String, CameraType> cameraTypeLookup = 
+UnorderedMap<String, CameraType> cameraTypeLookup =
 {
     {"perspective", CameraType::Perspective},
     {"orthographic", CameraType::Orthographic}
 };
 
-Map<String, TargetPath> targetPathLookup =
+UnorderedMap<String, TargetPath> targetPathLookup =
 {
     { "translation", TargetPath::Translation },
     { "rotation", TargetPath::Rotation },
     { "scale", TargetPath::Scale },
     { "weights", TargetPath::Weights },
+};
+
+UnorderedMap<String, LightType> lightTypeLookup =
+{
+    { "directional", LightType::Directional },
+    { "spot", LightType::Spot },
+    { "point", LightType::Point },
 };
 
 void from_json(const json& j, Vec3& v)
@@ -522,6 +529,20 @@ Skin ParseSkin(const json& j)
     return skin;
 }
 
+NodeLightsPunctual ParseNodeLightsPunctual(const json& j)
+{
+    NodeLightsPunctual lights;
+    lights.light = ParseBuiltin<int32>(j, "light");
+    return lights;
+}
+
+NodeExtensions ParseNodeExtensions(const json& j)
+{
+    NodeExtensions extensions;
+    extensions.lights = ParseOptional<NodeLightsPunctual, ParseNodeLightsPunctual>(j, "KHR_lights_punctual");
+    return extensions;
+}
+
 Node ParseNode(const json& j)
 {
     Node node;
@@ -534,6 +555,7 @@ Node ParseNode(const json& j)
     node.scale = ParseOptional<Vec3, ParseVec3>(j, "scale");
     node.translation = ParseOptional<Vec3, ParseVec3>(j, "translation");
     node.weights = ParseBuiltinArrayOrEmpty<float32>(j, "weights");
+    node.extensions = ParseOptional<NodeExtensions, ParseNodeExtensions>(j, "extensions");
     node.name = ParseName(j);
     return node;
 }
@@ -552,6 +574,40 @@ Texture ParseTexture(const json& j)
     texture.sampler = ParseOptionalIndex(j, "sampler");
     texture.source = ParseOptionalIndex(j, "source");
     return texture;
+}
+
+Spot ParseSpot(const json& j)
+{
+    Spot spot;
+    spot.innerConeAngle = ParseBuiltinOrDefault<float32>(j, "innerConeAngle", 0.0);
+    spot.outerConeAngle = ParseBuiltinOrDefault<float32>(j, "outerConeAngle", glm::pi<float32>() / 4);
+    return spot;
+}
+
+LightPunctual ParseLightPunctual(const json& j)
+{
+    LightPunctual light;
+    light.name = ParseName(j);
+    light.color = ParseOrDefault<Vec3, ParseVec3>(j, "color", { 1.0, 1.0, 1.0 });
+    light.intensity = ParseBuiltinOrDefault<float32>(j, "intensity", 1.0);
+    light.type = lightTypeLookup[ParseBuiltin<String>(j, "type")];
+    light.range = ParseBuiltinOptional<float32>(j, "range");
+    light.spot = ParseOptional<Spot, ParseSpot>(j, "spot");
+    return light;
+}
+
+RootLightsPunctual ParseRootLightsPunctual(const json& j)
+{
+    RootLightsPunctual lights;
+    lights.lights = ParseArrayOrEmpty<LightPunctual, ParseLightPunctual>(j, "lights");
+    return lights;
+}
+
+RootExtensions ParseRootExtensions(const json& j)
+{
+    RootExtensions extensions;
+    extensions.lights = ParseOptional<RootLightsPunctual, ParseRootLightsPunctual>(j, "KHR_lights_punctual");
+    return extensions;
 }
 
 SharedPtr<glTFRoot> glTFParser::ParseJSON(Stream* stream)
@@ -587,7 +643,7 @@ SharedPtr<glTFRoot> glTFParser::ParseJSON(Stream* stream)
     root->scene = ParseOptionalIndex(j, "scene");
     root->skins = ParseArrayOrEmpty<Skin, ParseSkin>(j, "skins");
     root->textures = ParseArrayOrEmpty<Texture, ParseTexture>(j, "textures");
-
+    root->extensions = ParseOptional<RootExtensions, ParseRootExtensions>(j, "extensions");
     return root;
 }
 

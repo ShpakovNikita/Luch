@@ -68,7 +68,7 @@ namespace Husky::Render::Deferred
 
         int32 width = 0;
         int32 height = 0;
-        Format swapchainFormat = Format::B8G8R8A8Unorm;
+        Format swapchainFormat = Format::B8G8R8A8Unorm_sRGB;
         float32 minDepth = 0.0;
         float32 maxDepth = 1.0;
     };

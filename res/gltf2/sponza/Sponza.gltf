@@ -1,7 +1,48 @@
 {
+    "extensionsUsed": [
+        "KHR_lights_punctual"
+    ],
     "asset": {
         "generator": "Granite glTF 2.0 exporter",
         "version": "2.0"
+    },
+    "scene": 0,
+    "scenes": [
+        {
+            "nodes": [
+                0, 1, 2, 3, 4
+            ]
+        }
+    ],
+    "extensions": {
+        "KHR_lights_punctual": {
+            "lights": [
+                {
+                    "color": [1.0, 1.0, 1.0],
+                    "intensity": 10,
+                    "type": "point",
+                    "range": 30
+                },
+                {
+                    "color": [1.0, 0.0, 0.0],
+                    "intensity": 50,
+                    "type": "spot",
+                    "range": 30,
+                    "spot": {
+                        "outerConeAngle": 0.4
+                    }
+                },
+                {
+                    "color": [0.0, 1.0, 0.0],
+                    "intensity": 50,
+                    "type": "spot",
+                    "range": 500,
+                    "spot": {
+                        "outerConeAngle": 0.5
+                    }
+                }
+            ]
+        }
     },
     "cameras":[
         {
@@ -30,6 +71,44 @@
                 3,
                 0
             ]
+        },
+        {
+            "translation": [
+                3,
+                3,
+                -1
+            ],
+            "extensions": {
+                "KHR_lights_punctual": {
+                    "light": 0
+                }
+            }
+        },
+        {
+            "rotation": [ 0, 0.7071068, 0, -0.7071068 ],
+            "translation": [
+                3,
+                2,
+                0
+            ],
+            "extensions": {
+                "KHR_lights_punctual": {
+                    "light": 1
+                }
+            }
+        },
+        {
+            "rotation": [ 0, 0.7071068, 0, -0.7071068 ],
+            "translation": [
+                3,
+                4.5,
+                0
+            ],
+            "extensions": {
+                "KHR_lights_punctual": {
+                    "light": 2
+                }
+            }
         }
     ],
     "buffers": [
@@ -8433,14 +8512,6 @@
                         "TANGENT": 404
                     }
                 }
-            ]
-        }
-    ],
-    "scene": 0,
-    "scenes": [
-        {
-            "nodes": [
-                0, 1
             ]
         }
     ]

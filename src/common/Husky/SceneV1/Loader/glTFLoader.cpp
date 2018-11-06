@@ -17,13 +17,14 @@
 #include <Husky/SceneV1/VertexBuffer.h>
 #include <Husky/SceneV1/PbrMaterial.h>
 #include <Husky/SceneV1/Sampler.h>
+#include <Husky/SceneV1/Light.h>
 #include <Husky/Render/Common.h>
 #include <cstring>
 #include <cmath>
 
 namespace Husky::SceneV1::Loader
 {
-    Map<glTF::ComponentType, ComponentType> ComponentTypes = 
+    UnorderedMap<glTF::ComponentType, ComponentType> ComponentTypes =
     {
         { glTF::ComponentType::Int8, ComponentType::Int8 },
         { glTF::ComponentType::UInt8, ComponentType::UInt8 },
@@ -31,6 +32,13 @@ namespace Husky::SceneV1::Loader
         { glTF::ComponentType::UInt16, ComponentType::UInt16 },
         { glTF::ComponentType::UInt, ComponentType::UInt },
         { glTF::ComponentType::Float, ComponentType::Float },
+    };
+
+    UnorderedMap<glTF::LightType, LightType> LightTypes =
+    {
+        { glTF::LightType::Spot, LightType::Spot },
+        { glTF::LightType::Directional, LightType::Directional },
+        { glTF::LightType::Point, LightType::Point },
     };
 
     glTFLoader::glTFLoader(const String& aRootFolder, SharedPtr<glTF::glTFRoot> glTFRoot)
@@ -100,6 +108,18 @@ namespace Husky::SceneV1::Loader
         {
             loadedMeshes.emplace_back(MakeMesh(mesh));
         }
+
+        if(root->extensions.has_value())
+        {
+            if(root->extensions->lights.has_value())
+            {
+                loadedLights.reserve(root->extensions->lights->lights.size());
+                for(const auto& light : root->extensions->lights->lights)
+                {
+                    loadedLights.emplace_back(MakeLight(light));
+                }
+            }
+        }
     }
 
     RefPtr<Scene> glTFLoader::MakeScene(const glTF::Scene& scene)
@@ -120,25 +140,28 @@ namespace Husky::SceneV1::Loader
         return MakeRef<Scene>(move(nodes), std::move(sceneProperties), name);
     }
 
-    RefPtr<Node> glTFLoader::MakeNode(const glTF::Node& node, SceneProperties* sceneProperties)
+    RefPtr<Node> glTFLoader::MakeNode(const glTF::Node& glTFNode, SceneProperties* sceneProperties)
     {
-        const String& name = node.name;
+        auto node = MakeRef<Node>();
+        node->SetName(glTFNode.name);
 
         RefPtrVector<Node> children;
-        children.reserve(node.children.size());
-        for (auto nodeIndex : node.children)
+        children.reserve(glTFNode.children.size());
+        for (auto nodeIndex : glTFNode.children)
         {
-            const auto& node = root->nodes[nodeIndex];
-            children.emplace_back(MakeNode(node, sceneProperties));
+            const auto& glTFChildNode = root->nodes[nodeIndex];
+            auto childNode = MakeNode(glTFChildNode, sceneProperties);
+            childNode->SetParent(node);
+            children.emplace_back(childNode);
         }
 
-        RefPtr<Mesh> mesh;
-        if (node.mesh.has_value())
+        if (glTFNode.mesh.has_value())
         {
-            HUSKY_ASSERT_MSG(!node.camera.has_value(), "Node should have either mesh or camera, not both");
+            HUSKY_ASSERT_MSG(!glTFNode.camera.has_value(), "Node should have either mesh or camera, not both");
 
-            mesh = loadedMeshes[*node.mesh];
+            const auto& mesh = loadedMeshes[*glTFNode.mesh];
             sceneProperties->meshes.insert(mesh);
+            node->SetMesh(mesh);
 
             for (const auto& primitive : mesh->GetPrimitives())
             {
@@ -194,34 +217,46 @@ namespace Husky::SceneV1::Loader
             }
         }
 
-        RefPtr<Camera> camera;
-        if (node.camera.has_value())
+        if (glTFNode.camera.has_value())
         {
-            HUSKY_ASSERT_MSG(!node.mesh.has_value(), "Node should have either mesh or camera, not both");
-            auto cameraIndex = *node.camera;
-            camera = loadedCameras[cameraIndex];
+            HUSKY_ASSERT_MSG(!glTFNode.mesh.has_value(), "Node should have either mesh or camera, not both");
+            auto cameraIndex = *glTFNode.camera;
+            const auto& camera = loadedCameras[cameraIndex];
             sceneProperties->cameras.insert(camera);
+            node->SetCamera(camera);
+        }
+
+        RefPtr<Light> light;
+        if(glTFNode.extensions.has_value() && glTFNode.extensions->lights.has_value())
+        {
+            auto lightIndex = glTFNode.extensions->lights->light;
+            light = loadedLights[lightIndex];
+            sceneProperties->lights.insert(light);
+            sceneProperties->lightNodes.insert(node);
+            node->SetLight(light);
         }
 
         // TODO skin
 
         Node::TransformType transform;
 
-        if(node.matrix.has_value())
+        if(glTFNode.matrix.has_value())
         {
-            transform = *node.matrix;
+            transform = *glTFNode.matrix;
         }
         else
         {
             transform = TransformProperties
             {
-                node.rotation.value_or(Quaternion{}),
-                node.scale.value_or(Vec3{ 1.0f, 1.0f, 1.0f }),
-                node.translation.value_or(Vec3{ 0, 0, 0 })
+                glTFNode.rotation.value_or(Quaternion{}),
+                glTFNode.scale.value_or(Vec3{ 1.0f, 1.0f, 1.0f }),
+                glTFNode.translation.value_or(Vec3{ 0, 0, 0 })
             };
         }
 
-        return MakeRef<Node>(move(children), mesh, camera, transform, name);
+        node->SetLocalTransform(transform);
+
+        return node;
     }
 
     RefPtr<Mesh> glTFLoader::MakeMesh(const glTF::Mesh& mesh)
@@ -745,6 +780,24 @@ namespace Husky::SceneV1::Loader
         }
 
         return MakeRef<Sampler>(samplerCreateInfo, name);
+    }
+
+    RefPtr<Light> glTFLoader::MakeLight(const glTF::LightPunctual& glTFLight)
+    {
+        auto lightType = LightTypes.at(glTFLight.type);
+        RefPtr<Light> light = MakeRef<Light>();
+        light->SetName(glTFLight.name);
+        light->SetColor(glTFLight.color);
+        light->SetIntensity(glTFLight.intensity);
+        light->SetType(lightType);
+        light->SetRange(glTFLight.range);
+        if(lightType == LightType::Spot)
+        {
+            HUSKY_ASSERT(glTFLight.spot.has_value());
+            light->SetInnerConeAngle(glTFLight.spot->innerConeAngle);
+            light->SetOuterConeAngle(glTFLight.spot->outerConeAngle);
+        }
+        return light;
     }
 
     RefPtr<Buffer> glTFLoader::ReadHostBuffer(const BufferSource& source)
