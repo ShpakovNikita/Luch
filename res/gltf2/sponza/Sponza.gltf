@@ -38,7 +38,7 @@
                     "type": "spot",
                     "range": 500,
                     "spot": {
-                        "outerConeAngle": 0.6
+                        "outerConeAngle": 0.5
                     }
                 }
             ]
@@ -101,7 +101,7 @@
             "rotation": [ 0, 0.7071068, 0, -0.7071068 ],
             "translation": [
                 3,
-                3.5,
+                4.5,
                 0
             ],
             "extensions": {
