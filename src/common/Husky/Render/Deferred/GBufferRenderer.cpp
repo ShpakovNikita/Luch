@@ -351,55 +351,55 @@ namespace Husky::Render::Deferred
         {
             textureDescriptorSet->WriteTexture(
                 resources->baseColorTextureBinding,
-                material->metallicRoughness.baseColorTexture.texture->GetDeviceTexture());
+                material->GetBaseColorTexture()->GetDeviceTexture());
 
             samplerDescriptorSet->WriteSampler(
                 resources->baseColorSamplerBinding,
-                material->metallicRoughness.baseColorTexture.texture->GetDeviceSampler());
+                material->GetBaseColorTexture()->GetDeviceSampler());
         }
 
         if (material->HasMetallicRoughnessTexture())
         {
             textureDescriptorSet->WriteTexture(
                 resources->metallicRoughnessTextureBinding,
-                material->metallicRoughness.metallicRoughnessTexture.texture->GetDeviceTexture());
+                material->GetMetallicRoughnessTexture()->GetDeviceTexture());
 
             samplerDescriptorSet->WriteSampler(
                 resources->metallicRoughnessSamplerBinding,
-                material->metallicRoughness.metallicRoughnessTexture.texture->GetDeviceSampler());
+                material->GetMetallicRoughnessTexture()->GetDeviceSampler());
         }
 
         if (material->HasNormalTexture())
         {
             textureDescriptorSet->WriteTexture(
                 resources->normalTextureBinding,
-                material->normalTexture.texture->GetDeviceTexture());
+                material->GetNormalTexture()->GetDeviceTexture());
 
             samplerDescriptorSet->WriteSampler(
                 resources->normalSamplerBinding,
-                material->normalTexture.texture->GetDeviceSampler());
+                material->GetNormalTexture()->GetDeviceSampler());
         }
 
         if (material->HasOcclusionTexture())
         {
             textureDescriptorSet->WriteTexture(
                 resources->occlusionTextureBinding,
-                material->occlusionTexture.texture->GetDeviceTexture());
+                material->GetOcclusionTexture()->GetDeviceTexture());
 
             samplerDescriptorSet->WriteSampler(
                 resources->occlusionSamplerBinding,
-                material->occlusionTexture.texture->GetDeviceSampler());
+                material->GetOcclusionTexture()->GetDeviceSampler());
         }
 
         if (material->HasEmissiveTexture())
         {
             textureDescriptorSet->WriteTexture(
                 resources->emissiveTextureBinding,
-                material->emissiveTexture.texture->GetDeviceTexture());
+                material->GetEmissiveTexture()->GetDeviceTexture());
 
             samplerDescriptorSet->WriteSampler(
                 resources->emissiveSamplerBinding,
-                material->emissiveTexture.texture->GetDeviceSampler());
+                material->GetEmissiveTexture()->GetDeviceSampler());
         }
 
         MaterialUniform materialUniform = RenderUtils::GetMaterialUniform(material);
@@ -443,7 +443,7 @@ namespace Husky::Render::Deferred
         for (const auto& primitive : mesh->GetPrimitives())
         {
             const auto& material = primitive->GetMaterial();
-            if (material->alphaMode != SceneV1::AlphaMode::Blend)
+            if (material->GetProperties().alphaMode != SceneV1::AlphaMode::Blend)
             {
                 BindMaterial(material, commandList);
                 DrawPrimitive(primitive, commandList);
@@ -454,7 +454,7 @@ namespace Husky::Render::Deferred
         for (const auto& primitive : mesh->GetPrimitives())
         {
             const auto& material = primitive->GetMaterial();
-            if (material->alphaMode == SceneV1::AlphaMode::Blend)
+            if (material->GetProperties().alphaMode == SceneV1::AlphaMode::Blend)
             {
                 BindMaterial(material, commandList);
                 DrawPrimitive(primitive, commandList);
@@ -547,7 +547,7 @@ namespace Husky::Render::Deferred
 
         const auto& material = primitive->GetMaterial();
 
-        if (material->doubleSided)
+        if (material->GetProperties().doubleSided)
         {
             ci.rasterization.cullMode = CullMode::None;
         }
@@ -565,7 +565,7 @@ namespace Husky::Render::Deferred
 
         auto& baseColorAttachment = ci.colorAttachments.attachments.emplace_back();
 
-        baseColorAttachment.blendEnable = material->alphaMode == SceneV1::AlphaMode::Blend;
+        baseColorAttachment.blendEnable = material->GetProperties().alphaMode == SceneV1::AlphaMode::Blend;
         baseColorAttachment.format = baseColorFormat;
         if (baseColorAttachment.blendEnable)
         {
@@ -610,7 +610,7 @@ namespace Husky::Render::Deferred
             shaderDefines.AddFlag(DeferredShaderDefines::HasEmissiveTexture);
         }
 
-        if (material->alphaMode == SceneV1::AlphaMode::Mask)
+        if (material->GetProperties().alphaMode == SceneV1::AlphaMode::Mask)
         {
             shaderDefines.AddFlag(DeferredShaderDefines::AlphaMask);
         }
@@ -670,10 +670,6 @@ namespace Husky::Render::Deferred
         HUSKY_ASSERT(fragmentShaderCreateResult == GraphicsResult::Success);
 
         auto fragmentShader = std::move(createdFragmentShader);
-
-        // Retain shader modules
-        primitive->AddShaderProgram(vertexShader);
-        primitive->AddShaderProgram(fragmentShader);
 
         ci.vertexProgram = vertexShader;
         ci.fragmentProgram = fragmentShader;

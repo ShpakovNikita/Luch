@@ -257,7 +257,7 @@ namespace Husky::Render::Deferred::ShadowMapping
         for (const auto& primitive : mesh->GetPrimitives())
         {
             const auto& material = primitive->GetMaterial();
-            if (material->alphaMode != SceneV1::AlphaMode::Blend)
+            if (material->GetProperties().alphaMode != SceneV1::AlphaMode::Blend)
             {
                 DrawPrimitive(primitive, commandList);
             }
@@ -267,7 +267,7 @@ namespace Husky::Render::Deferred::ShadowMapping
         for (const auto& primitive : mesh->GetPrimitives())
         {
             const auto& material = primitive->GetMaterial();
-            if (material->alphaMode == SceneV1::AlphaMode::Blend)
+            if (material->GetProperties().alphaMode == SceneV1::AlphaMode::Blend)
             {
                 DrawPrimitive(primitive, commandList);
             }
@@ -420,8 +420,7 @@ namespace Husky::Render::Deferred::ShadowMapping
 
     void ShadowRenderer::UpdateCamera(SceneV1::Camera* camera, const Mat4x4& transform)
     {
-        camera->SetCameraViewMatrix(glm::inverse(transform));
-        auto cameraUniform = RenderUtils::GetCameraUniform(camera);
+        auto cameraUniform = RenderUtils::GetCameraUniform(camera, transform);
         auto descriptorSet = camera->GetDescriptorSet(RendererName);
 
         // TODO

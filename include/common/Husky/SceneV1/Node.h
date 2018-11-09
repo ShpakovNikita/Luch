@@ -16,6 +16,7 @@ namespace Husky::SceneV1
 
     class Node : public BaseObject
     {
+        friend class Scene;
     public:
         using TransformType = Variant<Mat4x4, TransformProperties>;
 
@@ -27,27 +28,31 @@ namespace Husky::SceneV1
 
         inline Node* GetParent() const { return parent; }
         inline bool HasParent() const { return parent != nullptr; }
-        inline void SetParent(Node *aParent) { parent = aParent; }
 
         inline const RefPtrVector<Node>& GetChildren() const { return children; }
 
         inline const RefPtr<Mesh>& GetMesh() const { return mesh; }
-        void SetMesh(const RefPtr<Mesh>& aMesh);
+        void SetMesh(const RefPtr<Mesh>& aMesh) { mesh = aMesh; }
 
         inline const RefPtr<Camera>& GetCamera() const { return camera; }
-        void SetCamera(const RefPtr<Camera>& aCamera);
+        void SetCamera(const RefPtr<Camera>& aCamera) { camera = aCamera; }
 
         inline const RefPtr<Light>& GetLight() const { return light; }
-        void SetLight(const RefPtr<Light>& aLight);
+        void SetLight(const RefPtr<Light>& aLight) { light = aLight; }
 
         inline const TransformType& GetLocalTransform() const { return localTransform; }
         void SetLocalTransform(const TransformType& aLocalTransform) { localTransform = aLocalTransform; }
 
         Mat4x4 GetWorldTransform() const { return worldTransform; }
         void SetWorldTransform(const Mat4x4 aWorldTransform)  { worldTransform = aWorldTransform; }
+
+        void AddChild(const RefPtr<Node>& child);
+        void RemoveChild(Node* child);
+
     private:
         String name;
-        Node *parent = nullptr;
+        Node* parent = nullptr;
+        Scene* scene = nullptr;
         RefPtrVector<Node> children;
 
         RefPtr<Mesh> mesh;

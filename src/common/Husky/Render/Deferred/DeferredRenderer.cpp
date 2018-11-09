@@ -6,8 +6,6 @@
 #include <Husky/Render/Deferred/TonemapRenderer.h>
 #include <Husky/Render/Deferred/ShadowMapping/ShadowRenderer.h>
 
-#include <Husky/FileStream.h>
-
 #include <Husky/SceneV1/Scene.h>
 #include <Husky/SceneV1/Node.h>
 #include <Husky/SceneV1/Mesh.h>
@@ -246,10 +244,11 @@ namespace Husky::Render::Deferred
     {
         resources->sharedBuffer->Reset();
 
-        Mat4x4 identity = glm::mat4(1.0f);
-        for (const auto& node : scene->GetNodes())
+        const auto& sceneProperties = scene->GetSceneProperties();
+
+        for(const auto& cameraNode : sceneProperties.cameraNodes)
         {
-            UpdateNodeRecursive(node, identity);
+            UpdateCamera(cameraNode->GetCamera(), cameraNode->GetWorldTransform());
         }
 
         gbufferRenderer->UpdateScene(scene);
@@ -286,44 +285,9 @@ namespace Husky::Render::Deferred
         camera->SetDescriptorSet(RendererName, vertexDescriptorSet);
     }
 
-    void DeferredRenderer::UpdateNodeRecursive(SceneV1::Node* node, const Mat4x4& parentTransform)
-    {
-        Mat4x4 localTransformMatrix;
-        const auto& localTransform = node->GetLocalTransform();
-
-        if (std::holds_alternative<Mat4x4>(localTransform))
-        {
-            localTransformMatrix = std::get<Mat4x4>(localTransform);
-        }
-        else if(std::holds_alternative<SceneV1::TransformProperties>(localTransform))
-        {
-            const auto& transformProperties = std::get<SceneV1::TransformProperties>(localTransform);
-
-            localTransformMatrix
-                = glm::translate(transformProperties.translation)
-                * glm::toMat4(transformProperties.rotation)
-                * glm::scale(transformProperties.scale);
-        }
-
-        Mat4x4 worldTransform = parentTransform * localTransformMatrix;
-        node->SetWorldTransform(worldTransform);
-
-        const auto& camera = node->GetCamera();
-        if (camera != nullptr)
-        {
-            UpdateCamera(camera, worldTransform);
-        }
-
-        for (const auto& child : node->GetChildren())
-        {
-            UpdateNodeRecursive(child, worldTransform);
-        }
-    }
-
     void DeferredRenderer::UpdateCamera(SceneV1::Camera* camera, const Mat4x4& transform)
     {
-        camera->SetCameraViewMatrix(glm::inverse(transform));
-        auto cameraUniform = RenderUtils::GetCameraUniform(camera);
+        auto cameraUniform = RenderUtils::GetCameraUniform(camera, transform);
         auto descriptorSet = camera->GetDescriptorSet(RendererName);
 
         // TODO

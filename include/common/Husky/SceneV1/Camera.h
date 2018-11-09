@@ -16,11 +16,6 @@ namespace Husky::SceneV1
     public:
         inline CameraType GetCameraType() const { return type; }
 
-        virtual Mat4x4 GetCameraViewMatrix() const;
-        virtual void SetCameraViewMatrix(const Mat4x4& view);
-
-        virtual Vec3 GetCameraPosition();
-
         virtual Mat4x4 GetCameraProjectionMatrix() const = 0;
 
         inline const RefPtr<Graphics::DescriptorSet>& GetDescriptorSet(const String& key) const
@@ -37,8 +32,6 @@ namespace Husky::SceneV1
 
         inline const String& GetName() const { return name; }
         inline void SetName(const String& aName) { name = aName; }
-    protected:
-        Mat4x4 viewMatrix;
     private:
         CameraType type = CameraType::Perspective;
         String name;

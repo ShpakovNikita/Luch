@@ -31,6 +31,7 @@ namespace Husky::SceneV1
     private:
         RefPtrVector<Primitive> primitives;
         String name;
+
         mutable UnorderedMap<String, RefPtr<Graphics::DescriptorSet>> descriptorSets;
     };
 }

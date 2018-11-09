@@ -10,39 +10,8 @@
 
 namespace Husky::SceneV1::Loader
 {
-    class glTFLoader
+    struct SceneLoadContext
     {
-    public:
-        glTFLoader(const String& rootFolder, SharedPtr<glTF::glTFRoot> glTFRoot);
-
-        bool IsInterleaveEnabled() const { return interleave; }
-        void SetInterleaveEnabled(bool aInterleave) { interleave = aInterleave; }
-        RefPtrVector<Scene> LoadScenes();
-    private:
-        void LoadProperties();
-
-        RefPtr<Scene> MakeScene(const glTF::Scene& scene);
-        RefPtr<Node> MakeNode(const glTF::Node& node, SceneProperties* context);
-        RefPtr<Mesh> MakeMesh(const glTF::Mesh& mesh);
-        RefPtr<Camera> MakeCamera(const glTF::Camera& camera);
-        RefPtr<PerspectiveCamera> MakePerspectiveCamera(const String& name, const glTF::Perspective& camera);
-        RefPtr<OrthographicCamera> MakeOrthographicCamera(const String& name, const glTF::Orthographic& camera);
-        RefPtr<Primitive> MakePrimitiveInterleaved(const glTF::Primitive& primitive);
-        RefPtr<Primitive> MakePrimitive(const glTF::Primitive& primitive);
-        Optional<IndexBuffer> MakeIndexBuffer(const glTF::Accessor& indices);
-        RefPtr<PbrMaterial> MakePbrMaterial(const glTF::Material& material);
-        RefPtr<Texture> MakeTexture(const glTF::Texture& texture);
-        RefPtr<Sampler> MakeSampler(const glTF::Sampler& sampler);
-        RefPtr<Light> MakeLight(const glTF::LightPunctual& light);
-
-        RefPtr<Buffer> ReadHostBuffer(const BufferSource& source);
-        RefPtr<Image> ReadHostImage(const TextureSource& source);
-
-        String rootFolder;
-        SharedPtr<glTF::glTFRoot> root;
-
-        bool loaded = false;
-        bool interleave = true;
         RefPtrVector<Mesh> loadedMeshes;
         RefPtrVector<Camera> loadedCameras;
         RefPtrVector<Buffer> loadedBuffers;
@@ -50,5 +19,41 @@ namespace Husky::SceneV1::Loader
         RefPtrVector<Sampler> loadedSamplers;
         RefPtrVector<Texture> loadedTextures;
         RefPtrVector<Light> loadedLights;
+    };
+
+    class glTFLoader
+    {
+    public:
+        glTFLoader(const String& rootFolder, SharedPtr<glTF::glTFRoot> glTFRoot);
+
+        bool IsInterleaveEnabled() const { return interleave; }
+        void SetInterleaveEnabled(bool aInterleave) { interleave = aInterleave; }
+
+        int32 GetSceneCount() const;
+        RefPtr<Scene> LoadScene(int32 index);
+    private:
+        SceneLoadContext LoadProperties();
+
+        RefPtr<Scene> MakeScene(const glTF::Scene& scene, const SceneLoadContext& context);
+        RefPtr<Node> MakeNode(const glTF::Node& node, const SceneLoadContext& context);
+        RefPtr<Mesh> MakeMesh(const glTF::Mesh& mesh, const SceneLoadContext& context);
+        RefPtr<Camera> MakeCamera(const glTF::Camera& camera, const SceneLoadContext& context);
+        RefPtr<PerspectiveCamera> MakePerspectiveCamera(const String& name, const glTF::Perspective& camera);
+        RefPtr<OrthographicCamera> MakeOrthographicCamera(const String& name, const glTF::Orthographic& camera);
+        RefPtr<Primitive> MakePrimitiveInterleaved(const glTF::Primitive& primitive, const SceneLoadContext& context);
+        RefPtr<Primitive> MakePrimitive(const glTF::Primitive& primitive, const SceneLoadContext& context);
+        Optional<IndexBuffer> MakeIndexBuffer(const glTF::Accessor& indices, const SceneLoadContext& context);
+        RefPtr<PbrMaterial> MakePbrMaterial(const glTF::Material& material, const SceneLoadContext& context);
+        RefPtr<Texture> MakeTexture(const glTF::Texture& texture, const SceneLoadContext& context);
+        RefPtr<Sampler> MakeSampler(const glTF::Sampler& sampler, const SceneLoadContext& context);
+        RefPtr<Light> MakeLight(const glTF::LightPunctual& light, const SceneLoadContext& context);
+
+        RefPtr<Buffer> ReadHostBuffer(const BufferSource& source);
+        RefPtr<Image> ReadHostImage(const TextureSource& source);
+
+        String rootFolder;
+        SharedPtr<glTF::glTFRoot> root;
+
+        bool interleave = true;
     };
 }

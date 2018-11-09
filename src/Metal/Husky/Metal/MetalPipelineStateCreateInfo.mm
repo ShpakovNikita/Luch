@@ -58,8 +58,8 @@ namespace Husky::Metal
     mtlpp::RenderPipelineDescriptor ToMetalPipelineStateCreateInfo(const PipelineStateCreateInfo& ci)
     {
         mtlpp::RenderPipelineDescriptor d;
-        auto mtlVertexProgram = static_cast<MetalShaderProgram*>(ci.vertexProgram);
-        auto mtlFragmentProgram = static_cast<MetalShaderProgram*>(ci.fragmentProgram);
+        auto mtlVertexProgram = static_cast<MetalShaderProgram*>(ci.vertexProgram.Get());
+        auto mtlFragmentProgram = static_cast<MetalShaderProgram*>(ci.fragmentProgram.Get());
         d.SetVertexDescriptor(ToMetalVertexDescriptor(ci.inputAssembler));
 
         HUSKY_ASSERT(mtlVertexProgram != nullptr);

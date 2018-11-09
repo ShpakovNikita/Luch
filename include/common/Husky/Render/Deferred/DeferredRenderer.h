@@ -49,7 +49,6 @@ namespace Husky::Render::Deferred
         void PrepareCameraNode(SceneV1::Node* node);
         void PrepareNode(SceneV1::Node* node);
 
-        void UpdateNodeRecursive(SceneV1::Node* node, const Mat4x4& transform);
         void UpdateMesh(SceneV1::Mesh* mesh, const Mat4x4& transform);
         void UpdateCamera(SceneV1::Camera* camera, const Mat4x4& transform);
 

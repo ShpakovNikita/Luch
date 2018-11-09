@@ -1,5 +1,6 @@
 #include <Husky/SceneV1/Primitive.h>
 #include <Husky/SceneV1/PbrMaterial.h>
+#include <Husky/SceneV1/Scene.h>
 
 namespace Husky::SceneV1
 {
@@ -34,20 +35,7 @@ namespace Husky::SceneV1
         { { AttributeType::Vec4, ComponentType::Float}, Format::R32G32B32A32Sfloat },
     };
 
-    Primitive::Primitive(
-        Vector<PrimitiveAttribute>&& aAttributes,
-        Vector<VertexBuffer>&& aVertexBuffers,
-        const Optional<IndexBuffer>& aIndexBuffer,
-        const RefPtr<PbrMaterial>& aMaterial,
-        PrimitiveTopology aTopology)
-        : attributes(std::move(aAttributes))
-        , vertexBuffers(std::move(aVertexBuffers))
-        , indexBuffer(aIndexBuffer)
-        , material(aMaterial)
-        , topology(aTopology)
-    {
-    }
-
+    Primitive::Primitive() = default;
     Primitive::~Primitive() = default;
 
     Format AttribuiteToFormat(AttributeType attributeType, ComponentType componentType)

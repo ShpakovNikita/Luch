@@ -46,7 +46,7 @@ namespace Husky::Render::Deferred
         void UpdateScene(SceneV1::Scene* scene);
         Texture* Resolve(SceneV1::Scene* scene, SceneV1::Camera* camera, GBufferTextures* gbuffer);
     private:
-        void UpdateLights(const RefPtrUnorderedSet<SceneV1::Node>& lightNodes);
+        void UpdateLights(const RefPtrVector<SceneV1::Node>& lightNodes);
 
         RefPtr<PipelineState> CreateResolvePipelineState(ResolvePassResources* lighting);
         ResultValue<bool, UniquePtr<ResolvePassResources>> PrepareResolvePassResources();

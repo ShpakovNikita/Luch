@@ -106,7 +106,9 @@ namespace Husky::Render::Deferred
 
         const auto& sceneProperties = scene->GetSceneProperties();
 
-        UpdateLights(sceneProperties.lightNodes);
+        RefPtrVector<SceneV1::Node> lightNodes(sceneProperties.lightNodes.begin(), sceneProperties.lightNodes.end());
+
+        UpdateLights(lightNodes);
     }
 
     Texture* ResolveRenderer::Resolve(
@@ -182,7 +184,7 @@ namespace Husky::Render::Deferred
         return resolveTexture;
     }
 
-    void ResolveRenderer::UpdateLights(const RefPtrUnorderedSet<SceneV1::Node>& lightNodes)
+    void ResolveRenderer::UpdateLights(const RefPtrVector<SceneV1::Node>& lightNodes)
     {
         Vector<LightUniform> lightUniforms;
 

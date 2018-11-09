@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Husky/RefPtr.h>
 #include <Husky/Graphics/Format.h>
 #include <Husky/Graphics/VertexInputRate.h>
 #include <Husky/Graphics/PolygonMode.h>
@@ -102,9 +103,11 @@ namespace Husky::Graphics
 
     struct PipelineStateCreateInfo
     {
+        // We store shader programs in pipeline create info
+        RefPtr<ShaderProgram> vertexProgram;
+        RefPtr<ShaderProgram> fragmentProgram;
+
         PipelineVertexInputStateCreateInfo inputAssembler;
-        ShaderProgram* vertexProgram = nullptr;
-        ShaderProgram* fragmentProgram = nullptr;
         PipelineMultisampleStateCreateInfo multisampling;
         PipelineRasterizationStateCreateInfo rasterization;
         PipelineDepthStencilStateCreateInfo depthStencil;

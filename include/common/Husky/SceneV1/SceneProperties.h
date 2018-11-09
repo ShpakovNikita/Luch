@@ -7,14 +7,17 @@ namespace Husky::SceneV1
 {
     struct SceneProperties
     {
-        RefPtrUnorderedSet<Buffer> buffers;
-        RefPtrUnorderedSet<Mesh> meshes;
-        RefPtrUnorderedSet<Primitive> primitives;
-        RefPtrUnorderedSet<Camera> cameras;
-        RefPtrUnorderedSet<PbrMaterial> materials;
-        RefPtrUnorderedSet<Texture> textures;
-        RefPtrUnorderedSet<Sampler> samplers;
-        RefPtrUnorderedSet<Light> lights;
-        RefPtrUnorderedSet<Node> lightNodes;
+        template<typename T>
+        using Usages = UnorderedSet<RefPtr<T>, RefPtrHash<T>>;
+
+        Usages<Buffer> buffers;
+        Usages<Mesh> meshes;
+        Usages<Primitive> primitives;
+        Usages<Camera> cameras;
+        Usages<Node> cameraNodes;
+        Usages<PbrMaterial> materials;
+        Usages<Texture> textures;
+        Usages<Light> lights;
+        Usages<Node> lightNodes;
     };
 }

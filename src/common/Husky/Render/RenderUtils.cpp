@@ -9,16 +9,16 @@ namespace Husky::Render::RenderUtils
 {
     using namespace Graphics;
 
-    CameraUniform GetCameraUniform(SceneV1::Camera* camera)
+    CameraUniform GetCameraUniform(SceneV1::Camera* camera, const Mat4x4& transform)
     {
         CameraUniform cameraUniform;
-        cameraUniform.view = camera->GetCameraViewMatrix();
+        cameraUniform.view = glm::inverse(transform);
         cameraUniform.inverseView = glm::inverse(cameraUniform.view);
         cameraUniform.projection = camera->GetCameraProjectionMatrix();
         cameraUniform.inverseProjection = glm::inverse(cameraUniform.projection);
         cameraUniform.viewProjection = cameraUniform.projection * cameraUniform.view;
         cameraUniform.inverseViewProjection = glm::inverse(cameraUniform.viewProjection);
-        cameraUniform.position = Vec4{ camera->GetCameraPosition(), 1.0 };
+        cameraUniform.positionWS = transform * Vec4{ 0.0, 0.0, 0.0, 1.0 };
 
         Vec2 zMinMax;
         auto cameraType = camera->GetCameraType();
@@ -44,18 +44,18 @@ namespace Husky::Render::RenderUtils
     {
         MaterialUniform materialUniform;
 
-        materialUniform.baseColorFactor = material->metallicRoughness.baseColorFactor;
-        materialUniform.metallicFactor = material->metallicRoughness.metallicFactor;
-        materialUniform.roughnessFactor = material->metallicRoughness.roughnessFactor;
-        materialUniform.normalScale = material->normalTexture.scale;
-        materialUniform.occlusionStrength = material->occlusionTexture.strength;
-        materialUniform.emissiveFactor = material->emissiveFactor;
-        materialUniform.alphaCutoff = material->alphaCutoff;
+        materialUniform.baseColorFactor = material->GetProperties().metallicRoughness.baseColorFactor;
+        materialUniform.metallicFactor = material->GetProperties().metallicRoughness.metallicFactor;
+        materialUniform.roughnessFactor = material->GetProperties().metallicRoughness.roughnessFactor;
+        materialUniform.normalScale = material->GetProperties().normalTextureInfo.scale;
+        materialUniform.occlusionStrength = material->GetProperties().occlusionTextureInfo.strength;
+        materialUniform.emissiveFactor = material->GetProperties().emissiveFactor;
+        materialUniform.alphaCutoff = material->GetProperties().alphaCutoff;
 
         return materialUniform;
     }
 
-    LightUniform GetLightUniform(SceneV1::Light* light, Mat4x4 worldTransform)
+    LightUniform GetLightUniform(SceneV1::Light* light, const Mat4x4& worldTransform)
     {
         LightUniform lightUniform;
 

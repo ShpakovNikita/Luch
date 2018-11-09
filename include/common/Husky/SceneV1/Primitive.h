@@ -50,22 +50,25 @@ namespace Husky::SceneV1
 
     class Primitive : public BaseObject
     {
+        friend class Scene;
     public:
-        Primitive(
-            Vector<PrimitiveAttribute>&& attributes,
-            Vector<VertexBuffer>&& vertexBuffers,
-            const Optional<IndexBuffer>& indexBuffer,
-            const RefPtr<PbrMaterial>& material,
-            PrimitiveTopology topology
-        );
-
+        Primitive();
         ~Primitive();
 
-        const Vector<PrimitiveAttribute>& GetAttributes() const { return attributes; }
-        const Vector<VertexBuffer>& GetVertexBuffers() const { return vertexBuffers; }
-        const Optional<IndexBuffer>& GetIndexBuffer() const { return indexBuffer; }
-        const RefPtr<PbrMaterial>& GetMaterial() const { return material; }
+        inline const Vector<PrimitiveAttribute>& GetAttributes() const { return attributes; }
+        inline void SetAttributes(Vector<PrimitiveAttribute> aAttributes) { attributes = std::move(aAttributes); }
+
+        inline const Vector<VertexBuffer>& GetVertexBuffers() const { return vertexBuffers; }
+        inline void SetVertexBuffers(Vector<VertexBuffer> aVertexBuffers) { vertexBuffers = std::move(aVertexBuffers); }
+
+        inline const Optional<IndexBuffer>& GetIndexBuffer() const { return indexBuffer; }
+        inline void SetIndexBuffer(const Optional<IndexBuffer>& aIndexBuffer) { indexBuffer = aIndexBuffer; }
+
+        inline const RefPtr<PbrMaterial>& GetMaterial() const { return material; }
+        inline void SetMaterial(const RefPtr<PbrMaterial>& aMaterial) { material = aMaterial; }
+
         inline PrimitiveTopology GetTopology() const { return topology; }
+        inline void SetTopology(PrimitiveTopology aTopology) { topology = aTopology; }
 
         inline const RefPtr<Graphics::PipelineState>& GetPipelineState(const String& key) const
         {
@@ -76,15 +79,12 @@ namespace Husky::SceneV1
         {
             pipelineStates[key] = pipelineState;
         }
-
-        inline void AddShaderProgram(const RefPtr<Graphics::ShaderProgram>& shaderProgram) { shaderPrograms.push_back(shaderProgram); }
     private:
         Vector<PrimitiveAttribute> attributes;
         Vector<VertexBuffer> vertexBuffers;
         Optional<IndexBuffer> indexBuffer;
         RefPtr<PbrMaterial> material;
         PrimitiveTopology topology = PrimitiveTopology::TriangleList;
-        RefPtrVector<Graphics::ShaderProgram> shaderPrograms;
         mutable UnorderedMap<String, RefPtr<Graphics::PipelineState>> pipelineStates;
     };
 }

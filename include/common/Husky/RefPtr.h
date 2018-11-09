@@ -11,14 +11,14 @@ namespace Husky
         template<typename U>
         friend class RefPtr;
     public:
-        RefPtr() = default;
+        RefPtr() noexcept = default;
 
-        explicit RefPtr(T* aPtr)
+        explicit RefPtr(T* aPtr) noexcept
             : ptr(aPtr)
         {
         }
 
-        RefPtr(std::nullptr_t nptr)
+        RefPtr(std::nullptr_t nptr) noexcept
             : ptr(nullptr)
         {
         }
@@ -31,7 +31,7 @@ namespace Husky
             }
         }
 
-        RefPtr(const RefPtr& other)
+        RefPtr(const RefPtr& other) noexcept
             : ptr(other.ptr)
         {
             if (ptr)
@@ -40,21 +40,21 @@ namespace Husky
             }
         }
 
-        RefPtr(RefPtr&& other)
+        RefPtr(RefPtr&& other) noexcept
             : ptr(other.ptr)
         {
             other.ptr = nullptr;
         }
 
         template<typename U>
-        RefPtr(RefPtr<U>&& other)
+        RefPtr(RefPtr<U>&& other) noexcept
             : ptr(static_cast<T*>(other.ptr))
         {
             other.ptr = nullptr;
         }
 
         template<typename U>
-        RefPtr(const RefPtr<U>& other)
+        RefPtr(const RefPtr<U>& other) noexcept
             : ptr(static_cast<T*>(other.ptr))
         {
             if (ptr)
@@ -63,7 +63,7 @@ namespace Husky
             }
         }
 
-        RefPtr& operator=(const RefPtr& other)
+        RefPtr& operator=(const RefPtr& other) noexcept
         {
             ptr = other.ptr;
             if (ptr)
@@ -74,7 +74,7 @@ namespace Husky
         }
 
         template<typename U>
-        RefPtr& operator=(const RefPtr<U>& other)
+        RefPtr& operator=(const RefPtr<U>& other) noexcept
         {
             ptr = static_cast<T*>(other.ptr);
             if (ptr)
@@ -84,88 +84,86 @@ namespace Husky
             return *this;
         }
 
-        RefPtr& operator=(RefPtr&& other)
+        RefPtr& operator=(RefPtr&& other) noexcept
         {
             ptr = other.ptr;
             other.ptr = nullptr;
             return *this;
         }
 
-        bool operator==(const RefPtr& right) const
+        friend bool operator==(const RefPtr& left, const RefPtr& right) noexcept
         {
-            return ptr == right.ptr;
+            return left.ptr == right.ptr;
         }
 
-        //friend bool operator!=(const RefPtr& left, RefPtr& right)
-        //{
-        //    return left.ptr != right.ptr;
-        //}
-
-        bool operator!=(RefPtr& right) const
+        friend bool operator!=(const RefPtr& left, const RefPtr& right) noexcept
         {
-            return ptr != right.ptr;
+            return left.ptr != right.ptr;
         }
 
-        bool operator<(const RefPtr& right) const
+        friend bool operator<(const RefPtr& left, const RefPtr& right) noexcept
         {
-            return ptr < right.ptr;
+            return left.ptr < right.ptr;
         }
 
-        bool operator==(std::nullptr_t np) const
-        {
-            return ptr == np;
-        }
-
-        friend bool operator==(std::nullptr_t np, const RefPtr& ptr)
+        friend bool operator==(const RefPtr& ptr, std::nullptr_t np) noexcept
         {
             return ptr.ptr == np;
         }
 
-        bool operator!=(std::nullptr_t np) const
+        friend bool operator==(std::nullptr_t np, const RefPtr& ptr) noexcept
         {
-            return ptr != np;
+            return ptr.ptr == np;
         }
 
-        friend bool operator!=(std::nullptr_t np, const RefPtr& ptr)
+        friend bool operator!=(std::nullptr_t np, const RefPtr& ptr) noexcept
         {
             return ptr.ptr != np;
         }
 
-        operator T*() const
+        friend bool operator!=(const RefPtr& ptr, std::nullptr_t np) noexcept
+        {
+            return ptr.ptr != np;
+        }
+
+        operator T*() const noexcept
         {
             return ptr;
         }
 
-        operator bool() const
+        operator bool() const noexcept
         {
             return ptr != nullptr;
         }
 
-        T* operator->() const
+        T* operator->() const noexcept
         {
             return ptr;
         }
 
-        T* Get() const
+        T* Get() const noexcept
         {
             return ptr;
         }
 
-        T* Release()
+        void Release()
         {
-            return std::move(*this).Get();
+            if (ptr)
+            {
+                reinterpret_cast<BaseObject*>(ptr)->RemoveReference();
+            }
         }
 
-        explicit operator T*()
+        explicit operator T*() noexcept
         {
             return ptr;
         }
     private:
-        T * ptr = nullptr;
+        T* ptr = nullptr;
     };
 
     template<typename T, typename... Args>
-    inline RefPtr<T> MakeRef(Args&&... args)
+    [[nodiscard]] inline RefPtr<T> MakeRef(Args&&... args)
     {
         return RefPtr<T>(new T(std::forward<Args>(args)...));
     }
@@ -174,7 +172,7 @@ namespace Husky
     class RefPtrEqualTo
     {
     public:
-        bool operator()(const RefPtr<T>& left, const RefPtr<T>& right) const
+        bool operator()(const RefPtr<T>& left, const RefPtr<T>& right) const noexcept
         {
             return left.operator==(right);
         }
@@ -184,7 +182,7 @@ namespace Husky
     class RefPtrLess
     {
     public:
-        bool operator()(const RefPtr<T>& left, const RefPtr<T>& right) const
+        bool operator()(const RefPtr<T>& left, const RefPtr<T>& right) const noexcept
         {
             return left.operator<(right);
         }
@@ -194,7 +192,7 @@ namespace Husky
     class RefPtrHash
     {
     public:
-        bool operator()(const RefPtr<T>& ptr) const
+        std::size_t operator()(const RefPtr<T>& ptr) const noexcept
         {
             return std::hash<T*>{}(ptr);
         }
@@ -205,9 +203,6 @@ namespace Husky
 
     template<typename T, int32 N>
     using RefPtrArray = Array<RefPtr<T>, N>;
-
-    //template<typename T>
-    //using RefPtrVectorSet = VectorSet<RefPtr<T>>;
 
     template<typename T>
     using RefPtrSet = Set<RefPtr<T>, RefPtrLess<T>>;

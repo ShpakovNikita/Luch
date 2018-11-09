@@ -118,13 +118,11 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     auto root = glTFparser.ParseJSON(&fileStream);
 
     SceneV1::Loader::glTFLoader loader{ rootDir, root };
-    auto scenes = loader.LoadScenes();
+    scene = loader.LoadScene(0);
 
     deferredRenderer = MakeUnique<Render::Deferred::DeferredRenderer>(physicalDevice, surface, width, height);
 
     deferredRenderer->Initialize();
-
-    scene = scenes[0];
 
     auto cameraIt = std::find_if(
         scene->GetNodes().begin(),
@@ -167,6 +165,7 @@ void SampleApplication::Run()
 
 void SampleApplication::Process()
 {
+    scene->Update();
     deferredRenderer->UpdateScene(scene);
     deferredRenderer->DrawScene(scene, camera);
 }

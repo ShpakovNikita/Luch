@@ -6,24 +6,13 @@ namespace Husky::SceneV1
 {
     Node::~Node() = default;
 
-    void Node::SetMesh(const RefPtr<Mesh>& aMesh)
+    void Node::AddChild(const RefPtr<Node>& child)
     {
-        mesh = aMesh;
-        camera = nullptr;
-        light = nullptr;
+        
     }
 
-    void Node::SetCamera(const RefPtr<Camera>& aCamera)
+    void Node::RemoveChild(Node* child)
     {
-        camera = aCamera;
-        light = nullptr;
-        mesh = nullptr;
-    }
 
-    void Node::SetLight(const RefPtr<Light>& aLight)
-    {
-        light = aLight;
-        mesh = nullptr;
-        camera = nullptr;
     }
 }

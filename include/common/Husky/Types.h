@@ -43,20 +43,20 @@ using Array = std::array<T, Size>;
 template<typename T>
 using Vector = std::vector<T>;
 
-//template<typename T, typename Equal = std::equal_to<T>>
-//using VectorSet = vector_set<T, Equal>;
-
 template<typename T, typename Less = std::less<T>>
 using Set = std::set<T, Less>;
 
 template<typename T, typename Hash = std::hash<T>, typename Equal = std::equal_to<T>>
 using UnorderedSet = std::unordered_set<T, Hash, Equal>;
 
+template<typename T, typename Hash = std::hash<T>, typename Equal = std::equal_to<T>>
+using UnorderedMultiset = std::unordered_multiset<T, Hash, Equal>;
+
 template<typename Key, typename Value>
 using Map = std::map<Key, Value>;
 
 template<typename Key, typename Value, typename Hash = std::hash<Key>, typename KeyEqual = std::equal_to<Key>>
-using UnorderedMap = std::unordered_map<Key, Value>;
+using UnorderedMap = std::unordered_map<Key, Value, Hash, KeyEqual>;
 
 using Byte = std::byte;
 

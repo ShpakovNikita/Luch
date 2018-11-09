@@ -8,21 +8,6 @@ namespace Husky::SceneV1
     {
     }
 
-    Mat4x4 Camera::GetCameraViewMatrix() const
-    {
-        return viewMatrix;
-    }
-
-    void Camera::SetCameraViewMatrix(const Mat4x4& view)
-    {
-        viewMatrix = view;
-    }
-
-    Vec3 Camera::GetCameraPosition()
-    {
-        return viewMatrix[3];
-    }
-
     PerspectiveCamera::PerspectiveCamera()
         : Camera(CameraType::Perspective)
     {
