@@ -330,6 +330,7 @@ namespace Husky::Render::Deferred
 
         BufferCreateInfo quadBufferCreateInfo;
         quadBufferCreateInfo.length = fullscreenQuadVertices.size() * sizeof(QuadVertex);
+        // TODO
         quadBufferCreateInfo.storageMode = ResourceStorageMode::Shared;
         quadBufferCreateInfo.usage = BufferUsageFlags::VertexBuffer;
 

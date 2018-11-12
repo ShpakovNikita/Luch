@@ -12,7 +12,7 @@ namespace Husky::SceneV1
 
     void Scene::AddNode(const RefPtr<Node>& node)
     {
-        auto it = std::find(nodes.begin(), nodes.end(), node);
+        [[maybe_unused]] auto it = std::find(nodes.begin(), nodes.end(), node);
         HUSKY_ASSERT(it == nodes.end());
 
         nodes.push_back(node);

@@ -64,6 +64,9 @@ float3x3 TangentFrame(float3 dp1, float3 dp2, float3 N, float2 uv)
 }
 
 // Figure out coordinate system
+#if !ALPHA_MASK
+[[early_fragment_tests]]
+#endif
 fragment FragmentOut fp_main(
     VertexOut in [[stage_in]],
     device MaterialUniform& material [[buffer(0)]]
@@ -149,7 +152,8 @@ fragment FragmentOut fp_main(
     #endif
 
     out.baseColor = baseColor;
-    out.normal.xy = N.xy * 0.5 + float2(0.5);
+
+    out.normal.xy = N.xy;
     out.normal.zw = float2(metallic, roughness);
 
     return out;

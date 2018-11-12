@@ -73,7 +73,7 @@ float G_CookTorranceGGX(float3 V, float3 N, float3 H, float3 L)
 
     float intermediate = min(NdotV, NdotL);
 
-    float g = 2 * NdotH * intermediate / VdotH;
+    float g = 2 * NdotH * intermediate / (VdotH + 0.00001);
 
     return saturate(g);
 }
@@ -111,8 +111,7 @@ float Attenuation(Light light, float d)
     float d4 = d2 * d2;
     float r2 = light.range * light.range;
     float r4 = r2 * r2;
-    return max(min(1.0 - d4/r4, 1.0), 0.0) / d2;
-    //return 1.0f - smoothstep(light.range * 0.75f, light.range, d);
+    return max(min(1.0 - d4/r4, 1.0), 0.0) / (d2 + 0.0001);
 }
 
 LightingResult ApplyDirectionalLight(
@@ -221,41 +220,21 @@ LightingResult ApplySpotLight(
     return result;
 }
 
-float DepthToNDC(float depth, float minDepth, float maxDepth)
-{
-    return (depth - minDepth) / (maxDepth - minDepth);
-}
-
 float2 FragCoordToNDC(float2 fragCoord, float2 size)
 {
     float2 pd = 2 * fragCoord / size - float2(1.0);
     return float2(pd.x, -pd.y);
 }
 
-// These functions are for projection matrices that look like
-// ??  ??  ??  ??
-// ??  ??  ??  ??
-//  0   0   A   B
-//  0   0   C   0
-
-// VS - view space
-// CS - clip space
-// NDC - normalized device coordinates
-float HomogenousCoordinate(float depthNDC, float A, float B, float C)
+float3 UncompressNormal(float2 normalMapSample)
 {
-    float result = B;
-    result /= (depthNDC - A / C);
-    return result;
-}
-
-float4 PositionNDCtoCS(float3 positionNDC, float w)
-{
-    return float4(positionNDC * w, w);
-}
-
-float4 PositionCStoVS(float4 positionCS, float4x4 inverseProjection)
-{
-    return inverseProjection * positionCS;
+    // This function uncompresses a _view space_ normal
+    // Normal is packed by using just its xy view space coordinates
+    // z always looks towards camera (-Z) since we are in view space
+    //float2 normalXY = normalMapSample.xy * 2 - float2(1.0);
+    float2 normalXY = normalMapSample.xy;
+    float normalZ = sqrt(saturate(1 - length_squared(normalXY)));
+    return float3(normalXY.xy, -normalZ);
 }
 
 struct VertexOut
@@ -263,21 +242,6 @@ struct VertexOut
     float4 position [[position]];
     float2 texCoord;
 };
-
-float3 UncompressNormal(float2 normalMapSample)
-{
-    // This function unpacks a _view space_ normal
-    // Normal is packed by using just its xy view space coordinates
-    // z always looks towards camera (-Z) since we are in view space
-    float2 normalXY = normalMapSample.xy * 2 - float2(1.0);
-    float normalZ = sqrt(saturate(1 - length_squared(normalXY)));
-    return float3(normalXY.xy, -normalZ);
-}
-
-float3 PackVector(float3 v)
-{
-    return v*0.5 + float3(0.5);
-}
 
 struct FragmentOut
 {
@@ -310,21 +274,11 @@ fragment FragmentOut fp_main(
     // Otherwise (for metals), take base color to "tint" reflections
     F0 = mix(F0, baseColorSample.rgb, metallic);
 
-    // Depth buffer MUST BE the same size as MRTs
+    // Reconstruct view-space position
     float2 attachmentSize = float2(depthBuffer.get_width(), depthBuffer.get_height());
     float2 positionSS = in.position.xy;
     float depth = depthBuffer.sample(depthBufferSampler, texCoord);
     float2 xyNDC = FragCoordToNDC(positionSS, attachmentSize);
-    float3 positionNDC = float3(xyNDC, depth);
-
-//    float A = camera.projection[2][2];
-//    float B = camera.projection[3][2];
-//    float C = camera.projection[2][3];
-//    float w = HomogenousCoordinate(depth, A, B, C);
-//    float4 positionCS = PositionNDCtoCS(positionNDC, w);
-//    float4 intermediateP = camera.inverseProjection * positionCS;
-//    float3 P = intermediateP.xyz;
-
     float4 intermediatePosition = camera.inverseProjection * float4(xyNDC, depth, 1.0);
     float3 P = intermediatePosition.xyz / intermediatePosition.w;
     float3 eyePosVS = float3(0); // in view space eye is at origin
