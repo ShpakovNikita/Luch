@@ -90,6 +90,7 @@ namespace Husky::Render::Deferred
 
         RenderPassCreateInfo renderPassCreateInfo;
         renderPassCreateInfo
+            .WithName(RendererName)
             .WithNColorAttachments(1)
             .AddColorAttachment(&colorAttachment);
 

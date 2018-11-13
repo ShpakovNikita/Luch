@@ -3,14 +3,14 @@
 
 using namespace metal;
 
-enum LightType
+enum LightType : ushort
 {
     LIGHT_POINT = 0,
     LIGHT_SPOT = 1,
     LIGHT_DIRECTIONAL = 2,
 };
 
-enum LightState
+enum LightState : ushort
 {
     LIGHT_DISABLED = 0,
     LIGHT_ENABLED = 1,
@@ -21,14 +21,15 @@ struct Light
     float4 positionWS;
     float4 directionWS;
     float4 color;
-    int state;
-    int type;
+    ushort state;
+    ushort type;
     float innerConeAngle;
     float outerConeAngle;
     float range;
     float intensity;
     float padding0;
     float padding1;
+    float padding3;
 };
 
 struct LightingResult
@@ -50,16 +51,17 @@ struct CameraUniform
 
 struct LightingParamsUniform
 {
-    int lightCount;
-    int padding0;
+    ushort lightCount;
+    ushort padding0;
     int padding1;
     int padding2;
+    int padding3;
 };
 
-float D_GGX(float NdotH, float roughness)
+float D_GGX(float NdotH, half roughness)
 {
-    float alpha = roughness * roughness;
-    float alpha2 = alpha * alpha;
+    half alpha = roughness * roughness;
+    half alpha2 = alpha * alpha;
     float den = NdotH * NdotH * (alpha2 - 1.0) + 1.0;
     return alpha2 / (M_PI_F * den * den);
 }
@@ -78,7 +80,7 @@ float G_CookTorranceGGX(float3 V, float3 N, float3 H, float3 L)
     return saturate(g);
 }
 
-float3 F_Schlick(float cosTheta, float3 F0)
+half3 F_Schlick(float cosTheta, half3 F0)
 {
     return F0 + (1 - F0) * pow(1 - cosTheta, 5);
 }
@@ -89,7 +91,7 @@ float3 DiffuseLighting(float3 color, float3 L, float3 N)
     return color * NdotL;
 }
 
-float3 SpecularLighting(float3 color, float3 V, float3 L, float3 N, float3 F, float roughness)
+float3 SpecularLighting(float3 color, float3 V, float3 L, float3 N, half3 F, half roughness)
 {
     float3 H = normalize(V + L);
 
@@ -100,7 +102,7 @@ float3 SpecularLighting(float3 color, float3 V, float3 L, float3 N, float3 F, fl
     float den = 4 * NdotV * NdotL + 0.001;
     float D = D_GGX(NdotH, roughness);
     float G = G_CookTorranceGGX(V, N, H, L);
-    float3 spec = D * F * G / den;
+    float3 spec = D * float3(F) * G / den;
 
     return color * spec;
 }
@@ -119,9 +121,9 @@ LightingResult ApplyDirectionalLight(
     Light light,
     float3 V,
     float3 N,
-    float3 F0,
-    float metallic,
-    float roughness)
+    half3 F0,
+    half metallic,
+    half roughness)
 {
     LightingResult result;
 
@@ -130,10 +132,10 @@ LightingResult ApplyDirectionalLight(
     float3 L = directionVS.xyz;
     float NdotV = saturate(dot(N, V));
 
-    float3 F = F_Schlick(NdotV, F0);
-    float3 kD = (1 - metallic)*(float3(1.0) - F);
+    half3 F = F_Schlick(NdotV, F0);
+    half3 kD = (1 - metallic)*(half3(1.0h) - F);
 
-    result.diffuse = kD * DiffuseLighting(color, L, N) * light.intensity;
+    result.diffuse = float3(kD) * DiffuseLighting(color, L, N) * light.intensity;
     result.specular = SpecularLighting(color, V, L, N, F, roughness) * light.intensity;
 
     return result;
@@ -146,21 +148,21 @@ LightingResult ApplyPointlLightImpl(
     float3 V,
     float3 P,
     float3 N,
-    float3 F0,
-    float metallic,
-    float roughness)
+    half3 F0,
+    half metallic,
+    half roughness)
 {
     LightingResult result;
 
     float3 color = light.color.xyz;
     float attenuation = Attenuation(light, dist);
 
-    float NdotV = clamp(dot(N, V), 0.0, 1.0);
+    float NdotV = saturate(dot(N, V));
 
-    float3 F = F_Schlick(NdotV, F0);
-    float3 kD = (1 - metallic)*(float3(1.0) - F);
+    half3 F = F_Schlick(NdotV, F0);
+    half3 kD = (1 - metallic)*(half3(1.0h) - F);
 
-    result.diffuse = kD * DiffuseLighting(color, L, N) * light.intensity * attenuation;
+    result.diffuse = float3(kD) * DiffuseLighting(color, L, N) * light.intensity * attenuation;
     result.specular = SpecularLighting(color, V, L, N, F, roughness) * light.intensity * attenuation;
 
     return result;
@@ -172,9 +174,9 @@ LightingResult ApplyPointlLight(
     float3 V,
     float3 P,
     float3 N,
-    float3 F0,
-    float metallic,
-    float roughness)
+    half3 F0,
+    half metallic,
+    half roughness)
 {
     float3 positionVS = (camera.view * light.positionWS).xyz;
     float3 L = positionVS.xyz - P;
@@ -199,9 +201,9 @@ LightingResult ApplySpotLight(
     float3 V,
     float3 P,
     float3 N,
-    float3 F0,
-    float metallic,
-    float roughness)
+    half3 F0,
+    half metallic,
+    half roughness)
 {
     LightingResult result;
 
@@ -253,7 +255,7 @@ fragment FragmentOut fp_main(
     device CameraUniform& camera [[buffer(0)]],
     device LightingParamsUniform& lightingParams [[buffer(1)]],
     device Light* lights [[buffer(2)]],
-    texture2d<float> baseColorMap [[texture(0)]],
+    texture2d<half> baseColorMap [[texture(0)]],
     texture2d<float> normalMap [[texture(1)]],
     depth2d<float> depthBuffer [[texture(2)]],
     sampler baseColorSampler [[sampler(0)]],
@@ -262,14 +264,14 @@ fragment FragmentOut fp_main(
 {
     float2 texCoord = in.texCoord;
 
-    float4 baseColorSample = baseColorMap.sample(baseColorSampler, texCoord);
+    half4 baseColorSample = baseColorMap.sample(baseColorSampler, texCoord);
     float4 normalMapSample = normalMap.sample(normalMapSampler, texCoord);
 
     float3 N = UncompressNormal(normalMapSample.xy);
-    float metallic = normalMapSample.z;
-    float roughness = normalMapSample.w;
+    half metallic = half(normalMapSample.z);
+    half roughness = half(normalMapSample.w);
 
-    float3 F0 = float3(0.04);
+    half3 F0 = half3(0.04h);
     // If material is dielectrict, it's reflection coefficient can be approximated by 0.04
     // Otherwise (for metals), take base color to "tint" reflections
     F0 = mix(F0, baseColorSample.rgb, metallic);
@@ -286,7 +288,7 @@ fragment FragmentOut fp_main(
 
     LightingResult lightingResult;
 
-    for(int i = 0; i < lightingParams.lightCount; i++)
+    for(ushort i = 0; i < lightingParams.lightCount; i++)
     {
         Light light = lights[i];
 
@@ -313,7 +315,7 @@ fragment FragmentOut fp_main(
 
     FragmentOut result;
 
-    result.color.rgb = baseColorSample.rgb * (lightingResult.diffuse + lightingResult.specular);
+    result.color.rgb = float3(baseColorSample.rgb) * (lightingResult.diffuse + lightingResult.specular);
     result.color.a = 1.0;
 
     return result;

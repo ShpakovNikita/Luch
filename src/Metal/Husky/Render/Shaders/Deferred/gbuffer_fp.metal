@@ -35,13 +35,13 @@ struct VertexOut
 
 struct FragmentOut
 {
-    float4 baseColor [[color(0)]];
+    half4 baseColor [[color(0)]];
     float4 normal [[color(1)]];
 };
 
-float3 ExtractNormal(float3 normalTS, float3x3 TBN)
+float3 ExtractNormal(float3 normalTS, float normalScale, float3x3 TBN)
 {
-    float3 result = normalTS * 2 - float3(1.0);
+    float3 result = (normalTS * 2 - float3(1.0)) * float3(normalScale, normalScale, 1.0);
 
     return normalize(TBN * result);
 }
@@ -72,23 +72,23 @@ fragment FragmentOut fp_main(
     device MaterialUniform& material [[buffer(0)]]
 
 #if HAS_BASE_COLOR_TEXTURE
-    , texture2d<float> baseColorMap [[texture(0)]]         // RGB - color, A - opacity
+    , texture2d<half> baseColorMap [[texture(0)]]         // RGB - color, A - opacity
     , sampler baseColorSampler [[sampler(0)]]
 #endif
 #if HAS_METALLIC_ROUGHNESS_TEXTURE
-    , texture2d<float> metallicRoughnessMap [[texture(1)]] // R - metallic, G - roughness, BA unused
+    , texture2d<half> metallicRoughnessMap [[texture(1)]] // R - metallic, G - roughness, BA unused
     , sampler metallicRoughnessSampler [[sampler(1)]]
 #endif
 #if HAS_NORMAL_TEXTURE
-    , texture2d<float> normalMap [[texture(2)]]            // RGB - XYZ, A - unused
+    , texture2d<float> normalMap [[texture(2)]]           // RGB - XYZ, A - unused
     , sampler normalMapSampler [[sampler(2)]]
 #endif
 #if HAS_OCCLUSION_TEXTURE
-    , texture2d<float> occlusionMap [[texture(3)]]         // greyscale,
+    , texture2d<half> occlusionMap [[texture(3)]]         // greyscale,
     , sampler occlusionSampler [[sampler(3)]]
 #endif
 #if HAS_EMISSIVE_TEXTURE
-    , texture2d<float> emissiveMap [[texture(4)]]          // RGB - light color, A unused
+    , texture2d<half> emissiveMap [[texture(4)]]          // RGB - light color, A unused
     , sampler emissiveSampler [[sampler(4)]]
 #endif
     )
@@ -102,9 +102,9 @@ fragment FragmentOut fp_main(
     #endif
 
     #if HAS_BASE_COLOR_TEXTURE && HAS_TEXCOORD_0
-        float4 baseColor = baseColorMap.sample(baseColorSampler, texCoord);
+        half4 baseColor = baseColorMap.sample(baseColorSampler, texCoord);
     #else
-        float4 baseColor = float4(1.0);
+        half4 baseColor = half4(1.0h);
     #endif
 
     #if ALPHA_MASK
@@ -137,18 +137,18 @@ fragment FragmentOut fp_main(
 
     #if HAS_NORMAL_TEXTURE && HAS_TEXCOORD_0
         float3 normalSample = normalMap.sample(normalMapSampler, texCoord).xyz;
-        float3 N = normalize(ExtractNormal(normalSample, TBN));
+        float3 N = normalize(ExtractNormal(normalSample, material.normalScale, TBN));
     #else
         float3 N = normalize(normalVS);
     #endif
 
+    half metallic = half(material.metallicFactor);
+    half roughness = half(material.roughnessFactor);
+
     #if HAS_METALLIC_ROUGHNESS_TEXTURE && HAS_TEXCOORD_0
-        float4 metallicRoughness = metallicRoughnessMap.sample(metallicRoughnessSampler, texCoord);
-        float metallic = material.metallicFactor * metallicRoughness.b;
-        float roughness = material.roughnessFactor * clamp(metallicRoughness.g, 0.04, 1.0);
-    #else
-        float metallic = material.metallicFactor;
-        float roughness = material.roughnessFactor;
+        half4 metallicRoughnessSample = metallicRoughnessMap.sample(metallicRoughnessSampler, texCoord);
+        metallic *= metallicRoughnessSample.b;
+        roughness *= clamp(metallicRoughnessSample.g, 0.04h, 1.0h);
     #endif
 
     out.baseColor = baseColor;

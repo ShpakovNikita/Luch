@@ -63,29 +63,31 @@ namespace Husky::Render
 
     struct LightingParamsUniform
     {
-        int32 lightCount = 0;
-        int32 __padding0 = 0;
+        uint16 lightCount = 0;
+        uint16 __padding0 = 0;
         int32 __padding1 = 0;
         int32 __padding2 = 0;
+        int32 __padding3 = 0;
     };
+
+    static_assert(sizeof(LightingParamsUniform) % 4 == 0);
 
     struct LightUniform
     {
         Vec4 positionWS = { 0.0, 0.0, 0.0, 1.0 };
         Vec4 directionWS = { 0.0, 0.0, 0.0, 0.0 };
         Vec4 color = { 1.0, 1.0, 1.0, 1.0 };
-        int32 enabled = 1;
-        int32 type = 0;
+        uint16 enabled = 1;
+        uint16 type = 0;
         float32 innerConeAngle = 0;
         float32 outerConeAngle = 0;
         float32 range = 0;
         float32 intensity = 1.0;
         float32 __padding0 = 0.0;
         float32 __padding1 = 0.0;
+        float32 __padding2 = 0.0;
     };
 
     static_assert(sizeof(LightUniform) % 4 == 0);
 #pragma pack(pop)
-
-
 }
