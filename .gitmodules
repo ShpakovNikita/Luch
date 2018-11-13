@@ -10,3 +10,6 @@
 [submodule "lib/mtlpp"]
 	path = lib/mtlpp
 	url = https://github.com/naleksiev/mtlpp.git
+[submodule "lib/stb"]
+	path = lib/stb
+	url = https://github.com/nothings/stb.git
