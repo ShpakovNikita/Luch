@@ -11,20 +11,20 @@ struct VertexOut
 
 struct FragmentOut
 {
-    float4 color [[color(0)]];
+    half4 color [[color(0)]];
 };
 
 fragment FragmentOut fp_main(
     VertexOut in [[stage_in]],
-    texture2d<float> colorMap [[texture(0)]],
-    sampler colorSampler [[sampler(0)]])
+    texture2d<float> illuminanceMap [[texture(0)]],
+    sampler illuminanceSampler [[sampler(0)]])
 {
     FragmentOut result;
 
     float2 texCoord = in.texCoord;
-    float4 colorSample = colorMap.sample(colorSampler, texCoord);
+    float4 colorSample = illuminanceMap.sample(illuminanceSampler, texCoord);
 
-    result.color = colorSample;
+    result.color = half4(colorSample);
 
     return result;
 }

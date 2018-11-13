@@ -147,7 +147,6 @@ namespace Husky::Render::Deferred
             return false;
         }
 
-
         return true;
     }
 

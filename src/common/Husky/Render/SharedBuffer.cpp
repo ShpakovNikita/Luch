@@ -8,7 +8,7 @@ namespace Husky::Render
         : buffer(aBuffer)
     {
         Reset();
-        auto [mapResult, _] = buffer->MapMemory(remainingSize, 0);
+        [[maybe_unused]] auto [mapResult, _] = buffer->MapMemory(remainingSize, 0);
         HUSKY_ASSERT(mapResult == GraphicsResult::Success);
     }
 
