@@ -30,7 +30,7 @@ int64 FileStream::GetSize() const
     fstream.seekg(0, std::ios::end);
     auto result = fstream.tellg();
     fstream.seekg(positionBefore, std::ios::beg);
-    HUSKY_ASSERT(result >= 0);
+    LUCH_ASSERT(result >= 0);
     return result;
 }
 
@@ -104,7 +104,7 @@ std::ios::seekdir FileStream::ToStdSeekDir(SeekOrigin origin)
         case SeekOrigin::End:
             return std::ios::end;
         default:
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
     }
 }
 

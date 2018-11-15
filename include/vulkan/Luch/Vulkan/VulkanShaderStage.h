@@ -64,7 +64,7 @@ namespace Luch::Vulkan
             return vk::ShaderStageFlagBits::eCompute;
         }
 
-        HUSKY_ASSERT_MSG(false, "Unknown shader stage");
+        LUCH_ASSERT_MSG(false, "Unknown shader stage");
         return (vk::ShaderStageFlagBits)0;
     }
 }

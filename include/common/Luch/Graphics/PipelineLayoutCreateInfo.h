@@ -33,7 +33,7 @@ namespace Luch::Graphics
                 stages[stage].samplerSetLayouts.push_back(descriptorSetLayout);
                 break;
             default:
-                HUSKY_ASSERT(false);
+                LUCH_ASSERT(false);
             }
             return *this;
         }

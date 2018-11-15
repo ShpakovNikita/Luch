@@ -38,7 +38,7 @@ namespace Luch::SceneV1
                 format = Graphics::Format::R8G8B8A8Unorm;
                 break;
             default:
-                HUSKY_ASSERT(false);
+                LUCH_ASSERT(false);
             }
 
             auto image = MakeRef<Image>();

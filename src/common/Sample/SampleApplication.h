@@ -7,7 +7,7 @@
 #include <Luch/Render/Deferred/DeferredRenderer.h>
 
 #ifdef _WIN32
-    #if HUSKY_USE_VULKAN
+    #if LUCH_USE_VULKAN
         #include "../win32/VulkanAllocator.h"
     #endif
     #include <Luch/Platform/Win32/WndProcDelegate.h>

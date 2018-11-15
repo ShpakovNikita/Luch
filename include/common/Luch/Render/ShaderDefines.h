@@ -16,7 +16,7 @@ namespace Luch::Render
 
         void AddDefine(T define, const Variant<int32, String>& value)
         {
-            HUSKY_ASSERT(mapping != nullptr);
+            LUCH_ASSERT(mapping != nullptr);
 
             if (define != T{})
             {

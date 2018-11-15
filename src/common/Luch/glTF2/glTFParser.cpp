@@ -257,7 +257,7 @@ Vector<T> ParseBuiltinArray(const json& j)
 Sparse ParseSparse(const json& j)
 {
     Sparse sparse;
-    HUSKY_ASSERT(false);
+    LUCH_ASSERT(false);
     return sparse;
 }
 
@@ -397,7 +397,7 @@ Camera ParseCamera(const json& j)
         camera.perspective = ParsePerspective(j["perspective"]);
         break;
     default:
-        HUSKY_ASSERT(false);
+        LUCH_ASSERT(false);
     }
     return camera;
 }
@@ -623,7 +623,7 @@ SharedPtr<glTFRoot> glTFParser::ParseJSON(Stream* stream)
         j = json::parse(buffer.begin(), buffer.end());
     }
 
-    HUSKY_ASSERT(j.is_object());
+    LUCH_ASSERT(j.is_object());
 
     SharedPtr<glTFRoot> root = MakeShared<glTFRoot>();
 

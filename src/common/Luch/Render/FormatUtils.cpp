@@ -18,7 +18,7 @@ namespace Luch::Render::FormatUtils
         case Format::R8G8B8A8Unorm:
             return Format::R8G8B8A8Unorm_sRGB;
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown format");
+            LUCH_ASSERT_MSG(false, "Unknown format");
             return Format::Undefined;
         };
     }

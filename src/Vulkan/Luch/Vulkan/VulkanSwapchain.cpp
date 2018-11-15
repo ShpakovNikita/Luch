@@ -41,7 +41,7 @@ namespace Luch::Vulkan
         VulkanSemaphore* semaphore,
         Optional<Timeout> timeout)
     {
-        HUSKY_ASSERT(fence || semaphore);
+        LUCH_ASSERT(fence || semaphore);
 
         auto vulkanFence = fence ? fence->GetFence() : nullptr;
         auto vulkanSemaphore = semaphore ? semaphore->GetSemaphore() : nullptr;

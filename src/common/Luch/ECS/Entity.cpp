@@ -7,7 +7,7 @@ namespace Luch::ECS
 {
     void Entity::AddComponent(UniquePtr<Component> component)
     {
-        HUSKY_ASSERT(component != nullptr);
+        LUCH_ASSERT(component != nullptr);
 
         auto comp = component.get();
         components[component->GetTypeId()].emplace_back(move(component));

@@ -13,7 +13,7 @@ namespace Luch::SceneV1
     void Scene::AddNode(const RefPtr<Node>& node)
     {
         [[maybe_unused]] auto it = std::find(nodes.begin(), nodes.end(), node);
-        HUSKY_ASSERT(it == nodes.end());
+        LUCH_ASSERT(it == nodes.end());
 
         nodes.push_back(node);
         AddNodeProperties(node);
@@ -59,7 +59,7 @@ namespace Luch::SceneV1
 
     void Scene::AddNodeProperties(const RefPtr<Node>& node)
     {
-        HUSKY_ASSERT(node->scene == nullptr);
+        LUCH_ASSERT(node->scene == nullptr);
 
         node->scene = this;
 

@@ -16,7 +16,7 @@ namespace Luch::SceneV1::Loader
         case glTF::WrapMode::MirroredRepeat:
             return SamplerAddressMode::MirrorRepeat;
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown sampler addres mode");
+            LUCH_ASSERT_MSG(false, "Unknown sampler addres mode");
         }
     }
 
@@ -29,7 +29,7 @@ namespace Luch::SceneV1::Loader
         case glTF::MagFilter::Linear:
             return SamplerMinMagFilter::Linear;
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown mag filter");
+            LUCH_ASSERT_MSG(false, "Unknown mag filter");
         }
     }
 
@@ -131,11 +131,11 @@ namespace Luch::SceneV1::Loader
         Vec2* texcoords,
         Vec4* outTangents)
     {
-        //HUSKY_ASSERT(mode == glTF::PrimitiveMode::Triangles || mode == glTF::PrimitiveMode::TriangleStrip);
-        HUSKY_ASSERT(mode == glTF::PrimitiveMode::Triangles);
+        //LUCH_ASSERT(mode == glTF::PrimitiveMode::Triangles || mode == glTF::PrimitiveMode::TriangleStrip);
+        LUCH_ASSERT(mode == glTF::PrimitiveMode::Triangles);
         //int32 verticesCount = mode == glTF::PrimitiveMode::Triangles ? indexCount * 3 : indexCount + 2;
         int32 verticesCount = indexCount / 3;
-        HUSKY_ASSERT(verticesCount % 3 == 0);
+        LUCH_ASSERT(verticesCount % 3 == 0);
 
         Vector<Vec3> tangents;
         tangents.resize(verticesCount);

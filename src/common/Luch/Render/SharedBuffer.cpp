@@ -9,7 +9,7 @@ namespace Luch::Render
     {
         Reset();
         [[maybe_unused]] auto [mapResult, _] = buffer->MapMemory(remainingSize, 0);
-        HUSKY_ASSERT(mapResult == GraphicsResult::Success);
+        LUCH_ASSERT(mapResult == GraphicsResult::Success);
     }
 
     SharedBuffer::~SharedBuffer()
@@ -19,7 +19,7 @@ namespace Luch::Render
 
     SharedBufferSuballocation SharedBuffer::Suballocate(int32 size, int32 alignment)
     {
-        HUSKY_ASSERT(size <= remainingSize);
+        LUCH_ASSERT(size <= remainingSize);
 
         int32 padding = (-offset & (alignment - 1));
         int32 alignedOffset = padding + offset;

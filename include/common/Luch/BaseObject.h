@@ -43,7 +43,7 @@ namespace Luch
         {
             // TODO
             auto newRefCount = --refCount;
-            HUSKY_ASSERT_MSG(newRefCount >= 0, "Negative refcount");
+            LUCH_ASSERT_MSG(newRefCount >= 0, "Negative refcount");
             if (newRefCount == 0)
             {
                 delete this;

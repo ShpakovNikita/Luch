@@ -17,7 +17,7 @@ namespace Luch::Metal
         case IndexType::UInt32:
             return mtlpp::IndexType::UInt32;
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown unsupported index type");
+            LUCH_ASSERT_MSG(false, "Unknown unsupported index type");
             return mtlpp::IndexType::UInt16;
         }
     }

@@ -69,7 +69,7 @@ namespace Luch::Vulkan
             return vk::Format::eR32G32B32A32Sfloat;
 
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown format");
+            LUCH_ASSERT_MSG(false, "Unknown format");
         }
     }
 
@@ -96,7 +96,7 @@ namespace Luch::Vulkan
         case vk::Format::eD32SfloatS8Uint:
             return Format::D32SfloatS8Uint;
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown format");
+            LUCH_ASSERT_MSG(false, "Unknown format");
         }
     }
 }

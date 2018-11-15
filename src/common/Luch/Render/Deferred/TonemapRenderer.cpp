@@ -49,7 +49,7 @@ namespace Luch::Render::Deferred
 
     bool TonemapRenderer::Initialize()
     {
-        HUSKY_ASSERT(context != nullptr);
+        LUCH_ASSERT(context != nullptr);
 
         auto[tonemapResourcesPrepared, preparedTonemapResources] = PrepareTonemapPassResources(context.get());
         if (!tonemapResourcesPrepared)
@@ -76,7 +76,7 @@ namespace Luch::Render::Deferred
         resources->textureDescriptorSet->Update();
 
         auto [allocateCmdListResult, cmdList] = resources->commandPool->AllocateGraphicsCommandList();
-        HUSKY_ASSERT(allocateCmdListResult == GraphicsResult::Success);
+        LUCH_ASSERT(allocateCmdListResult == GraphicsResult::Success);
 
         ColorAttachment colorAttachment = resources->colorAttachmentTemplate;
         colorAttachment.output.texture = output;
@@ -159,7 +159,7 @@ namespace Luch::Render::Deferred
         auto[createPipelineResult, createdPipeline] = context->device->CreatePipelineState(ci);
         if (createPipelineResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
         }
 
         return createdPipeline;
@@ -183,7 +183,7 @@ namespace Luch::Render::Deferred
             descriptorPoolCreateInfo);
         if (createDescriptorPoolResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
@@ -199,13 +199,13 @@ namespace Luch::Render::Deferred
 
         auto [vertexShaderLibraryCreated, createdVertexShaderLibrary] = RenderUtils::CreateShaderLibrary(
             context->device,
-#if _WIN32 && HUSKY_USE_VULKAN
+#if _WIN32 && LUCH_USE_VULKAN
             "C:\\Development\\Luch\\src\\Luch\\Render\\Shaders\\Deferred\\tonemap.vert",
 #endif
 #if __APPLE__
-    #if HUSKY_USE_METAL
+    #if LUCH_USE_METAL
             "/Users/spo1ler/Development/Luch/src/Metal/Luch/Render/Shaders/Deferred/tonemap_vp.metal",
-    #elif HUSKY_USE_VULKAN
+    #elif LUCH_USE_VULKAN
             "/Users/spo1ler/Development/Luch/src/Vulkan/Luch/Render/Shaders/Deferred/tonemap.vert",
     #else
             "",
@@ -215,7 +215,7 @@ namespace Luch::Render::Deferred
 
         if (!vertexShaderLibraryCreated)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
@@ -223,7 +223,7 @@ namespace Luch::Render::Deferred
             ShaderStage::Vertex, "vp_main");
         if(vertexShaderProgramCreateResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
@@ -231,13 +231,13 @@ namespace Luch::Render::Deferred
 
         auto[fragmentShaderLibraryCreated, createdFragmentShaderLibrary] = RenderUtils::CreateShaderLibrary(
             context->device,
-#if _WIN32 && HUSKY_USE_VULKAN
+#if _WIN32 && LUCH_USE_VULKAN
             "C:\\Development\\Luch\\src\\Luch\\Render\\Shaders\\Deferred\\tonemap.frag",
 #endif
 #if __APPLE__
-    #if HUSKY_USE_METAL
+    #if LUCH_USE_METAL
             "/Users/spo1ler/Development/Luch/src/Metal/Luch/Render/Shaders/Deferred/tonemap_fp.metal",
-    #elif HUSKY_USE_VULKAN
+    #elif LUCH_USE_VULKAN
             "/Users/spo1ler/Development/Luch/src/Vulkan/Luch/Render/Shaders/Deferred/tonemap.frag",
     #else
             "",
@@ -247,7 +247,7 @@ namespace Luch::Render::Deferred
 
         if (!fragmentShaderLibraryCreated)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
@@ -257,7 +257,7 @@ namespace Luch::Render::Deferred
 
         if(fragmentShaderProgramCreateResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
@@ -277,7 +277,7 @@ namespace Luch::Render::Deferred
 
         if (createTextureDescriptorSetLayoutResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
@@ -294,7 +294,7 @@ namespace Luch::Render::Deferred
 
         if (createSamplerDescriptorSetLayoutResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
@@ -305,7 +305,7 @@ namespace Luch::Render::Deferred
         auto[createSamplerResult, createdSampler] = context->device->CreateSampler(samplerCreateInfo);
         if (createSamplerResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
@@ -319,7 +319,7 @@ namespace Luch::Render::Deferred
         auto[createPipelineLayoutResult, createdPipelineLayout] = context->device->CreatePipelineLayout(pipelineLayoutCreateInfo);
         if (createPipelineLayoutResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
@@ -341,7 +341,7 @@ namespace Luch::Render::Deferred
 
         if (createQuadBufferResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
@@ -381,7 +381,7 @@ namespace Luch::Render::Deferred
         auto [createBufferResult, createdBuffer] = context->device->CreateBuffer(bufferCreateInfo);
         if(createBufferResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 

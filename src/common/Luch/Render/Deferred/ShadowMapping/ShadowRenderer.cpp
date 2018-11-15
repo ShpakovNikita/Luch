@@ -88,7 +88,7 @@ namespace Luch::Render::Deferred::ShadowMapping
         const RefPtrVector<SceneV1::Node>& lightNodes)
     {
         auto [createCommandListResult, commandList] = resources->commandPool->AllocateGraphicsCommandList();
-        HUSKY_ASSERT(createCommandListResult == GraphicsResult::Success);
+        LUCH_ASSERT(createCommandListResult == GraphicsResult::Success);
 
         shadowMaps.clear();
         commandList->Begin();
@@ -96,7 +96,7 @@ namespace Luch::Render::Deferred::ShadowMapping
         for(const auto& lightNode : lightNodes)
         {
             const auto& light = lightNode->GetLight();
-            HUSKY_ASSERT(light != nullptr);
+            LUCH_ASSERT(light != nullptr);
 
             if(light->IsShadowEnabled())
             {
@@ -162,7 +162,7 @@ namespace Luch::Render::Deferred::ShadowMapping
         }
         case SceneV1::LightType::Directional:
         {
-            HUSKY_ASSERT_MSG(false, "Not implemented");
+            LUCH_ASSERT_MSG(false, "Not implemented");
 
             auto it = directionalLightCameras.find(light);
             if(it == directionalLightCameras.end())
@@ -291,7 +291,7 @@ namespace Luch::Render::Deferred::ShadowMapping
             offsets.push_back(vertexBuffer.byteOffset);
         }
 
-        HUSKY_ASSERT(primitive->GetIndexBuffer().has_value());
+        LUCH_ASSERT(primitive->GetIndexBuffer().has_value());
         const auto& indexBuffer = *primitive->GetIndexBuffer();
 
         commandList->BindVertexBuffers(graphicsVertexBuffers, offsets, 0);
@@ -308,7 +308,7 @@ namespace Luch::Render::Deferred::ShadowMapping
     {
         auto[createVertexDescriptorSetResult, vertexDescriptorSet] = resources->descriptorPool->AllocateDescriptorSet(
             resources->cameraBufferSetLayout);
-        HUSKY_ASSERT(createVertexDescriptorSetResult == GraphicsResult::Success);
+        LUCH_ASSERT(createVertexDescriptorSetResult == GraphicsResult::Success);
 
         camera->SetDescriptorSet(RendererName, vertexDescriptorSet);
     }
@@ -318,7 +318,7 @@ namespace Luch::Render::Deferred::ShadowMapping
         auto[allocateDescriptorSetResult, allocatedDescriptorSet] = resources->descriptorPool->AllocateDescriptorSet(
             resources->meshBufferSetLayout);
 
-        HUSKY_ASSERT(allocateDescriptorSetResult == GraphicsResult::Success);
+        LUCH_ASSERT(allocateDescriptorSetResult == GraphicsResult::Success);
 
         mesh->SetBufferDescriptorSet(RendererName, allocatedDescriptorSet);
     }
@@ -379,8 +379,8 @@ namespace Luch::Render::Deferred::ShadowMapping
         Mat4x4 transform,
         SceneV1::PerspectiveCamera* camera)
     {;
-        HUSKY_ASSERT(light->GetOuterConeAngle().has_value());
-        HUSKY_ASSERT(light->GetRange().has_value());
+        LUCH_ASSERT(light->GetOuterConeAngle().has_value());
+        LUCH_ASSERT(light->GetRange().has_value());
 
         camera->SetYFOV(light->GetOuterConeAngle().value());
         camera->SetAspectRatio(1);
@@ -395,7 +395,7 @@ namespace Luch::Render::Deferred::ShadowMapping
         Mat4x4 transform,
         SceneV1::OrthographicCamera* camera)
     {
-        HUSKY_ASSERT_MSG(false, "Not implemented");
+        LUCH_ASSERT_MSG(false, "Not implemented");
 
         UpdateCamera(camera, transform);
     }
@@ -408,7 +408,7 @@ namespace Luch::Render::Deferred::ShadowMapping
     {
         // TODO
 
-        HUSKY_ASSERT(light->GetRange().has_value());
+        LUCH_ASSERT(light->GetRange().has_value());
 
         camera->SetYFOV(glm::pi<float32>() / 2);
         camera->SetAspectRatio(1);
@@ -454,7 +454,7 @@ namespace Luch::Render::Deferred::ShadowMapping
 
         if (createDescriptorPoolResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
@@ -478,7 +478,7 @@ namespace Luch::Render::Deferred::ShadowMapping
             cameraBufferSetLayoutCreateInfo);
         if(cameraBufferSetLayoutCreateResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
@@ -494,7 +494,7 @@ namespace Luch::Render::Deferred::ShadowMapping
             meshBufferSetLayoutCreateInfo);
         if(meshBufferSetLayoutCreateResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
@@ -508,7 +508,7 @@ namespace Luch::Render::Deferred::ShadowMapping
         auto [createPipelineLayoutResult, createdPipelineLayout] = context->device->CreatePipelineLayout(pipelineLayoutCreateInfo);
         if(createPipelineLayoutResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
@@ -526,9 +526,9 @@ namespace Luch::Render::Deferred::ShadowMapping
             "C:\\Development\\Luch\\src\\Luch\\Render\\Shaders\\Deferred\\todo.vert",
 #endif
 #if __APPLE__
-    #if HUSKY_USE_METAL
+    #if LUCH_USE_METAL
             "/Users/spo1ler/Development/Luch/src/Metal/Luch/Render/Shaders/Deferred/shadowmap_vp.metal",
-    #elif HUSKY_USE_VULKAN
+    #elif LUCH_USE_VULKAN
             "/Users/spo1ler/Development/Luch/src/Vulkan/Luch/Render/Shaders/Deferred/todo.vert",
     #else
             "",
@@ -538,7 +538,7 @@ namespace Luch::Render::Deferred::ShadowMapping
 
         if(!vertexShaderLibraryCreated)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
@@ -548,7 +548,7 @@ namespace Luch::Render::Deferred::ShadowMapping
 
         if(createVertexProgramResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
@@ -567,7 +567,7 @@ namespace Luch::Render::Deferred::ShadowMapping
         auto [createPipelineStateResult, createdPipelineState] = context->device->CreatePipelineState(pipelineStateCreateInfo);
         if(createPipelineStateResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
@@ -576,7 +576,7 @@ namespace Luch::Render::Deferred::ShadowMapping
         auto [createCommandPoolResult, createdCommandPool] = context->commandQueue->CreateCommandPool();
         if(createCommandPoolResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
