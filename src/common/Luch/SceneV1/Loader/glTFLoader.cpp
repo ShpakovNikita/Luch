@@ -332,7 +332,7 @@ namespace Luch::SceneV1::Loader
             primitive->SetMaterial(pbrMaterial);
         }
 
-        HUSKY_ASSERT(glTFPrimitive.mode == glTF::PrimitiveMode::Triangles);
+        LUCH_ASSERT(glTFPrimitive.mode == glTF::PrimitiveMode::Triangles);
         primitive->SetTopology(PrimitiveTopology::TriangleList);
 
         return primitive;
@@ -342,7 +342,7 @@ namespace Luch::SceneV1::Loader
     {
         auto primitive = MakeRef<Primitive>();
 
-        HUSKY_ASSERT(glTFPrimitive.mode == glTF::PrimitiveMode::Triangles);
+        LUCH_ASSERT(glTFPrimitive.mode == glTF::PrimitiveMode::Triangles);
 
         Vector<PrimitiveAttribute> attributes;
         auto& positionAttribute = attributes.emplace_back();
@@ -387,7 +387,7 @@ namespace Luch::SceneV1::Loader
             const auto& accessor = root->accessors[glTFAttribute.accessor];
             if(vertexCount.has_value())
             {
-                HUSKY_ASSERT(accessor.count == *vertexCount);
+                LUCH_ASSERT(accessor.count == *vertexCount);
             }
             else
             {
@@ -396,9 +396,9 @@ namespace Luch::SceneV1::Loader
             glTFAttributes[semantic] = glTFAttribute;
         }
 
-        HUSKY_ASSERT(glTFAttributes.count(AttributeSemantic::Position) == 1);
-        HUSKY_ASSERT(glTFAttributes.count(AttributeSemantic::Normal) == 1);
-        HUSKY_ASSERT(glTFAttributes.count(AttributeSemantic::Texcoord_0) == 1);
+        LUCH_ASSERT(glTFAttributes.count(AttributeSemantic::Position) == 1);
+        LUCH_ASSERT(glTFAttributes.count(AttributeSemantic::Normal) == 1);
+        LUCH_ASSERT(glTFAttributes.count(AttributeSemantic::Texcoord_0) == 1);
 
         Vector<Byte> vertexBytes;
         vertexBytes.resize(*vertexCount * sizeof(Render::Vertex));
@@ -440,7 +440,7 @@ namespace Luch::SceneV1::Loader
                 }
                 else
                 {
-                    HUSKY_ASSERT(false);
+                    LUCH_ASSERT(false);
                 }
             }
         }
@@ -459,7 +459,7 @@ namespace Luch::SceneV1::Loader
             const auto& glTFAttribute = kv.second;
 
             const auto& accessor = root->accessors[glTFAttribute.accessor];
-            HUSKY_ASSERT(accessor.bufferView.has_value());
+            LUCH_ASSERT(accessor.bufferView.has_value());
             const auto& bufferView = root->bufferViews[*accessor.bufferView];
             const auto& buffer = context.loadedBuffers[bufferView.buffer];
 
@@ -483,28 +483,28 @@ namespace Luch::SceneV1::Loader
                 {
                 case AttributeSemantic::Position:
                 {
-                    HUSKY_ASSERT(attributeType == AttributeType::Vec3);
-                    HUSKY_ASSERT(componentType == ComponentType::Float);
+                    LUCH_ASSERT(attributeType == AttributeType::Vec3);
+                    LUCH_ASSERT(componentType == ComponentType::Float);
                     std::memcpy(&positions[i], attributeBytes, sizeof(Vec3));
                     break;
                 }
                 case AttributeSemantic::Normal:
                 {
-                    HUSKY_ASSERT(attributeType == AttributeType::Vec3);
-                    HUSKY_ASSERT(componentType == ComponentType::Float);
+                    LUCH_ASSERT(attributeType == AttributeType::Vec3);
+                    LUCH_ASSERT(componentType == ComponentType::Float);
                     std::memcpy(&normals[i], attributeBytes, sizeof(Vec3));
                     break;
                 }
                 case AttributeSemantic::Tangent:
                 {
-                    HUSKY_ASSERT(attributeType == AttributeType::Vec4);
-                    HUSKY_ASSERT(componentType == ComponentType::Float);
+                    LUCH_ASSERT(attributeType == AttributeType::Vec4);
+                    LUCH_ASSERT(componentType == ComponentType::Float);
                     std::memcpy(&tangents[i], attributeBytes, sizeof(Vec4));
                     break;
                 }
                 case AttributeSemantic::Texcoord_0:
                 {
-                    HUSKY_ASSERT(attributeType == AttributeType::Vec2);
+                    LUCH_ASSERT(attributeType == AttributeType::Vec2);
 
                     if(accessor.componentType == glTF::ComponentType::Float)
                     {
@@ -526,12 +526,12 @@ namespace Luch::SceneV1::Loader
                     }
                     else
                     {
-                        HUSKY_ASSERT_MSG(false, "Invalid texcoord component type");
+                        LUCH_ASSERT_MSG(false, "Invalid texcoord component type");
                     }
                     break;
                 }
                 default:
-                    HUSKY_ASSERT_MSG(false, "Unknown semantic for interleaved");
+                    LUCH_ASSERT_MSG(false, "Unknown semantic for interleaved");
                 }
             }
         }
@@ -590,7 +590,7 @@ namespace Luch::SceneV1::Loader
         }
 
         const auto& bufferView = root->bufferViews[*indices.bufferView];
-        HUSKY_ASSERT_MSG(!bufferView.byteStride.has_value(), "index accessor buffer views should not have stride");
+        LUCH_ASSERT_MSG(!bufferView.byteStride.has_value(), "index accessor buffer views should not have stride");
 
         auto buffer = context.loadedBuffers[bufferView.buffer];
 
@@ -605,7 +605,7 @@ namespace Luch::SceneV1::Loader
             indexType = IndexType::UInt32;
             break;
         default:
-            HUSKY_ASSERT_MSG(false, "Unsupported index type");
+            LUCH_ASSERT_MSG(false, "Unsupported index type");
         }
 
         IndexBuffer ib;
@@ -749,7 +749,7 @@ namespace Luch::SceneV1::Loader
         light->SetRange(glTFLight.range);
         if(lightType == LightType::Spot)
         {
-            HUSKY_ASSERT(glTFLight.spot.has_value());
+            LUCH_ASSERT(glTFLight.spot.has_value());
             light->SetInnerConeAngle(glTFLight.spot->innerConeAngle);
             light->SetOuterConeAngle(glTFLight.spot->outerConeAngle);
         }

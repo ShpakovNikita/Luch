@@ -121,7 +121,7 @@ EShLanguage ToLanguage(ShaderStage shaderStage)
     case ShaderStage::Compute:
         return EShLangCompute;
     default:
-        HUSKY_ASSERT_MSG(false, "Unknown shader stage");
+        LUCH_ASSERT_MSG(false, "Unknown shader stage");
         return EShLangVertex;
     }
 }
@@ -161,7 +161,7 @@ bool VulkanGLSLShaderCompiler::TryCompileShader(
         return false;
     }
 
-    HUSKY_ASSERT(glslSource.back() == Byte{ 0 });
+    LUCH_ASSERT(glslSource.back() == Byte{ 0 });
     // TODO logging
     EShLanguage language = ToLanguage(shaderStage);
     glslang::TShader shader(language);
@@ -180,7 +180,7 @@ bool VulkanGLSLShaderCompiler::TryCompileShader(
     {
         const auto& log = shader.getInfoLog();
         const auto& debugLog = shader.getInfoLog();
-        HUSKY_ASSERT(false);
+        LUCH_ASSERT(false);
         return false;
     }
 
@@ -190,7 +190,7 @@ bool VulkanGLSLShaderCompiler::TryCompileShader(
     {
         const auto& log = program.getInfoLog();
         const auto& debugLog = program.getInfoLog();
-        HUSKY_ASSERT(false);
+        LUCH_ASSERT(false);
         return false;
     }
 

@@ -20,7 +20,7 @@ namespace Luch::Graphics
         case IndexType::UInt32:
             return sizeof(uint32);
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown index type");
+            LUCH_ASSERT_MSG(false, "Unknown index type");
         }
     }
 }

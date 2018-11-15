@@ -27,7 +27,7 @@ namespace Luch::SceneV1
             return;
         }
 
-        HUSKY_ASSERT(source.has_value());
+        LUCH_ASSERT(source.has_value());
 
         UniquePtr<FileStream> stream = MakeUnique<FileStream>(source->root + "/" + source->filename, FileOpenModes::Read);
         hostBuffer.resize(source->byteLength);

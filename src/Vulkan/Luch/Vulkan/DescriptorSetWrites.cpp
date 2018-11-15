@@ -34,8 +34,8 @@ namespace Luch::Vulkan
 
         for (auto& buffer : buffers)
         {
-            HUSKY_ASSERT(buffer != nullptr);
-            HUSKY_ASSERT(buffer->GetDevice() == device);
+            LUCH_ASSERT(buffer != nullptr);
+            LUCH_ASSERT(buffer->GetDevice() == device);
             auto& bufferInfo = infos.emplace_back();
             bufferInfo.setBuffer(buffer->GetBuffer());
             bufferInfo.setOffset(0);
@@ -75,8 +75,8 @@ namespace Luch::Vulkan
 
         for (auto& buffer : buffers)
         {
-            HUSKY_ASSERT(buffer != nullptr);
-            HUSKY_ASSERT(buffer->GetDevice() == device);
+            LUCH_ASSERT(buffer != nullptr);
+            LUCH_ASSERT(buffer->GetDevice() == device);
             auto& bufferInfo = infos.emplace_back();
             bufferInfo.setBuffer(buffer->GetBuffer());
             bufferInfo.setOffset(0);
@@ -114,8 +114,8 @@ namespace Luch::Vulkan
 
         for (auto& image : images)
         {
-            HUSKY_ASSERT(image.imageView != nullptr);
-            HUSKY_ASSERT(image.imageView->GetDevice() == device);
+            LUCH_ASSERT(image.imageView != nullptr);
+            LUCH_ASSERT(image.imageView->GetDevice() == device);
 
             auto& imageInfo = infos.emplace_back();
             imageInfo.setImageLayout(image.layout);
@@ -153,7 +153,7 @@ namespace Luch::Vulkan
 
         for (auto& sampler : samplers)
         {
-            HUSKY_ASSERT(sampler->GetDevice() == device);
+            LUCH_ASSERT(sampler->GetDevice() == device);
 
             auto& imageInfo = infos.emplace_back();
             imageInfo.setSampler(sampler->GetSampler());
@@ -189,9 +189,9 @@ namespace Luch::Vulkan
 
         for (auto& image : images)
         {
-            HUSKY_ASSERT(image.imageView != nullptr);
-            HUSKY_ASSERT(image.imageView->GetDevice() == device);
-            HUSKY_ASSERT(image.sampler->GetDevice() == device);
+            LUCH_ASSERT(image.imageView != nullptr);
+            LUCH_ASSERT(image.imageView->GetDevice() == device);
+            LUCH_ASSERT(image.sampler->GetDevice() == device);
 
             auto& imageInfo = infos.emplace_back();
             imageInfo.setImageLayout(image.layout);

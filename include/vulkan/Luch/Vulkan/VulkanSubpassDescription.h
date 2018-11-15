@@ -53,7 +53,7 @@ namespace Luch::Vulkan
             const Attachment* resolveAttachment,
             vk::ImageLayout resolveAttachmentLayout)
         {
-            HUSKY_ASSERT_MSG(resolveAttachment != nullptr, "Null resolve attachment");
+            LUCH_ASSERT_MSG(resolveAttachment != nullptr, "Null resolve attachment");
 
             SubpassAttachmentReference subpassColorAttachment = { colorAttachment, colorAttachmentLayout };
             SubpassAttachmentReference subpassResolveAttachment = { resolveAttachment, resolveAttachmentLayout };

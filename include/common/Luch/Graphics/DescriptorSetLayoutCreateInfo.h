@@ -23,7 +23,7 @@ namespace Luch::Graphics
 
         inline DescriptorSetLayoutCreateInfo& AddBinding(DescriptorSetBinding* binding)
         {
-            HUSKY_ASSERT(binding->index < 0);
+            LUCH_ASSERT(binding->index < 0);
             binding->index = currentBindingIndex;
             currentBindingIndex++;
             bindings.push_back(*binding);

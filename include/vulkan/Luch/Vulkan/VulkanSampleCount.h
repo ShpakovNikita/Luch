@@ -26,7 +26,7 @@ namespace Luch::Vulkan
         case SampleCount::e64:
             return vk::SampleCountFlagBits::e64;
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown sample count");
+            LUCH_ASSERT_MSG(false, "Unknown sample count");
         }
     }
 }

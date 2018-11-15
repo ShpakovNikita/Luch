@@ -19,14 +19,14 @@ namespace Luch::Render::Deferred
 
     ShadowMappingOptions& DeferredOptions::GetShadowMappingOptions()
     {
-        HUSKY_ASSERT(shadowMappingOptions.has_value());
+        LUCH_ASSERT(shadowMappingOptions.has_value());
 
         return *shadowMappingOptions;
     }
 
     const ShadowMappingOptions& DeferredOptions::GetShadowMappingOptions() const
     {
-        HUSKY_ASSERT(shadowMappingOptions.has_value());
+        LUCH_ASSERT(shadowMappingOptions.has_value());
 
         return *shadowMappingOptions;
     }

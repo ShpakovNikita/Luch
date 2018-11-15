@@ -31,11 +31,11 @@ if(APPLE)
 endif()
 
 if(USE_METAL)
-    add_compile_definitions(HUSKY_USE_METAL)
+    add_compile_definitions(LUCH_USE_METAL)
 endif()
 
 if(USE_VULKAN)
-    add_compile_definitions(HUSKY_USE_VULKAN)
+    add_compile_definitions(LUCH_USE_VULKAN)
 endif()
 
 # TODO Check depth for consistency
@@ -316,15 +316,15 @@ endif()
 target_link_libraries(LuchEngineSample LuchEngine)
 
 if(WIN32)
-    set(HUSKY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/_build)
-    set(HUSKY_OUTPUT_DIRECTORY_DEBUG ${HUSKY_OUTPUT_DIRECTORY}/Debug)
-    set(HUSKY_OUTPUT_DIRECTORY_RELEASE ${HUSKY_OUTPUT_DIRECTORY}/Release)
+    set(LUCH_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/_build)
+    set(LUCH_OUTPUT_DIRECTORY_DEBUG ${LUCH_OUTPUT_DIRECTORY}/Debug)
+    set(LUCH_OUTPUT_DIRECTORY_RELEASE ${LUCH_OUTPUT_DIRECTORY}/Release)
     
     set_target_properties(LuchEngine PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY_DEBUG HUSKY_OUTPUT_DIRECTORY_DEBUG)
+        RUNTIME_OUTPUT_DIRECTORY_DEBUG LUCH_OUTPUT_DIRECTORY_DEBUG)
     set_target_properties(LuchEngineSample PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY_RELEASE HUSKY_OUTPUT_DIRECTORY_RELEASE)
+        RUNTIME_OUTPUT_DIRECTORY_RELEASE LUCH_OUTPUT_DIRECTORY_RELEASE)
 
     set_target_properties(LuchEngineSample PROPERTIES
-        VS_DEBUGGER_WORKING_DIRECTORY ${HUSKY_OUTPUT_DIRECTORY}/$(Configuration)) #fuck cmake for making me do this shit
+        VS_DEBUGGER_WORKING_DIRECTORY ${LUCH_OUTPUT_DIRECTORY}/$(Configuration)) #fuck cmake for making me do this shit
 endif()

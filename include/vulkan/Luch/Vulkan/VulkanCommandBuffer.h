@@ -81,7 +81,7 @@ namespace Luch::Vulkan
             Vector<int64> offsets,
             int32 binding)
         {
-            HUSKY_ASSERT(vertexBuffers.size() == offsets.size());
+            LUCH_ASSERT(vertexBuffers.size() == offsets.size());
 
             Vector<vk::Buffer> vulkanBuffers;
             Vector<vk::DeviceSize> vulkanOffsets;

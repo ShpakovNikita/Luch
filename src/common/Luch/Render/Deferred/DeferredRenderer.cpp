@@ -198,7 +198,7 @@ namespace Luch::Render::Deferred
 
         if (createDescriptorPoolResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
@@ -217,7 +217,7 @@ namespace Luch::Render::Deferred
 
         if (createCameraDescriptorSetLayoutResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
@@ -230,7 +230,7 @@ namespace Luch::Render::Deferred
         auto [createBufferResult, createdBuffer] = context->device->CreateBuffer(bufferCreateInfo);
         if(createBufferResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
@@ -266,7 +266,7 @@ namespace Luch::Render::Deferred
         Texture* resolved = resolveRenderer->Resolve(scene, camera, gbuffer);
 
         auto[acquireResult, acquiredTexture] = context->swapchain->GetNextAvailableTexture(nullptr);
-        HUSKY_ASSERT(acquireResult == GraphicsResult::Success);
+        LUCH_ASSERT(acquireResult == GraphicsResult::Success);
 
         tonemapRenderer->Tonemap(resolved, acquiredTexture.texture);
 
@@ -279,7 +279,7 @@ namespace Luch::Render::Deferred
 
         auto[createVertexDescriptorSetResult, vertexDescriptorSet] = resources->descriptorPool->AllocateDescriptorSet(
             resources->cameraBufferDescriptorSetLayout);
-        HUSKY_ASSERT(createVertexDescriptorSetResult == GraphicsResult::Success);
+        LUCH_ASSERT(createVertexDescriptorSetResult == GraphicsResult::Success);
 
         camera->SetDescriptorSet(RendererName, vertexDescriptorSet);
     }

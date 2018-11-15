@@ -79,7 +79,7 @@ namespace Luch::Render::RenderUtils
         Vector<Byte> result;
         result.resize(fileSize + 1); // +1 for null termination
         [[maybe_unused]] auto bytesRead = fileStream.Read(result.data(), fileSize, sizeof(Byte));
-        HUSKY_ASSERT(bytesRead == fileSize);
+        LUCH_ASSERT(bytesRead == fileSize);
         return result;
     }
 
@@ -93,7 +93,7 @@ namespace Luch::Render::RenderUtils
         auto [createLibraryResult, library] = device->CreateShaderLibraryFromSource(shaderSource, defines);
         if(createLibraryResult != GraphicsResult::Success && createLibraryResult != GraphicsResult::CompilerWarning)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
         else

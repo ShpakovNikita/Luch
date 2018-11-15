@@ -19,7 +19,7 @@ namespace Luch::Vulkan
 
             if (!binding->immutableSamplers.empty())
             {
-                HUSKY_ASSERT_MSG(binding->immutableSamplers.size() == binding->count, "Immutable samplers count must match descriptor count");
+                LUCH_ASSERT_MSG(binding->immutableSamplers.size() == binding->count, "Immutable samplers count must match descriptor count");
                 auto& samplers = description.samplers.emplace_back();
                 samplers.reserve(binding->count);
                 for (auto& sampler : binding->immutableSamplers)

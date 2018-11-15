@@ -15,7 +15,7 @@ namespace Luch::Vulkan
         case IndexType::UInt32:
             return vk::IndexType::eUint32;
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown index type");
+            LUCH_ASSERT_MSG(false, "Unknown index type");
             return vk::IndexType::eUint16;
         }
     }
@@ -29,7 +29,7 @@ namespace Luch::Vulkan
         case vk::IndexType::eUint32:
             return IndexType::UInt32;
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown index type");
+            LUCH_ASSERT_MSG(false, "Unknown index type");
             return IndexType::UInt16;
         }
     }

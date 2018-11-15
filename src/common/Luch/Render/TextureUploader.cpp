@@ -44,7 +44,7 @@ namespace Luch::Render
             auto [succeeded, intermediateResult] = UploadTexture(texture);
 
             // TODO
-            HUSKY_ASSERT(succeeded);
+            LUCH_ASSERT(succeeded);
 
             result.stagingBuffers.push_back(intermediateResult.stagingBuffer);
             intermediateResults.push_back(intermediateResult);

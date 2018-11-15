@@ -23,10 +23,10 @@ namespace Luch::Metal
         case PrimitiveTopology::TriangleStrip:
             return mtlpp::PrimitiveType::TriangleStrip;
         case PrimitiveTopology::TriangleFan:
-            HUSKY_ASSERT_MSG(false, "Triangle fan primitive topology is unsupported in Metal");
+            LUCH_ASSERT_MSG(false, "Triangle fan primitive topology is unsupported in Metal");
             return mtlpp::PrimitiveType::Point;
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown unsupported primitive topology");
+            LUCH_ASSERT_MSG(false, "Unknown unsupported primitive topology");
             return mtlpp::PrimitiveType::Point;
         }
     }
@@ -44,10 +44,10 @@ namespace Luch::Metal
         case PrimitiveTopology::TriangleStrip:
             return mtlpp::PrimitiveTopologyClass::Triangle;
         case PrimitiveTopology::TriangleFan:
-            HUSKY_ASSERT_MSG(false, "Triangle fan primitive topology is unsupported in Metal");
+            LUCH_ASSERT_MSG(false, "Triangle fan primitive topology is unsupported in Metal");
             return mtlpp::PrimitiveTopologyClass::Point;
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown unsupported primitive topology");
+            LUCH_ASSERT_MSG(false, "Unknown unsupported primitive topology");
             return mtlpp::PrimitiveTopologyClass::Point;
         }
     }

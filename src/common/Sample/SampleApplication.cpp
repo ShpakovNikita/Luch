@@ -20,7 +20,7 @@
 #include <Luch/SceneV1/PbrMaterial.h>
 #include <Luch/SceneV1/Sampler.h>
 
-#if HUSKY_USE_METAL
+#if LUCH_USE_METAL
     #include <Luch/Metal/MetalPhysicalDevice.h>
     #include <Luch/Metal/MetalSurface.h>
 #elif USE_VULKAN
@@ -30,7 +30,7 @@
 using namespace Luch;
 using namespace Luch::Graphics;
 
-#if HUSKY_USE_METAL
+#if LUCH_USE_METAL
 using namespace Luch::Metal;
 #endif
 
@@ -67,7 +67,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     allocationCallbacks = allocator.GetAllocationCallbacks();
 #endif
 
-#if HUSKY_USE_METAL
+#if LUCH_USE_METAL
     auto [enumeratePhysicalDevicesResult, physicalDevices] = MetalPhysicalDevice::EnumeratePhysicalDevices();
     if (enumeratePhysicalDevicesResult != GraphicsResult::Success || physicalDevices.empty())
     {
@@ -129,7 +129,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
         scene->GetNodes().end(),
         [](const auto& node) { return node->GetCamera() != nullptr; });
 
-    HUSKY_ASSERT(cameraIt != scene->GetNodes().end());
+    LUCH_ASSERT(cameraIt != scene->GetNodes().end());
     camera = (*cameraIt)->GetCamera();
 
     deferredRenderer->PrepareScene(scene);

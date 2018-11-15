@@ -90,8 +90,8 @@ namespace Luch::Render::Deferred
 
     bool GBufferRenderer::Initialize()
     {
-        HUSKY_ASSERT(context != nullptr);
-        HUSKY_ASSERT(commonResources != nullptr);
+        LUCH_ASSERT(context != nullptr);
+        LUCH_ASSERT(commonResources != nullptr);
 
         Vector<Format> depthFormats =
         {
@@ -101,7 +101,7 @@ namespace Luch::Render::Deferred
         };
 
         auto supportedDepthFormats = context->physicalDevice->GetSupportedDepthStencilFormats(depthFormats);
-        HUSKY_ASSERT_MSG(!depthFormats.empty(), "No supported depth formats");
+        LUCH_ASSERT_MSG(!depthFormats.empty(), "No supported depth formats");
         depthStencilFormat = depthFormats.front();
 
         auto [gBufferResourcesPrepared, preparedGBufferResources] = PrepareGBufferPassResources();
@@ -146,7 +146,7 @@ namespace Luch::Render::Deferred
         TextureUploader textureUploader{ context->device, resources->commandPool };
         auto [uploadTexturesSucceeded, uploadTexturesResult] = textureUploader.UploadTextures(texturesVector);
 
-        HUSKY_ASSERT(uploadTexturesSucceeded);
+        LUCH_ASSERT(uploadTexturesSucceeded);
 
         for (const auto& commandList : uploadTexturesResult.commandLists)
         {
@@ -157,7 +157,7 @@ namespace Luch::Render::Deferred
         for(const auto& buffer : buffers)
         {
             [[maybe_unused]] bool uploadSucceeded = buffer->UploadToDevice(context->device);
-            HUSKY_ASSERT(uploadSucceeded);
+            LUCH_ASSERT(uploadSucceeded);
         }
 
         const auto& nodes = scene->GetNodes();
@@ -189,7 +189,7 @@ namespace Luch::Render::Deferred
     GBufferTextures* GBufferRenderer::DrawScene(SceneV1::Scene* scene, SceneV1::Camera* camera)
     {
         auto [allocateCommandListResult, cmdList] = resources->commandPool->AllocateGraphicsCommandList();
-        HUSKY_ASSERT(allocateCommandListResult == GraphicsResult::Success);
+        LUCH_ASSERT(allocateCommandListResult == GraphicsResult::Success);
 
         int32 framebufferWidth = context->swapchain->GetInfo().width;
         int32 framebufferHeight = context->swapchain->GetInfo().height;
@@ -216,7 +216,7 @@ namespace Luch::Render::Deferred
             .WithDepthStencilAttachment(&depthStencilAttachment);
 
         auto[createRenderPassResult, createdRenderPass] = context->device->CreateRenderPass(renderPassCreateInfo);
-        HUSKY_ASSERT(createRenderPassResult == GraphicsResult::Success);
+        LUCH_ASSERT(createRenderPassResult == GraphicsResult::Success);
 
         cmdList->Begin();
         cmdList->BeginRenderPass(renderPassCreateInfo);
@@ -280,7 +280,7 @@ namespace Luch::Render::Deferred
         auto[allocateDescriptorSetResult, allocatedDescriptorSet] = resources->descriptorPool->AllocateDescriptorSet(
             resources->meshBufferDescriptorSetLayout);
 
-        HUSKY_ASSERT(allocateDescriptorSetResult == GraphicsResult::Success);
+        LUCH_ASSERT(allocateDescriptorSetResult == GraphicsResult::Success);
 
         mesh->SetBufferDescriptorSet(RendererName, allocatedDescriptorSet);
     }
@@ -289,15 +289,15 @@ namespace Luch::Render::Deferred
     {
         auto[allocateTextureDescriptorSetResult, textureDescriptorSet] = resources->descriptorPool->AllocateDescriptorSet(
             resources->materialTextureDescriptorSetLayout);
-        HUSKY_ASSERT(allocateTextureDescriptorSetResult == GraphicsResult::Success);
+        LUCH_ASSERT(allocateTextureDescriptorSetResult == GraphicsResult::Success);
 
         auto[allocateBufferDescriptorSetResult, bufferDescriptorSet] = resources->descriptorPool->AllocateDescriptorSet(
             resources->materialBufferDescriptorSetLayout);
-        HUSKY_ASSERT(allocateBufferDescriptorSetResult == GraphicsResult::Success);
+        LUCH_ASSERT(allocateBufferDescriptorSetResult == GraphicsResult::Success);
 
         auto[allocateSamplerDescriptorSetResult, samplerDescriptorSet] = resources->descriptorPool->AllocateDescriptorSet(
             resources->materialSamplerDescriptorSetLayout);
-        HUSKY_ASSERT(allocateSamplerDescriptorSetResult == GraphicsResult::Success);
+        LUCH_ASSERT(allocateSamplerDescriptorSetResult == GraphicsResult::Success);
 
         material->SetTextureDescriptorSet(RendererName, textureDescriptorSet);
         material->SetBufferDescriptorSet(RendererName, bufferDescriptorSet);
@@ -498,7 +498,7 @@ namespace Luch::Render::Deferred
             offsets.push_back(vertexBuffer.byteOffset);
         }
 
-        HUSKY_ASSERT(primitive->GetIndexBuffer().has_value());
+        LUCH_ASSERT(primitive->GetIndexBuffer().has_value());
         const auto& indexBuffer = *primitive->GetIndexBuffer();
 
         commandList->BindPipelineState(pipelineState);
@@ -520,7 +520,7 @@ namespace Luch::Render::Deferred
         shaderDefines.mapping = &FlagToString;
 
         const auto& vertexBuffers = primitive->GetVertexBuffers();
-        HUSKY_ASSERT(vertexBuffers.size() == 1);
+        LUCH_ASSERT(vertexBuffers.size() == 1);
 
         ci.inputAssembler.bindings.resize(vertexBuffers.size());
         for (int i = 0; i < vertexBuffers.size(); i++)
@@ -622,9 +622,9 @@ namespace Luch::Render::Deferred
             "C:\\Development\\Luch\\src\\Luch\\Render\\Shaders\\Deferred\\gbuffer.vert",
 #endif
 #if __APPLE__
-    #if HUSKY_USE_METAL
+    #if LUCH_USE_METAL
             "/Users/spo1ler/Development/Luch/src/Metal/Luch/Render/Shaders/Deferred/gbuffer_vp.metal",
-    #elif HUSKY_USE_VULKAN
+    #elif LUCH_USE_VULKAN
             "/Users/spo1ler/Development/Luch/src/Vulkan/Luch/Render/Shaders/Deferred/gbuffer.vert",
     #else
             "",
@@ -634,13 +634,13 @@ namespace Luch::Render::Deferred
 
         if (!vertexShaderLibraryCreated)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
         }
 
         auto[vertexShaderCreateResult, createdVertexShader] = vertexShaderLibrary->CreateShaderProgram(
             ShaderStage::Vertex,
             "vp_main");
-        HUSKY_ASSERT(vertexShaderCreateResult == GraphicsResult::Success);
+        LUCH_ASSERT(vertexShaderCreateResult == GraphicsResult::Success);
 
         auto vertexShader = std::move(createdVertexShader);
 
@@ -650,9 +650,9 @@ namespace Luch::Render::Deferred
             "C:\\Development\\Luch\\src\\Luch\\Render\\Shaders\\Deferred\\gbuffer.frag",
 #endif
 #if __APPLE__
-    #if HUSKY_USE_METAL
+    #if LUCH_USE_METAL
             "/Users/spo1ler/Development/Luch/src/Metal/Luch/Render/Shaders/Deferred/gbuffer_fp.metal",
-    #elif HUSKY_USE_VULKAN
+    #elif LUCH_USE_VULKAN
             "/Users/spo1ler/Development/Luch/src/Vulkan/Luch/Render/Shaders/Deferred/gbuffer.frag",
     #else
             "",
@@ -662,13 +662,13 @@ namespace Luch::Render::Deferred
 
         if (!fragmentShaderLibraryCreated)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
         }
 
         auto[fragmentShaderCreateResult, createdFragmentShader] = fragmentShaderLibrary->CreateShaderProgram(
             ShaderStage::Fragment,
             "fp_main");
-        HUSKY_ASSERT(fragmentShaderCreateResult == GraphicsResult::Success);
+        LUCH_ASSERT(fragmentShaderCreateResult == GraphicsResult::Success);
 
         auto fragmentShader = std::move(createdFragmentShader);
 
@@ -678,7 +678,7 @@ namespace Luch::Render::Deferred
         auto[createPipelineResult, createdPipeline] = context->device->CreatePipelineState(ci);
         if (createPipelineResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
         }
 
         return createdPipeline;
@@ -692,7 +692,7 @@ namespace Luch::Render::Deferred
 
         if (createCommandPoolResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
@@ -712,7 +712,7 @@ namespace Luch::Render::Deferred
 
         if (createDescriptorPoolResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
@@ -771,7 +771,7 @@ namespace Luch::Render::Deferred
 
         if (createMeshDescriptorSetLayoutResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
@@ -782,7 +782,7 @@ namespace Luch::Render::Deferred
 
         if (createMaterialTextureDescriptorSetLayoutResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
@@ -793,7 +793,7 @@ namespace Luch::Render::Deferred
 
         if (createMaterialBufferDescriptorSetLayoutResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
@@ -804,7 +804,7 @@ namespace Luch::Render::Deferred
 
         if (createMaterialSamplerDescriptorSetLayoutResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
@@ -823,7 +823,7 @@ namespace Luch::Render::Deferred
 
         if (createPipelineLayoutResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
@@ -855,7 +855,7 @@ namespace Luch::Render::Deferred
         auto [createBufferResult, createdBuffer] = context->device->CreateBuffer(bufferCreateInfo);
         if(createBufferResult != GraphicsResult::Success)
         {
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { false };
         }
 
