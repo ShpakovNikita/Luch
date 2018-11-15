@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.9.0)
 
-project(Husky VERSION 0.1 LANGUAGES CXX)
+project(Luch VERSION 0.1 LANGUAGES CXX)
 set(CXX_STANDARD 17)
 
 # set_property(GLOBAL PROPERTY USE_FOLDERS On) 
@@ -165,30 +165,30 @@ if(USE_VULKAN)
             IMPORTED_LOCATION ${SPIRV_REMAPPER_LIB})
     endif()
 
-    file(GLOB_RECURSE ENGINE_VULKAN_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Vulkan/Husky/*.cpp)
-    file(GLOB_RECURSE ENGINE_VULKAN_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Vulkan/Husky/*.h)
+    file(GLOB_RECURSE ENGINE_VULKAN_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Vulkan/Luch/*.cpp)
+    file(GLOB_RECURSE ENGINE_VULKAN_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Vulkan/Luch/*.h)
 endif()
 
-file(GLOB_RECURSE ENGINE_COMMON_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Husky/*.cpp)
-file(GLOB_RECURSE ENGINE_COMMON_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/Common/Husky/*.h)
+file(GLOB_RECURSE ENGINE_COMMON_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Luch/*.cpp)
+file(GLOB_RECURSE ENGINE_COMMON_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/Common/Luch/*.h)
 
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/include/common/)
 
-add_library(HuskyEngine
+add_library(LuchEngine
     ${ENGINE_COMMON_CPP_FILES}
     ${ENGINE_COMMON_HEADER_FILES})
 
 
-# Add Husky Engine library
+# Add Luch Engine library
 if(APPLE)
-    file(GLOB_RECURSE ENGINE_MACOS_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Husky/*.cpp)
-    file(GLOB_RECURSE ENGINE_MACOS_OBJC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Husky/*.m)
-    file(GLOB_RECURSE ENGINE_MACOS_OBJCPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Husky/*.mm)
-    file(GLOB_RECURSE ENGINE_MACOS_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/macOS/Husky/*.h)
+    file(GLOB_RECURSE ENGINE_MACOS_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Luch/*.cpp)
+    file(GLOB_RECURSE ENGINE_MACOS_OBJC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Luch/*.m)
+    file(GLOB_RECURSE ENGINE_MACOS_OBJCPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Luch/*.mm)
+    file(GLOB_RECURSE ENGINE_MACOS_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/macOS/Luch/*.h)
 
     include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/include/macOS/)
 
-    target_sources(HuskyEngine
+    target_sources(LuchEngine
         PRIVATE
         ${ENGINE_MACOS_CPP_FILES}
         ${ENGINE_MACOS_OBJC_FILES}
@@ -197,12 +197,12 @@ if(APPLE)
 endif()
 
 if(WIN32)
-    file(GLOB_RECURSE ENGINE_WIN32_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Win32/Husky/*.cpp)
-    file(GLOB_RECURSE ENGINE_WIN32_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/Win32/Husky/*.h)
+    file(GLOB_RECURSE ENGINE_WIN32_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Win32/Luch/*.cpp)
+    file(GLOB_RECURSE ENGINE_WIN32_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/Win32/Luch/*.h)
 
     include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/include/Win32/)
 
-    target_sources(HuskyEngine
+    target_sources(LuchEngine
         ${ENGINE_WIN32_CPP_FILES}
         ${ENGINE_WIN32_HEADER_FILES})
 endif()
@@ -224,18 +224,18 @@ if(USE_METAL)
     target_link_libraries(mtlpp "-framework Cocoa")
     target_link_libraries(mtlpp "-framework Metal")
 
-    target_link_libraries(HuskyEngine mtlpp)
+    target_link_libraries(LuchEngine mtlpp)
 
     # Add Metal implementation files
-    file(GLOB_RECURSE ENGINE_METAL_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Metal/Husky/*.cpp)
-    file(GLOB_RECURSE ENGINE_METAL_OBJC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Metal/Husky/*.m)
-    file(GLOB_RECURSE ENGINE_METAL_OBJCPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Metal/Husky/*.mm)
-    file(GLOB_RECURSE ENGINE_METAL_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/Metal/Husky/*.h)
+    file(GLOB_RECURSE ENGINE_METAL_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Metal/Luch/*.cpp)
+    file(GLOB_RECURSE ENGINE_METAL_OBJC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Metal/Luch/*.m)
+    file(GLOB_RECURSE ENGINE_METAL_OBJCPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Metal/Luch/*.mm)
+    file(GLOB_RECURSE ENGINE_METAL_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/Metal/Luch/*.h)
 
     include_directories(AFTER
         ${CMAKE_CURRENT_SOURCE_DIR}/include/Metal/)
 
-    target_sources(HuskyEngine PUBLIC
+    target_sources(LuchEngine PUBLIC
         ${ENGINE_METAL_CPP_FILES}
         ${ENGINE_METAL_OBJC_FILES}
         ${ENGINE_METAL_OBJCPP_FILES}
@@ -252,28 +252,28 @@ if(USE_METAL)
     # source_group(
     #     "Shaders" FILES ${MACOS_METAL_SHADER_FILES})
 
-    # target_sources(HuskyEngine PUBLIC ${MACOS_METAL_SHADER_FILES})
+    # target_sources(LuchEngine PUBLIC ${MACOS_METAL_SHADER_FILES})
 endif()
 
 # TODO Add vulkan implementation
 
 # if(USE_VULKAN)
-#     target_link_libraries(HuskyEngine ${Vulkan_LIBRARIES})
-#     target_link_libraries(HuskyEngine glslang)
-#     target_link_libraries(HuskyEngine SPIRV)
-#     target_link_libraries(HuskyEngine OGLCompiler)
-#     target_link_libraries(HuskyEngine OSDependent)
-#     target_link_libraries(HuskyEngine HLSL)
-#     target_link_libraries(HuskyEngine SPIRV-Tools)
-#     target_link_libraries(HuskyEngine SPIRV-Tools-opt)
-#     target_link_libraries(HuskyEngine SPVRemapper)
+#     target_link_libraries(LuchEngine ${Vulkan_LIBRARIES})
+#     target_link_libraries(LuchEngine glslang)
+#     target_link_libraries(LuchEngine SPIRV)
+#     target_link_libraries(LuchEngine OGLCompiler)
+#     target_link_libraries(LuchEngine OSDependent)
+#     target_link_libraries(LuchEngine HLSL)
+#     target_link_libraries(LuchEngine SPIRV-Tools)
+#     target_link_libraries(LuchEngine SPIRV-Tools-opt)
+#     target_link_libraries(LuchEngine SPVRemapper)
 # endif()
 
 # Add sample
 file(GLOB_RECURSE SAMPLE_COMMON_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Sample/*.cpp)
 file(GLOB_RECURSE SAMPLE_COMMON_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Sample/*.h)
 
-add_executable(HuskyEngineSample
+add_executable(LuchEngineSample
         ${SAMPLE_COMMON_CPP_FILES}
         ${SAMPLE_COMMON_HEADER_FILES})
 
@@ -281,7 +281,7 @@ if(WIN32)
     file(GLOB_RECURSE SAMPLE_WIN32_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Win32/Sample/*.cpp)
     file(GLOB_RECURSE SAMPLE_WIN32_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Win32/Sample/*.h)
 
-    target_sources(HuskyEngineSample PUBLIC
+    target_sources(LuchEngineSample PUBLIC
         ${SAMPLE_WIN32_CPP_FILES}
         ${SAMPLE_WIN32_HEADER_FILES})
 endif()
@@ -293,7 +293,7 @@ if(APPLE)
     file(GLOB_RECURSE SAMPLE_MACOS_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Sample/*.h)
     set(SAMPLE_MACOS_RESOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/res/macOS/Sample/Main.storyboard)
 
-    target_sources(HuskyEngineSample PUBLIC
+    target_sources(LuchEngineSample PUBLIC
         ${SAMPLE_MACOS_CPP_FILES}
         ${SAMPLE_MACOS_OBJC_FILES}
         ${SAMPLE_MACOS_OBJCPP_FILES}
@@ -301,30 +301,30 @@ if(APPLE)
         ${SAMPLE_MACOS_RESOURCE_FILES})
 
     set_target_properties(
-        HuskyEngineSample
+        LuchEngineSample
         PROPERTIES
         MACOSX_BUNDLE TRUE
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/res/macOS/Sample/Info.plist.in
         RESOURCE "${SAMPLE_MACOS_RESOURCE_FILES}")
 
-    target_link_libraries(HuskyEngineSample "-framework Foundation")
-    target_link_libraries(HuskyEngineSample "-framework CoreVideo")
-    target_link_libraries(HuskyEngineSample "-framework QuartzCore")
-    target_link_libraries(HuskyEngineSample "-framework Cocoa")
+    target_link_libraries(LuchEngineSample "-framework Foundation")
+    target_link_libraries(LuchEngineSample "-framework CoreVideo")
+    target_link_libraries(LuchEngineSample "-framework QuartzCore")
+    target_link_libraries(LuchEngineSample "-framework Cocoa")
 endif()
 
-target_link_libraries(HuskyEngineSample HuskyEngine)
+target_link_libraries(LuchEngineSample LuchEngine)
 
 if(WIN32)
     set(HUSKY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/_build)
     set(HUSKY_OUTPUT_DIRECTORY_DEBUG ${HUSKY_OUTPUT_DIRECTORY}/Debug)
     set(HUSKY_OUTPUT_DIRECTORY_RELEASE ${HUSKY_OUTPUT_DIRECTORY}/Release)
     
-    set_target_properties(HuskyEngine PROPERTIES
+    set_target_properties(LuchEngine PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY_DEBUG HUSKY_OUTPUT_DIRECTORY_DEBUG)
-    set_target_properties(HuskyEngineSample PROPERTIES
+    set_target_properties(LuchEngineSample PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY_RELEASE HUSKY_OUTPUT_DIRECTORY_RELEASE)
 
-    set_target_properties(HuskyEngineSample PROPERTIES
+    set_target_properties(LuchEngineSample PROPERTIES
         VS_DEBUGGER_WORKING_DIRECTORY ${HUSKY_OUTPUT_DIRECTORY}/$(Configuration)) #fuck cmake for making me do this shit
 endif()

@@ -2,7 +2,7 @@
 
 #include "../common/SampleApplication.h"
 
-using namespace Husky;
+using namespace Luch;
 
 int32 main(int32 argc, char8** argv)
 {

@@ -1,6 +1,0 @@
-General:
-- Use uniform initialization wherever possible
-- Be as explicit as possible about anything
-
-Vulkan Specific:
-- If we initialized structure with `= {}`, then we do not set `pNext` to `nullptr`.
