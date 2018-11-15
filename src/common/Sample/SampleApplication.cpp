@@ -1,37 +1,37 @@
 #include "SampleApplication.h"
 
-#include <Husky/Math/Math.h>
-#include <Husky/FileStream.h>
-#include <Husky/VectorTypes.h>
-#include <Husky/SceneV1/Loader/glTFLoader.h>
+#include <Luch/Math/Math.h>
+#include <Luch/FileStream.h>
+#include <Luch/VectorTypes.h>
+#include <Luch/SceneV1/Loader/glTFLoader.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 
-#include <Husky/SceneV1/Scene.h>
-#include <Husky/SceneV1/Mesh.h>
-#include <Husky/SceneV1/Node.h>
-#include <Husky/SceneV1/Camera.h>
-#include <Husky/SceneV1/Primitive.h>
-#include <Husky/SceneV1/Texture.h>
-#include <Husky/SceneV1/Light.h>
-#include <Husky/SceneV1/BufferSource.h>
-#include <Husky/SceneV1/IndexBuffer.h>
-#include <Husky/SceneV1/VertexBuffer.h>
-#include <Husky/SceneV1/PbrMaterial.h>
-#include <Husky/SceneV1/Sampler.h>
+#include <Luch/SceneV1/Scene.h>
+#include <Luch/SceneV1/Mesh.h>
+#include <Luch/SceneV1/Node.h>
+#include <Luch/SceneV1/Camera.h>
+#include <Luch/SceneV1/Primitive.h>
+#include <Luch/SceneV1/Texture.h>
+#include <Luch/SceneV1/Light.h>
+#include <Luch/SceneV1/BufferSource.h>
+#include <Luch/SceneV1/IndexBuffer.h>
+#include <Luch/SceneV1/VertexBuffer.h>
+#include <Luch/SceneV1/PbrMaterial.h>
+#include <Luch/SceneV1/Sampler.h>
 
 #if HUSKY_USE_METAL
-    #include <Husky/Metal/MetalPhysicalDevice.h>
-    #include <Husky/Metal/MetalSurface.h>
+    #include <Luch/Metal/MetalPhysicalDevice.h>
+    #include <Luch/Metal/MetalSurface.h>
 #elif USE_VULKAN
     static_assert(false, "Vulkan is not ready");
 #endif
 
-using namespace Husky;
-using namespace Husky::Graphics;
+using namespace Luch;
+using namespace Luch::Graphics;
 
 #if HUSKY_USE_METAL
-using namespace Husky::Metal;
+using namespace Luch::Metal;
 #endif
 
 #ifdef _WIN32
@@ -43,7 +43,7 @@ static LRESULT CALLBACK StaticWindowProc(
     _In_ LPARAM lParam
 )
 {
-    using namespace Husky::Platform::Win32;
+    using namespace Luch::Platform::Win32;
 
     static_assert(sizeof(LPARAM) >= sizeof(WndProcDelegate*));
 
@@ -104,12 +104,12 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     glTF::glTFParser glTFparser;
 
 #if __APPLE__
-    String rootDir{ "/Users/spo1ler/Development/HuskyEngine/res/gltf2/sponza/" };
+    String rootDir{ "/Users/spo1ler/Development/Luch/res/gltf2/sponza/" };
     String filename { "Sponza.gltf" };
 #endif
 
 #if _WIN32
-    String rootDir{ "C:\\Development\\HuskyResources\\glTF-Sample-Models\\2.0\\Sponza\\glTF\\" };
+    String rootDir{ "C:\\Development\\LuchResources\\glTF-Sample-Models\\2.0\\Sponza\\glTF\\" };
     String filename{ "Sponza.gltf" };
 #endif
 
@@ -200,7 +200,7 @@ LRESULT SampleApplication::WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
     }
 }
 
-std::tuple<HINSTANCE, HWND> SampleApplication::CreateMainWindow(const Husky::String& title, int32 width, int32 height)
+std::tuple<HINSTANCE, HWND> SampleApplication::CreateMainWindow(const Luch::String& title, int32 width, int32 height)
 {
     static const TCHAR* className = TEXT("MAIN_WINDOW");
 
@@ -209,7 +209,7 @@ std::tuple<HINSTANCE, HWND> SampleApplication::CreateMainWindow(const Husky::Str
     WNDCLASS wc = {};
     wc.hInstance = hInstance;
     wc.lpfnWndProc = StaticWindowProc;
-    wc.cbWndExtra = sizeof(Husky::Platform::Win32::WndProcDelegate*);
+    wc.cbWndExtra = sizeof(Luch::Platform::Win32::WndProcDelegate*);
     wc.lpszClassName = className;
 
     RegisterClass(&wc);
@@ -231,7 +231,7 @@ std::tuple<HINSTANCE, HWND> SampleApplication::CreateMainWindow(const Husky::Str
 
     if (window)
     {
-        using namespace Husky::Platform::Win32;
+        using namespace Luch::Platform::Win32;
         static_assert(sizeof(LONG_PTR) >= sizeof(WndProcDelegate*));
         SetWindowLongPtr(window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(static_cast<WndProcDelegate*>(this)));
 

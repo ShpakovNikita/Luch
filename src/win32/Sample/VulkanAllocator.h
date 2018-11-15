@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Husky/Vulkan/VulkanAllocationDelegate.h>
+#include <Luch/Vulkan/VulkanAllocationDelegate.h>
 
 struct VulkanAllocatorInternalData
 {
@@ -16,6 +16,6 @@ public:
    void InternalFreeNotification(VulkanAllocatorInternalData* userData, size_t size, VkInternalAllocationType allocationType, VkSystemAllocationScope allocationScope);
 };
 
-class VulkanAllocator : public Husky::Vulkan::VulkanAllocationDelegate<VulkanAllocatorInternal, VulkanAllocatorInternalData>
+class VulkanAllocator : public Luch::Vulkan::VulkanAllocationDelegate<VulkanAllocatorInternal, VulkanAllocatorInternalData>
 {
 };

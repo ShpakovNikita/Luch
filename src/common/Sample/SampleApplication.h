@@ -1,54 +1,54 @@
 #pragma once
 
-#include <Husky/BaseApplication.h>
-#include <Husky/glTF2/glTFParser.h>
-#include <Husky/glTF2/glTF.h>
+#include <Luch/BaseApplication.h>
+#include <Luch/glTF2/glTFParser.h>
+#include <Luch/glTF2/glTF.h>
 
-#include <Husky/Render/Deferred/DeferredRenderer.h>
+#include <Luch/Render/Deferred/DeferredRenderer.h>
 
 #ifdef _WIN32
     #if HUSKY_USE_VULKAN
         #include "../win32/VulkanAllocator.h"
     #endif
-    #include <Husky/Platform/Win32/WndProcDelegate.h>
+    #include <Luch/Platform/Win32/WndProcDelegate.h>
 #endif
 
 class SampleApplication
-    : public Husky::BaseApplication
+    : public Luch::BaseApplication
 #if USE_VULKAN
-    , private Husky::Vulkan::VulkanDebugDelegate
+    , private Luch::Vulkan::VulkanDebugDelegate
 #endif
 #ifdef _WIN32
-    , private Husky::Platform::Win32::WndProcDelegate
+    , private Luch::Platform::Win32::WndProcDelegate
 #endif
 {
 public:
     SampleApplication() = default;
 
-    bool Initialize(const Husky::Vector<Husky::String>& args) override;
+    bool Initialize(const Luch::Vector<Luch::String>& args) override;
     bool Deinitialize() override;
     void Run() override;
     void Process();
 
-    const Husky::String& GetApplicationName() const override
+    const Luch::String& GetApplicationName() const override
     {
-        static Husky::String applicationName = "Sample";
+        static Luch::String applicationName = "Sample";
         return applicationName;
     }
 
-    const Husky::Version& GetApplicationVersion() const override
+    const Luch::Version& GetApplicationVersion() const override
     {
-        static Husky::Version applicationVersion{0, 1, 0};
+        static Luch::Version applicationVersion{0, 1, 0};
         return applicationVersion;
     }
 
-    const Husky::String& GetMainWindowTitle() const override
+    const Luch::String& GetMainWindowTitle() const override
     {
-        static Husky::String windowTitle = "Sample";
+        static Luch::String windowTitle = "Sample";
         return windowTitle;
     }
 
-    void SetViewSize(Husky::int32 aWidth, Husky::int32 aHeight)
+    void SetViewSize(Luch::int32 aWidth, Luch::int32 aHeight)
     {
         width = aWidth;
         height = aHeight;
@@ -68,7 +68,7 @@ private:
         LPARAM lParam
     ) override;
 
-    std::tuple<HINSTANCE, HWND> CreateMainWindow(const Husky::String& title, Husky::int32 width, Husky::int32 height);
+    std::tuple<HINSTANCE, HWND> CreateMainWindow(const Luch::String& title, Luch::int32 width, Luch::int32 height);
 #endif
 
 #if _WIN32
@@ -80,16 +80,16 @@ private:
     void* view = nullptr;
 #endif
 
-    Husky::int32 width = 1200;
-    Husky::int32 height = 900;
+    Luch::int32 width = 1200;
+    Luch::int32 height = 900;
 
-    Husky::RefPtr<Husky::Graphics::PhysicalDevice> physicalDevice;
-    Husky::RefPtr<Husky::Graphics::Surface> surface;
+    Luch::RefPtr<Luch::Graphics::PhysicalDevice> physicalDevice;
+    Luch::RefPtr<Luch::Graphics::Surface> surface;
 #if WIN32
     VulkanAllocator allocator;
 #endif
 
-    Husky::UniquePtr<Husky::Render::Deferred::DeferredRenderer> deferredRenderer;
-    Husky::RefPtr<Husky::SceneV1::Scene> scene;
-    Husky::RefPtr<Husky::SceneV1::Camera> camera;
+    Luch::UniquePtr<Luch::Render::Deferred::DeferredRenderer> deferredRenderer;
+    Luch::RefPtr<Luch::SceneV1::Scene> scene;
+    Luch::RefPtr<Luch::SceneV1::Camera> camera;
 };
