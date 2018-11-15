@@ -1,3 +1,5 @@
-# HuskyEngine
+# Luch
 
-Husky Engine is my ongoing computer graphics playground project. 
+Luch means ray in Russian
+
+Luch is my ongoing 3D graphics engine playground project. 
