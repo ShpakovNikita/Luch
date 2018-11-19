@@ -17,7 +17,7 @@ namespace Luch::Metal
         case AttachmentLoadOperation::Load:
             return mtlpp::LoadAction::Load;
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown load operation");
+            LUCH_ASSERT_MSG(false, "Unknown load operation");
             return mtlpp::LoadAction::DontCare;
         }
     }
@@ -31,7 +31,7 @@ namespace Luch::Metal
         case Graphics::AttachmentStoreOperation::Store:
             return mtlpp::StoreAction::Store;
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown store operation");
+            LUCH_ASSERT_MSG(false, "Unknown store operation");
             return mtlpp::StoreAction::DontCare;
         }
     }
@@ -45,12 +45,12 @@ namespace Luch::Metal
             const auto& colorAttachment = createInfo.colorAttachments[i];
 
             auto mtlTexture = static_cast<MetalTexture*>(colorAttachment->output.texture);
-            HUSKY_ASSERT(mtlTexture != nullptr);
+            LUCH_ASSERT(mtlTexture != nullptr);
 
 //            auto mtlResolveTexture = static_cast<MetalTexture*>(colorAttachment->resolve.texture);
 //            if(colorAttachment->colorStoreOperation == AttachmentStoreOperation::Resolve)
 //            {
-//                HUSKY_ASSERT(mtlResolveTexture != nullptr);
+//                LUCH_ASSERT(mtlResolveTexture != nullptr);
 //            }
 
             mtlpp::ClearColor clearColor = {
@@ -81,7 +81,7 @@ namespace Luch::Metal
         if(createInfo.depthStencilAttachment != nullptr)
         {
             auto mtlDepthStencilBuffer = static_cast<MetalTexture*>(createInfo.depthStencilAttachment->output.texture);
-            HUSKY_ASSERT(mtlDepthStencilBuffer != nullptr);
+            LUCH_ASSERT(mtlDepthStencilBuffer != nullptr);
 
     //        auto mtlResolveDepthStencilBuffer = static_cast<MetalTexture*>(createInfo.depthStencilAttachment->resolve.texture);
 

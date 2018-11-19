@@ -47,7 +47,7 @@ namespace Luch::Metal
         case BlendFactor::OneMinusSource1Alpha:
             return mtlpp::BlendFactor::OneMinusSource1Alpha;
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown blend factor");
+            LUCH_ASSERT_MSG(false, "Unknown blend factor");
             return mtlpp::BlendFactor::Zero;
         }
     }
@@ -67,7 +67,7 @@ namespace Luch::Metal
         case BlendOperation::Max:
             return mtlpp::BlendOperation::Max;
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown blend operation");
+            LUCH_ASSERT_MSG(false, "Unknown blend operation");
             return mtlpp::BlendOperation::Add;
         }
     }

@@ -65,7 +65,7 @@ namespace Luch::Metal
         case Format::R32G32B32A32Sfloat:
             return mtlpp::VertexFormat::Float4;
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown vertex format");
+            LUCH_ASSERT_MSG(false, "Unknown vertex format");
             return mtlpp::VertexFormat::Invalid;
         }
     }
@@ -83,7 +83,7 @@ namespace Luch::Metal
         case Format::R8G8Unorm_sRGB:
             return mtlpp::PixelFormat::RG8Unorm_sRGB;
         case Format::R8G8B8Unorm:
-            HUSKY_ASSERT_MSG(false, "R8G8B8 is not supported in metal");
+            LUCH_ASSERT_MSG(false, "R8G8B8 is not supported in metal");
             return mtlpp::PixelFormat::Invalid;
         case Format::R8G8B8A8Unorm:
             return mtlpp::PixelFormat::RGBA8Unorm;
@@ -100,7 +100,7 @@ namespace Luch::Metal
         case Format::S8Uint:
             return mtlpp::PixelFormat::Stencil8;
         case Format::D16UnormS8Uint:
-            HUSKY_ASSERT_MSG(false, "D16UnormS8Uint is not supported in Metal");
+            LUCH_ASSERT_MSG(false, "D16UnormS8Uint is not supported in Metal");
             return mtlpp::PixelFormat::Invalid;
         case Format::D24UnormS8Uint:
             return mtlpp::PixelFormat::Depth24Unorm_Stencil8;
@@ -131,22 +131,22 @@ namespace Luch::Metal
         case Format::R32G32Sfloat:
             return mtlpp::PixelFormat::RG32Float;
         case Format::R8G8B8Sint:
-            HUSKY_ASSERT_MSG(false, "R8G8B8SInt is not supported in Metal");
+            LUCH_ASSERT_MSG(false, "R8G8B8SInt is not supported in Metal");
             return mtlpp::PixelFormat::Invalid;
         case Format::R8G8B8Uint:
-            HUSKY_ASSERT_MSG(false, "R8G8B8Uint is not supported in Metal");
+            LUCH_ASSERT_MSG(false, "R8G8B8Uint is not supported in Metal");
             return mtlpp::PixelFormat::Invalid;
         case Format::R16G16B16Sint:
-            HUSKY_ASSERT_MSG(false, "R16G16B16Sint is not supported in Metal");
+            LUCH_ASSERT_MSG(false, "R16G16B16Sint is not supported in Metal");
             return mtlpp::PixelFormat::Invalid;
         case Format::R16G16B16Uint:
-            HUSKY_ASSERT_MSG(false, "R16G16B16Uint is not supported in Metal");
+            LUCH_ASSERT_MSG(false, "R16G16B16Uint is not supported in Metal");
             return mtlpp::PixelFormat::Invalid;
         case Format::R32G32B32Uint:
-            HUSKY_ASSERT_MSG(false, "R32G32B32Uint is not supported in Metal");
+            LUCH_ASSERT_MSG(false, "R32G32B32Uint is not supported in Metal");
             return mtlpp::PixelFormat::Invalid;
         case Format::R32G32B32Sfloat:
-            HUSKY_ASSERT_MSG(false, "R32G32B32Sfloat is not supported in Metal");
+            LUCH_ASSERT_MSG(false, "R32G32B32Sfloat is not supported in Metal");
             return mtlpp::PixelFormat::Invalid;
         case Format::R8G8B8A8Sint:
             return mtlpp::PixelFormat::RGBA8Sint;
@@ -161,7 +161,7 @@ namespace Luch::Metal
         case Format::R32G32B32A32Sfloat:
             return mtlpp::PixelFormat::RGBA32Float;
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown format");
+            LUCH_ASSERT_MSG(false, "Unknown format");
             return mtlpp::PixelFormat::Invalid;
         }
     }

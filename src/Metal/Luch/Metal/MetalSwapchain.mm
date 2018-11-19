@@ -15,7 +15,7 @@ namespace Luch::Metal
         , swapchainInfo(aCreateInfo)
         , layer(aLayer)
     {
-        HUSKY_ASSERT(swapchainInfo.imageCount == 1);
+        LUCH_ASSERT(swapchainInfo.imageCount == 1);
         //frameSemaphore = dispatch_semaphore_create(createInfo.imageCount);
         auto mtlDevice = static_cast<MetalGraphicsDevice*>(GetGraphicsDevice());
 

@@ -23,7 +23,7 @@ namespace Luch::Metal
 
     void* MetalBuffer::GetMappedMemory()
     {
-        HUSKY_ASSERT(mappedMemory != nullptr);
+        LUCH_ASSERT(mappedMemory != nullptr);
         return mappedMemory;
     }
 

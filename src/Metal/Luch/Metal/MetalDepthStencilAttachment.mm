@@ -26,7 +26,7 @@ namespace Luch::Metal
         case StencilOperation::Invert:
             return mtlpp::StencilOperation::Invert;
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown stencil operation");
+            LUCH_ASSERT_MSG(false, "Unknown stencil operation");
             return mtlpp::StencilOperation::Zero;
         }
     }
@@ -52,7 +52,7 @@ namespace Luch::Metal
         case CompareFunction::Always:
             return mtlpp::CompareFunction::Always;
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown compare function");
+            LUCH_ASSERT_MSG(false, "Unknown compare function");
             return mtlpp::CompareFunction::Never;
         }
     }

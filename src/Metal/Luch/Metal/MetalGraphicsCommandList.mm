@@ -27,7 +27,7 @@ namespace Luch::Metal
         case CullMode::None:
             return mtlpp::CullMode::None;
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown cull mode");
+            LUCH_ASSERT_MSG(false, "Unknown cull mode");
             return mtlpp::CullMode::None;
         }
     }
@@ -41,7 +41,7 @@ namespace Luch::Metal
         case FrontFace::CounterClockwise:
             return mtlpp::Winding::CounterClockwise;
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown front face winding order");
+            LUCH_ASSERT_MSG(false, "Unknown front face winding order");
             return mtlpp::Winding::CounterClockwise;
         }
     }
@@ -55,7 +55,7 @@ namespace Luch::Metal
         case PolygonMode::Lines:
             return mtlpp::TriangleFillMode::Lines;
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown polygon fill mode");
+            LUCH_ASSERT_MSG(false, "Unknown polygon fill mode");
             return mtlpp::TriangleFillMode::Lines;
         }
     }
@@ -70,7 +70,7 @@ namespace Luch::Metal
 
     void MetalGraphicsCommandList::BeginRenderPass(const RenderPassCreateInfo& renderPassCreateInfo)
     {
-        HUSKY_ASSERT(!commandEncoder);
+        LUCH_ASSERT(!commandEncoder);
         auto renderPassDescriptor = ToMetalRenderPasDescriptor(renderPassCreateInfo);
         commandEncoder = commandBuffer.RenderCommandEncoder(renderPassDescriptor);
     }
@@ -92,12 +92,12 @@ namespace Luch::Metal
 
         if(mtlPipelineState->depthStencilState.has_value())
         {
-            HUSKY_ASSERT(mtlPipelineState->GetCreateInfo().depthStencil.depthTestEnable == true);
+            LUCH_ASSERT(mtlPipelineState->GetCreateInfo().depthStencil.depthTestEnable == true);
             commandEncoder.SetDepthStencilState(mtlPipelineState->depthStencilState.value());
         }
         else
         {
-            HUSKY_ASSERT(mtlPipelineState->GetCreateInfo().depthStencil.depthTestEnable == false);
+            LUCH_ASSERT(mtlPipelineState->GetCreateInfo().depthStencil.depthTestEnable == false);
         }
         // TODO stencil reference
         commandEncoder.SetCullMode(ToMetalCullMode(ci.rasterization.cullMode));
@@ -135,7 +135,7 @@ namespace Luch::Metal
         auto mtlPipelineLayout = static_cast<MetalPipelineLayout*>(pipelineLayout);
         auto textureSetLayouts = mtlPipelineLayout->createInfo.stages[stage].textureSetLayouts;
         auto layoutIt = std::find(textureSetLayouts.begin(), textureSetLayouts.end(), mtlDescriptorSetLayout);
-        HUSKY_ASSERT(layoutIt != textureSetLayouts.end());
+        LUCH_ASSERT(layoutIt != textureSetLayouts.end());
 
         uint32 start = 0;
         for(auto it = textureSetLayouts.begin(); it != layoutIt; it++)
@@ -144,11 +144,11 @@ namespace Luch::Metal
             start += mtlLayout->createInfo.bindings.size();
         }
 
-        HUSKY_ASSERT(mtlDescriptorSetLayout->createInfo.type == DescriptorSetType::Texture);
+        LUCH_ASSERT(mtlDescriptorSetLayout->createInfo.type == DescriptorSetType::Texture);
         auto textures = mtlDescriptorSet->textures.data();
         auto length = (uint32)mtlDescriptorSet->textures.size();
 
-        HUSKY_ASSERT(length != 0);
+        LUCH_ASSERT(length != 0);
         auto range = ns::Range { start, length };
 
         switch(stage)
@@ -160,7 +160,7 @@ namespace Luch::Metal
             commandEncoder.SetFragmentTextures(textures, range);
             break;
         default:
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
         }
     }
 
@@ -174,7 +174,7 @@ namespace Luch::Metal
         auto mtlPipelineLayout = static_cast<MetalPipelineLayout*>(pipelineLayout);
         auto bufferSetLayouts = mtlPipelineLayout->createInfo.stages[stage].bufferSetLayouts;
         auto layoutIt = std::find(bufferSetLayouts.begin(), bufferSetLayouts.end(), mtlDescriptorSetLayout);
-        HUSKY_ASSERT(layoutIt != bufferSetLayouts.end());
+        LUCH_ASSERT(layoutIt != bufferSetLayouts.end());
 
         uint32 start = 0;
         for(auto it = bufferSetLayouts.begin(); it != layoutIt; it++)
@@ -183,12 +183,12 @@ namespace Luch::Metal
             start += mtlLayout->createInfo.bindings.size();
         }
 
-        HUSKY_ASSERT(mtlDescriptorSetLayout->createInfo.type == DescriptorSetType::Buffer);
+        LUCH_ASSERT(mtlDescriptorSetLayout->createInfo.type == DescriptorSetType::Buffer);
         auto buffers = mtlDescriptorSet->buffers.data();
         auto bufferOffsets = (uint32*)mtlDescriptorSet->bufferOffsets.data();
         auto length = (uint32)mtlDescriptorSet->buffers.size();
 
-        HUSKY_ASSERT(length != 0);
+        LUCH_ASSERT(length != 0);
         auto range = ns::Range { start, length };
 
         switch(stage)
@@ -200,7 +200,7 @@ namespace Luch::Metal
             commandEncoder.SetFragmentBuffers(buffers, bufferOffsets, range);
             break;
         default:
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
         }
     }
 
@@ -214,7 +214,7 @@ namespace Luch::Metal
         auto mtlPipelineLayout = static_cast<MetalPipelineLayout*>(pipelineLayout);
         auto samplerSetLayouts = mtlPipelineLayout->createInfo.stages[stage].samplerSetLayouts;
         auto layoutIt = std::find(samplerSetLayouts.begin(), samplerSetLayouts.end(), mtlDescriptorSetLayout);
-        HUSKY_ASSERT(layoutIt != samplerSetLayouts.end());
+        LUCH_ASSERT(layoutIt != samplerSetLayouts.end());
 
         uint32 start = 0;
         for(auto it = samplerSetLayouts.begin(); it != layoutIt; it++)
@@ -223,11 +223,11 @@ namespace Luch::Metal
             start += mtlLayout->createInfo.bindings.size();
         }
 
-        HUSKY_ASSERT(mtlDescriptorSetLayout->createInfo.type == DescriptorSetType::Sampler);
+        LUCH_ASSERT(mtlDescriptorSetLayout->createInfo.type == DescriptorSetType::Sampler);
         auto samplers = mtlDescriptorSet->samplers.data();
         auto length = (uint32)mtlDescriptorSet->samplers.size();
 
-        HUSKY_ASSERT(length != 0);
+        LUCH_ASSERT(length != 0);
         auto range = ns::Range { start, length };
 
         switch(stage)
@@ -239,7 +239,7 @@ namespace Luch::Metal
             commandEncoder.SetFragmentSamplerStates(samplers, range);
             break;
         default:
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
         }
     }
 
@@ -248,7 +248,7 @@ namespace Luch::Metal
         const ArrayProxy<int32>& offsets,
         int32 firstBuffer)
     {
-        HUSKY_ASSERT(buffers.size() == offsets.size());
+        LUCH_ASSERT(buffers.size() == offsets.size());
         auto mtlGraphicsDevice = (MetalGraphicsDevice*)GetGraphicsDevice();
         int32 start = mtlGraphicsDevice->MaxBoundBuffers() - 1 - buffers.size();
         ns::Range range { (uint32)start, (uint32)buffers.size() };
@@ -276,7 +276,7 @@ namespace Luch::Metal
 
     void MetalGraphicsCommandList::SetViewports(const ArrayProxy<Viewport>& viewports)
     {
-        HUSKY_ASSERT(viewports.size() == 1);
+        LUCH_ASSERT(viewports.size() == 1);
 
         auto viewport = viewports.front();
         commandEncoder.SetViewport({
@@ -290,7 +290,7 @@ namespace Luch::Metal
 
     void MetalGraphicsCommandList::SetScissorRects(const ArrayProxy<IntRect>& scissorRects)
     {
-        HUSKY_ASSERT(scissorRects.size() == 1);
+        LUCH_ASSERT(scissorRects.size() == 1);
 
         auto scissorRect = scissorRects.front();
         commandEncoder.SetScissorRect({

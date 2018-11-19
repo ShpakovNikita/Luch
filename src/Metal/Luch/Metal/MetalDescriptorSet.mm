@@ -26,9 +26,9 @@ namespace Luch::Metal
 
     void MetalDescriptorSet::WriteTexture(const DescriptorSetBinding& binding, Texture* texture)
     {
-        HUSKY_ASSERT(texture != nullptr);
-        HUSKY_ASSERT(samplers.empty());
-        HUSKY_ASSERT(buffers.empty());
+        LUCH_ASSERT(texture != nullptr);
+        LUCH_ASSERT(samplers.empty());
+        LUCH_ASSERT(buffers.empty());
 
         auto index = binding.GetIndex();
         if(index >= textures.size())
@@ -42,9 +42,9 @@ namespace Luch::Metal
 
     void MetalDescriptorSet::WriteUniformBuffer(const DescriptorSetBinding& binding, Buffer* buffer, int32 offset)
     {
-        HUSKY_ASSERT(buffer != nullptr);
-        HUSKY_ASSERT(textures.empty());
-        HUSKY_ASSERT(samplers.empty());
+        LUCH_ASSERT(buffer != nullptr);
+        LUCH_ASSERT(textures.empty());
+        LUCH_ASSERT(samplers.empty());
 
         auto index = binding.GetIndex();
         if(index >= buffers.size())
@@ -60,9 +60,9 @@ namespace Luch::Metal
 
     void MetalDescriptorSet::WriteSampler(const DescriptorSetBinding& binding, Sampler* sampler)
     {
-        HUSKY_ASSERT(sampler != nullptr);
-        HUSKY_ASSERT(textures.empty());
-        HUSKY_ASSERT(buffers.empty());
+        LUCH_ASSERT(sampler != nullptr);
+        LUCH_ASSERT(textures.empty());
+        LUCH_ASSERT(buffers.empty());
 
         auto index = binding.GetIndex();
         if(index >= samplers.size())

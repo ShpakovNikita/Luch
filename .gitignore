@@ -295,4 +295,4 @@ __pycache__/
 *.odx.cs
 *.xsd.cs
 
-_build/
+.vscode

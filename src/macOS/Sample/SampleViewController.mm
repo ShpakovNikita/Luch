@@ -31,7 +31,7 @@
     app->SetViewSize(static_cast<Luch::int32>(backingSize.width), static_cast<Luch::int32>(backingSize.height));
     app->SetView(self.view.layer);
     [[maybe_unused]] bool result = app->Initialize({});
-    HUSKY_ASSERT(result);
+    LUCH_ASSERT(result);
 
     CVDisplayLinkCreateWithActiveCGDisplays(&displayLink);
     CVDisplayLinkSetOutputCallback(displayLink, &DisplayLinkCallback, app);

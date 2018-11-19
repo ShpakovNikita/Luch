@@ -33,7 +33,7 @@ namespace Luch::Metal
         case TextureType::TextureBuffer:
             return mtlpp::TextureType::TextureBuffer;
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown texture type");
+            LUCH_ASSERT_MSG(false, "Unknown texture type");
         }
     }
 

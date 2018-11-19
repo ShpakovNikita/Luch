@@ -20,7 +20,7 @@ namespace Luch::Metal
         case VertexInputRate::PerInstance:
             return mtlpp::VertexStepFunction::PerInstance;
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown input rate");
+            LUCH_ASSERT_MSG(false, "Unknown input rate");
             return mtlpp::VertexStepFunction::PerVertex;
         }
     }
@@ -62,7 +62,7 @@ namespace Luch::Metal
         auto mtlFragmentProgram = static_cast<MetalShaderProgram*>(ci.fragmentProgram.Get());
         d.SetVertexDescriptor(ToMetalVertexDescriptor(ci.inputAssembler));
 
-        HUSKY_ASSERT(mtlVertexProgram != nullptr);
+        LUCH_ASSERT(mtlVertexProgram != nullptr);
         d.SetVertexFunction(mtlVertexProgram->GetMetalFunction());
 
         if(mtlFragmentProgram != nullptr)

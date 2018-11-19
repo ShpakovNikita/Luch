@@ -23,7 +23,7 @@ namespace Luch::Metal
         case SamplerAddressMode::ClampToBorder:
             return mtlpp::SamplerAddressMode::ClampToBorderColor;
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown address mode");
+            LUCH_ASSERT_MSG(false, "Unknown address mode");
             return mtlpp::SamplerAddressMode::ClampToEdge;
         }
     }
@@ -37,7 +37,7 @@ namespace Luch::Metal
         case SamplerMinMagFilter::Linear:
             return mtlpp::SamplerMinMagFilter::Linear;
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown sampler min mag filter");
+            LUCH_ASSERT_MSG(false, "Unknown sampler min mag filter");
             return mtlpp::SamplerMinMagFilter::Nearest;
         }
     }
@@ -53,7 +53,7 @@ namespace Luch::Metal
         case SamplerMipFilter::Linear:
             return mtlpp::SamplerMipFilter::Linear;
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown sampler mip filter");
+            LUCH_ASSERT_MSG(false, "Unknown sampler mip filter");
             return mtlpp::SamplerMipFilter::NotMipmapped;
         }
     }
@@ -69,7 +69,7 @@ namespace Luch::Metal
         case SamplerBorderColor::OpaqueWhite:
             return mtlpp::SamplerBorderColor::OpaqueWhite;
         default:
-            HUSKY_ASSERT_MSG(false, "Unknown sampler border color");
+            LUCH_ASSERT_MSG(false, "Unknown sampler border color");
             return mtlpp::SamplerBorderColor::OpaqueBlack;
         }
     }

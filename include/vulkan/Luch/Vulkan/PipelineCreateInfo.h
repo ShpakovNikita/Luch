@@ -29,14 +29,12 @@ namespace Luch::Vulkan
         // TODO specialization
     };
 
-    // TODO move to husky types
     struct PipelineVertexInputStateCreateInfo
     {
         Vector<vk::VertexInputBindingDescription> bindingDescriptions;
         Vector<vk::VertexInputAttributeDescription> attributeDescriptions;
     };
 
-    // TODO move to husky types
     struct PipelineInputAssemblyStateCreateInfo
     {
         vk::PrimitiveTopology topology = vk::PrimitiveTopology::eTriangleList;
@@ -45,14 +43,12 @@ namespace Luch::Vulkan
 
     // TODO tesselation
 
-    // TODO move to husky types
     struct PipelineViewportStateCreateInfo
     {
         Vector<vk::Viewport> viewports;
         Vector<vk::Rect2D> scissors;
     };
 
-    // TODO move to husky types
     struct PipelineRasterizationStateCreateInfo
     {
         vk::PolygonMode polygonMode = vk::PolygonMode::eFill;

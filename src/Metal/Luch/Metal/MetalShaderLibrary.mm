@@ -22,7 +22,7 @@ namespace Luch::Metal
         auto mtlDevice = static_cast<MetalGraphicsDevice*>(GetGraphicsDevice());
         // TODO error
         auto mtlFunction = library.NewFunction(name.c_str());
-        HUSKY_ASSERT(mtlFunction);
+        LUCH_ASSERT(mtlFunction);
         return { GraphicsResult::Success, MakeRef<MetalShaderProgram>(mtlDevice, mtlFunction) };
     }
 }

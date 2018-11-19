@@ -122,7 +122,7 @@ namespace Luch::Metal
         case ResourceStorageMode::DeviceLocal:
             if(initialData != nullptr)
             {
-                HUSKY_ASSERT_MSG(false, "Can't create GPU-only buffer with initial data");
+                LUCH_ASSERT_MSG(false, "Can't create GPU-only buffer with initial data");
                 return { GraphicsResult::InvalidValue };
             }
             optionBits |= (uint32)mtlpp::ResourceOptions::StorageModePrivate;
@@ -188,7 +188,7 @@ namespace Luch::Metal
             }
             else
             {
-                HUSKY_ASSERT_MSG(false, "Unknown define type");
+                LUCH_ASSERT_MSG(false, "Unknown define type");
                 return { GraphicsResult::InvalidValue };
             }
             dict[key] = value;
@@ -207,7 +207,7 @@ namespace Luch::Metal
         else
         {
             [[maybe_unused]] auto description = error.GetLocalizedDescription().GetCStr();
-            HUSKY_ASSERT(false);
+            LUCH_ASSERT(false);
             return { result };
         }
     }
