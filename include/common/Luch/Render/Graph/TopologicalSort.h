@@ -16,7 +16,7 @@ namespace Luch::Render::Graph
             Black,
         };
 
-        Vector<Color> colors { vertexCount, Color::White };
+        Vector<Color> colors { static_cast<size_t>(vertexCount), Color::White };
         Stack<int32> stack;
 
         std::function<bool(int32)> dfs;
