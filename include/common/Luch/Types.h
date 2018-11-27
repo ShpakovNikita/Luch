@@ -12,6 +12,7 @@
 #include <tuple>
 #include <unordered_map>
 #include <unordered_set>
+#include <stack>
 #include <variant>
 #include <vector>
 
@@ -37,6 +38,9 @@ using StringView = std::string_view;
 using uchar8 = unsigned char;
 using char8 = char;
 
+template<typename T1, typename T2>
+using Pair = std::pair<T1, T2>;
+
 template<typename T, int32 Size>
 using Array = std::array<T, Size>;
 
@@ -52,11 +56,17 @@ using UnorderedSet = std::unordered_set<T, Hash, Equal>;
 template<typename T, typename Hash = std::hash<T>, typename Equal = std::equal_to<T>>
 using UnorderedMultiset = std::unordered_multiset<T, Hash, Equal>;
 
+template<typename Key, typename Value, typename Hash = std::hash<Key>, typename Equal = std::equal_to<Key>>
+using UnorderedMultimap = std::unordered_multimap<Key, Value, Hash, Equal>;
+
 template<typename Key, typename Value>
 using Map = std::map<Key, Value>;
 
 template<typename Key, typename Value, typename Hash = std::hash<Key>, typename KeyEqual = std::equal_to<Key>>
 using UnorderedMap = std::unordered_map<Key, Value, Hash, KeyEqual>;
+
+template<typename T>
+using Stack = std::stack<T>;
 
 using Byte = std::byte;
 

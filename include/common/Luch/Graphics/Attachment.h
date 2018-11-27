@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Luch/Types.h>
+#include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/Graphics/Format.h>
 #include <Luch/Graphics/Color.h>
 
