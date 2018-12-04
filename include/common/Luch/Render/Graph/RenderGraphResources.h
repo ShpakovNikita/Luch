@@ -28,12 +28,14 @@ namespace Luch::Render::Graph
         Array<uint32, 4> clearValues = {0, 0, 0, 0};
     };
 
-    struct RenderMutableResource
-    {
-        friend class RenderGraphResourceManager;
-    public:
-        uint32 handle = 0;
+    class RenderResource;
 
+    class RenderMutableResource
+    {
+        friend class RenderResource;
+        friend class RenderGraphResourceManager;
+        friend struct std::hash<Luch::Render::Graph::RenderMutableResource>;
+    public:
         RenderMutableResource() = default;
         RenderMutableResource(const RenderMutableResource& other) = default;
         RenderMutableResource& operator=(const RenderMutableResource& other) = default;
@@ -47,26 +49,28 @@ namespace Luch::Render::Graph
         {
             return left.handle != right.handle;
         }
-    private:
-        explicit RenderMutableResource(uint32 aHandle) noexcept
-            : handle(aHandle)
+
+        friend bool operator<(const RenderMutableResource& left, const RenderMutableResource& right)
         {
+            return left.handle < right.handle;
         }
+    private:
+        explicit RenderMutableResource(uint32 aHandle) noexcept;
+        explicit RenderMutableResource(RenderResource resource) noexcept;
+
+        uint32 handle = 0;
     };
 
-    struct RenderResource
+    class RenderResource
     {
+        friend class RenderMutableResource;
+        friend class RenderGraphResourceManager;
+        friend struct std::hash<Luch::Render::Graph::RenderResource>;
     public:
-        uint32 handle = 0;
-
         RenderResource() = default;
         RenderResource(const RenderResource& other) = default;
         RenderResource& operator=(const RenderResource& other) = default;
-
-        RenderResource(RenderMutableResource mutableResource) noexcept
-            : handle(mutableResource.handle)
-        {
-        }
+        RenderResource(RenderMutableResource mutableResource) noexcept;
 
         friend bool operator==(const RenderResource& left, const RenderResource& right)
         {
@@ -97,8 +101,14 @@ namespace Luch::Render::Graph
         {
             return left.handle != right.handle;
         }
+
+        friend bool operator<(const RenderResource& left, const RenderResource& right)
+        {
+            return left.handle < right.handle;
+        }
     private:
-        explicit RenderResource(uint32 aHandle) noexcept : handle(aHandle) {}
+        explicit RenderResource(uint32 aHandle) noexcept;
+        uint32 handle = 0;
     };
 
 }

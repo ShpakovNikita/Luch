@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Luch/RefPtr.h>
+#include <Luch/UniquePtr.h>
 #include <Luch/Types.h>
 #include <Luch/Graphics/BufferUsageFlags.h>
 #include <Luch/Graphics/Format.h>
@@ -22,34 +23,59 @@ namespace Luch::Render::Graph
         RenderMutableResource CreateRenderTarget(const RenderTargetInfo& info);
         RenderMutableResource ImportRenderTarget(const RefPtr<Texture>& texture);
 
-        RenderMutableResource CreateBuffer(BufferUsageFlags usageFlags);
-        RenderMutableResource ImportBuffer(const RefPtr<Buffer>& buffer);
-
         void ReadsTexture(RenderResource textureResource);
         RenderMutableResource WritesToRenderTarget(
             RenderMutableResource renderTargetResource,
             TextureUsageFlags usageFlags);
-
-        void ReadsBuffer(RenderResource bufferResource);
     private:
         RenderGraphPass* pass = nullptr;
+        String name;
         RenderGraphResourceManager* resourceManager = nullptr;
         Vector<RenderMutableResource> createdRenderTargets;
         Vector<RenderMutableResource> importedRenderTargets;
-        Vector<RenderMutableResource> createdBuffers;
-        Vector<RenderMutableResource> importedBuffers;
         Vector<RenderResource> readTextures;
         Vector<RenderMutableResource> writeTextures;
-        Vector<RenderResource> readBuffers;
+    };
+
+    struct RenderGraphBuildResult
+    {
+        bool resourcesCreated = false;
+        Vector<RenderGraphNode*> nodes;
+        UnorderedMultimap<int32, int32> edges;
+        Vector<RenderResource> unusedResources;
+        // TODO unused nodes
+    };
+
+    struct RenderGraphExecuteResult
+    {
+        RefPtrVector<GraphicsCommandList> commandLists;
+    };
+
+    struct RenderGraphSubmitResult
+    {
     };
 
     class RenderGraphBuilder
     {
     public:
-        RenderGraphNode* AddRenderPass(RenderGraphPass* pass);
+        RenderGraphBuilder() = default;
+        ~RenderGraphBuilder();
+
+        bool Initialize(GraphicsDevice* device, CommandQueue* queue);
+        bool Deinitialize();
+
+        RenderGraphNode* AddRenderPass(const String& name, RenderGraphPass* pass);
+
+        RenderGraphBuildResult Build();
+        RenderGraphExecuteResult Execute(RenderGraphBuildResult& buildResult);
+        RenderGraphSubmitResult Submit(RenderGraphExecuteResult& executeResult);
     private:
-        RenderGraphResourceManager* resourceManager;
+        static UnorderedMultimap<int32, int32> CalculateEdges(Vector<RenderGraphNode> nodes);
+
+        GraphicsDevice* device = nullptr;
+        CommandQueue* queue = nullptr;
+        RefPtr<CommandPool> commandPool;
+        UniquePtr<RenderGraphResourceManager> resourceManager;
         Vector<RenderGraphNode> nodes;
-        UnorderedMultimap<RenderGraphNode*, RenderGraphNode*> edges;
     };
 }

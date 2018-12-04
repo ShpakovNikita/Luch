@@ -6,4 +6,6 @@ namespace Luch::Render::Graph
     class RenderGraphResourceManager;
     class RenderGraphNode;
     class RenderGraphBuilder;
+    class RenderResource;
+    class RenderMutableResource;
 }

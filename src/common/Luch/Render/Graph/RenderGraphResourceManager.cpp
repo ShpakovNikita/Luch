@@ -1,8 +1,16 @@
 #include <Luch/Render/Graph/RenderGraphResourceManager.h>
+#include <Luch/Graphics/GraphicsDevice.h>
+#include <Luch/Graphics/TextureCreateInfo.h>
+#include <Luch/Graphics/Texture.h>
 
 namespace Luch::Render::Graph
 {
     using namespace Graphics;
+
+    RenderGraphResourceManager::RenderGraphResourceManager(GraphicsDevice* aDevice)
+        : device(aDevice)
+    {
+    }
 
     RenderMutableResource RenderGraphResourceManager::CreateRenderTarget(const RenderTargetInfo& info)
     {
@@ -38,18 +46,81 @@ namespace Luch::Render::Graph
         return nextHandle;
     }
 
-    RenderMutableResource RenderGraphResourceManager::CreateBuffer(BufferUsageFlags usageFlags)
+    void RenderGraphResourceManager::MarkUnused(const Vector<RenderResource>& unusedResources)
     {
-        auto handle = GetNextHandle();
-        pendingBuffers[handle] = usageFlags;
-        return handle;
+        for(auto unusedResource : unusedResources)
+        {
+            pendingRenderTargets.erase(RenderMutableResource{ unusedResource });
+            importedRenderTargets.erase(RenderMutableResource{ unusedResource });
+            modifiedResources.erase(RenderMutableResource{ unusedResource });
+        }
     }
 
-    RenderMutableResource RenderGraphResourceManager::ImportBuffer(const RefPtr<Buffer>& buffer)
+    bool RenderGraphResourceManager::Build()
     {
-        auto handle = GetNextHandle();
-        importedBuffers[handle] = buffer;
-        return handle;
+        for(const auto& [handle, info] : pendingRenderTargets)
+        {
+            TextureCreateInfo createInfo;
+
+            bool hasDepthOrStencil = FormatHasDepth(info.format) || FormatHasStencil(info.format);
+            createInfo.width = info.width;
+            createInfo.height = info.height;
+            createInfo.format = info.format;
+            createInfo.storageMode = ResourceStorageMode::DeviceLocal;
+            createInfo.usage = TextureUsageFlags::ShaderRead;
+            createInfo.usage |= hasDepthOrStencil 
+                ? TextureUsageFlags::DepthStencilAttachment
+                : TextureUsageFlags::ColorAttachment;
+
+            auto [createTextureResult, createdTexture] = device->CreateTexture(createInfo);
+            if(createTextureResult != GraphicsResult::Success)
+            {
+                return false;
+            }
+
+            createdTextures[handle] = createdTexture;
+        }
+
+        pendingRenderTargets.clear();
+
+        return true;
+    }
+
+    void RenderGraphResourceManager::Reset()
+    {
+        createdTextures.clear();
+        pendingRenderTargets.clear();
+        importedRenderTargets.clear();
+        modifiedResources.clear();
+    }
+
+    RefPtr<Texture> RenderGraphResourceManager::GetTexture(RenderResource textureHandle)
+    {
+        {
+            auto it = modifiedResources.find(textureHandle);
+            if(it != modifiedResources.end())
+            {
+                textureHandle = it->second;
+            }
+        }
+
+        {
+            auto it = createdTextures.find(textureHandle);
+            if(it != createdTextures.end())
+            {
+                return it->second;
+            }
+        }
+
+        {
+            auto it = importedRenderTargets.find(textureHandle);
+            if(it != importedRenderTargets.end())
+            {
+                return it->second;
+            }
+        }
+
+        return nullptr;
     }
 
     RenderMutableResource RenderGraphResourceManager::GetNextHandle()

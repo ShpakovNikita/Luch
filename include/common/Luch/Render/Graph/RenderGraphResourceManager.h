@@ -15,20 +15,28 @@ namespace Luch::Render::Graph
     class RenderGraphResourceManager
     {
     public:
+        RenderGraphResourceManager(GraphicsDevice* device);
+
         RenderMutableResource CreateRenderTarget(const RenderTargetInfo& info);
         RenderMutableResource ImportRenderTarget(const RefPtr<Texture>& texture);
 
         RenderMutableResource ModifyResource(RenderMutableResource handle);
 
-        RenderMutableResource CreateBuffer(BufferUsageFlags usageFlags);
-        RenderMutableResource ImportBuffer(const RefPtr<Buffer>& buffer);
+        void MarkUnused(const Vector<RenderResource>& unusedResources);
+
+        bool Build();
+        void Reset();
+
+        RefPtr<Texture> GetTexture(RenderResource textureHandle);
     private:
+        GraphicsDevice* device = nullptr;
         RenderMutableResource GetNextHandle();
         uint32 nextHandleValue = 0;
+
         UnorderedMap<RenderMutableResource, RenderTargetInfo> pendingRenderTargets;
-        UnorderedMap<RenderMutableResource, RefPtr<Texture>> importedRenderTargets;
-        UnorderedMap<RenderMutableResource, BufferUsageFlags> pendingBuffers;
-        UnorderedMap<RenderMutableResource, RefPtr<Buffer>> importedBuffers;
-        UnorderedMap<RenderMutableResource, RenderMutableResource> modifiedResources;
+        UnorderedMap<RenderResource, RenderMutableResource> modifiedResources;
+
+        UnorderedMap<RenderResource, RefPtr<Texture>> createdTextures;
+        UnorderedMap<RenderResource, RefPtr<Texture>> importedRenderTargets;
     };
 }
