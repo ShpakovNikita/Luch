@@ -3,10 +3,12 @@
 #include <Luch/RefPtr.h>
 #include <Luch/UniquePtr.h>
 #include <Luch/Types.h>
+#include <Luch/ResultValue.h>
 #include <Luch/Graphics/BufferUsageFlags.h>
 #include <Luch/Graphics/Format.h>
 #include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/Graphics/TextureUsageFlags.h>
+#include <Luch/Render/Graph/RenderGraph.h>
 #include <Luch/Render/Graph/RenderGraphForwards.h>
 #include <Luch/Render/Graph/RenderGraphResources.h>
 
@@ -18,6 +20,7 @@ namespace Luch::Render::Graph
 
     class RenderGraphNode
     {
+        friend class RenderGraph;
         friend class RenderGraphBuilder;
     public:
         RenderMutableResource CreateRenderTarget(const RenderTargetInfo& info);
@@ -37,45 +40,25 @@ namespace Luch::Render::Graph
         Vector<RenderMutableResource> writeTextures;
     };
 
-    struct RenderGraphBuildResult
-    {
-        bool resourcesCreated = false;
-        Vector<RenderGraphNode*> nodes;
-        UnorderedMultimap<int32, int32> edges;
-        Vector<RenderResource> unusedResources;
-        // TODO unused nodes
-    };
-
-    struct RenderGraphExecuteResult
-    {
-        RefPtrVector<GraphicsCommandList> commandLists;
-    };
-
-    struct RenderGraphSubmitResult
-    {
-    };
-
     class RenderGraphBuilder
     {
     public:
         RenderGraphBuilder() = default;
         ~RenderGraphBuilder();
 
-        bool Initialize(GraphicsDevice* device, CommandQueue* queue);
+        bool Initialize(GraphicsDevice* device, CommandQueue* aQueue);
         bool Deinitialize();
 
         RenderGraphNode* AddRenderPass(const String& name, RenderGraphPass* pass);
 
-        RenderGraphBuildResult Build();
-        RenderGraphExecuteResult Execute(RenderGraphBuildResult& buildResult);
-        RenderGraphSubmitResult Submit(RenderGraphExecuteResult& executeResult);
+        ResultValue<RenderGraphBuildResult, UniquePtr<RenderGraph>> Build();
     private:
         static UnorderedMultimap<int32, int32> CalculateEdges(Vector<RenderGraphNode> nodes);
 
         GraphicsDevice* device = nullptr;
         CommandQueue* queue = nullptr;
-        RefPtr<CommandPool> commandPool;
         UniquePtr<RenderGraphResourceManager> resourceManager;
+        RefPtr<CommandPool> commandPool;
         Vector<RenderGraphNode> nodes;
     };
 }

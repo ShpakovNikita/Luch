@@ -2,10 +2,17 @@
 
 #include <Luch/Types.h>
 #include <Luch/Assert.h>
+#include <Luch/ResultValue.h>
 
 namespace Luch::Render::Graph
 {
-    Vector<int32> TopologicalOrder(
+    enum class TopologicalSortResult
+    {
+        Success,
+        Cycle,
+    };
+
+    ResultValue<TopologicalSortResult, Vector<int32>> TopologicalOrder(
         int32 vertexCount,
         const UnorderedMultimap<int32, int32>& edges)
     {
@@ -49,7 +56,10 @@ namespace Luch::Render::Graph
         for(int32 i = 0; i < vertexCount; i++)
         {
             bool cycle = dfs(i);
-            LUCH_ASSERT(!cycle);
+            if(cycle)
+            {
+                return { TopologicalSortResult::Cycle };
+            }
         }
 
         Vector<int32> result;
@@ -60,6 +70,6 @@ namespace Luch::Render::Graph
             stack.pop();
         }
 
-        return result;
+        return { TopologicalSortResult::Success, std::move(result) };
     }
 }

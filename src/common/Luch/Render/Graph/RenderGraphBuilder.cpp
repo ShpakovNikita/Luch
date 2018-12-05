@@ -2,6 +2,7 @@
 #include <Luch/Graphics/GraphicsDevice.h>
 #include <Luch/Graphics/CommandQueue.h>
 #include <Luch/Graphics/CommandPool.h>
+#include <Luch/Render/Graph/RenderGraph.h>
 #include <Luch/Render/Graph/RenderGraphPass.h>
 #include <Luch/Render/Graph/RenderGraphResourceManager.h>
 #include <Luch/Render/Graph/TopologicalSort.h>
@@ -48,7 +49,7 @@ namespace Luch::Render::Graph
         auto [createPoolResult, createdPool] = queue->CreateCommandPool();
         if(createPoolResult != GraphicsResult::Success)
         {
-            return { false };
+            return false;
         }
 
         commandPool = std::move(createdPool);
@@ -60,9 +61,8 @@ namespace Luch::Render::Graph
     {
         device = nullptr;
         queue = nullptr;
-        commandPool.Release();
         resourceManager.reset();
-        return false;
+        return true;
     }
 
     RenderGraphNode* RenderGraphBuilder::AddRenderPass(const String& name, RenderGraphPass* pass)
@@ -74,10 +74,9 @@ namespace Luch::Render::Graph
         return node;
     }
 
-    RenderGraphBuildResult RenderGraphBuilder::Build()
+    ResultValue<RenderGraphBuildResult, UniquePtr<RenderGraph>> RenderGraphBuilder::Build()
     {
-        RenderGraphBuildResult result;
-        resourceManager->Reset();
+        RenderGraphData data;
 
         for(int32 i = 0; i < nodes.size(); i++)
         {
@@ -102,7 +101,7 @@ namespace Luch::Render::Graph
                 if(!intersection.empty())
                 {
                     LUCH_ASSERT(i != j);
-                    result.edges.emplace(i, j);
+                    data.edges.emplace(i, j);
                     consumedResources.insert(intersection.begin(), intersection.end());
                 }
             }
@@ -110,58 +109,35 @@ namespace Luch::Render::Graph
             std::set_difference(
                 producedResources.begin(), producedResources.end(),
                 consumedResources.begin(), consumedResources.end(),
-                std::back_inserter(result.unusedResources));
+                std::back_inserter(data.unusedResources));
         }
 
-        auto order = TopologicalOrder(nodes.size(), result.edges);
-        for(int32 index : order)
-        {
-            result.nodes.push_back(&nodes[index]);
-        }
-
-        result.resourcesCreated = resourceManager->Build();
-        if(!result.resourcesCreated)
+        bool resourcesCreated = resourceManager->Build();
+        if(!resourcesCreated)
         {
             resourceManager->Reset();
+            return { RenderGraphBuildResult::ResourceCreationFailed };
         }
 
-        return result;
-    }
+        auto [sortResult, order] = TopologicalOrder(nodes.size(), data.edges);
 
-    RenderGraphExecuteResult RenderGraphBuilder::Execute(RenderGraphBuildResult& buildResult)
-    {
-        RenderGraphExecuteResult result;
-
-        RefPtrVector<GraphicsCommandList> commandLists;
-        int32 nodeCount = buildResult.nodes.size();
-
-        commandLists.reserve(nodeCount);
-        for(int32 i = 0; i < nodeCount; i++)
+        if(sortResult != TopologicalSortResult::Success)
         {
-            auto [createCommandListResult, createdCommandList] = commandPool->AllocateGraphicsCommandList();
-            if(createCommandListResult != GraphicsResult::Success)
-            {
-                return result;
-            }
-
-            commandLists.emplace_back(std::move(createdCommandList));
+            return { RenderGraphBuildResult::CyclicDependency };
         }
 
-        result.commandLists = std::move(commandLists);
+        auto result = data.unusedResources.empty() 
+            ? RenderGraphBuildResult::Success
+            : RenderGraphBuildResult::UnusedResources;
 
-        for(int32 i = 0; i < nodeCount; i++)
+        for(int32 index : order)
         {
-            nodes[i].pass->ExecuteGraphicsPass(result.commandLists[i]);
+            data.nodes.push_back(&nodes[index]);
         }
 
-        return result;
-    }
+        UniquePtr<RenderGraph> graph = MakeUnique<RenderGraph>(
+            device, queue, std::move(resourceManager), std::move(data));
 
-    RenderGraphSubmitResult RenderGraphBuilder::Submit(RenderGraphExecuteResult& executeResult)
-    {
-        for(int32 i = 0; i < executeResult.commandLists.size(); i++)
-        {
-            auto result = queue->Submit(executeResult.commandLists[i]);
-        }
+        return { result, std::move(graph) };
     }
 }
