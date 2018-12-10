@@ -12,7 +12,6 @@ namespace Luch::Render::Deferred
 
     struct GBufferPassResources
     {
-        RefPtr<CommandPool> commandPool;
         RefPtr<PipelineLayout> pipelineLayout;
         RefPtr<DescriptorPool> descriptorPool;
 
@@ -32,9 +31,9 @@ namespace Luch::Render::Deferred
         DescriptorSetBinding emissiveTextureBinding;
         DescriptorSetBinding emissiveSamplerBinding;
 
-        ColorAttachment baseColorAttachmentTemplate;
-        ColorAttachment normalMapAttachmentTemplate;
-        DepthStencilAttachment depthStencilAttachmentTemplate;
+        ColorAttachment gbuffer0AttachmentTemplate;
+        ColorAttachment gbuffer1AttachmentTemplate;
+        DepthStencilAttachment gbufferDSAttachmentTemplate;
 
         RefPtr<DescriptorSetLayout> meshBufferDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> materialTextureDescriptorSetLayout;

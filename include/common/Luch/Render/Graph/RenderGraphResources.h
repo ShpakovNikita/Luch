@@ -6,6 +6,7 @@
 #include <Luch/Graphics/Format.h>
 #include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/Graphics/TextureUsageFlags.h>
+#include <Luch/Graphics/Attachment.h>
 
 namespace Luch::Render::Graph
 {
@@ -13,20 +14,41 @@ namespace Luch::Render::Graph
 
     class RenderResourceManager;
 
-    enum class RenderTargetInitialState
+    enum class AttachmentInitialState
     {
         DontCare,
         Clear,
     };
 
-    struct RenderTargetInfo
+    enum class AttachmentSlot
+    {
+        Color_0 = 0,
+        Color_1,
+        Color_2,
+        Color_3,
+        Color_SlotCount,
+        DepthStencil,
+    };
+
+    struct TextureDescriptor
     {
         int32 width = 0;
         int32 height = 0;
         Format format = Format::Undefined;
-        RenderTargetInitialState initialState = RenderTargetInitialState::DontCare;
-        Array<uint32, 4> clearValues = {0, 0, 0, 0};
     };
+
+    struct AttachmentDescriptor
+    {
+        AttachmentSlot slot = AttachmentSlot::Color_0;
+        AttachmentLoadOperation loadOp = AttachmentLoadOperation::Clear;
+        AttachmentStoreOperation storeOp = AttachmentStoreOperation::Store;
+    };
+
+    struct ColorAttachmentDescriptor
+    {
+
+    };
+
 
     class RenderResource;
 

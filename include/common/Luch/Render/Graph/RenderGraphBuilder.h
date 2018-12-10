@@ -16,18 +16,17 @@ namespace Luch::Render::Graph
 {
     using namespace Graphics;
 
-    class RenderGraphBuilder;
-
     class RenderGraphNode
     {
         friend class RenderGraph;
         friend class RenderGraphBuilder;
     public:
-        RenderMutableResource CreateRenderTarget(const RenderTargetInfo& info);
-        RenderMutableResource ImportRenderTarget(const RefPtr<Texture>& texture);
+        RenderMutableResource CreateRenderTarget(RenderTargetSlot slot, const RenderTargetInfo& info);
+        RenderMutableResource ImportRenderTarget(RenderTargetSlot slot, const RefPtr<Texture>& texture);
 
         void ReadsTexture(RenderResource textureResource);
         RenderMutableResource WritesToRenderTarget(
+            RenderTargetSlot slot,
             RenderMutableResource renderTargetResource,
             TextureUsageFlags usageFlags);
     private:
@@ -36,8 +35,8 @@ namespace Luch::Render::Graph
         RenderGraphResourceManager* resourceManager = nullptr;
         Vector<RenderMutableResource> createdRenderTargets;
         Vector<RenderMutableResource> importedRenderTargets;
-        Vector<RenderResource> readTextures;
         Vector<RenderMutableResource> writeTextures;
+        Vector<RenderResource> readTextures;
     };
 
     class RenderGraphBuilder

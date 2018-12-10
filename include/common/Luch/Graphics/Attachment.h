@@ -31,11 +31,8 @@ namespace Luch::Graphics
 
     struct Attachment
     {
-        int32 index = -1;
         AttachmentTextureInfo output;
-        AttachmentTextureInfo resolve;
         Format format = Format::Undefined;
-        // TODO Multisampling
     };
 
     struct ColorAttachment : public Attachment

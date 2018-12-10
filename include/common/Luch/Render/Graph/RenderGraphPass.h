@@ -6,6 +6,7 @@
 #include <Luch/Graphics/Format.h>
 #include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/Graphics/TextureUsageFlags.h>
+#include <Luch/Render/Graph/RenderGraphResourceManager.h>
 
 namespace Luch::Render::Graph
 {
@@ -15,6 +16,8 @@ namespace Luch::Render::Graph
     {
     public:
         virtual inline ~RenderGraphPass() {}
-        virtual void ExecuteGraphicsPass(GraphicsCommandList* commandList) = 0;
+        virtual void ExecuteGraphicsPass(
+            RenderGraphResourceManager* resourceManager,
+            GraphicsCommandList* commandList) = 0;
     };
 }

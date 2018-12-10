@@ -15,36 +15,45 @@
 #include <Luch/Render/RenderForwards.h>
 #include <Luch/Render/Deferred/DeferredForwards.h>
 
+#include <Luch/Render/Graph/RenderGraphPass.h>
+#include <Luch/Render/Graph/RenderGraphResources.h>
+#include <Luch/Render/Graph/RenderGraphForwards.h>
+
 #include <Luch/Render/SharedBuffer.h>
 
 namespace Luch::Render::Deferred
 {
     using namespace Graphics;
+    using namespace Graph;
 
-    class GBufferRenderer
+    class GBufferRenderPass : public RenderGraphPass
     {
     public:
+        static const String RenderPassName;
         static constexpr int32 SharedUniformBufferSize = 16 * 1024 * 1024;
         static constexpr int32 MaxDescriptorSetCount = 4096;
         static constexpr int32 MaxDescriptorCount = 4096;
-        static constexpr int32 OffscreenImageCount = 3;
-        static const String RendererName;
 
-        GBufferRenderer();
-        ~GBufferRenderer();
+        static ResultValue<bool, UniquePtr<GBufferPassResources>> PrepareGBufferPassResources();
+
+        GBufferRenderPass(int32 width, int32 height, RenderGraphBuilder* builder);
+        ~GBufferRenderPass();
 
         const SharedPtr<RenderContext>& GetRenderContext() { return context; }
         void SetRenderContext(const SharedPtr<RenderContext>& aContext) { context = aContext; }
 
-        const SharedPtr<DeferredResources>& GetDeferredResources() { return commonResources; }
-        void SetDeferredResources(const SharedPtr<DeferredResources>& aResources) { commonResources = aResources; }
-
-        bool Initialize();
-        bool Deinitialize();
+        GBufferPassResources* GetGBufferPassResources() { return resources; }
+        void SetGBufferPassResources(GBufferPassResources* aResources) { resources = aResources; }
 
         void PrepareScene(SceneV1::Scene* scene);
         void UpdateScene(SceneV1::Scene* scene);
-        GBufferTextures* DrawScene(SceneV1::Scene* scene, SceneV1::Camera* camera);
+
+        void SetScene(SceneV1::Scene* aScene) { scene = aScene; }
+        void SetCamera(SceneV1::Camera* aCamera) { camera = aCamera; }
+
+        void ExecuteGraphicsPass(
+            RenderGraphResourceManager* resourceManager,
+            GraphicsCommandList* commandList) override;
     private:
         void PrepareMeshNode(SceneV1::Node* node);
         void PrepareNode(SceneV1::Node* node);
@@ -57,26 +66,30 @@ namespace Luch::Render::Deferred
         void UpdateCamera(SceneV1::Camera* camera, const Mat4x4& transform);
         void UpdateMaterial(SceneV1::PbrMaterial* material);
 
-        void BindMaterial(SceneV1::PbrMaterial* material, GraphicsCommandList* commandList);
+        void DrawScene(
+            SceneV1::Scene* scene,
+            SceneV1::Camera* camera,
+            RenderGraphResourceManager* resourceManager,
+            GraphicsCommandList* commandList);
+
         void DrawNode(SceneV1::Node* node, GraphicsCommandList* commandList);
         void DrawMesh(SceneV1::Mesh* mesh, GraphicsCommandList* commandList);
         void DrawPrimitive(SceneV1::Primitive* primitive, GraphicsCommandList* commandList);
+        void BindMaterial(SceneV1::PbrMaterial* material, GraphicsCommandList* commandList);
 
         RefPtr<PipelineState> CreateGBufferPipelineState(SceneV1::Primitive* primitive);
 
-        ResultValue<bool, UniquePtr<GBufferPassResources>> PrepareGBufferPassResources();
-        ResultValue<bool, UniquePtr<GBufferTextures>> CreateGBufferTextures();
-
         SharedPtr<RenderContext> context;
 
-        SharedPtr<DeferredResources> commonResources;
-        UniquePtr<GBufferPassResources> resources;
-        UniquePtr<GBufferTextures> gbuffer;
+        GBufferPassResources* resources;
 
-        Format baseColorFormat = Format::R8G8B8A8Unorm;
-        Format normalMapFormat = Format::R32G32B32A32Sfloat;
-        Format depthStencilFormat = Format::D24UnormS8Uint;
-        float32 minDepth = 0.0;
-        float32 maxDepth = 1.0;
+        int32 width = 0;
+        int32 height = 0;
+        RenderMutableResource gbuffer0;
+        RenderMutableResource gbuffer1;
+        RenderMutableResource gbufferDS;
+        RenderGraphBuilder* builder = nullptr;
+        SceneV1::Scene* scene = nullptr;
+        SceneV1::Camera* camera = nullptr;
     };
 }

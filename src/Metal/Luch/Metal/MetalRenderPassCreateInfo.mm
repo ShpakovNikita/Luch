@@ -36,7 +36,7 @@ namespace Luch::Metal
         }
     }
 
-    mtlpp::RenderPassDescriptor ToMetalRenderPasDescriptor(const RenderPassCreateInfo& createInfo)
+    mtlpp::RenderPassDescriptor ToMetalRenderPassDescriptor(const RenderPassCreateInfo& createInfo)
     {
         mtlpp::RenderPassDescriptor d;
 

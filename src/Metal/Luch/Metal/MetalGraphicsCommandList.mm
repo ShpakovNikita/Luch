@@ -71,7 +71,7 @@ namespace Luch::Metal
     void MetalGraphicsCommandList::BeginRenderPass(const RenderPassCreateInfo& renderPassCreateInfo)
     {
         LUCH_ASSERT(!commandEncoder);
-        auto renderPassDescriptor = ToMetalRenderPasDescriptor(renderPassCreateInfo);
+        auto renderPassDescriptor = ToMetalRenderPassDescriptor(renderPassCreateInfo);
         commandEncoder = commandBuffer.RenderCommandEncoder(renderPassDescriptor);
     }
 
