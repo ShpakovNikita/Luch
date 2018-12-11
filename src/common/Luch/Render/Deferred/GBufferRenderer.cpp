@@ -35,6 +35,7 @@
 #include <Luch/Graphics/PrimitiveTopology.h>
 #include <Luch/Graphics/DescriptorSetBinding.h>
 #include <Luch/Graphics/RenderPassCreateInfo.h>
+#include <Luch/Graphics/FrameBufferCreateInfo.h>
 #include <Luch/Graphics/DescriptorPoolCreateInfo.h>
 #include <Luch/Graphics/DescriptorSetLayoutCreateInfo.h>
 #include <Luch/Graphics/PipelineLayoutCreateInfo.h>
@@ -198,28 +199,17 @@ namespace Luch::Render::Deferred
             0, 0, static_cast<float32>(framebufferWidth), static_cast<float32>(framebufferHeight), 0.0f, 1.0f };
         IntRect scissorRect { {0, 0}, { framebufferWidth, framebufferHeight } };
 
-        ColorAttachment baseColorAttachment = resources->baseColorAttachmentTemplate;
-        baseColorAttachment.output.texture = gbuffer->baseColorTexture;
+        FrameBufferCreateInfo frameBufferCreateInfo;
+        frameBufferCreateInfo.renderPass = resources->renderPass;
+        frameBufferCreateInfo.colorTextures[0] = gbuffer->baseColorTexture;
+        frameBufferCreateInfo.colorTextures[1] = gbuffer->normalMapTexture;
+        frameBufferCreateInfo.depthStencilTexture = gbuffer->depthStencilBuffer;
 
-        ColorAttachment normalMapAttachment = resources->normalMapAttachmentTemplate;
-        normalMapAttachment.output.texture = gbuffer->normalMapTexture;
-
-        DepthStencilAttachment depthStencilAttachment = resources->depthStencilAttachmentTemplate;
-        depthStencilAttachment.output.texture = gbuffer->depthStencilBuffer;
-
-        RenderPassCreateInfo renderPassCreateInfo;
-        renderPassCreateInfo
-            .WithName(RendererName)
-            .WithNColorAttachments(2)
-            .AddColorAttachment(&baseColorAttachment)
-            .AddColorAttachment(&normalMapAttachment)
-            .WithDepthStencilAttachment(&depthStencilAttachment);
-
-        auto[createRenderPassResult, createdRenderPass] = context->device->CreateRenderPass(renderPassCreateInfo);
-        LUCH_ASSERT(createRenderPassResult == GraphicsResult::Success);
+        auto [createFrameBufferResult, frameBuffer] = context->device->CreateFrameBuffer(frameBufferCreateInfo);
+        LUCH_ASSERT(createFrameBufferResult == GraphicsResult::Success);
 
         cmdList->Begin();
-        cmdList->BeginRenderPass(renderPassCreateInfo);
+        cmdList->BeginRenderPass(frameBuffer);
         cmdList->SetViewports({ viewport });
         cmdList->SetScissorRects({ scissorRect });
         cmdList->BindBufferDescriptorSet(
@@ -688,6 +678,42 @@ namespace Luch::Render::Deferred
     {
         UniquePtr<GBufferPassResources> gbufferResources = MakeUnique<GBufferPassResources>();
 
+        ColorAttachment baseColorAttachment;
+        baseColorAttachment.format = baseColorFormat;
+        baseColorAttachment.colorLoadOperation = AttachmentLoadOperation::Clear;
+        baseColorAttachment.colorStoreOperation = AttachmentStoreOperation::Store;
+        baseColorAttachment.clearValue = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+        ColorAttachment normalMapAttachment;
+        normalMapAttachment.format = normalMapFormat;
+        normalMapAttachment.colorLoadOperation = AttachmentLoadOperation::Clear;
+        normalMapAttachment.colorStoreOperation = AttachmentStoreOperation::Store;
+        normalMapAttachment.clearValue = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+        DepthStencilAttachment depthStencilAttachment;
+        depthStencilAttachment.format = depthStencilFormat;
+        depthStencilAttachment.depthLoadOperation = AttachmentLoadOperation::Clear;
+        depthStencilAttachment.depthStoreOperation = AttachmentStoreOperation::Store;
+        depthStencilAttachment.stencilLoadOperation = AttachmentLoadOperation::Clear;
+        depthStencilAttachment.stencilStoreOperation = AttachmentStoreOperation::Store;
+        depthStencilAttachment.depthClearValue = maxDepth;
+        depthStencilAttachment.stencilClearValue = 0xffffffff;
+
+        RenderPassCreateInfo renderPassCreateInfo;
+        renderPassCreateInfo.name = RendererName;
+        renderPassCreateInfo.colorAttachments[0] = baseColorAttachment;
+        renderPassCreateInfo.colorAttachments[1] = normalMapAttachment;
+        renderPassCreateInfo.depthStencilAttachment = depthStencilAttachment;
+
+        auto[createRenderPassResult, createdRenderPass] = context->device->CreateRenderPass(renderPassCreateInfo);
+        if(createRenderPassResult != GraphicsResult::Success)
+        {
+            LUCH_ASSERT(false);
+            return { false };
+        }
+
+        gbufferResources->renderPass = std::move(createdRenderPass);
+
         auto[createCommandPoolResult, createdCommandPool] = context->commandQueue->CreateCommandPool();
 
         if (createCommandPoolResult != GraphicsResult::Success)
@@ -828,24 +854,6 @@ namespace Luch::Render::Deferred
         }
 
         gbufferResources->pipelineLayout = std::move(createdPipelineLayout);
-
-        gbufferResources->baseColorAttachmentTemplate.format = baseColorFormat;
-        gbufferResources->baseColorAttachmentTemplate.colorLoadOperation = AttachmentLoadOperation::Clear;
-        gbufferResources->baseColorAttachmentTemplate.colorStoreOperation = AttachmentStoreOperation::Store;
-        gbufferResources->baseColorAttachmentTemplate.clearValue = { 0.0f, 0.0f, 0.0f, 1.0f };
-
-        gbufferResources->normalMapAttachmentTemplate.format = normalMapFormat;
-        gbufferResources->normalMapAttachmentTemplate.colorLoadOperation = AttachmentLoadOperation::Clear;
-        gbufferResources->normalMapAttachmentTemplate.colorStoreOperation = AttachmentStoreOperation::Store;
-        gbufferResources->normalMapAttachmentTemplate.clearValue = { 0.0f, 0.0f, 0.0f, 0.0f };
-
-        gbufferResources->depthStencilAttachmentTemplate.format = depthStencilFormat;
-        gbufferResources->depthStencilAttachmentTemplate.depthLoadOperation = AttachmentLoadOperation::Clear;
-        gbufferResources->depthStencilAttachmentTemplate.depthStoreOperation = AttachmentStoreOperation::Store;
-        gbufferResources->depthStencilAttachmentTemplate.stencilLoadOperation = AttachmentLoadOperation::Clear;
-        gbufferResources->depthStencilAttachmentTemplate.stencilStoreOperation = AttachmentStoreOperation::Store;
-        gbufferResources->depthStencilAttachmentTemplate.depthClearValue = maxDepth;
-        gbufferResources->depthStencilAttachmentTemplate.stencilClearValue = 0xffffffff;
 
         BufferCreateInfo bufferCreateInfo;
         bufferCreateInfo.length = SharedUniformBufferSize;

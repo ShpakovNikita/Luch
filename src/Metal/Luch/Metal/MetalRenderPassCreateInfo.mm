@@ -1,5 +1,7 @@
 #include <Luch/Metal/MetalRenderPassCreateInfo.h>
+#include <Luch/Graphics/RenderPass.h>
 #include <Luch/Graphics/RenderPassCreateInfo.h>
+#include <Luch/Graphics/FrameBufferCreateInfo.h>
 #include <Luch/Metal/MetalTexture.h>
 
 namespace Luch::Metal
@@ -36,88 +38,61 @@ namespace Luch::Metal
         }
     }
 
-    mtlpp::RenderPassDescriptor ToMetalRenderPasDescriptor(const RenderPassCreateInfo& createInfo)
+    mtlpp::RenderPassDescriptor ToMetalRenderPassDescriptor(const FrameBufferCreateInfo& frameBufferCreateInfo)
     {
         mtlpp::RenderPassDescriptor d;
-
-        for(int32 i = 0; i < createInfo.colorAttachments.size(); i++)
+        const auto& renderPassCreateInfo = frameBufferCreateInfo.renderPass->GetCreateInfo();
+        LUCH_ASSERT(renderPassCreateInfo.colorAttachments.size() == frameBufferCreateInfo.colorTextures.size());
+        for(int32 i = 0; i < renderPassCreateInfo.colorAttachments.size(); i++)
         {
-            const auto& colorAttachment = createInfo.colorAttachments[i];
+            const auto& colorAttachment = renderPassCreateInfo.colorAttachments[i];
+            if(colorAttachment.has_value())
+            {
+                auto mtlTexture = static_cast<MetalTexture*>(frameBufferCreateInfo.colorTextures[i]);
+                LUCH_ASSERT(mtlTexture != nullptr);
 
-            auto mtlTexture = static_cast<MetalTexture*>(colorAttachment->output.texture);
-            LUCH_ASSERT(mtlTexture != nullptr);
-
-//            auto mtlResolveTexture = static_cast<MetalTexture*>(colorAttachment->resolve.texture);
-//            if(colorAttachment->colorStoreOperation == AttachmentStoreOperation::Resolve)
-//            {
-//                LUCH_ASSERT(mtlResolveTexture != nullptr);
-//            }
-
-            mtlpp::ClearColor clearColor = {
-                colorAttachment->clearValue.red,
-                colorAttachment->clearValue.green,
-                colorAttachment->clearValue.blue,
-                colorAttachment->clearValue.alpha
-            };
-            d.GetColorAttachments()[i].SetTexture(mtlTexture->GetNativeTexture());
-            d.GetColorAttachments()[i].SetLevel(colorAttachment->output.mipmapLevel);
-            d.GetColorAttachments()[i].SetSlice(colorAttachment->output.slice);
-            d.GetColorAttachments()[i].SetDepthPlane(colorAttachment->output.depthPlane);
-
-//            if(mtlResolveTexture != nullptr)
-//            {
-//                d.GetColorAttachments()[i].SetResolveTexture(mtlResolveTexture->GetNativeTexture());
-//            }
-//
-//            d.GetColorAttachments()[i].SetResolveLevel(colorAttachment->resolve.mipmapLevel);
-//            d.GetColorAttachments()[i].SetResolveSlice(colorAttachment->resolve.slice);
-//            d.GetColorAttachments()[i].SetResolveDepthPlane(colorAttachment->resolve.depthPlane);
-
-            d.GetColorAttachments()[i].SetClearColor(clearColor);
-            d.GetColorAttachments()[i].SetLoadAction(ToMetalLoadAction(colorAttachment->colorLoadOperation));
-            d.GetColorAttachments()[i].SetStoreAction(ToMetalStoreAction(colorAttachment->colorStoreOperation));
+                mtlpp::ClearColor clearColor = {
+                    colorAttachment->clearValue.red,
+                    colorAttachment->clearValue.green,
+                    colorAttachment->clearValue.blue,
+                    colorAttachment->clearValue.alpha
+                };
+                d.GetColorAttachments()[i].SetTexture(mtlTexture->GetNativeTexture());
+                d.GetColorAttachments()[i].SetLevel(colorAttachment->output.mipmapLevel);
+                d.GetColorAttachments()[i].SetSlice(colorAttachment->output.slice);
+                d.GetColorAttachments()[i].SetDepthPlane(colorAttachment->output.depthPlane);
+                d.GetColorAttachments()[i].SetClearColor(clearColor);
+                d.GetColorAttachments()[i].SetLoadAction(ToMetalLoadAction(colorAttachment->colorLoadOperation));
+                d.GetColorAttachments()[i].SetStoreAction(ToMetalStoreAction(colorAttachment->colorStoreOperation));
+            }
         }
 
-        if(createInfo.depthStencilAttachment != nullptr)
+        if(renderPassCreateInfo.depthStencilAttachment.has_value())
         {
-            auto mtlDepthStencilBuffer = static_cast<MetalTexture*>(createInfo.depthStencilAttachment->output.texture);
+            const auto& depthStencilAttachment = renderPassCreateInfo.depthStencilAttachment;
+            auto mtlDepthStencilBuffer = static_cast<MetalTexture*>(frameBufferCreateInfo.depthStencilTexture);
             LUCH_ASSERT(mtlDepthStencilBuffer != nullptr);
 
-    //        auto mtlResolveDepthStencilBuffer = static_cast<MetalTexture*>(createInfo.depthStencilAttachment->resolve.texture);
-
-            if(createInfo.depthStencilAttachment->format != Format::S8Uint)
+            if(depthStencilAttachment->format != Format::S8Uint)
             {
                 d.GetDepthAttachment().SetTexture(mtlDepthStencilBuffer->GetNativeTexture());
-                d.GetDepthAttachment().SetLevel(createInfo.depthStencilAttachment->output.mipmapLevel);
-                d.GetDepthAttachment().SetSlice(createInfo.depthStencilAttachment->output.slice);
-                d.GetDepthAttachment().SetDepthPlane(createInfo.depthStencilAttachment->output.depthPlane);
-
-        //        if(mtlResolveDepthStencilBuffer != nullptr)
-        //        {
-        //            d.GetDepthAttachment().SetResolveTexture(mtlResolveDepthStencilBuffer->GetNativeTexture());
-        //        }
-        //        d.GetDepthAttachment().SetResolveLevel(createInfo.depthStencilAttachment->resolve.mipmapLevel);
-        //        d.GetDepthAttachment().SetResolveSlice(createInfo.depthStencilAttachment->resolve.slice);
-        //        d.GetDepthAttachment().SetResolveDepthPlane(createInfo.depthStencilAttachment->resolve.depthPlane);
-        //
-                d.GetDepthAttachment().SetClearDepth(createInfo.depthStencilAttachment->depthClearValue);
-                d.GetDepthAttachment().SetLoadAction(ToMetalLoadAction(createInfo.depthStencilAttachment->depthLoadOperation));
-                d.GetDepthAttachment().SetStoreAction(ToMetalStoreAction(createInfo.depthStencilAttachment->depthStoreOperation));
+                d.GetDepthAttachment().SetLevel(depthStencilAttachment->output.mipmapLevel);
+                d.GetDepthAttachment().SetSlice(depthStencilAttachment->output.slice);
+                d.GetDepthAttachment().SetDepthPlane(depthStencilAttachment->output.depthPlane);
+                d.GetDepthAttachment().SetClearDepth(depthStencilAttachment->depthClearValue);
+                d.GetDepthAttachment().SetLoadAction(ToMetalLoadAction(depthStencilAttachment->depthLoadOperation));
+                d.GetDepthAttachment().SetStoreAction(ToMetalStoreAction(depthStencilAttachment->depthStoreOperation));
             }
 
-            if(createInfo.depthStencilAttachment->format != Format::D16Unorm && createInfo.depthStencilAttachment->format != Format::D32Sfloat)
+            if(depthStencilAttachment->format != Format::D16Unorm && depthStencilAttachment->format != Format::D32Sfloat)
             {
                 d.GetStencilAttachment().SetTexture(mtlDepthStencilBuffer->GetNativeTexture());
-                d.GetStencilAttachment().SetLevel(createInfo.depthStencilAttachment->output.mipmapLevel);
-                d.GetStencilAttachment().SetSlice(createInfo.depthStencilAttachment->output.slice);
-                d.GetStencilAttachment().SetDepthPlane(createInfo.depthStencilAttachment->output.depthPlane);
-        //        d.GetStencilAttachment().SetResolveTexture(mtlResolveDepthStencilBuffer->GetNativeTexture());
-        //        d.GetStencilAttachment().SetResolveLevel(createInfo.depthStencilAttachment->resolve.mipmapLevel);
-        //        d.GetStencilAttachment().SetResolveSlice(createInfo.depthStencilAttachment->resolve.slice);
-        //        d.GetStencilAttachment().SetResolveDepthPlane(createInfo.depthStencilAttachment->resolve.depthPlane);
-                d.GetStencilAttachment().SetClearStencil(createInfo.depthStencilAttachment->stencilClearValue);
-                d.GetStencilAttachment().SetLoadAction(ToMetalLoadAction(createInfo.depthStencilAttachment->stencilLoadOperation));
-                d.GetStencilAttachment().SetStoreAction(ToMetalStoreAction(createInfo.depthStencilAttachment->stencilStoreOperation));
+                d.GetStencilAttachment().SetLevel(depthStencilAttachment->output.mipmapLevel);
+                d.GetStencilAttachment().SetSlice(depthStencilAttachment->output.slice);
+                d.GetStencilAttachment().SetDepthPlane(depthStencilAttachment->output.depthPlane);
+                d.GetStencilAttachment().SetClearStencil(depthStencilAttachment->stencilClearValue);
+                d.GetStencilAttachment().SetLoadAction(ToMetalLoadAction(depthStencilAttachment->stencilLoadOperation));
+                d.GetStencilAttachment().SetStoreAction(ToMetalStoreAction(depthStencilAttachment->stencilStoreOperation));
             }
         }
 

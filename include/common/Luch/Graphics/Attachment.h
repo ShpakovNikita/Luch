@@ -3,6 +3,7 @@
 #include <Luch/Types.h>
 #include <Luch/Graphics/Format.h>
 #include <Luch/Graphics/Color.h>
+#include <Luch/Graphics/GraphicsForwards.h>
 
 namespace Luch::Graphics
 {
@@ -17,12 +18,10 @@ namespace Luch::Graphics
     {
         DontCare,
         Store,
-        //Resolve,
     };
 
     struct AttachmentTextureInfo
     {
-        Texture* texture = nullptr;
         int32 mipmapLevel = 0;
         int32 slice = 0;
         int32 depthPlane = 0;
@@ -32,9 +31,7 @@ namespace Luch::Graphics
     {
         int32 index = -1;
         AttachmentTextureInfo output;
-        AttachmentTextureInfo resolve;
         Format format = Format::Undefined;
-        // TODO Multisampling
     };
 
     struct ColorAttachment : public Attachment

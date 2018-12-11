@@ -3,6 +3,7 @@
 #include <Luch/RefPtr.h>
 #include <Luch/UniquePtr.h>
 #include <Luch/Graphics/GraphicsForwards.h>
+#include <Luch/Graphics/DescriptorSetBinding.h>
 #include <Luch/Render/RenderForwards.h>
 #include <Luch/Render/Deferred/DeferredForwards.h>
 
@@ -32,14 +33,12 @@ namespace Luch::Render::Deferred
         DescriptorSetBinding emissiveTextureBinding;
         DescriptorSetBinding emissiveSamplerBinding;
 
-        ColorAttachment baseColorAttachmentTemplate;
-        ColorAttachment normalMapAttachmentTemplate;
-        DepthStencilAttachment depthStencilAttachmentTemplate;
-
         RefPtr<DescriptorSetLayout> meshBufferDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> materialTextureDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> materialBufferDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> materialSamplerDescriptorSetLayout;
+
+        RefPtr<RenderPass> renderPass;
 
         UniquePtr<SharedBuffer> sharedBuffer;
     };

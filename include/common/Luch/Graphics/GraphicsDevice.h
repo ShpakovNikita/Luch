@@ -28,6 +28,9 @@ namespace Luch::Graphics
         virtual GraphicsResultRefPtr<RenderPass> CreateRenderPass(
             const RenderPassCreateInfo& createInfo) = 0;
 
+        virtual GraphicsResultRefPtr<FrameBuffer> CreateFrameBuffer(
+            const FrameBufferCreateInfo& createInfo) = 0;
+
         virtual GraphicsResultRefPtr<PipelineState> CreatePipelineState(
             const PipelineStateCreateInfo& createInfo) = 0;
 

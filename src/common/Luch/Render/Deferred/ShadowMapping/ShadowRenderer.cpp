@@ -12,10 +12,12 @@
 #include <Luch/Graphics/DescriptorPool.h>
 #include <Luch/Graphics/GraphicsCommandList.h>
 #include <Luch/Graphics/Swapchain.h>
+#include <Luch/Graphics/FrameBuffer.h>
 #include <Luch/Graphics/SwapchainInfo.h>
 #include <Luch/Graphics/PipelineState.h>
 #include <Luch/Graphics/DescriptorSetBinding.h>
 #include <Luch/Graphics/RenderPassCreateInfo.h>
+#include <Luch/Graphics/FrameBufferCreateInfo.h>
 #include <Luch/Graphics/DescriptorPoolCreateInfo.h>
 #include <Luch/Graphics/DescriptorSetLayoutCreateInfo.h>
 #include <Luch/Graphics/PipelineLayoutCreateInfo.h>
@@ -204,14 +206,14 @@ namespace Luch::Render::Deferred::ShadowMapping
             return nullptr;
         }
 
-        DepthStencilAttachment attachment = resources->depthStencilAttachmentTemplate;
-        attachment.output.texture = createdDepthBuffer;
+        FrameBufferCreateInfo frameBufferCreateInfo;
+        frameBufferCreateInfo.depthStencilTexture = createdDepthBuffer;
+        frameBufferCreateInfo.renderPass = resources->renderPass;
 
-        RenderPassCreateInfo renderPassCreateInfo;
-        renderPassCreateInfo
-            .WithDepthStencilAttachment(&attachment);
+        auto [createFrameBufferResult, frameBuffer] = context->device->CreateFrameBuffer(frameBufferCreateInfo);
+        LUCH_ASSERT(createFrameBufferResult == GraphicsResult::Success);
 
-        commandList->BeginRenderPass(renderPassCreateInfo);
+        commandList->BeginRenderPass(frameBuffer);
         commandList->BindPipelineState(resources->pipelineState);
 
         commandList->BindBufferDescriptorSet(
@@ -440,6 +442,24 @@ namespace Luch::Render::Deferred::ShadowMapping
     {
         UniquePtr<ShadowMappingPassResources> resources = MakeUnique<ShadowMappingPassResources>();
 
+        DepthStencilAttachment depthStencilAttachment;
+        depthStencilAttachment.format = options.shadowMapFormat;
+        depthStencilAttachment.depthClearValue = 1.0f;
+        depthStencilAttachment.depthLoadOperation = AttachmentLoadOperation::Clear;
+        depthStencilAttachment.depthStoreOperation = AttachmentStoreOperation::Store;
+
+        RenderPassCreateInfo renderPassCreateInfo;
+        renderPassCreateInfo.depthStencilAttachment = depthStencilAttachment;
+
+        auto[createRenderPassResult, createdRenderPass] = context->device->CreateRenderPass(renderPassCreateInfo);
+        if(createRenderPassResult != GraphicsResult::Success)
+        {
+            LUCH_ASSERT(false);
+            return { false };
+        }
+
+        resources->renderPass = std::move(createdRenderPass);
+
         DescriptorPoolCreateInfo descriptorPoolCreateInfo;
         // two sets per material, one set per mesh
         descriptorPoolCreateInfo.maxDescriptorSets = MaxDescriptorSetCount;
@@ -462,11 +482,6 @@ namespace Luch::Render::Deferred::ShadowMapping
 
         resources->cameraUniformBufferBinding.OfType(ResourceType::UniformBuffer);
         resources->meshUniformBufferBinding.OfType(ResourceType::UniformBuffer);
-
-        resources->depthStencilAttachmentTemplate.format = options.shadowMapFormat;
-        resources->depthStencilAttachmentTemplate.depthClearValue = 1.0f;
-        resources->depthStencilAttachmentTemplate.depthLoadOperation = AttachmentLoadOperation::Clear;
-        resources->depthStencilAttachmentTemplate.depthStoreOperation = AttachmentStoreOperation::Store;
 
         DescriptorSetLayoutCreateInfo cameraBufferSetLayoutCreateInfo;
         cameraBufferSetLayoutCreateInfo

@@ -10,6 +10,7 @@ namespace Luch::Metal
     class MetalCommandPool;
     class MetalDescriptorSet;
     class MetalGraphicsCommandList;
+    class MetalFrameBuffer;
     class MetalPipelineState;
     class MetalPipelineStateCreateInfo;
     class MetalPipelineLayout;

@@ -18,7 +18,7 @@ namespace Luch::Metal
         inline void Begin() override {};
         inline void End() override {};
 
-        void BeginRenderPass(const RenderPassCreateInfo& renderPassCreateInfo) override;
+        void BeginRenderPass(FrameBuffer* frameBuffer) override;
         void EndRenderPass() override;
 
         void BindPipelineState(PipelineState* pipelineState) override;
