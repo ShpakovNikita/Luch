@@ -14,6 +14,7 @@
 #include <Luch/Graphics/GraphicsDevice.h>
 #include <Luch/Graphics/CommandQueue.h>
 #include <Luch/Graphics/CommandPool.h>
+#include <Luch/Graphics/FrameBuffer.h>
 #include <Luch/Graphics/DescriptorPool.h>
 #include <Luch/Graphics/GraphicsCommandList.h>
 #include <Luch/Graphics/SamplerCreateInfo.h>
@@ -23,6 +24,7 @@
 #include <Luch/Graphics/PrimitiveTopology.h>
 #include <Luch/Graphics/DescriptorSetBinding.h>
 #include <Luch/Graphics/RenderPassCreateInfo.h>
+#include <Luch/Graphics/FrameBufferCreateInfo.h>
 #include <Luch/Graphics/DescriptorPoolCreateInfo.h>
 #include <Luch/Graphics/DescriptorSetLayoutCreateInfo.h>
 #include <Luch/Graphics/PipelineLayoutCreateInfo.h>
@@ -78,8 +80,12 @@ namespace Luch::Render::Deferred
         auto [allocateCmdListResult, cmdList] = resources->commandPool->AllocateGraphicsCommandList();
         LUCH_ASSERT(allocateCmdListResult == GraphicsResult::Success);
 
-        ColorAttachment colorAttachment = resources->colorAttachmentTemplate;
-        colorAttachment.output.texture = output;
+        FrameBufferCreateInfo frameBufferCreateInfo;
+        frameBufferCreateInfo.colorTextures[0] = output;
+        frameBufferCreateInfo.renderPass = resources->renderPass;
+
+        auto [createFrameBufferResult, frameBuffer] = context->device->CreateFrameBuffer(frameBufferCreateInfo);
+        LUCH_ASSERT(createFrameBufferResult == GraphicsResult::Success);
 
         int32 framebufferWidth = context->swapchain->GetInfo().width;
         int32 framebufferHeight = context->swapchain->GetInfo().height;
@@ -88,14 +94,8 @@ namespace Luch::Render::Deferred
             0, 0, static_cast<float32>(framebufferWidth), static_cast<float32>(framebufferHeight), 0.0f, 1.0f };
         IntRect scissorRect { {0, 0}, { framebufferWidth, framebufferHeight } };
 
-        RenderPassCreateInfo renderPassCreateInfo;
-        renderPassCreateInfo
-            .WithName(RendererName)
-            .WithNColorAttachments(1)
-            .AddColorAttachment(&colorAttachment);
-
         cmdList->Begin();
-        cmdList->BeginRenderPass(renderPassCreateInfo);
+        cmdList->BeginRenderPass(frameBuffer);
         cmdList->BindPipelineState(resources->pipelineState);
         cmdList->SetViewports({ viewport });
         cmdList->SetScissorRects({ scissorRect });
@@ -169,6 +169,24 @@ namespace Luch::Render::Deferred
         RenderContext* context)
     {
         UniquePtr<TonemapPassResources> tonemapResources = MakeUnique<TonemapPassResources>();
+
+        ColorAttachment colorAttachment;
+        colorAttachment.format = context->swapchain->GetInfo().format;
+        colorAttachment.colorLoadOperation = AttachmentLoadOperation::Clear;
+        colorAttachment.colorStoreOperation = AttachmentStoreOperation::Store;
+
+        RenderPassCreateInfo renderPassCreateInfo;
+        renderPassCreateInfo.name =  RendererName;
+        renderPassCreateInfo.colorAttachments[0] = colorAttachment;
+
+        auto[createRenderPassResult, createdRenderPass] = context->device->CreateRenderPass(renderPassCreateInfo);
+        if(createRenderPassResult != GraphicsResult::Success)
+        {
+            LUCH_ASSERT(false);
+            return { false };
+        }
+
+        tonemapResources->renderPass = std::move(createdRenderPass);
 
         DescriptorPoolCreateInfo descriptorPoolCreateInfo;
         descriptorPoolCreateInfo.maxDescriptorSets = 3;
@@ -324,10 +342,6 @@ namespace Luch::Render::Deferred
         }
 
         tonemapResources->pipelineLayout = std::move(createdPipelineLayout);
-
-        tonemapResources->colorAttachmentTemplate.format = context->swapchain->GetInfo().format;
-        tonemapResources->colorAttachmentTemplate.colorLoadOperation = AttachmentLoadOperation::Clear;
-        tonemapResources->colorAttachmentTemplate.colorStoreOperation = AttachmentStoreOperation::Store;
 
         BufferCreateInfo quadBufferCreateInfo;
         quadBufferCreateInfo.length = fullscreenQuadVertices.size() * sizeof(QuadVertex);

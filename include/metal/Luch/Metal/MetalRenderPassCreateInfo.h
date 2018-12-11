@@ -10,5 +10,5 @@ namespace Luch::Metal
 
     mtlpp::LoadAction ToMetalLoadAction(AttachmentLoadOperation loadOperation);
     mtlpp::StoreAction ToMetalStoreAction(AttachmentStoreOperation storeOperation);
-    mtlpp::RenderPassDescriptor ToMetalRenderPasDescriptor(const RenderPassCreateInfo& createInfo);
+    mtlpp::RenderPassDescriptor ToMetalRenderPassDescriptor(const FrameBufferCreateInfo& frameBufferCreateInfo);
 }

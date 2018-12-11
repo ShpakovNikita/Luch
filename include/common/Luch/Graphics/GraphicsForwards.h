@@ -14,6 +14,7 @@ namespace Luch::Graphics
     class DescriptorSetBinding;
     class DescriptorSetLayout;
     class DescriptorSetLayoutCreateInfo;
+    class FrameBuffer;
     class GraphicsCommandList;
     class GraphicsDevice;
     class GraphicsObject;
@@ -22,7 +23,6 @@ namespace Luch::Graphics
     class PipelineState;
     class Queue;
     class RenderPass;
-    class RenderPassCreateInfo;
     class Sampler;
     class ShaderLibrary;
     class ShaderProgram;
@@ -32,12 +32,14 @@ namespace Luch::Graphics
     class Texture;
 
     struct Attachment;
+    struct BufferCreateInfo;
     struct ColorAttachment;
     struct DepthStencilAttachment;
     struct DescriptorPoolCreateInfo;
-    struct BufferCreateInfo;
+    struct FrameBufferCreateInfo;
     struct PipelineLayoutCreateInfo;
     struct PipelineStateCreateInfo;
+    struct RenderPassCreateInfo;
     struct SamplerCreateInfo;
     struct SwapchainInfo;
     struct TextureCreateInfo;

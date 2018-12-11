@@ -24,6 +24,7 @@ namespace Luch::Render::Deferred::ShadowMapping
         DepthStencilAttachment depthStencilAttachmentTemplate;
 
         RefPtr<DescriptorPool> descriptorPool;
+        RefPtr<RenderPass> renderPass;
 
         RefPtr<DescriptorSetLayout> meshBufferSetLayout;
         RefPtr<DescriptorSetLayout> cameraBufferSetLayout;

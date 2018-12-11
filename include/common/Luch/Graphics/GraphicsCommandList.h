@@ -19,7 +19,7 @@ namespace Luch::Graphics
         virtual void Begin() = 0;
         virtual void End() = 0;
 
-        virtual void BeginRenderPass(const RenderPassCreateInfo& renderPassCreateInfo) = 0;
+        virtual void BeginRenderPass(FrameBuffer* framebuffer) = 0;
         virtual void EndRenderPass() = 0;
 
         virtual void BindPipelineState(PipelineState* pipelineState) = 0;

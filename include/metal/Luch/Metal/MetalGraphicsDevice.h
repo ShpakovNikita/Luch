@@ -35,6 +35,9 @@ namespace Luch::Metal
         GraphicsResultRefPtr<RenderPass> CreateRenderPass(
             const RenderPassCreateInfo& createInfo) override;
 
+        GraphicsResultRefPtr<FrameBuffer> CreateFrameBuffer(
+            const FrameBufferCreateInfo& createInfo) override;
+
         GraphicsResultRefPtr<PipelineState> CreatePipelineState(
             const PipelineStateCreateInfo& createInfo) override;
 

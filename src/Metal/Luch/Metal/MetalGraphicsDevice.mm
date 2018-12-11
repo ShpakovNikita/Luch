@@ -14,6 +14,8 @@
 #include <Luch/Metal/MetalSwapchain.h>
 #include <Luch/Metal/MetalSurface.h>
 #include <Luch/Metal/MetalError.h>
+#include <Luch/Metal/MetalFrameBuffer.h>
+#include <Luch/Metal/MetalRenderPassCreateInfo.h>
 #include <Luch/Metal/MetalPipelineStateCreateInfo.h>
 #include <Luch/Metal/MetalTextureCreateInfo.h>
 #include <Luch/Metal/MetalSamplerCreateInfo.h>
@@ -68,6 +70,13 @@ namespace Luch::Metal
         const RenderPassCreateInfo& createInfo)
     {
         return { GraphicsResult::Success, MakeRef<MetalRenderPass>(this, createInfo) };
+    }
+
+    GraphicsResultRefPtr<FrameBuffer> MetalGraphicsDevice::CreateFrameBuffer(
+        const FrameBufferCreateInfo& createInfo)
+    {
+        auto renderPassDescriptor = ToMetalRenderPassDescriptor(createInfo);
+        return { GraphicsResult::Success, MakeRef<MetalFrameBuffer>(this, renderPassDescriptor, createInfo) };
     }
 
     GraphicsResultRefPtr<PipelineLayout> MetalGraphicsDevice::CreatePipelineLayout(

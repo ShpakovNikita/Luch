@@ -5,6 +5,7 @@
 #include <Luch/Metal/MetalPipelineState.h>
 #include <Luch/Metal/MetalPipelineLayout.h>
 #include <Luch/Metal/MetalDescriptorSet.h>
+#include <Luch/Metal/MetalFrameBuffer.h>
 #include <Luch/Metal/MetalRenderPassCreateInfo.h>
 #include <Luch/Metal/MetalDescriptorSetLayout.h>
 #include <Luch/Metal/MetalBuffer.h>
@@ -68,10 +69,11 @@ namespace Luch::Metal
     {
     }
 
-    void MetalGraphicsCommandList::BeginRenderPass(const RenderPassCreateInfo& renderPassCreateInfo)
+    void MetalGraphicsCommandList::BeginRenderPass(FrameBuffer* frameBuffer)
     {
         LUCH_ASSERT(!commandEncoder);
-        auto renderPassDescriptor = ToMetalRenderPasDescriptor(renderPassCreateInfo);
+        auto mtlFrameBuffer = static_cast<MetalFrameBuffer*>(frameBuffer);
+        auto renderPassDescriptor = mtlFrameBuffer->GetRenderPassDescriptor();
         commandEncoder = commandBuffer.RenderCommandEncoder(renderPassDescriptor);
     }
 
