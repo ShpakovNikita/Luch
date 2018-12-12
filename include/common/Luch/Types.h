@@ -14,6 +14,7 @@
 #include <unordered_set>
 #include <variant>
 #include <vector>
+#include <stack>
 
 namespace Luch
 {
@@ -57,6 +58,12 @@ using Map = std::map<Key, Value>;
 
 template<typename Key, typename Value, typename Hash = std::hash<Key>, typename KeyEqual = std::equal_to<Key>>
 using UnorderedMap = std::unordered_map<Key, Value, Hash, KeyEqual>;
+
+template<typename Key, typename Value, typename Hash = std::hash<Key>, typename KeyEqual = std::equal_to<Key>>
+using UnorderedMultimap = std::unordered_multimap<Key, Value, Hash, KeyEqual>;
+
+template<typename T>
+using Stack = std::stack<T>;
 
 using Byte = std::byte;
 
