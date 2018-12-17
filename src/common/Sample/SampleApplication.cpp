@@ -27,6 +27,13 @@
     static_assert(false, "Vulkan is not ready");
 #endif
 
+#include <Luch/Graphics/PhysicalDevice.h>
+#include <Luch/Graphics/GraphicsDevice.h>
+#include <Luch/Graphics/Swapchain.h>
+#include <Luch/Graphics/SwapchainInfo.h>
+#include <Luch/Graphics/CommandQueue.h>
+#include <Luch/Render/SceneRenderer.h>
+
 using namespace Luch;
 using namespace Luch::Graphics;
 
@@ -113,16 +120,42 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     String filename{ "Sponza.gltf" };
 #endif
 
+    auto [createDeviceResult, createdDevice] = physicalDevice->CreateGraphicsDevice();
+    if(createDeviceResult != GraphicsResult::Success)
+    {
+        return false;
+    }
+
+    context->device = std::move(createdDevice);
+
+    auto [createCommandQueueResult, createdCommandQueue] = context->device->CreateCommandQueue();
+    if(createCommandQueueResult != GraphicsResult::Success)
+    {
+        return false;
+    }
+
+    context->commandQueue = std::move(createdCommandQueue);
+
+    SwapchainInfo swapchainInfo;
+    swapchainInfo.format = Format::B8G8R8A8Unorm_sRGB;
+    swapchainInfo.imageCount = 1;
+    swapchainInfo.width = width;
+    swapchainInfo.height = height;
+
+    auto [createSwapchainResult, createdSwapchain] = context->device->CreateSwapchain(swapchainInfo, surface);
+    if(createSwapchainResult != GraphicsResult::Success)
+    {
+        return false;
+    }
+
+    context->swapchain = std::move(createdSwapchain);
+
     FileStream fileStream{ rootDir + filename, FileOpenModes::Read };
 
     auto root = glTFparser.ParseJSON(&fileStream);
 
     SceneV1::Loader::glTFLoader loader{ rootDir, root };
     scene = loader.LoadScene(0);
-
-    deferredRenderer = MakeUnique<Render::Deferred::DeferredRenderer>(physicalDevice, surface, width, height);
-
-    deferredRenderer->Initialize();
 
     auto cameraIt = std::find_if(
         scene->GetNodes().begin(),
@@ -131,9 +164,6 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     LUCH_ASSERT(cameraIt != scene->GetNodes().end());
     camera = (*cameraIt)->GetCamera();
-
-    deferredRenderer->PrepareScene(scene);
-    deferredRenderer->UpdateScene(scene);
 
     return true;
 }
@@ -166,8 +196,14 @@ void SampleApplication::Run()
 void SampleApplication::Process()
 {
     scene->Update();
-    deferredRenderer->UpdateScene(scene);
-    deferredRenderer->DrawScene(scene, camera);
+
+    auto renderer = MakeUnique<Render::SceneRenderer>(context);
+
+    renderer->PrepareScene(scene);
+    renderer->UpdateScene(scene);
+    renderer->DrawScene(scene, camera);
+
+    context->commandQueue->Present(0, context->swapchain);
 }
 
 #ifdef _WIN32

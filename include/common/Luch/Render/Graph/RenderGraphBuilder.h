@@ -12,19 +12,19 @@ namespace Luch::Render::Graph
     {
         friend class RenderGraphNodeBuilder;
     public:
-        RenderGraphBuilder() = default;
+        RenderGraphBuilder();
+        ~RenderGraphBuilder();
 
-        bool Initialize(GraphicsDevice* device, CommandQueue* queue);
+        bool Initialize(GraphicsDevice* device, RefPtr<CommandPool> commandPool);
         bool Deinitialize();
 
         UniquePtr<RenderGraphNodeBuilder> AddRenderPass(String name, RenderGraphPass* pass);
         ResultValue<RenderGraphBuildResult, UniquePtr<RenderGraph>> Build();
     private:
         GraphicsDevice* device = nullptr;
-        CommandQueue* queue = nullptr;
+        RefPtr<CommandPool> commandPool;
 
         UniquePtr<RenderGraphResourceManager> resourceManager;
-        RefPtr<CommandPool> commandPool;
         Vector<RenderGraphNode> renderGraphNodes;
     };
 }

@@ -9,10 +9,8 @@ namespace Luch::Render
 
     struct RenderContext
     {
-        RefPtr<PhysicalDevice> physicalDevice;
         RefPtr<GraphicsDevice> device;
         RefPtr<CommandQueue> commandQueue;
-        RefPtr<Surface> surface;
         RefPtr<Swapchain> swapchain;
     };
 }

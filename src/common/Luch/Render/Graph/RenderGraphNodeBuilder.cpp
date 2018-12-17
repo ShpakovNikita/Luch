@@ -25,8 +25,9 @@ namespace Luch::Render::Graph
         auto node = GetNode();
         LUCH_ASSERT(!node->colorAttachments[index].has_value());
 
-        node->colorAttachments[index] = attachment;
         RenderMutableResource resource = resourceManager->ImportAttachment(texture);
+        node->colorAttachments[index] = attachment;
+        node->colorAttachmentResources[index] = resource;
 
         node->importedResources.push_back(resource);
 
@@ -39,8 +40,9 @@ namespace Luch::Render::Graph
 
         LUCH_ASSERT(!node->depthStencilAttachment.has_value());
 
-        node->depthStencilAttachment = attachment;
         RenderMutableResource resource = resourceManager->ImportAttachment(texture);
+        node->depthStencilAttachment = attachment;
+        node->depthStencilAttachmentResource = resource;
 
         node->importedResources.push_back(resource);
 
@@ -53,8 +55,9 @@ namespace Luch::Render::Graph
 
         LUCH_ASSERT(!node->colorAttachments[index].has_value());
 
-        node->colorAttachments[index] = attachment;
         RenderMutableResource resource = resourceManager->CreateAttachment(width, height, attachment.format);
+        node->colorAttachments[index] = attachment;
+        node->colorAttachmentResources[index] = resource;
 
         node->createdResources.push_back(resource);
 
@@ -67,8 +70,9 @@ namespace Luch::Render::Graph
 
         LUCH_ASSERT(!node->depthStencilAttachment.has_value());
 
-        node->depthStencilAttachment = attachment;
         RenderMutableResource resource = resourceManager->CreateAttachment(width, height, attachment.format);
+        node->depthStencilAttachment = attachment;
+        node->depthStencilAttachmentResource = resource;
 
         node->createdResources.push_back(resource);
 
@@ -81,8 +85,9 @@ namespace Luch::Render::Graph
 
         LUCH_ASSERT(!node->colorAttachments[index].has_value());
 
-        node->colorAttachments[index] = attachment;
         RenderMutableResource modifiedResource = resourceManager->ModifyResource(resource);
+        node->colorAttachments[index] = attachment;
+        node->colorAttachmentResources[index] = resource;
 
         node->writtenResources.push_back(modifiedResource);
 
@@ -95,8 +100,9 @@ namespace Luch::Render::Graph
 
         LUCH_ASSERT(!node->depthStencilAttachment.has_value());
 
-        node->depthStencilAttachment = attachment;
         RenderMutableResource modifiedResource = resourceManager->ModifyResource(resource);
+        node->depthStencilAttachment = attachment;
+        node->depthStencilAttachmentResource = resource;
 
         node->writtenResources.push_back(modifiedResource);
 

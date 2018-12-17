@@ -2,26 +2,22 @@
 #include <Luch/Render/Graph/RenderGraphResourceManager.h>
 #include <Luch/Render/Graph/RenderGraphNodeBuilder.h>
 #include <Luch/Render/Graph/TopologicalSort.h>
-#include <Luch/Graphics/CommandQueue.h>
+#include <Luch/Graphics/GraphicsDevice.h>
+#include <Luch/Graphics/RenderPassCreateInfo.h>
+#include <Luch/Graphics/FrameBufferCreateInfo.h>
 #include <Luch/Graphics/CommandPool.h>
 
 namespace Luch::Render::Graph
 {
     using namespace Graphics;
 
-    bool RenderGraphBuilder::Initialize(GraphicsDevice* aDevice, CommandQueue* aQueue)
+    RenderGraphBuilder::RenderGraphBuilder() = default;
+    RenderGraphBuilder::~RenderGraphBuilder() = default;
+
+    bool RenderGraphBuilder::Initialize(GraphicsDevice* aDevice, RefPtr<CommandPool> aCommandPool)
     {
         device = aDevice;
-        queue = aQueue;
-
-        auto [createCommandPoolResult, createdCommandPool] = queue->CreateCommandPool();
-        if(createCommandPoolResult != GraphicsResult::Success)
-        {
-            return false;
-        }
-
-        commandPool = std::move(createdCommandPool);
-
+        commandPool = commandPool;
         resourceManager = MakeUnique<RenderGraphResourceManager>(device);
 
         return true;
@@ -30,7 +26,6 @@ namespace Luch::Render::Graph
     bool RenderGraphBuilder::Deinitialize()
     {
         device = nullptr;
-        queue = nullptr;
         commandPool.Release();
         resourceManager.reset();
         return true;
@@ -105,8 +100,54 @@ namespace Luch::Render::Graph
             data.nodes.emplace_back(std::move(renderGraphNodes[index]));
         }
 
+        for(auto& node : data.nodes)
+        {
+            RenderPassCreateInfo renderPassCreateInfo;
+            renderPassCreateInfo.colorAttachments = node.colorAttachments;
+            renderPassCreateInfo.depthStencilAttachment = node.depthStencilAttachment;
+            renderPassCreateInfo.name = node.name;
+
+            auto [createRenderPassResult, createdRenderPass] = device->CreateRenderPass(renderPassCreateInfo);
+            if(createRenderPassResult != GraphicsResult::Success)
+            {
+                return { RenderGraphBuildResult::RenderPassCreationFailed };
+            }
+
+            node.renderPass = std::move(createdRenderPass);
+
+            FrameBufferCreateInfo frameBufferCreateInfo;
+            frameBufferCreateInfo.renderPass = node.renderPass;
+
+            for(int32 i = 0; i < node.colorAttachmentResources.size(); i++)
+            {
+                RenderMutableResource colorAttachmentResource = node.colorAttachmentResources[i];
+                if(colorAttachmentResource)
+                {
+                    const auto& colorTexture = resourceManager->GetTexture(colorAttachmentResource);
+                    LUCH_ASSERT(colorTexture != nullptr);
+                    frameBufferCreateInfo.colorTextures[i] = colorTexture;
+                }
+            }
+
+            RenderMutableResource depthStencilAttachmentResource = node.depthStencilAttachmentResource;
+            if(depthStencilAttachmentResource)
+            {
+                const auto& depthStencilTexture = resourceManager->GetTexture(depthStencilAttachmentResource);
+                LUCH_ASSERT(depthStencilTexture != nullptr);
+                frameBufferCreateInfo.depthStencilTexture = depthStencilTexture;
+            }
+
+            auto [createFrameBufferResult, createdFrameBuffer] = device->CreateFrameBuffer(frameBufferCreateInfo);
+            if(createFrameBufferResult != GraphicsResult::Success)
+            {
+                return { RenderGraphBuildResult::RenderPassCreationFailed };
+            }
+
+            node.frameBuffer = std::move(createdFrameBuffer);
+        }
+
         UniquePtr<RenderGraph> graph = MakeUnique<RenderGraph>(
-            device, queue, std::move(resourceManager), std::move(data));
+            commandPool, std::move(resourceManager), std::move(data));
 
         return { result, std::move(graph) };
     }

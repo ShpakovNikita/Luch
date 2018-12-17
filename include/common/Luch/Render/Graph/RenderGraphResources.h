@@ -31,6 +31,11 @@ namespace Luch::Render::Graph
         RenderMutableResource(const RenderMutableResource& other) = default;
         RenderMutableResource& operator=(const RenderMutableResource& other) = default;
 
+        operator bool()
+        {
+            return handle != 0;
+        }
+
         friend bool operator==(const RenderMutableResource& left, const RenderMutableResource& right)
         {
             return left.handle == right.handle;
@@ -62,6 +67,11 @@ namespace Luch::Render::Graph
         RenderResource(const RenderResource& other) = default;
         RenderResource& operator=(const RenderResource& other) = default;
         RenderResource(RenderMutableResource mutableResource) noexcept;
+
+        operator bool()
+        {
+            return handle != 0;
+        }
 
         friend bool operator==(const RenderResource& left, const RenderResource& right)
         {

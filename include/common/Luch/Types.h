@@ -73,6 +73,9 @@ using Limits = std::numeric_limits<T>;
 template<typename T>
 using Optional = std::optional<T>;
 
+template<typename T1, typename T2>
+using Pair = std::pair<T1, T2>;
+
 template<typename ... Args>
 using Tuple = std::tuple<Args...>;
 

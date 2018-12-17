@@ -11,6 +11,7 @@ namespace Luch::Render::Graph
         Success,
         UnusedResources,
         ResourceCreationFailed,
+        RenderPassCreationFailed,
         CyclicDependency,
     };
 
@@ -25,11 +26,15 @@ namespace Luch::Render::Graph
     {
     public:
         RenderGraph(
-            GraphicsDevice* device,
-            CommandQueue* queue,
+            CommandPool* commandPool,
             UniquePtr<RenderGraphResourceManager> resourceManager,
             RenderGraphData graphData);
+        ~RenderGraph();
+        
+        RefPtrVector<GraphicsCommandList> Execute();
     private:
+        CommandPool* commandPool = nullptr;
+        UniquePtr<RenderGraphResourceManager> resourceManager;
         RenderGraphData graphData;
     };
 }
