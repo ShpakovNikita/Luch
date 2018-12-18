@@ -89,7 +89,7 @@ private:
     VulkanAllocator allocator;
 #endif
 
-    Luch::RefPtr<Luch::Render::RenderContext> context;
+    Luch::SharedPtr<Luch::Render::RenderContext> context;
     Luch::RefPtr<Luch::SceneV1::Scene> scene;
     Luch::RefPtr<Luch::SceneV1::Camera> camera;
 };

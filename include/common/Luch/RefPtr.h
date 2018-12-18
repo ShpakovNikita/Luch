@@ -152,6 +152,8 @@ namespace Luch
             {
                 reinterpret_cast<BaseObject*>(ptr)->RemoveReference();
             }
+
+            ptr = nullptr;
         }
 
         explicit operator T*() noexcept

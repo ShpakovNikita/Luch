@@ -667,7 +667,7 @@ namespace Luch::Render::Deferred
         return createdPipeline;
     }
 
-    ResultValue<bool, UniquePtr<GBufferPassResources>> GBufferRenderPass::PrepareGBufferPassResources()
+    ResultValue<bool, UniquePtr<GBufferPassResources>> GBufferRenderPass::PrepareGBufferPassResources(RenderContext* context)
     {
         UniquePtr<GBufferPassResources> gbufferResources = MakeUnique<GBufferPassResources>();
 
@@ -701,8 +701,11 @@ namespace Luch::Render::Deferred
 
         gbufferResources->descriptorPool = std::move(createdDescriptorPool);
 
-        gbufferResources->materialUniformBufferBinding.OfType(ResourceType::UniformBuffer);
+        gbufferResources->cameraUniformBufferBinding.OfType(ResourceType::UniformBuffer);
+
         gbufferResources->meshUniformBufferBinding.OfType(ResourceType::UniformBuffer);
+
+        gbufferResources->materialUniformBufferBinding.OfType(ResourceType::UniformBuffer);
 
         gbufferResources->baseColorTextureBinding.OfType(ResourceType::Texture);
         gbufferResources->baseColorSamplerBinding.OfType(ResourceType::Sampler);
@@ -718,6 +721,11 @@ namespace Luch::Render::Deferred
 
         gbufferResources->emissiveTextureBinding.OfType(ResourceType::Texture);
         gbufferResources->emissiveSamplerBinding.OfType(ResourceType::Sampler);
+
+        DescriptorSetLayoutCreateInfo cameraDescriptorSetLayoutCreateInfo;
+        cameraDescriptorSetLayoutCreateInfo
+            .OfType(DescriptorSetType::Buffer)
+            .AddBinding(&gbufferResources->cameraUniformBufferBinding);
 
         DescriptorSetLayoutCreateInfo meshDescriptorSetLayoutCreateInfo;
         meshDescriptorSetLayoutCreateInfo
@@ -748,6 +756,17 @@ namespace Luch::Render::Deferred
             .AddBinding(&gbufferResources->normalSamplerBinding)
             .AddBinding(&gbufferResources->occlusionSamplerBinding)
             .AddBinding(&gbufferResources->emissiveSamplerBinding);
+
+        auto[createCameraDescriptorSetLayoutResult, createdCameraDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(
+            cameraDescriptorSetLayoutCreateInfo);
+
+        if (createCameraDescriptorSetLayoutResult != GraphicsResult::Success)
+        {
+            LUCH_ASSERT(false);
+            return { false };
+        }
+
+        gbufferResources->cameeraBufferDescriptorSetLayout = std::move(createdCameraDescriptorSetLayout);
 
         auto[createMeshDescriptorSetLayoutResult, createdMeshDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(
             meshDescriptorSetLayoutCreateInfo);
@@ -795,7 +814,7 @@ namespace Luch::Render::Deferred
 
         PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
         pipelineLayoutCreateInfo
-            .AddSetLayout(ShaderStage::Vertex, commonResources->cameraBufferDescriptorSetLayout)
+            .AddSetLayout(ShaderStage::Vertex, gbufferResources->cameraBufferDescriptorSetLayout)
             .AddSetLayout(ShaderStage::Vertex, gbufferResources->meshBufferDescriptorSetLayout)
             .AddSetLayout(ShaderStage::Fragment, gbufferResources->materialTextureDescriptorSetLayout)
             .AddSetLayout(ShaderStage::Fragment, gbufferResources->materialBufferDescriptorSetLayout)
@@ -827,76 +846,5 @@ namespace Luch::Render::Deferred
         gbufferResources->sharedBuffer = MakeUnique<SharedBuffer>(std::move(createdBuffer));
 
         return { true, std::move(gbufferResources) };
-    }
-
-    ResultValue<bool, UniquePtr<GBufferTextures>> GBufferRenderPass::CreateGBufferTextures()
-    {
-        UniquePtr<GBufferTextures> textures = MakeUnique<GBufferTextures>();
-
-        const auto& swapchainCreateInfo = context->swapchain->GetInfo();
-        int32 textureWidth = swapchainCreateInfo.width;
-        int32 textureHeight = swapchainCreateInfo.height;
-
-        TextureCreateInfo baseColorTextureCreateInfo;
-        baseColorTextureCreateInfo.format = baseColorFormat;
-        baseColorTextureCreateInfo.width = textureWidth;
-        baseColorTextureCreateInfo.height = textureHeight;
-        baseColorTextureCreateInfo.usage =
-              TextureUsageFlags::ColorAttachment
-            | TextureUsageFlags::ShaderRead
-            | TextureUsageFlags::TransferSource;
-
-        auto[createBaseColorTextureResult, createdBaseColorTexture] = context->device->CreateTexture(
-            baseColorTextureCreateInfo);
-
-        if (createBaseColorTextureResult != GraphicsResult::Success)
-        {
-            return { false };
-        }
-
-        textures->baseColorTexture = std::move(createdBaseColorTexture);
-
-        // Normal map
-
-        TextureCreateInfo normalMapCreateInfo;
-        normalMapCreateInfo.format = normalMapFormat;
-        normalMapCreateInfo.width = textureWidth;
-        normalMapCreateInfo.height = textureHeight;
-        normalMapCreateInfo.usage =
-              TextureUsageFlags::ColorAttachment
-            | TextureUsageFlags::ShaderRead
-            | TextureUsageFlags::TransferSource;
-
-
-        auto[createNormapMapTextureResult, createdNormapMapTexture] = context->device->CreateTexture(
-            normalMapCreateInfo);
-
-        if (createNormapMapTextureResult != GraphicsResult::Success)
-        {
-            return { false };
-        }
-
-        textures->normalMapTexture = std::move(createdNormapMapTexture);
-
-        TextureCreateInfo depthBufferCreateInfo;
-        depthBufferCreateInfo.format = depthStencilFormat;
-        depthBufferCreateInfo.width = textureWidth;
-        depthBufferCreateInfo.height = textureHeight;
-        depthBufferCreateInfo.usage =
-              TextureUsageFlags::DepthStencilAttachment
-            | TextureUsageFlags::ShaderRead
-            | TextureUsageFlags::TransferSource;
-
-        auto[createDepthStencilBufferResult, createdDepthStencilBuffer] = context->device->CreateTexture(
-            depthBufferCreateInfo);
-
-        if (createDepthStencilBufferResult != GraphicsResult::Success)
-        {
-            return { false };
-        }
-
-        textures->depthStencilBuffer = std::move(createdDepthStencilBuffer);
-
-        return { true, std::move(textures) };
     }
 }

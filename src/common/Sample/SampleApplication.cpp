@@ -120,6 +120,8 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     String filename{ "Sponza.gltf" };
 #endif
 
+    context = MakeShared<Render::RenderContext>();
+
     auto [createDeviceResult, createdDevice] = physicalDevice->CreateGraphicsDevice();
     if(createDeviceResult != GraphicsResult::Success)
     {

@@ -33,6 +33,8 @@ namespace Luch::Render::Deferred
         static constexpr int32 OffscreenImageCount = 3;
         static const String RenderPassName;
 
+        static ResultValue<bool, UniquePtr<GBufferPassResources>> PrepareGBufferPassResources(RenderContext* context);
+
         GBufferRenderPass(
             int32 width,
             int32 height,
@@ -49,6 +51,8 @@ namespace Luch::Render::Deferred
 
         SceneV1::Scene* GetScene() { return scene; }
         void SetScene(SceneV1::Scene* aScene) { scene = aScene; }
+
+        void SetResources(GBufferPassResources* aResources) { resources = aResources; }
 
         void ExecuteRenderPass(
             RenderGraphResourceManager* manager,
@@ -73,17 +77,11 @@ namespace Luch::Render::Deferred
 
         RefPtr<PipelineState> CreateGBufferPipelineState(SceneV1::Primitive* primitive);
 
-        ResultValue<bool, UniquePtr<GBufferPassResources>> PrepareGBufferPassResources();
-        ResultValue<bool, UniquePtr<GBufferTextures>> CreateGBufferTextures();
-
         SharedPtr<RenderContext> context;
+        GBufferPassResources* resources;
 
         SceneV1::Scene* scene;
         SceneV1::Camera* camera;
-
-        SharedPtr<DeferredResources> commonResources;
-        UniquePtr<GBufferPassResources> resources;
-        UniquePtr<GBufferTextures> gbuffer;
 
         Format baseColorFormat = Format::R8G8B8A8Unorm;
         Format normalMapFormat = Format::R32G32B32A32Sfloat;

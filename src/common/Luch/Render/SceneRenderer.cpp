@@ -20,11 +20,16 @@
 #include <Luch/Graphics/Swapchain.h>
 #include <Luch/Graphics/SwapchainInfo.h>
 
+#include <Luch/Render/Deferred/GBufferRenderPass.h>
+#include <Luch/Render/Deferred/GBufferPassResources.h>
 #include <Luch/Render/Graph/RenderGraph.h>
+#include <Luch/Render/Graph/RenderGraphBuilder.h>
 
 namespace Luch::Render
 {
     using namespace Graphics;
+    using namespace Deferred;
+    using namespace Graph;
 
     SceneRenderer::SceneRenderer(
         SharedPtr<RenderContext> aContext)
@@ -34,23 +39,50 @@ namespace Luch::Render
 
     SceneRenderer::~SceneRenderer() = default;
 
-    void SceneRenderer::PrepareScene(SceneV1::Scene* scene)
+    bool SceneRenderer::Initialize()
     {
         auto [createCommandPoolResult, createdCommandPool] = context->commandQueue->CreateCommandPool();
-        LUCH_ASSERT(createCommandPoolResult == GraphicsResult::Success);
+        if(createCommandPoolResult != GraphicsResult::Success)
+        {
+            return false;
+        }
 
         commandPool = std::move(createdCommandPool);
 
-        auto builderInitialized = builder.Initialize(context->device, commandPool);
+        auto [createGBufferPassResourcesResult, createdGBufferPassResources] = GBufferRenderPass::PrepareGBufferPassResources(context);
+        if(!createGBufferPassResourcesResult)
+        {
+            return false;
+        }
+
+        gbufferPassResources = std::move(createdGBufferPassResources);
+    }
+
+    bool SceneRenderer::Deinitialize()
+    {
+        commandPool.Release();
+        gbufferPassResources.reset();
+        return true;
+    }
+
+    void SceneRenderer::BeginRender()
+    {
+        builder = MakeUnique<RenderGraphBuilder>();
+        auto builderInitialized = builder->Initialize(context->device, commandPool);
         LUCH_ASSERT(builderInitialized);
 
-        auto swapchainInfo = context->swapchain->GetInfo();
-
-        gbufferPass = MakeUnique<Deferred::GBufferRenderPass>(
+        gbufferPass = MakeUnique<GBufferRenderPass>(
             swapchainInfo.width,
             swapchainInfo.height,
             context,
             &builder);
+
+        gbufferPass->SetResources(gbufferPassResources.get());
+    }
+
+    void SceneRenderer::PrepareScene(SceneV1::Scene* scene)
+    {
+        auto swapchainInfo = context->swapchain->GetInfo();
 
         gbufferPass->SetScene(scene);
 
@@ -72,5 +104,11 @@ namespace Luch::Render
         {
             context->commandQueue->Submit(commandList);
         }
+    }
+
+    void SceneRenderer::EndRender()
+    {
+        builder.reset();
+        gbufferPass.reset();
     }
 }

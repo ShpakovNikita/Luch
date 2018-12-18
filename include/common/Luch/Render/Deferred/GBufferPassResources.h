@@ -17,6 +17,9 @@ namespace Luch::Render::Deferred
         RefPtr<PipelineLayout> pipelineLayout;
         RefPtr<DescriptorPool> descriptorPool;
 
+        // Camera bindings
+        DescriptorSetBinding cameraUniformBufferBinding;
+
         // Mesh bindings
         DescriptorSetBinding meshUniformBufferBinding;
 
@@ -33,6 +36,7 @@ namespace Luch::Render::Deferred
         DescriptorSetBinding emissiveTextureBinding;
         DescriptorSetBinding emissiveSamplerBinding;
 
+        RefPtr<DescriptorSetLayout> cameraBufferDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> meshBufferDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> materialTextureDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> materialBufferDescriptorSetLayout;
