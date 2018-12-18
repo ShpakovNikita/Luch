@@ -14,49 +14,47 @@
 #include <Luch/Render/Common.h>
 #include <Luch/Render/ShaderDefines.h>
 #include <Luch/Render/RenderForwards.h>
-#include <Luch/Render/Deferred/DeferredForwards.h>
 #include <Luch/Render/Deferred/ResolvePassResources.h>
+#include <Luch/Render/Graph/RenderGraphForwards.h>
+#include <Luch/Render/Graph/RenderGraphPass.h>
 
 namespace Luch::Render::Deferred
 {
     using namespace Graphics;
+    using namespace Graph;
 
-    class ResolveRenderer
+    class ResolveRenderPass : public RenderGraphPass
     {
     public:
         static constexpr int32 SharedUniformBufferSize = 16 * 1024 * 1024;
         static constexpr int32 MaxDescriptorSetCount = 4096;
         static constexpr int32 MaxDescriptorCount = 4096;
         static constexpr int32 OffscreenImageCount = 3;
-        static const String RendererName;
+        static const String RenderPassName;
 
-        ResolveRenderer();
-        ~ResolveRenderer();
+        ResolveRenderPass(RenderGraphBuilder* builder);
+        ~ResolveRenderPass();
 
         const SharedPtr<RenderContext>& GetRenderContext() { return context; }
         void SetRenderContext(const SharedPtr<RenderContext>& aContext) { context = aContext; }
-
-        const SharedPtr<DeferredResources>& GetDeferredResources() { return commonResources; }
-        void SetDeferredResources(const SharedPtr<DeferredResources>& aResources) { commonResources = aResources; }
 
         bool Initialize();
         bool Deinitialize();
 
         void PrepareScene(SceneV1::Scene* scene);
         void UpdateScene(SceneV1::Scene* scene);
-        Texture* Resolve(SceneV1::Scene* scene, SceneV1::Camera* camera, GBufferTextures* gbuffer);
+
+        void ExecuteRenderPass(
+            RenderGraphResourceManager* manager,
+            FrameBuffer* frameBuffer, 
+            GraphicsCommandList* commandList) override;
     private:
         void UpdateLights(const RefPtrVector<SceneV1::Node>& lightNodes);
 
         RefPtr<PipelineState> CreateResolvePipelineState(ResolvePassResources* lighting);
-        ResultValue<bool, UniquePtr<ResolvePassResources>> PrepareResolvePassResources();
-        ResultValue<bool, RefPtr<Texture>> CreateResolveTexture();
+        static ResultValue<bool, UniquePtr<ResolvePassResources>> PrepareResolvePassResources(RenderContext* context);
 
         SharedPtr<RenderContext> context;
-        SharedPtr<DeferredResources> commonResources;
-        UniquePtr<ResolvePassResources> resources;
-        RefPtr<Texture> resolveTexture;
-
-        Format colorFormat = Format::R32G32B32A32Sfloat;
+        ResolvePassResources* resources;
     };
 }

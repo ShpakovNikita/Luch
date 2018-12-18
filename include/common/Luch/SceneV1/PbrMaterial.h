@@ -97,40 +97,37 @@ namespace Luch::SceneV1
         void SetOcclusionTexture(const RefPtr<Texture>& texture);
         void SetEmissiveTexture(const RefPtr<Texture>& texture);
 
-        inline const RefPtr<Graphics::DescriptorSet>& GetTextureDescriptorSet(const String& key)
+        inline const RefPtr<Graphics::DescriptorSet>& GetTextureDescriptorSet()
         {
-            return textureDescriptorSets[key];
+            return textureDescriptorSet;
         }
 
-        inline const RefPtr<Graphics::DescriptorSet>& GetBufferDescriptorSet(const String& key)
+        inline const RefPtr<Graphics::DescriptorSet>& GetBufferDescriptorSet()
         {
-            return bufferDescriptorSets[key];
+            return bufferDescriptorSet;
         }
 
-        inline const RefPtr<Graphics::DescriptorSet>& GetSamplerDescriptorSet(const String& key)
+        inline const RefPtr<Graphics::DescriptorSet>& GetSamplerDescriptorSet()
         {
-            return samplerDescriptorSets[key];
+            return samplerDescriptorSet;
         }
 
         inline void SetTextureDescriptorSet(
-            const String& key,
-            const RefPtr<Graphics::DescriptorSet>& textureDescriptorSet)
+            const RefPtr<Graphics::DescriptorSet>& aTextureDescriptorSet)
         {
-            textureDescriptorSets[key] = textureDescriptorSet;
+            textureDescriptorSet = aTextureDescriptorSet;
         }
 
         inline void SetBufferDescriptorSet(
-            const String& key,
-            const RefPtr<Graphics::DescriptorSet>& bufferDescriptorSet)
+            const RefPtr<Graphics::DescriptorSet>& aBufferDescriptorSet)
         {
-            bufferDescriptorSets[key] = bufferDescriptorSet;
+            bufferDescriptorSet = aBufferDescriptorSet;
         }
 
         inline void SetSamplerDescriptorSet(
-            const String& key,
-            const RefPtr<Graphics::DescriptorSet>& samplerDescriptorSet)
+            const RefPtr<Graphics::DescriptorSet>& aSamplerDescriptorSet)
         {
-            samplerDescriptorSets[key] = samplerDescriptorSet;
+            samplerDescriptorSet = aSamplerDescriptorSet;
         }
     private:
         PbrMaterialDirtyFlags dirtyFlags = PbrMaterialDirtyFlags::All;
@@ -143,8 +140,8 @@ namespace Luch::SceneV1
         RefPtr<Texture> occlusionTexture;
         RefPtr<Texture> emissiveTexture;
 
-        mutable UnorderedMap<String, RefPtr<Graphics::DescriptorSet>> textureDescriptorSets;
-        mutable UnorderedMap<String, RefPtr<Graphics::DescriptorSet>> bufferDescriptorSets;
-        mutable UnorderedMap<String, RefPtr<Graphics::DescriptorSet>> samplerDescriptorSets;
+        RefPtr<Graphics::DescriptorSet> textureDescriptorSet;
+        RefPtr<Graphics::DescriptorSet> bufferDescriptorSet;
+        RefPtr<Graphics::DescriptorSet> samplerDescriptorSet;
     };
 }

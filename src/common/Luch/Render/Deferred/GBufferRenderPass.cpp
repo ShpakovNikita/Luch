@@ -1,9 +1,9 @@
 #include <Luch/Render/Deferred/GBufferRenderPass.h>
 #include <Luch/Render/TextureUploader.h>
 #include <Luch/Render/ShaderDefines.h>
+#include <Luch/Render/MaterialManager.h>
 #include <Luch/Render/Deferred/DeferredShaderDefines.h>
 #include <Luch/Render/Deferred/GBufferPassResources.h>
-#include <Luch/Render/Deferred/DeferredResources.h>
 
 #include <Luch/SceneV1/Scene.h>
 #include <Luch/SceneV1/Node.h>
@@ -46,9 +46,8 @@
 #include <Luch/Render/RenderUtils.h>
 #include <Luch/Render/SharedBuffer.h>
 #include <Luch/Render/Deferred/GBufferPassResources.h>
-#include <Luch/Render/Deferred/GBufferTextures.h>
-#include <Luch/Render/Graph/RenderGraphBuilder.h>
 #include <Luch/Render/Graph/RenderGraphNode.h>
+#include <Luch/Render/Graph/RenderGraphBuilder.h>
 #include <Luch/Render/Graph/RenderGraphNodeBuilder.h>
 
 namespace Luch::Render::Deferred
@@ -176,11 +175,6 @@ namespace Luch::Render::Deferred
                 PrepareMeshNode(node);
             }
         }
-
-        for (const auto& material : sceneProperties.materials)
-        {
-            PrepareMaterial(material);
-        }
     }
 
     void GBufferRenderPass::UpdateScene(SceneV1::Scene* scene)
@@ -199,11 +193,11 @@ namespace Luch::Render::Deferred
         GraphicsCommandList* commandList)
     {
         Viewport viewport;
-        viewport.width = width;
-        viewport.height = height;
+        viewport.width = static_cast<float32>(width);
+        viewport.height = static_cast<float32>(height);
 
-        FloatRect scissorRect;
-        scissorRect.size = { widtdh, height };
+        IntRect scissorRect;
+        scissorRect.size = { width, height };
 
         commandList->Begin();
         commandList->BeginRenderPass(frameBuffer);
@@ -268,27 +262,6 @@ namespace Luch::Render::Deferred
         mesh->SetBufferDescriptorSet(RenderPassName, allocatedDescriptorSet);
     }
 
-    void GBufferRenderPass::PrepareMaterial(SceneV1::PbrMaterial* material)
-    {
-        auto[allocateTextureDescriptorSetResult, textureDescriptorSet] = resources->descriptorPool->AllocateDescriptorSet(
-            resources->materialTextureDescriptorSetLayout);
-        LUCH_ASSERT(allocateTextureDescriptorSetResult == GraphicsResult::Success);
-
-        auto[allocateBufferDescriptorSetResult, bufferDescriptorSet] = resources->descriptorPool->AllocateDescriptorSet(
-            resources->materialBufferDescriptorSetLayout);
-        LUCH_ASSERT(allocateBufferDescriptorSetResult == GraphicsResult::Success);
-
-        auto[allocateSamplerDescriptorSetResult, samplerDescriptorSet] = resources->descriptorPool->AllocateDescriptorSet(
-            resources->materialSamplerDescriptorSetLayout);
-        LUCH_ASSERT(allocateSamplerDescriptorSetResult == GraphicsResult::Success);
-
-        material->SetTextureDescriptorSet(RenderPassName, textureDescriptorSet);
-        material->SetBufferDescriptorSet(RenderPassName, bufferDescriptorSet);
-        material->SetSamplerDescriptorSet(RenderPassName, samplerDescriptorSet);
-
-        UpdateMaterial(material);
-    }
-
     void GBufferRenderPass::UpdateNode(SceneV1::Node* node)
     {
         const auto& mesh = node->GetMesh();
@@ -323,84 +296,6 @@ namespace Luch::Render::Deferred
             suballocation.offset);
 
         descriptorSet->Update();
-    }
-
-    void GBufferRenderPass::UpdateMaterial(SceneV1::PbrMaterial* material)
-    {
-        auto textureDescriptorSet = material->GetTextureDescriptorSet(RenderPassName);
-        auto samplerDescriptorSet = material->GetSamplerDescriptorSet(RenderPassName);
-        auto bufferDescriptorSet = material->GetBufferDescriptorSet(RenderPassName);
-
-        if (material->HasBaseColorTexture())
-        {
-            textureDescriptorSet->WriteTexture(
-                resources->baseColorTextureBinding,
-                material->GetBaseColorTexture()->GetDeviceTexture());
-
-            samplerDescriptorSet->WriteSampler(
-                resources->baseColorSamplerBinding,
-                material->GetBaseColorTexture()->GetDeviceSampler());
-        }
-
-        if (material->HasMetallicRoughnessTexture())
-        {
-            textureDescriptorSet->WriteTexture(
-                resources->metallicRoughnessTextureBinding,
-                material->GetMetallicRoughnessTexture()->GetDeviceTexture());
-
-            samplerDescriptorSet->WriteSampler(
-                resources->metallicRoughnessSamplerBinding,
-                material->GetMetallicRoughnessTexture()->GetDeviceSampler());
-        }
-
-        if (material->HasNormalTexture())
-        {
-            textureDescriptorSet->WriteTexture(
-                resources->normalTextureBinding,
-                material->GetNormalTexture()->GetDeviceTexture());
-
-            samplerDescriptorSet->WriteSampler(
-                resources->normalSamplerBinding,
-                material->GetNormalTexture()->GetDeviceSampler());
-        }
-
-        if (material->HasOcclusionTexture())
-        {
-            textureDescriptorSet->WriteTexture(
-                resources->occlusionTextureBinding,
-                material->GetOcclusionTexture()->GetDeviceTexture());
-
-            samplerDescriptorSet->WriteSampler(
-                resources->occlusionSamplerBinding,
-                material->GetOcclusionTexture()->GetDeviceSampler());
-        }
-
-        if (material->HasEmissiveTexture())
-        {
-            textureDescriptorSet->WriteTexture(
-                resources->emissiveTextureBinding,
-                material->GetEmissiveTexture()->GetDeviceTexture());
-
-            samplerDescriptorSet->WriteSampler(
-                resources->emissiveSamplerBinding,
-                material->GetEmissiveTexture()->GetDeviceSampler());
-        }
-
-        MaterialUniform materialUniform = RenderUtils::GetMaterialUniform(material);
-
-        // TODO
-        auto suballocation = resources->sharedBuffer->Suballocate(sizeof(MaterialUniform), 16);
-
-        bufferDescriptorSet->WriteUniformBuffer(
-            resources->materialUniformBufferBinding,
-            suballocation.buffer,
-            suballocation.offset);
-
-        memcpy(suballocation.offsetMemory, &materialUniform, sizeof(MaterialUniform));
-
-        textureDescriptorSet->Update();
-        samplerDescriptorSet->Update();
-        bufferDescriptorSet->Update();
     }
 
     void GBufferRenderPass::DrawNode(SceneV1::Node* node, GraphicsCommandList* commandList)
@@ -451,17 +346,17 @@ namespace Luch::Render::Deferred
         commandList->BindTextureDescriptorSet(
             ShaderStage::Fragment,
             resources->pipelineLayout,
-            material->GetTextureDescriptorSet(RenderPassName));
+            material->GetTextureDescriptorSet());
 
         commandList->BindBufferDescriptorSet(
             ShaderStage::Fragment,
             resources->pipelineLayout,
-            material->GetBufferDescriptorSet(RenderPassName));
+            material->GetBufferDescriptorSet());
 
         commandList->BindSamplerDescriptorSet(
             ShaderStage::Fragment,
             resources->pipelineLayout,
-            material->GetSamplerDescriptorSet(RenderPassName));
+            material->GetSamplerDescriptorSet());
     }
 
     void GBufferRenderPass::DrawPrimitive(SceneV1::Primitive* primitive, GraphicsCommandList* commandList)
@@ -667,7 +562,9 @@ namespace Luch::Render::Deferred
         return createdPipeline;
     }
 
-    ResultValue<bool, UniquePtr<GBufferPassResources>> GBufferRenderPass::PrepareGBufferPassResources(RenderContext* context)
+    ResultValue<bool, UniquePtr<GBufferPassResources>> GBufferRenderPass::PrepareGBufferPassResources(
+        RenderContext* context,
+        MaterialResources* materialResources)
     {
         UniquePtr<GBufferPassResources> gbufferResources = MakeUnique<GBufferPassResources>();
 
@@ -705,23 +602,6 @@ namespace Luch::Render::Deferred
 
         gbufferResources->meshUniformBufferBinding.OfType(ResourceType::UniformBuffer);
 
-        gbufferResources->materialUniformBufferBinding.OfType(ResourceType::UniformBuffer);
-
-        gbufferResources->baseColorTextureBinding.OfType(ResourceType::Texture);
-        gbufferResources->baseColorSamplerBinding.OfType(ResourceType::Sampler);
-
-        gbufferResources->metallicRoughnessTextureBinding.OfType(ResourceType::Texture);
-        gbufferResources->metallicRoughnessSamplerBinding.OfType(ResourceType::Sampler);
-
-        gbufferResources->normalTextureBinding.OfType(ResourceType::Texture);
-        gbufferResources->normalSamplerBinding.OfType(ResourceType::Sampler);
-
-        gbufferResources->occlusionTextureBinding.OfType(ResourceType::Texture);
-        gbufferResources->occlusionSamplerBinding.OfType(ResourceType::Sampler);
-
-        gbufferResources->emissiveTextureBinding.OfType(ResourceType::Texture);
-        gbufferResources->emissiveSamplerBinding.OfType(ResourceType::Sampler);
-
         DescriptorSetLayoutCreateInfo cameraDescriptorSetLayoutCreateInfo;
         cameraDescriptorSetLayoutCreateInfo
             .OfType(DescriptorSetType::Buffer)
@@ -732,31 +612,6 @@ namespace Luch::Render::Deferred
             .OfType(DescriptorSetType::Buffer)
             .AddBinding(&gbufferResources->meshUniformBufferBinding);
 
-        DescriptorSetLayoutCreateInfo materialBufferDescriptorSetLayoutCreateInfo;
-        materialBufferDescriptorSetLayoutCreateInfo
-            .OfType(DescriptorSetType::Buffer)
-            .AddBinding(&gbufferResources->materialUniformBufferBinding);
-
-        DescriptorSetLayoutCreateInfo materialTextureDescriptorSetLayoutCreateInfo;
-        materialTextureDescriptorSetLayoutCreateInfo
-            .OfType(DescriptorSetType::Texture)
-            .WithNBindings(5)
-            .AddBinding(&gbufferResources->baseColorTextureBinding)
-            .AddBinding(&gbufferResources->metallicRoughnessTextureBinding)
-            .AddBinding(&gbufferResources->normalTextureBinding)
-            .AddBinding(&gbufferResources->occlusionTextureBinding)
-            .AddBinding(&gbufferResources->emissiveTextureBinding);
-
-        DescriptorSetLayoutCreateInfo materialSamplerDescriptorSetLayoutCreateInfo;
-        materialSamplerDescriptorSetLayoutCreateInfo
-            .OfType(DescriptorSetType::Sampler)
-            .WithNBindings(5)
-            .AddBinding(&gbufferResources->baseColorSamplerBinding)
-            .AddBinding(&gbufferResources->metallicRoughnessSamplerBinding)
-            .AddBinding(&gbufferResources->normalSamplerBinding)
-            .AddBinding(&gbufferResources->occlusionSamplerBinding)
-            .AddBinding(&gbufferResources->emissiveSamplerBinding);
-
         auto[createCameraDescriptorSetLayoutResult, createdCameraDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(
             cameraDescriptorSetLayoutCreateInfo);
 
@@ -766,7 +621,7 @@ namespace Luch::Render::Deferred
             return { false };
         }
 
-        gbufferResources->cameeraBufferDescriptorSetLayout = std::move(createdCameraDescriptorSetLayout);
+        gbufferResources->cameraBufferDescriptorSetLayout = std::move(createdCameraDescriptorSetLayout);
 
         auto[createMeshDescriptorSetLayoutResult, createdMeshDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(
             meshDescriptorSetLayoutCreateInfo);
@@ -779,46 +634,14 @@ namespace Luch::Render::Deferred
 
         gbufferResources->meshBufferDescriptorSetLayout = std::move(createdMeshDescriptorSetLayout);
 
-        auto[createMaterialTextureDescriptorSetLayoutResult, createdMaterialTextureDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(
-            materialTextureDescriptorSetLayoutCreateInfo);
-
-        if (createMaterialTextureDescriptorSetLayoutResult != GraphicsResult::Success)
-        {
-            LUCH_ASSERT(false);
-            return { false };
-        }
-
-        gbufferResources->materialTextureDescriptorSetLayout = std::move(createdMaterialTextureDescriptorSetLayout);
-
-        auto[createMaterialBufferDescriptorSetLayoutResult, createdMaterialBufferDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(
-            materialBufferDescriptorSetLayoutCreateInfo);
-
-        if (createMaterialBufferDescriptorSetLayoutResult != GraphicsResult::Success)
-        {
-            LUCH_ASSERT(false);
-            return { false };
-        }
-
-        gbufferResources->materialBufferDescriptorSetLayout = std::move(createdMaterialBufferDescriptorSetLayout);
-
-        auto[createMaterialSamplerDescriptorSetLayoutResult, createdMaterialSamplerDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(
-            materialSamplerDescriptorSetLayoutCreateInfo);
-
-        if (createMaterialSamplerDescriptorSetLayoutResult != GraphicsResult::Success)
-        {
-            LUCH_ASSERT(false);
-            return { false };
-        }
-
-        gbufferResources->materialSamplerDescriptorSetLayout = std::move(createdMaterialSamplerDescriptorSetLayout);
 
         PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
         pipelineLayoutCreateInfo
             .AddSetLayout(ShaderStage::Vertex, gbufferResources->cameraBufferDescriptorSetLayout)
             .AddSetLayout(ShaderStage::Vertex, gbufferResources->meshBufferDescriptorSetLayout)
-            .AddSetLayout(ShaderStage::Fragment, gbufferResources->materialTextureDescriptorSetLayout)
-            .AddSetLayout(ShaderStage::Fragment, gbufferResources->materialBufferDescriptorSetLayout)
-            .AddSetLayout(ShaderStage::Fragment, gbufferResources->materialSamplerDescriptorSetLayout);
+            .AddSetLayout(ShaderStage::Fragment, materialResources->materialTextureDescriptorSetLayout)
+            .AddSetLayout(ShaderStage::Fragment, materialResources->materialBufferDescriptorSetLayout)
+            .AddSetLayout(ShaderStage::Fragment, materialResources->materialSamplerDescriptorSetLayout);
 
         auto[createPipelineLayoutResult, createdPipelineLayout] = context->device->CreatePipelineLayout(
             pipelineLayoutCreateInfo);

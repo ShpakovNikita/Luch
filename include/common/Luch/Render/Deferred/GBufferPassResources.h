@@ -23,24 +23,8 @@ namespace Luch::Render::Deferred
         // Mesh bindings
         DescriptorSetBinding meshUniformBufferBinding;
 
-        // Material bindings
-        DescriptorSetBinding materialUniformBufferBinding;
-        DescriptorSetBinding baseColorTextureBinding;
-        DescriptorSetBinding baseColorSamplerBinding;
-        DescriptorSetBinding metallicRoughnessTextureBinding;
-        DescriptorSetBinding metallicRoughnessSamplerBinding;
-        DescriptorSetBinding normalTextureBinding;
-        DescriptorSetBinding normalSamplerBinding;
-        DescriptorSetBinding occlusionTextureBinding;
-        DescriptorSetBinding occlusionSamplerBinding;
-        DescriptorSetBinding emissiveTextureBinding;
-        DescriptorSetBinding emissiveSamplerBinding;
-
         RefPtr<DescriptorSetLayout> cameraBufferDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> meshBufferDescriptorSetLayout;
-        RefPtr<DescriptorSetLayout> materialTextureDescriptorSetLayout;
-        RefPtr<DescriptorSetLayout> materialBufferDescriptorSetLayout;
-        RefPtr<DescriptorSetLayout> materialSamplerDescriptorSetLayout;
 
         RefPtr<RenderPass> renderPass;
 

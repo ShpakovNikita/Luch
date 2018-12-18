@@ -10,6 +10,7 @@
 #include <Luch/Render/Common.h>
 #include <Luch/Render/Deferred/DeferredForwards.h>
 #include <Luch/Render/RenderContext.h>
+#include <Luch/Render/MaterialManager.h>
 #include <Luch/Render/Deferred/GBufferRenderPass.h>
 
 namespace Luch::Render
@@ -19,22 +20,27 @@ namespace Luch::Render
     class SceneRenderer
     {
     public:
-        SceneRenderer(SharedPtr<RenderContext> context);
+        SceneRenderer(RefPtr<SceneV1::Scene> scene);
         ~SceneRenderer();
 
-        bool Initialize();
+        bool Initialize(SharedPtr<RenderContext> context);
         bool Deinitialize();
 
         void BeginRender();
-        void PrepareScene(SceneV1::Scene* scene);
-        void UpdateScene(SceneV1::Scene* scene);
-        void DrawScene(SceneV1::Scene* scene, SceneV1::Camera* camera);
+        bool PrepareScene();
+        void UpdateScene();
+        void DrawScene(SceneV1::Camera* camera);
         void EndRender();
     private:
+        bool UploadSceneTextures();
+        bool UploadSceneBuffers();
+
+        UniquePtr<MaterialManager> materialManager;
         UniquePtr<Graph::RenderGraphBuilder> builder;
         UniquePtr<Deferred::GBufferRenderPass> gbufferPass;
         UniquePtr<Deferred::GBufferPassResources> gbufferPassResources;
         SharedPtr<RenderContext> context;
         RefPtr<CommandPool> commandPool;
+        RefPtr<SceneV1::Scene> scene;
     };
 }

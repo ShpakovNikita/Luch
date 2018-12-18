@@ -1,9 +1,7 @@
-#include <Luch/Render/Deferred/ResolveRenderer.h>
+#include <Luch/Render/Deferred/ResolveRenderPass.h>
 #include <Luch/Render/RenderContext.h>
 #include <Luch/Render/RenderUtils.h>
 #include <Luch/Render/SharedBuffer.h>
-#include <Luch/Render/Deferred/DeferredResources.h>
-#include <Luch/Render/Deferred/GBufferTextures.h>
 
 #include <Luch/SceneV1/Scene.h>
 #include <Luch/SceneV1/Node.h>
@@ -40,18 +38,6 @@ namespace Luch::Render::Deferred
 {
     using namespace Graphics;
 
-    // Fullscreen quad for triangle list
-//    static const Vector<QuadVertex> fullscreenQuadVertices =
-//    {
-//        {{-1.0f, +1.0f, 0.0f}, {0.0f, 1.0f}}, // bottom left
-//        {{+1.0f, +1.0f, 0.0f}, {1.0f, 1.0f}}, // bottom right
-//        {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}}, // top left
-//
-//        {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}},  // top left
-//        {{+1.0f, +1.0f, 0.0f}, {1.0f, 1.0f}},  // bottom right
-//        {{+1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}}, // top right
-//    };
-
     // One triangle that covers whole screen
     constexpr Array<QuadVertex, 3> fullscreenQuadVertices =
     {
@@ -60,10 +46,14 @@ namespace Luch::Render::Deferred
         QuadVertex { Vec3{-1.0f, +3.0f, 0.0f}, Vec2{0.0f, -1.0f} },
     };
 
-    const String ResolveRenderer::RendererName{"Resolve"};
+    const String ResolveRenderPass::RendererPassName{"Resolve"};
 
-    ResolveRenderer::ResolveRenderer() = default;
-    ResolveRenderer::~ResolveRenderer() = default;
+    ResolveRenderPass::ResolveRenderPass(RenderGraphBuilder* builder)
+    {
+
+    }
+
+    ResolveRenderPass::~ResolveRenderPass() = default;
 
     bool ResolveRenderer::Initialize()
     {

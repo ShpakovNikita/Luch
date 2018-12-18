@@ -90,6 +90,7 @@ private:
 #endif
 
     Luch::SharedPtr<Luch::Render::RenderContext> context;
+    Luch::UniquePtr<Luch::Render::SceneRenderer> renderer;
     Luch::RefPtr<Luch::SceneV1::Scene> scene;
     Luch::RefPtr<Luch::SceneV1::Camera> camera;
 };

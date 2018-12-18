@@ -33,7 +33,9 @@ namespace Luch::Render::Deferred
         static constexpr int32 OffscreenImageCount = 3;
         static const String RenderPassName;
 
-        static ResultValue<bool, UniquePtr<GBufferPassResources>> PrepareGBufferPassResources(RenderContext* context);
+        static ResultValue<bool, UniquePtr<GBufferPassResources>> PrepareGBufferPassResources(
+            RenderContext* context,
+            MaterialResources* materialResources);
 
         GBufferRenderPass(
             int32 width,
@@ -52,7 +54,7 @@ namespace Luch::Render::Deferred
         SceneV1::Scene* GetScene() { return scene; }
         void SetScene(SceneV1::Scene* aScene) { scene = aScene; }
 
-        void SetResources(GBufferPassResources* aResources) { resources = aResources; }
+        void SetGBufferPassResources(GBufferPassResources* aResources) { resources = aResources; }
 
         void ExecuteRenderPass(
             RenderGraphResourceManager* manager,
@@ -63,12 +65,10 @@ namespace Luch::Render::Deferred
         void PrepareNode(SceneV1::Node* node);
         void PrepareMesh(SceneV1::Mesh* mesh);
         void PreparePrimitive(SceneV1::Primitive* primitive);
-        void PrepareMaterial(SceneV1::PbrMaterial* mesh);
 
         void UpdateNode(SceneV1::Node* node);
         void UpdateMesh(SceneV1::Mesh* mesh, const Mat4x4& transform);
         void UpdateCamera(SceneV1::Camera* camera, const Mat4x4& transform);
-        void UpdateMaterial(SceneV1::PbrMaterial* material);
 
         void BindMaterial(SceneV1::PbrMaterial* material, GraphicsCommandList* commandList);
         void DrawNode(SceneV1::Node* node, GraphicsCommandList* commandList);

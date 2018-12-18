@@ -51,8 +51,12 @@ namespace Luch::Render::Graph
             return left.handle < right.handle;
         }
     private:
-        explicit RenderMutableResource(uint32 aHandle) noexcept;
-        explicit RenderMutableResource(RenderResource resource) noexcept;
+        explicit RenderMutableResource(uint32 aHandle) noexcept
+            : handle(aHandle)
+        {
+        }
+
+        RenderMutableResource(RenderResource resource) noexcept;
 
         uint32 handle = 0;
     };
@@ -66,7 +70,10 @@ namespace Luch::Render::Graph
         RenderResource() = default;
         RenderResource(const RenderResource& other) = default;
         RenderResource& operator=(const RenderResource& other) = default;
-        RenderResource(RenderMutableResource mutableResource) noexcept;
+        RenderResource(RenderMutableResource mutableResource) noexcept
+            : handle(mutableResource.handle)
+        {
+        }
 
         operator bool()
         {
@@ -112,6 +119,10 @@ namespace Luch::Render::Graph
         uint32 handle = 0;
     };
 
+    inline RenderMutableResource::RenderMutableResource(RenderResource resource) noexcept
+        : handle(resource.handle)
+    {
+    }
 }
 
 namespace std
