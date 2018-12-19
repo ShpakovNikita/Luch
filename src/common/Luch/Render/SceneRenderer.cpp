@@ -24,7 +24,7 @@
 
 #include <Luch/Render/RenderUtils.h>
 #include <Luch/Render/Deferred/GBufferRenderPass.h>
-#include <Luch/Render/Deferred/GBufferPassResources.h>
+#include <Luch/Render/Deferred/GBufferRenderContext.h>
 #include <Luch/Render/Graph/RenderGraph.h>
 #include <Luch/Render/Graph/RenderGraphBuilder.h>
 
@@ -62,16 +62,20 @@ namespace Luch::Render
 
         commandPool = std::move(createdCommandPool);
 
-        auto [createGBufferPassResourcesResult, createdGBufferPassResources] = GBufferRenderPass::PrepareGBufferPassResources(
-            context.get(),
+        auto [createGBufferRenderContextResult, createdGBufferRenderContext] = GBufferRenderPass::PrepareGBufferRenderContext(
+            context->device,
             materialManager->GetResources());
 
-        if(!createGBufferPassResourcesResult)
+        if(!createGBufferRenderContextResult)
         {
             return false;
         }
 
-        gbufferPassResources = std::move(createdGBufferPassResources);
+        gbufferRenderContext = std::move(createdGBufferRenderContext);
+
+        auto swapchainInfo = context->swapchain->GetInfo();
+        gbufferRenderContext->attachmentSize = { swapchainInfo.width, swapchainInfo.height };
+        gbufferRenderContext->scene = scene;
 
         return true;
     }
@@ -79,7 +83,7 @@ namespace Luch::Render
     bool SceneRenderer::Deinitialize()
     {
         commandPool.Release();
-        gbufferPassResources.reset();
+        gbufferRenderContext.reset();
         context.reset();
 
         auto materialManagerDeinitialized = materialManager->Deinitialize();
@@ -97,15 +101,9 @@ namespace Luch::Render
         auto builderInitialized = builder->Initialize(context->device, commandPool);
         LUCH_ASSERT(builderInitialized);
 
-        auto swapchainInfo = context->swapchain->GetInfo();
-
         gbufferPass = MakeUnique<GBufferRenderPass>(
-            swapchainInfo.width,
-            swapchainInfo.height,
-            context,
+            gbufferRenderContext,
             builder.get());
-
-        gbufferPass->SetGBufferPassResources(gbufferPassResources.get());
     }
 
     bool SceneRenderer::PrepareScene()
@@ -133,9 +131,7 @@ namespace Luch::Render
             }
         }
 
-        gbufferPass->SetScene(scene);
-
-        gbufferPass->PrepareScene(scene);
+        gbufferPass->PrepareScene();
 
         return true;
     }
@@ -149,7 +145,7 @@ namespace Luch::Render
             materialManager->UpdateMaterial(material);
         }
 
-        gbufferPass->UpdateScene(scene);
+        gbufferPass->UpdateScene();
     }
 
     void SceneRenderer::DrawScene(SceneV1::Camera* camera)

@@ -6,7 +6,7 @@ namespace Luch::Render::Deferred
     class ResolveRenderPass;
     class TonemapRenderPass;
 
-    struct GBufferPassResources;
-    struct ResolvePassResources;
-    struct TonemapPassResources;
+    struct GBufferRenderContext;
+    struct ResolveRenderContext;
+    struct TonemapRenderContext;
 }

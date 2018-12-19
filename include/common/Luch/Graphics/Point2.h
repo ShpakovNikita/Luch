@@ -5,13 +5,13 @@
 namespace Luch::Graphics
 {
     template<typename T>
-    struct Point2D
+    struct Point2
     {
         T x = 0;
         T y = 0;
     };
 
-    using IntPoint2D = Point2D<int32>;
-    using FloatPoint2D = Point2D<float32>;
+    using Point2i = Point2<int32>;
+    using Point2f = Point2<float32>;
 }
 

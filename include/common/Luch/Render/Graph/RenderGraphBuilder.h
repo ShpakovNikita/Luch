@@ -1,7 +1,9 @@
 #pragma once
 
+#include <Luch/RefPtr.h>
 #include <Luch/UniquePtr.h>
 #include <Luch/ResultValue.h>
+#include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/Render/Graph/RenderGraph.h>
 #include <Luch/Render/Graph/RenderGraphNode.h>
 #include <Luch/Render/Graph/RenderGraphForwards.h>
@@ -18,7 +20,10 @@ namespace Luch::Render::Graph
         bool Initialize(GraphicsDevice* device, RefPtr<CommandPool> commandPool);
         bool Deinitialize();
 
-        UniquePtr<RenderGraphNodeBuilder> AddRenderPass(String name, RenderGraphPass* pass);
+        UniquePtr<RenderGraphNodeBuilder> AddRenderPass(
+            String name,
+            RefPtr<Graphics::RenderPass> renderPass,
+            RenderGraphPass* pass);
         ResultValue<RenderGraphBuildResult, UniquePtr<RenderGraph>> Build();
     private:
         GraphicsDevice* device = nullptr;

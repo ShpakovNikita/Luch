@@ -17,14 +17,14 @@ namespace Luch::Render::Graph
             int32 nodeIndex,
             RenderGraphResourceManager* resourceManager);
 
-        RenderMutableResource ImportColorAttachment(int32 index, RefPtr<Texture> texture, const ColorAttachment& attachment);
-        RenderMutableResource ImportDepthStencilAttachment(RefPtr<Texture> texture, const DepthStencilAttachment& attachment);
+        RenderMutableResource ImportColorAttachment(int32 index, RefPtr<Texture> texture);
+        RenderMutableResource ImportDepthStencilAttachment(RefPtr<Texture> texture);
 
-        RenderMutableResource CreateColorAttachment(int32 index, int32 width, int32 height, const ColorAttachment& attachment);
-        RenderMutableResource CreateDepthStencilAttachment(int32 width, int32 height, const DepthStencilAttachment& attachment);
+        RenderMutableResource CreateColorAttachment(int32 index, Size2i size);
+        RenderMutableResource CreateDepthStencilAttachment(Size2i size);
 
-        RenderMutableResource WritesToColorAttachment(int32 index, RenderMutableResource resource, const ColorAttachment& attachment);
-        RenderMutableResource WritesToDepthStencilAttachment(RenderMutableResource resource, const DepthStencilAttachment& attachment);
+        RenderMutableResource WritesToColorAttachment(int32 index, RenderMutableResource resource);
+        RenderMutableResource WritesToDepthStencilAttachment(RenderMutableResource resource);
 
         RenderResource ReadsTexture(RenderResource resource);
     private:

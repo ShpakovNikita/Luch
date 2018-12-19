@@ -3,7 +3,7 @@
 #include <Luch/Render/ShaderDefines.h>
 #include <Luch/Render/MaterialManager.h>
 #include <Luch/Render/Deferred/DeferredShaderDefines.h>
-#include <Luch/Render/Deferred/GBufferPassResources.h>
+#include <Luch/Render/Deferred/GBufferRenderContext.h>
 
 #include <Luch/SceneV1/Scene.h>
 #include <Luch/SceneV1/Node.h>
@@ -45,7 +45,7 @@
 #include <Luch/Render/RenderContext.h>
 #include <Luch/Render/RenderUtils.h>
 #include <Luch/Render/SharedBuffer.h>
-#include <Luch/Render/Deferred/GBufferPassResources.h>
+#include <Luch/Render/Deferred/GBufferRenderContext.h>
 #include <Luch/Render/Graph/RenderGraphNode.h>
 #include <Luch/Render/Graph/RenderGraphBuilder.h>
 #include <Luch/Render/Graph/RenderGraphNodeBuilder.h>
@@ -90,83 +90,25 @@ namespace Luch::Render::Deferred
     const String GBufferRenderPass::RenderPassName{"GBuffer"};
 
     GBufferRenderPass::GBufferRenderPass(
-        int32 aWidth,
-        int32 aHeight,
-        SharedPtr<RenderContext> aContext,
+        GBufferRenderContext* aContext,
         RenderGraphBuilder* builder)
         : context(aContext)
-        , width(aWidth)
-        , height(aHeight)
     {
-        Vector<Format> depthFormats =
+        auto node = builder->AddRenderPass(RenderPassName, context->renderPass, this);
+
+        for(int32 i = 0; i < DeferredConstants::GBufferColorAttachmentCount; i++)
         {
-            Format::D32SfloatS8Uint,
-            Format::D24UnormS8Uint,
-            Format::D16UnormS8Uint,
-        };
+            gbuffer.color[i] = node->CreateColorAttachment(i, context->attachmentSize);
+        }
 
-        auto supportedDepthFormats = context->device->GetPhysicalDevice()->GetSupportedDepthStencilFormats(depthFormats);
-        LUCH_ASSERT_MSG(!depthFormats.empty(), "No supported depth formats");
-        depthStencilFormat = depthFormats.front();
-
-        auto node = builder->AddRenderPass(RenderPassName, this);
-
-        ColorAttachment baseColorAttachment;
-        baseColorAttachment.format = baseColorFormat;
-        baseColorAttachment.colorLoadOperation = AttachmentLoadOperation::Clear;
-        baseColorAttachment.colorStoreOperation = AttachmentStoreOperation::Store;
-        baseColorAttachment.clearValue = { 0.0f, 0.0f, 0.0f, 1.0f };
-        node->CreateColorAttachment(0, width, height, baseColorAttachment);
-
-        ColorAttachment normalMapAttachment;
-        normalMapAttachment.format = normalMapFormat;
-        normalMapAttachment.colorLoadOperation = AttachmentLoadOperation::Clear;
-        normalMapAttachment.colorStoreOperation = AttachmentStoreOperation::Store;
-        normalMapAttachment.clearValue = { 0.0f, 0.0f, 0.0f, 0.0f };
-        node->CreateColorAttachment(1, width, height, normalMapAttachment);
-
-        DepthStencilAttachment depthStencilAttachment;
-        depthStencilAttachment.format = depthStencilFormat;
-        depthStencilAttachment.depthLoadOperation = AttachmentLoadOperation::Clear;
-        depthStencilAttachment.depthStoreOperation = AttachmentStoreOperation::Store;
-        depthStencilAttachment.stencilLoadOperation = AttachmentLoadOperation::Clear;
-        depthStencilAttachment.stencilStoreOperation = AttachmentStoreOperation::Store;
-        depthStencilAttachment.depthClearValue = 1.0;
-        depthStencilAttachment.stencilClearValue = 0x00000000;
-        node->CreateDepthStencilAttachment(width, height, depthStencilAttachment);
+        gbuffer.depthStencil = node->CreateDepthStencilAttachment(context->attachmentSize);
     }
 
     GBufferRenderPass::~GBufferRenderPass() = default;
 
-    void GBufferRenderPass::PrepareScene(SceneV1::Scene* scene)
+    void GBufferRenderPass::PrepareScene()
     {
-        const auto& sceneProperties = scene->GetSceneProperties();
-        const auto& textures = sceneProperties.textures;
-
-        Vector<SceneV1::Texture*> texturesVector;
-        for (const auto& texture : textures)
-        {
-            texturesVector.push_back(texture);
-        }
-
-        TextureUploader textureUploader{ context->device, resources->commandPool };
-        auto [uploadTexturesSucceeded, uploadTexturesResult] = textureUploader.UploadTextures(texturesVector);
-
-        LUCH_ASSERT(uploadTexturesSucceeded);
-
-        for (const auto& commandList : uploadTexturesResult.commandLists)
-        {
-            context->commandQueue->Submit(commandList);
-        }
-
-        const auto& buffers = sceneProperties.buffers;
-        for(const auto& buffer : buffers)
-        {
-            [[maybe_unused]] bool uploadSucceeded = buffer->UploadToDevice(context->device);
-            LUCH_ASSERT(uploadSucceeded);
-        }
-
-        const auto& nodes = scene->GetNodes();
+        const auto& nodes = context->scene->GetNodes();
 
         for (const auto& node : nodes)
         {
@@ -177,11 +119,11 @@ namespace Luch::Render::Deferred
         }
     }
 
-    void GBufferRenderPass::UpdateScene(SceneV1::Scene* scene)
+    void GBufferRenderPass::UpdateScene()
     {
-        resources->sharedBuffer->Reset();
+        context->sharedBuffer->Reset();
 
-        for (const auto& node : scene->GetNodes())
+        for (const auto& node : context->scene->GetNodes())
         {
             UpdateNode(node);
         }
@@ -193,11 +135,11 @@ namespace Luch::Render::Deferred
         GraphicsCommandList* commandList)
     {
         Viewport viewport;
-        viewport.width = static_cast<float32>(width);
-        viewport.height = static_cast<float32>(height);
+        viewport.width = static_cast<float32>(context->attachmentSize.width);
+        viewport.height = static_cast<float32>(context->attachmentSize.height);
 
-        IntRect scissorRect;
-        scissorRect.size = { width, height };
+        Rect2i scissorRect;
+        scissorRect.size = context->attachmentSize;
 
         commandList->Begin();
         commandList->BeginRenderPass(frameBuffer);
@@ -205,10 +147,10 @@ namespace Luch::Render::Deferred
         commandList->SetScissorRects({ scissorRect });
         commandList->BindBufferDescriptorSet(
             ShaderStage::Vertex,
-            resources->pipelineLayout,
+            context->pipelineLayout,
             camera->GetDescriptorSet(RenderPassName));
 
-        for (const auto& node : scene->GetNodes())
+        for (const auto& node : context->scene->GetNodes())
         {
             DrawNode(node, commandList);
         }
@@ -233,10 +175,6 @@ namespace Luch::Render::Deferred
         }
     }
 
-    void GBufferRenderPass::PrepareNode(SceneV1::Node* node)
-    {
-    }
-
     void GBufferRenderPass::PreparePrimitive(SceneV1::Primitive* primitive)
     {
         RefPtr<PipelineState> pipelineState = primitive->GetPipelineState(RenderPassName);
@@ -254,8 +192,8 @@ namespace Luch::Render::Deferred
             PreparePrimitive(primitive);
         }
 
-        auto[allocateDescriptorSetResult, allocatedDescriptorSet] = resources->descriptorPool->AllocateDescriptorSet(
-            resources->meshBufferDescriptorSetLayout);
+        auto[allocateDescriptorSetResult, allocatedDescriptorSet] = context->descriptorPool->AllocateDescriptorSet(
+            context->meshBufferDescriptorSetLayout);
 
         LUCH_ASSERT(allocateDescriptorSetResult == GraphicsResult::Success);
 
@@ -284,14 +222,14 @@ namespace Luch::Render::Deferred
         meshUniform.inverseTransform = glm::inverse(transform);
 
         // TODO
-        auto suballocation = resources->sharedBuffer->Suballocate(sizeof(MeshUniform), 16);
+        auto suballocation = context->sharedBuffer->Suballocate(sizeof(MeshUniform), 16);
 
         memcpy(suballocation.offsetMemory, &meshUniform, sizeof(MeshUniform));
 
         auto descriptorSet = mesh->GetBufferDescriptorSet(RenderPassName);
 
         descriptorSet->WriteUniformBuffer(
-            resources->meshUniformBufferBinding,
+            context->meshUniformBufferBinding,
             suballocation.buffer,
             suballocation.offset);
 
@@ -316,7 +254,7 @@ namespace Luch::Render::Deferred
     {
         commandList->BindBufferDescriptorSet(
             ShaderStage::Vertex,
-            resources->pipelineLayout,
+            context->pipelineLayout,
             mesh->GetBufferDescriptorSet(RenderPassName));
 
         for (const auto& primitive : mesh->GetPrimitives())
@@ -345,17 +283,17 @@ namespace Luch::Render::Deferred
     {
         commandList->BindTextureDescriptorSet(
             ShaderStage::Fragment,
-            resources->pipelineLayout,
+            context->pipelineLayout,
             material->GetTextureDescriptorSet());
 
         commandList->BindBufferDescriptorSet(
             ShaderStage::Fragment,
-            resources->pipelineLayout,
+            context->pipelineLayout,
             material->GetBufferDescriptorSet());
 
         commandList->BindSamplerDescriptorSet(
             ShaderStage::Fragment,
-            resources->pipelineLayout,
+            context->pipelineLayout,
             material->GetSamplerDescriptorSet());
     }
 
@@ -442,27 +380,16 @@ namespace Luch::Render::Deferred
         ci.depthStencil.depthWriteEnable = true;
         ci.depthStencil.depthCompareFunction = CompareFunction::Less;
 
-        auto& baseColorAttachment = ci.colorAttachments.attachments.emplace_back();
-
-        baseColorAttachment.blendEnable = material->GetProperties().alphaMode == SceneV1::AlphaMode::Blend;
-        baseColorAttachment.format = baseColorFormat;
-        if (baseColorAttachment.blendEnable)
+        ci.colorAttachments.attachments.resize(DeferredConstants::GBufferColorAttachmentCount);
+        for(int32 i = 0; i < ci.colorAttachments.attachments.size(); i++)
         {
-            baseColorAttachment.srcColorBlendFactor = BlendFactor::SourceAlpha;
-            baseColorAttachment.dstColorBlendFactor = BlendFactor::OneMinusSourceAlpha;
-            baseColorAttachment.colorBlendOp = BlendOperation::Add;
-            baseColorAttachment.srcAlphaBlendFactor = BlendFactor::OneMinusSourceAlpha;
-            baseColorAttachment.dstAlphaBlendFactor = BlendFactor::Zero;
-            baseColorAttachment.alphaBlendOp = BlendOperation::Add;
+            ci.colorAttachments.attachments[i].format = DeferredConstants::GBufferColorAttachmentFormats[i];
         }
 
-        auto& normalMapAttachmentBlendState = ci.colorAttachments.attachments.emplace_back();
-        normalMapAttachmentBlendState.format = normalMapFormat;
-        normalMapAttachmentBlendState.blendEnable = false;
 
         // TODO
         //ci.renderPass = scene.gbuffer.renderPass;
-        ci.pipelineLayout = resources->pipelineLayout;
+        ci.pipelineLayout = context->pipelineLayout;
 
         if (material->HasBaseColorTexture())
         {
@@ -562,21 +489,54 @@ namespace Luch::Render::Deferred
         return createdPipeline;
     }
 
-    ResultValue<bool, UniquePtr<GBufferPassResources>> GBufferRenderPass::PrepareGBufferPassResources(
-        RenderContext* context,
+    ResultValue<bool, UniquePtr<GBufferRenderContext>> GBufferRenderPass::PrepareGBufferRenderContext(
+        GraphicsDevice* device,
         MaterialResources* materialResources)
     {
-        UniquePtr<GBufferPassResources> gbufferResources = MakeUnique<GBufferPassResources>();
+        UniquePtr<GBufferRenderContext> context = MakeUnique<GBufferRenderContext>();
+        context->device = device;
 
-        auto[createCommandPoolResult, createdCommandPool] = context->commandQueue->CreateCommandPool();
-
-        if (createCommandPoolResult != GraphicsResult::Success)
+        Vector<Format> depthFormats =
         {
-            LUCH_ASSERT(false);
+            Format::D32SfloatS8Uint,
+            Format::D24UnormS8Uint,
+            Format::D16UnormS8Uint,
+        };
+
+        auto supportedDepthFormats = context->device->GetPhysicalDevice()->GetSupportedDepthStencilFormats(depthFormats);
+        LUCH_ASSERT_MSG(!depthFormats.empty(), "No supported depth formats");
+        Format depthStencilFormat = depthFormats.front();
+
+        ColorAttachment gbufferColorAttachmentTemplate;
+        gbufferColorAttachmentTemplate.colorLoadOperation = AttachmentLoadOperation::Clear;
+        gbufferColorAttachmentTemplate.colorStoreOperation = AttachmentStoreOperation::Store;
+        gbufferColorAttachmentTemplate.clearValue = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+        DepthStencilAttachment depthStencilAttachment;
+        depthStencilAttachment.format = depthStencilFormat;
+        depthStencilAttachment.depthLoadOperation = AttachmentLoadOperation::Clear;
+        depthStencilAttachment.depthStoreOperation = AttachmentStoreOperation::Store;
+        depthStencilAttachment.stencilLoadOperation = AttachmentLoadOperation::Clear;
+        depthStencilAttachment.stencilStoreOperation = AttachmentStoreOperation::Store;
+        depthStencilAttachment.depthClearValue = 1.0;
+        depthStencilAttachment.stencilClearValue = 0x00000000;
+
+        RenderPassCreateInfo renderPassCreateInfo;
+        for(int32 i = 0; i < DeferredConstants::GBufferColorAttachmentCount; i++)
+        {
+            ColorAttachment attachment = gbufferColorAttachmentTemplate;
+            attachment.format = DeferredConstants::GBufferColorAttachmentFormats[i];
+            renderPassCreateInfo.colorAttachments[i] = attachment;
+        }
+        renderPassCreateInfo.depthStencilAttachment = depthStencilAttachment;
+
+        auto [createRenderPassResult, createdRenderPass] = device->CreateRenderPass(renderPassCreateInfo);
+        if(createRenderPassResult != GraphicsResult::Success)
+        {
             return { false };
         }
 
-        gbufferResources->commandPool = std::move(createdCommandPool);
+        context->renderPass = std::move(createdRenderPass);
 
         DescriptorPoolCreateInfo descriptorPoolCreateInfo;
         descriptorPoolCreateInfo.maxDescriptorSets = MaxDescriptorSetCount;
@@ -587,7 +547,7 @@ namespace Luch::Render::Deferred
             { ResourceType::Sampler, MaxDescriptorSetCount },
         };
 
-        auto[createDescriptorPoolResult, createdDescriptorPool] = context->device->CreateDescriptorPool(
+        auto[createDescriptorPoolResult, createdDescriptorPool] = device->CreateDescriptorPool(
             descriptorPoolCreateInfo);
 
         if (createDescriptorPoolResult != GraphicsResult::Success)
@@ -596,23 +556,23 @@ namespace Luch::Render::Deferred
             return { false };
         }
 
-        gbufferResources->descriptorPool = std::move(createdDescriptorPool);
+        context->descriptorPool = std::move(createdDescriptorPool);
 
-        gbufferResources->cameraUniformBufferBinding.OfType(ResourceType::UniformBuffer);
+        context->cameraUniformBufferBinding.OfType(ResourceType::UniformBuffer);
 
-        gbufferResources->meshUniformBufferBinding.OfType(ResourceType::UniformBuffer);
+        context->meshUniformBufferBinding.OfType(ResourceType::UniformBuffer);
 
         DescriptorSetLayoutCreateInfo cameraDescriptorSetLayoutCreateInfo;
         cameraDescriptorSetLayoutCreateInfo
             .OfType(DescriptorSetType::Buffer)
-            .AddBinding(&gbufferResources->cameraUniformBufferBinding);
+            .AddBinding(&context->cameraUniformBufferBinding);
 
         DescriptorSetLayoutCreateInfo meshDescriptorSetLayoutCreateInfo;
         meshDescriptorSetLayoutCreateInfo
             .OfType(DescriptorSetType::Buffer)
-            .AddBinding(&gbufferResources->meshUniformBufferBinding);
+            .AddBinding(&context->meshUniformBufferBinding);
 
-        auto[createCameraDescriptorSetLayoutResult, createdCameraDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(
+        auto[createCameraDescriptorSetLayoutResult, createdCameraDescriptorSetLayout] = device->CreateDescriptorSetLayout(
             cameraDescriptorSetLayoutCreateInfo);
 
         if (createCameraDescriptorSetLayoutResult != GraphicsResult::Success)
@@ -621,9 +581,9 @@ namespace Luch::Render::Deferred
             return { false };
         }
 
-        gbufferResources->cameraBufferDescriptorSetLayout = std::move(createdCameraDescriptorSetLayout);
+        context->cameraBufferDescriptorSetLayout = std::move(createdCameraDescriptorSetLayout);
 
-        auto[createMeshDescriptorSetLayoutResult, createdMeshDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(
+        auto[createMeshDescriptorSetLayoutResult, createdMeshDescriptorSetLayout] = device->CreateDescriptorSetLayout(
             meshDescriptorSetLayoutCreateInfo);
 
         if (createMeshDescriptorSetLayoutResult != GraphicsResult::Success)
@@ -632,18 +592,17 @@ namespace Luch::Render::Deferred
             return { false };
         }
 
-        gbufferResources->meshBufferDescriptorSetLayout = std::move(createdMeshDescriptorSetLayout);
-
+        context->meshBufferDescriptorSetLayout = std::move(createdMeshDescriptorSetLayout);
 
         PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
         pipelineLayoutCreateInfo
-            .AddSetLayout(ShaderStage::Vertex, gbufferResources->cameraBufferDescriptorSetLayout)
-            .AddSetLayout(ShaderStage::Vertex, gbufferResources->meshBufferDescriptorSetLayout)
+            .AddSetLayout(ShaderStage::Vertex, context->cameraBufferDescriptorSetLayout)
+            .AddSetLayout(ShaderStage::Vertex, context->meshBufferDescriptorSetLayout)
             .AddSetLayout(ShaderStage::Fragment, materialResources->materialTextureDescriptorSetLayout)
             .AddSetLayout(ShaderStage::Fragment, materialResources->materialBufferDescriptorSetLayout)
             .AddSetLayout(ShaderStage::Fragment, materialResources->materialSamplerDescriptorSetLayout);
 
-        auto[createPipelineLayoutResult, createdPipelineLayout] = context->device->CreatePipelineLayout(
+        auto[createPipelineLayoutResult, createdPipelineLayout] = device->CreatePipelineLayout(
             pipelineLayoutCreateInfo);
 
         if (createPipelineLayoutResult != GraphicsResult::Success)
@@ -652,22 +611,22 @@ namespace Luch::Render::Deferred
             return { false };
         }
 
-        gbufferResources->pipelineLayout = std::move(createdPipelineLayout);
+        context->pipelineLayout = std::move(createdPipelineLayout);
 
         BufferCreateInfo bufferCreateInfo;
         bufferCreateInfo.length = SharedUniformBufferSize;
         bufferCreateInfo.storageMode = ResourceStorageMode::Shared;
         bufferCreateInfo.usage = BufferUsageFlags::Uniform;
 
-        auto [createBufferResult, createdBuffer] = context->device->CreateBuffer(bufferCreateInfo);
+        auto [createBufferResult, createdBuffer] = device->CreateBuffer(bufferCreateInfo);
         if(createBufferResult != GraphicsResult::Success)
         {
             LUCH_ASSERT(false);
             return { false };
         }
 
-        gbufferResources->sharedBuffer = MakeUnique<SharedBuffer>(std::move(createdBuffer));
+        context->sharedBuffer = MakeUnique<SharedBuffer>(std::move(createdBuffer));
 
-        return { true, std::move(gbufferResources) };
+        return { true, std::move(context) };
     }
 }

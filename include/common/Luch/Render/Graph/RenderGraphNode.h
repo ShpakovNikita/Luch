@@ -17,8 +17,6 @@ namespace Luch::Render::Graph
 
         RenderGraphPass* pass = nullptr;
         String name;
-        Array<Optional<ColorAttachment>, MaxColorAttachmentCount> colorAttachments;
-        Optional<DepthStencilAttachment> depthStencilAttachment;
         Array<RenderMutableResource, MaxColorAttachmentCount> colorAttachmentResources;
         RenderMutableResource depthStencilAttachmentResource;
         Vector<RenderMutableResource> importedResources;

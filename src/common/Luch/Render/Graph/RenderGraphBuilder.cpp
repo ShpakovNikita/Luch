@@ -31,11 +31,15 @@ namespace Luch::Render::Graph
         return true;
     }
 
-    UniquePtr<RenderGraphNodeBuilder> RenderGraphBuilder::AddRenderPass(String name, RenderGraphPass* pass)
+    UniquePtr<RenderGraphNodeBuilder> RenderGraphBuilder::AddRenderPass(
+        String name,
+        RefPtr<Graphics::RenderPass> renderPass,
+        RenderGraphPass* pass)
     {
         auto& node = renderGraphNodes.emplace_back();
         node.name = name;
         node.pass = pass;
+        node.renderPass = renderPass;
 
         return MakeUnique<RenderGraphNodeBuilder>(this, renderGraphNodes.size() - 1, resourceManager.get());
     }
@@ -102,19 +106,6 @@ namespace Luch::Render::Graph
 
         for(auto& node : data.nodes)
         {
-            RenderPassCreateInfo renderPassCreateInfo;
-            renderPassCreateInfo.colorAttachments = node.colorAttachments;
-            renderPassCreateInfo.depthStencilAttachment = node.depthStencilAttachment;
-            renderPassCreateInfo.name = node.name;
-
-            auto [createRenderPassResult, createdRenderPass] = device->CreateRenderPass(renderPassCreateInfo);
-            if(createRenderPassResult != GraphicsResult::Success)
-            {
-                return { RenderGraphBuildResult::RenderPassCreationFailed };
-            }
-
-            node.renderPass = std::move(createdRenderPass);
-
             FrameBufferCreateInfo frameBufferCreateInfo;
             frameBufferCreateInfo.renderPass = node.renderPass;
 

@@ -3,6 +3,7 @@
 #include <Luch/RefPtr.h>
 #include <Luch/Render/Graph/RenderGraphForwards.h>
 #include <Luch/Render/Graph/RenderGraphResources.h>
+#include <Luch/Graphics/Size2.h>
 #include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/Graphics/RenderPassCreateInfo.h>
 
@@ -14,8 +15,7 @@ namespace Luch::Render::Graph
     {
         struct AttachmentCreateInfo
         {
-            int32 width = 0;
-            int32 height = 0;
+            Size2i size;
             Format format = Format::Undefined;
         };
     public:
@@ -24,7 +24,7 @@ namespace Luch::Render::Graph
         RenderGraphResourceManager(GraphicsDevice* device);
 
         RenderMutableResource ImportAttachment(RefPtr<Texture> texture);
-        RenderMutableResource CreateAttachment(int32 width, int32 height, Format format);
+        RenderMutableResource CreateAttachment(Size2i size, Format format);
         RenderMutableResource ModifyResource(RenderMutableResource resource);
 
         bool Build();

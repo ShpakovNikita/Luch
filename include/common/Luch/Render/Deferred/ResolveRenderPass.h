@@ -14,7 +14,9 @@
 #include <Luch/Render/Common.h>
 #include <Luch/Render/ShaderDefines.h>
 #include <Luch/Render/RenderForwards.h>
-#include <Luch/Render/Deferred/ResolvePassResources.h>
+#include <Luch/Render/Deferred/GBufferRenderPass.h>
+#include <Luch/Render/Deferred/ResolveRenderContext.h>
+#include <Luch/Render/Graph/RenderGraphResources.h>
 #include <Luch/Render/Graph/RenderGraphForwards.h>
 #include <Luch/Render/Graph/RenderGraphPass.h>
 
@@ -25,36 +27,43 @@ namespace Luch::Render::Deferred
 
     class ResolveRenderPass : public RenderGraphPass
     {
-    public:
         static constexpr int32 SharedUniformBufferSize = 16 * 1024 * 1024;
         static constexpr int32 MaxDescriptorSetCount = 4096;
         static constexpr int32 MaxDescriptorCount = 4096;
         static constexpr int32 OffscreenImageCount = 3;
+        static constexpr Format ColorFormat = Format::R32G32B32A32Sfloat;
+    public:
         static const String RenderPassName;
 
-        ResolveRenderPass(RenderGraphBuilder* builder);
+        static ResultValue<bool, UniquePtr<ResolveRenderContext>> PrepareResolveRenderContext(
+            GraphicsDevice* device
+        );
+
+        ResolveRenderPass(
+            ResolveRenderContext* context,
+            RenderGraphBuilder* builder);
+
         ~ResolveRenderPass();
 
-        const SharedPtr<RenderContext>& GetRenderContext() { return context; }
-        void SetRenderContext(const SharedPtr<RenderContext>& aContext) { context = aContext; }
+        void PrepareScene();
+        void UpdateScene();
 
-        bool Initialize();
-        bool Deinitialize();
-
-        void PrepareScene(SceneV1::Scene* scene);
-        void UpdateScene(SceneV1::Scene* scene);
+        SceneV1::Camera* GetCamera() { return camera; }
+        void SetCamera(SceneV1::Camera* aCamera) { camera = aCamera; }
 
         void ExecuteRenderPass(
             RenderGraphResourceManager* manager,
-            FrameBuffer* frameBuffer, 
+            FrameBuffer* frameBuffer,
             GraphicsCommandList* commandList) override;
     private:
         void UpdateLights(const RefPtrVector<SceneV1::Node>& lightNodes);
 
-        RefPtr<PipelineState> CreateResolvePipelineState(ResolvePassResources* lighting);
-        static ResultValue<bool, UniquePtr<ResolvePassResources>> PrepareResolvePassResources(RenderContext* context);
+        RefPtr<PipelineState> CreateResolvePipelineState(ResolveRenderContext* context);
 
-        SharedPtr<RenderContext> context;
-        ResolvePassResources* resources;
+        SceneV1::Camera* camera = nullptr;
+        ResolveRenderContext* context;
+        GBufferReadOnly gbuffer;
+
+        RenderMutableResource resolveTextureHandle;
     };
 }

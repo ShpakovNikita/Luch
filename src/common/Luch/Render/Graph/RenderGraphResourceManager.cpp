@@ -16,10 +16,10 @@ namespace Luch::Render::Graph
         return handle;
     }
 
-    RenderMutableResource RenderGraphResourceManager::CreateAttachment(int32 width, int32 height, Format format)
+    RenderMutableResource RenderGraphResourceManager::CreateAttachment(Size2i size, Format format)
     {
         auto handle = GetNextHandle();
-        pendingAttachments[handle] = AttachmentCreateInfo { width, height, format };
+        pendingAttachments[handle] = AttachmentCreateInfo { size, format };
         return handle;
     }
 
@@ -50,8 +50,8 @@ namespace Luch::Render::Graph
             TextureCreateInfo createInfo;
 
             bool hasDepthOrStencil = FormatHasDepth(info.format) || FormatHasStencil(info.format);
-            createInfo.width = info.width;
-            createInfo.height = info.height;
+            createInfo.width = info.size.width;
+            createInfo.height = info.size.height;
             createInfo.format = info.format;
             createInfo.storageMode = ResourceStorageMode::DeviceLocal;
             createInfo.usage = TextureUsageFlags::ShaderRead;

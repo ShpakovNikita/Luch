@@ -38,7 +38,7 @@ namespace Luch::Render
         UniquePtr<MaterialManager> materialManager;
         UniquePtr<Graph::RenderGraphBuilder> builder;
         UniquePtr<Deferred::GBufferRenderPass> gbufferPass;
-        UniquePtr<Deferred::GBufferPassResources> gbufferPassResources;
+        UniquePtr<Deferred::GBufferRenderContext> gbufferRenderContext;
         SharedPtr<RenderContext> context;
         RefPtr<CommandPool> commandPool;
         RefPtr<SceneV1::Scene> scene;

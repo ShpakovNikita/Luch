@@ -4,7 +4,7 @@
 #include <Luch/BaseObject.h>
 #include <Luch/Graphics/IndexType.h>
 #include <Luch/Graphics/ShaderStage.h>
-#include <Luch/Graphics/Rect.h>
+#include <Luch/Graphics/Rect2.h>
 #include <Luch/Graphics/Viewport.h>
 #include <Luch/Graphics/Color.h>
 #include <Luch/Graphics/GraphicsObject.h>
@@ -50,15 +50,7 @@ namespace Luch::Graphics
             int32 indexBufferOffset) = 0;
 
         virtual void SetViewports(const ArrayProxy<Viewport>& viewports) = 0;
-        virtual void SetScissorRects(const ArrayProxy<IntRect>& scissorRects) = 0;
-
-//        virtual void SetDepthBias(
-//            float32 depthBias,
-//            float32 slopeScale,
-//            float32 clamp) = 0;
-//
-//        virtual void SetBlendColor(ColorSNorm32 color) = 0;
-//        virtual void SetStencilReference(uint32 front, uint32 back) = 0;
+        virtual void SetScissorRects(const ArrayProxy<Rect2i>& scissorRects) = 0;
 
         virtual void Draw(
             int32 vertexStart,
@@ -75,7 +67,5 @@ namespace Luch::Graphics
             int32 baseVertex,
             int32 instanceCount,
             int32 baseInstance) = 0;
-
-        // TODO Indirect Draw
     };
 }

@@ -14,6 +14,8 @@
 #include <Luch/Render/Common.h>
 #include <Luch/Render/RenderForwards.h>
 #include <Luch/Render/Deferred/DeferredForwards.h>
+#include <Luch/Render/Deferred/GBuffer.h>
+#include <Luch/Render/Deferred/DeferredConstants.h>
 #include <Luch/Render/Graph/RenderGraphForwards.h>
 #include <Luch/Render/Graph/RenderGraphPass.h>
 
@@ -26,35 +28,29 @@ namespace Luch::Render::Deferred
 
     class GBufferRenderPass : public RenderGraphPass
     {
-    public:
         static constexpr int32 SharedUniformBufferSize = 16 * 1024 * 1024;
         static constexpr int32 MaxDescriptorSetCount = 4096;
         static constexpr int32 MaxDescriptorCount = 4096;
-        static constexpr int32 OffscreenImageCount = 3;
+    public:
         static const String RenderPassName;
 
-        static ResultValue<bool, UniquePtr<GBufferPassResources>> PrepareGBufferPassResources(
-            RenderContext* context,
+        static ResultValue<bool, UniquePtr<GBufferRenderContext>> PrepareGBufferRenderContext(
+            GraphicsDevice* device,
             MaterialResources* materialResources);
 
         GBufferRenderPass(
-            int32 width,
-            int32 height,
-            SharedPtr<RenderContext> context,
+            GBufferRenderContext* context,
             RenderGraphBuilder* builder);
 
         ~GBufferRenderPass();
 
-        void PrepareScene(SceneV1::Scene* scene);
-        void UpdateScene(SceneV1::Scene* scene);
+        void PrepareScene();
+        void UpdateScene();
 
         SceneV1::Camera* GetCamera() { return camera; }
         void SetCamera(SceneV1::Camera* aCamera) { camera = aCamera; }
 
-        SceneV1::Scene* GetScene() { return scene; }
-        void SetScene(SceneV1::Scene* aScene) { scene = aScene; }
-
-        void SetGBufferPassResources(GBufferPassResources* aResources) { resources = aResources; }
+        GBufferReadOnly GetGBuffer() { return gbuffer; }
 
         void ExecuteRenderPass(
             RenderGraphResourceManager* manager,
@@ -62,7 +58,6 @@ namespace Luch::Render::Deferred
             GraphicsCommandList* commandList) override;
     private:
         void PrepareMeshNode(SceneV1::Node* node);
-        void PrepareNode(SceneV1::Node* node);
         void PrepareMesh(SceneV1::Mesh* mesh);
         void PreparePrimitive(SceneV1::Primitive* primitive);
 
@@ -77,16 +72,9 @@ namespace Luch::Render::Deferred
 
         RefPtr<PipelineState> CreateGBufferPipelineState(SceneV1::Primitive* primitive);
 
-        SharedPtr<RenderContext> context;
-        GBufferPassResources* resources;
+        GBufferRenderContext* context = nullptr;
+        GBuffer gbuffer;
 
-        SceneV1::Scene* scene;
-        SceneV1::Camera* camera;
-
-        Format baseColorFormat = Format::R8G8B8A8Unorm;
-        Format normalMapFormat = Format::R32G32B32A32Sfloat;
-        Format depthStencilFormat = Format::D24UnormS8Uint;
-        int32 width = 0;
-        int32 height = 0;
+        SceneV1::Camera* camera = nullptr;
     };
 }

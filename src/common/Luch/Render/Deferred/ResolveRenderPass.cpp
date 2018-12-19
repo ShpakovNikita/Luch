@@ -2,6 +2,9 @@
 #include <Luch/Render/RenderContext.h>
 #include <Luch/Render/RenderUtils.h>
 #include <Luch/Render/SharedBuffer.h>
+#include <Luch/Render/Graph/RenderGraphResourceManager.h>
+#include <Luch/Render/Graph/RenderGraphNodeBuilder.h>
+#include <Luch/Render/Graph/RenderGraphBuilder.h>
 
 #include <Luch/SceneV1/Scene.h>
 #include <Luch/SceneV1/Node.h>
@@ -13,7 +16,6 @@
 #include <Luch/Graphics/Buffer.h>
 #include <Luch/Graphics/ShaderLibrary.h>
 #include <Luch/Graphics/DescriptorSet.h>
-#include <Luch/Graphics/PhysicalDevice.h>
 #include <Luch/Graphics/GraphicsDevice.h>
 #include <Luch/Graphics/CommandQueue.h>
 #include <Luch/Graphics/CommandPool.h>
@@ -22,6 +24,7 @@
 #include <Luch/Graphics/SamplerCreateInfo.h>
 #include <Luch/Graphics/Swapchain.h>
 #include <Luch/Graphics/FrameBuffer.h>
+#include <Luch/Graphics/Texture.h>
 #include <Luch/Graphics/SwapchainInfo.h>
 #include <Luch/Graphics/PipelineState.h>
 #include <Luch/Graphics/PrimitiveTopology.h>
@@ -46,136 +49,95 @@ namespace Luch::Render::Deferred
         QuadVertex { Vec3{-1.0f, +3.0f, 0.0f}, Vec2{0.0f, -1.0f} },
     };
 
-    const String ResolveRenderPass::RendererPassName{"Resolve"};
+    const String ResolveRenderPass::RenderPassName{"Resolve"};
 
-    ResolveRenderPass::ResolveRenderPass(RenderGraphBuilder* builder)
+    ResolveRenderPass::ResolveRenderPass(
+        ResolveRenderContext* aContext,
+        RenderGraphBuilder* builder)
+        : context(aContext)
     {
+        auto node = builder->AddRenderPass(RenderPassName, context->renderPass, this);
 
+        for(int32 i = 0; i < context->gbuffer.color.size(); i++)
+        {
+            gbuffer.color[i] = node->ReadsTexture(context->gbuffer.color[i]);
+        }
+
+        gbuffer.depthStencil = node->ReadsTexture(context->gbuffer.depthStencil);
+
+        resolveTextureHandle = node->CreateColorAttachment(0, context->attachmentSize);
     }
 
     ResolveRenderPass::~ResolveRenderPass() = default;
 
-    bool ResolveRenderer::Initialize()
+    void ResolveRenderPass::UpdateScene()
     {
-        LUCH_ASSERT(context != nullptr);
-        LUCH_ASSERT(commonResources != nullptr);
+        context->sharedBuffer->Reset();
 
-        auto[resourcesPrepared, preparedResources] = PrepareResolvePassResources();
-        if (!resourcesPrepared)
-        {
-            return false;
-        }
-
-        resources = std::move(preparedResources);
-
-        auto [resolveTextureCreated, createdResolveTexture] = CreateResolveTexture();
-        if(!resolveTextureCreated)
-        {
-            return false;
-        }
-
-        resolveTexture = std::move(createdResolveTexture);
-
-        return true;
-    }
-
-    bool ResolveRenderer::Deinitialize()
-    {
-        context.reset();
-        commonResources.reset();
-        resources.reset();
-
-        return true;
-    }
-
-    void ResolveRenderer::PrepareScene(SceneV1::Scene* scene)
-    {
-    }
-
-    void ResolveRenderer::UpdateScene(SceneV1::Scene* scene)
-    {
-        resources->sharedBuffer->Reset();
-
-        const auto& sceneProperties = scene->GetSceneProperties();
+        const auto& sceneProperties = context->scene->GetSceneProperties();
 
         RefPtrVector<SceneV1::Node> lightNodes(sceneProperties.lightNodes.begin(), sceneProperties.lightNodes.end());
 
         UpdateLights(lightNodes);
     }
 
-    Texture* ResolveRenderer::Resolve(
-        SceneV1::Scene* scene,
-        SceneV1::Camera* camera,
-        GBufferTextures* gbuffer)
+    void ResolveRenderPass::ExecuteRenderPass(
+        RenderGraphResourceManager* manager,
+        FrameBuffer* frameBuffer, 
+        GraphicsCommandList* cmdList)
     {
-        resources->gbufferTextureDescriptorSet->WriteTexture(
-            resources->baseColorTextureBinding,
-            gbuffer->baseColorTexture);
+        for(int32 i = 0; i < gbuffer.color.size(); i++)
+        {
+            auto colorTexture = manager->GetTexture(gbuffer.color[i]);
 
-        resources->gbufferTextureDescriptorSet->WriteTexture(
-            resources->normalMapTextureBinding,
-            gbuffer->normalMapTexture);
+            context->gbufferTextureDescriptorSet->WriteTexture(
+                context->colorTextureBindings[i],
+                colorTexture);
+        }
 
-        resources->gbufferTextureDescriptorSet->WriteTexture(
-            resources->depthStencilTextureBinding,
-            gbuffer->depthStencilBuffer);
+        auto depthStencilTexture = manager->GetTexture(gbuffer.gbufferDepthStencil);
 
-        resources->gbufferTextureDescriptorSet->Update();
+        context->gbufferTextureDescriptorSet->WriteTexture(
+            context->depthStencilTextureBinding,
+            depthStencilTexture);
 
-        auto [allocateCmdListResult, cmdList] = resources->commandPool->AllocateGraphicsCommandList();
-        LUCH_ASSERT(allocateCmdListResult == GraphicsResult::Success);
+        context->gbufferTextureDescriptorSet->Update();
 
-        int32 framebufferWidth = context->swapchain->GetInfo().width;
-        int32 framebufferHeight = context->swapchain->GetInfo().height;
+        Viewport viewport;
+        viewport.width = context->attachmentSize.width;
+        viewport.height = context->attachmentSize.height;
 
-        Viewport viewport {
-            0, 0, static_cast<float32>(framebufferWidth), static_cast<float32>(framebufferHeight), 0.0f, 1.0f };
-        IntRect scissorRect { {0, 0}, { framebufferWidth, framebufferHeight } };
-
-        FrameBufferCreateInfo frameBufferCreateInfo;
-        frameBufferCreateInfo.colorTextures[0] = resolveTexture;
-        frameBufferCreateInfo.renderPass = resources->renderPass;
-
-        auto [createFrameBufferResult, frameBuffer] = context->device->CreateFrameBuffer(frameBufferCreateInfo);
-        LUCH_ASSERT(createFrameBufferResult == GraphicsResult::Success);
+        Rect2i scissorRect;
+        scissorRect.size = context->attachmentSize;
 
         cmdList->Begin();
         cmdList->BeginRenderPass(frameBuffer);
-        cmdList->BindPipelineState(resources->pipelineState);
+        cmdList->BindPipelineState(context->pipelineState);
         cmdList->SetViewports({ viewport });
         cmdList->SetScissorRects({ scissorRect });
 
         cmdList->BindTextureDescriptorSet(
             ShaderStage::Fragment,
-            resources->pipelineLayout,
-            resources->gbufferTextureDescriptorSet);
-
-        cmdList->BindSamplerDescriptorSet(
-            ShaderStage::Fragment,
-            resources->pipelineLayout,
-            resources->gbufferSamplerDescriptorSet);
+            context->pipelineLayout,
+            context->gbufferTextureDescriptorSet);
 
         cmdList->BindBufferDescriptorSet(
             ShaderStage::Fragment,
-            resources->pipelineLayout,
+            context->pipelineLayout,
             camera->GetDescriptorSet("Deferred"));
 
         cmdList->BindBufferDescriptorSet(
             ShaderStage::Fragment,
-            resources->pipelineLayout,
-            resources->lightsBufferDescriptorSet);
+            context->pipelineLayout,
+            context->lightsBufferDescriptorSet);
 
-        cmdList->BindVertexBuffers({ resources->fullscreenQuadBuffer }, {0}, 0);
+        cmdList->BindVertexBuffers({ context->fullscreenQuadBuffer }, {0}, 0);
         cmdList->Draw(0, fullscreenQuadVertices.size());
         cmdList->EndRenderPass();
         cmdList->End();
-
-        context->commandQueue->Submit(cmdList);
-
-        return resolveTexture;
     }
 
-    void ResolveRenderer::UpdateLights(const RefPtrVector<SceneV1::Node>& lightNodes)
+    void ResolveRenderPass::UpdateLights(const RefPtrVector<SceneV1::Node>& lightNodes)
     {
         Vector<LightUniform> lightUniforms;
 
@@ -196,26 +158,26 @@ namespace Luch::Render::Deferred
         LightingParamsUniform lightingParams;
         lightingParams.lightCount = enabledLightsCount;
 
-        auto lightingParamsSuballocation = resources->sharedBuffer->Suballocate(sizeof(LightingParamsUniform), 16);
-        auto lightsSuballocation = resources->sharedBuffer->Suballocate(enabledLightsCount * sizeof(LightUniform), 16);
+        auto lightingParamsSuballocation = context->sharedBuffer->Suballocate(sizeof(LightingParamsUniform), 16);
+        auto lightsSuballocation = context->sharedBuffer->Suballocate(enabledLightsCount * sizeof(LightUniform), 16);
 
         memcpy(lightingParamsSuballocation.offsetMemory, &lightingParams, sizeof(LightingParamsUniform));
         memcpy(lightsSuballocation.offsetMemory, lightUniforms.data(), enabledLightsCount * sizeof(LightUniform));
 
-        resources->lightsBufferDescriptorSet->WriteUniformBuffer(
-            resources->lightingParamsBinding,
+        context->lightsBufferDescriptorSet->WriteUniformBuffer(
+            context->lightingParamsBinding,
             lightingParamsSuballocation.buffer,
             lightingParamsSuballocation.offset);
 
-        resources->lightsBufferDescriptorSet->WriteUniformBuffer(
-            resources->lightsBufferBinding,
+        context->lightsBufferDescriptorSet->WriteUniformBuffer(
+            context->lightsBufferBinding,
             lightsSuballocation.buffer,
             lightsSuballocation.offset);
 
-        resources->lightsBufferDescriptorSet->Update();
+        context->lightsBufferDescriptorSet->Update();
     }
 
-    RefPtr<PipelineState> ResolveRenderer::CreateResolvePipelineState(ResolvePassResources* resolve)
+    RefPtr<PipelineState> ResolveRenderPass::CreateResolvePipelineState(ResolveRenderContext* context)
     {
         PipelineStateCreateInfo ci;
 
@@ -241,15 +203,15 @@ namespace Luch::Render::Deferred
         ci.depthStencil.depthWriteEnable = false;
 
         auto& colorAttachment = ci.colorAttachments.attachments.emplace_back();
-        colorAttachment.format = colorFormat;
+        colorAttachment.format = ColorFormat;
         colorAttachment.blendEnable = false;
 
         ci.depthStencil.depthStencilFormat = Format::Undefined;
 
         //pipelineState.renderPass = lighting.renderPass;
-        ci.pipelineLayout = resolve->pipelineLayout;
-        ci.vertexProgram = resolve->vertexShader;
-        ci.fragmentProgram = resolve->fragmentShader;
+        ci.pipelineLayout = context->pipelineLayout;
+        ci.vertexProgram = context->vertexShader;
+        ci.fragmentProgram = context->fragmentShader;
 
         auto[createPipelineResult, createdPipeline] = context->device->CreatePipelineState(ci);
         if (createPipelineResult != GraphicsResult::Success)
@@ -260,27 +222,28 @@ namespace Luch::Render::Deferred
         return createdPipeline;
     }
 
-    ResultValue<bool, UniquePtr<ResolvePassResources>> ResolveRenderer::PrepareResolvePassResources()
+    ResultValue<bool, UniquePtr<ResolveRenderContext>> ResolveRenderPass::PrepareResolveRenderContext(GraphicsDevice* device)
     {
-        UniquePtr<ResolvePassResources> resolveResources = MakeUnique<ResolvePassResources>();
+        UniquePtr<ResolveRenderContext> context = MakeUnique<ResolveRenderContext>();
+        context->device = device;
 
         ColorAttachment colorAttachment;
-        colorAttachment.format = colorFormat;
+        colorAttachment.format = ColorFormat;
         colorAttachment.colorLoadOperation = AttachmentLoadOperation::Clear;
         colorAttachment.colorStoreOperation = AttachmentStoreOperation::Store;
 
         RenderPassCreateInfo renderPassCreateInfo;
-        renderPassCreateInfo.name = RendererName;
+        renderPassCreateInfo.name = RenderPassName;
         renderPassCreateInfo.colorAttachments[0] = colorAttachment;
 
-        auto[createRenderPassResult, createdRenderPass] = context->device->CreateRenderPass(renderPassCreateInfo);
+        auto[createRenderPassResult, createdRenderPass] = device->CreateRenderPass(renderPassCreateInfo);
         if(createRenderPassResult != GraphicsResult::Success)
         {
             LUCH_ASSERT(false);
             return { false };
         }
 
-        resolveResources->renderPass = std::move(createdRenderPass);
+        context->renderPass = std::move(createdRenderPass);
 
         DescriptorPoolCreateInfo descriptorPoolCreateInfo;
         descriptorPoolCreateInfo.maxDescriptorSets = 3;
@@ -291,7 +254,7 @@ namespace Luch::Render::Deferred
             { ResourceType::Sampler, OffscreenImageCount + 1 },
         };
 
-        auto[createDescriptorPoolResult, createdDescriptorPool] = context->device->CreateDescriptorPool(
+        auto[createDescriptorPoolResult, createdDescriptorPool] = device->CreateDescriptorPool(
             descriptorPoolCreateInfo);
         if (createDescriptorPoolResult != GraphicsResult::Success)
         {
@@ -299,15 +262,7 @@ namespace Luch::Render::Deferred
             return { false };
         }
 
-        resolveResources->descriptorPool = std::move(createdDescriptorPool);
-
-        auto [createCommandPoolResult, createdCommandPool] = context->commandQueue->CreateCommandPool();
-        if(createCommandPoolResult != GraphicsResult::Success)
-        {
-            return { false };
-        }
-
-        resolveResources->commandPool = std::move(createdCommandPool);
+        context->descriptorPool = std::move(createdDescriptorPool);
 
         auto [vertexShaderLibraryCreated, createdVertexShaderLibrary] = RenderUtils::CreateShaderLibrary(
             context->device,
@@ -338,10 +293,10 @@ namespace Luch::Render::Deferred
             return { false };
         }
 
-        resolveResources->vertexShader = std::move(vertexShaderProgram);
+        context->vertexShader = std::move(vertexShaderProgram);
 
         auto[fragmentShaderLibraryCreated, createdFragmentShaderLibrary] = RenderUtils::CreateShaderLibrary(
-            context->device,
+            device,
 #if _WIN32
             "C:\\Development\\Luch\\src\\Luch\\Render\\Shaders\\Deferred\\resolve.frag",
 #endif
@@ -372,41 +327,43 @@ namespace Luch::Render::Deferred
             return { false };
         }
 
-        resolveResources->fragmentShader = std::move(fragmentShaderProgram);
+        context->fragmentShader = std::move(fragmentShaderProgram);
 
-        resolveResources->lightingParamsBinding.OfType(ResourceType::UniformBuffer);
-        resolveResources->lightsBufferBinding.OfType(ResourceType::UniformBuffer);
+        context->lightingParamsBinding.OfType(ResourceType::UniformBuffer);
+        context->lightsBufferBinding.OfType(ResourceType::UniformBuffer);
 
         DescriptorSetLayoutCreateInfo lightsDescriptorSetLayoutCreateInfo;
         lightsDescriptorSetLayoutCreateInfo
             .OfType(DescriptorSetType::Buffer)
             .WithNBindings(2)
-            .AddBinding(&resolveResources->lightingParamsBinding)
-            .AddBinding(&resolveResources->lightsBufferBinding);
+            .AddBinding(&context->lightingParamsBinding)
+            .AddBinding(&context->lightsBufferBinding);
 
-        auto[createLightsDescriptorSetLayoutResult, createdLightsDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(lightsDescriptorSetLayoutCreateInfo);
+        auto[createLightsDescriptorSetLayoutResult, createdLightsDescriptorSetLayout] = device->CreateDescriptorSetLayout(lightsDescriptorSetLayoutCreateInfo);
         if (createLightsDescriptorSetLayoutResult != GraphicsResult::Success)
         {
             LUCH_ASSERT(false);
             return { false };
         }
 
-        resolveResources->lightsBufferDescriptorSetLayout = std::move(createdLightsDescriptorSetLayout);
-
-        resolveResources->baseColorTextureBinding.OfType(ResourceType::Texture);
-        resolveResources->baseColorSamplerBinding.OfType(ResourceType::Sampler);
-        resolveResources->normalMapTextureBinding.OfType(ResourceType::Texture);
-        resolveResources->normalMapSamplerBinding.OfType(ResourceType::Sampler);
-        resolveResources->depthStencilTextureBinding.OfType(ResourceType::Texture);
-        resolveResources->depthStencilSamplerBinding.OfType(ResourceType::Sampler);
+        context->lightsBufferDescriptorSetLayout = std::move(createdLightsDescriptorSetLayout);
+        for(int32 i = 0; i < DeferredConstants::GBufferColorAttachmentCount; i++)
+        {
+            context->colorTextureBindings[i].OfType(ResourceType::Texture);
+        }
+        
+        context->depthStencilTextureBinding.OfType(ResourceType::Texture);
 
         DescriptorSetLayoutCreateInfo gbufferTextureDescriptorSetLayoutCreateInfo;
         gbufferTextureDescriptorSetLayoutCreateInfo
             .OfType(DescriptorSetType::Texture)
-            .WithNBindings(3)
-            .AddBinding(&resolveResources->baseColorTextureBinding)
-            .AddBinding(&resolveResources->normalMapTextureBinding)
-            .AddBinding(&resolveResources->depthStencilTextureBinding);
+            .WithNBindings(DeferredConstants::GBufferColorAttachmentCount + 1);
+        for(int32 i = 0; i < DeferredConstants::GBufferColorAttachmentCount; i++)
+        {
+            gbufferTextureDescriptorSetLayoutCreateInfo.AddBinding(&context->colorTextureBindings[i]);
+        }
+            
+        gbufferTextureDescriptorSetLayoutCreateInfo.AddBinding(&context->depthStencilTextureBinding);
 
         auto[createGBufferTextureDescriptorSetLayoutResult, createdGBufferTextureDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(gbufferTextureDescriptorSetLayoutCreateInfo);
         if (createGBufferTextureDescriptorSetLayoutResult != GraphicsResult::Success)
@@ -415,60 +372,13 @@ namespace Luch::Render::Deferred
             return { false };
         }
 
-        resolveResources->gbufferTextureDescriptorSetLayout = std::move(createdGBufferTextureDescriptorSetLayout);
-
-        DescriptorSetLayoutCreateInfo gbufferSamplerDescriptorSetLayoutCreateInfo;
-        gbufferSamplerDescriptorSetLayoutCreateInfo
-            .OfType(DescriptorSetType::Sampler)
-            .WithNBindings(3)
-            .AddBinding(&resolveResources->baseColorSamplerBinding)
-            .AddBinding(&resolveResources->normalMapSamplerBinding)
-            .AddBinding(&resolveResources->depthStencilSamplerBinding);
-
-        auto[createGBufferSamplerDescriptorSetLayoutResult, createdGBufferSamplerDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(gbufferSamplerDescriptorSetLayoutCreateInfo);
-        if (createGBufferSamplerDescriptorSetLayoutResult != GraphicsResult::Success)
-        {
-            LUCH_ASSERT(false);
-            return { false };
-        }
-
-        resolveResources->gbufferSamplerDescriptorSetLayout = std::move(createdGBufferSamplerDescriptorSetLayout);
-
-        SamplerCreateInfo samplerCreateInfo;
-
-        auto[createBaseColorSamplerResult, createdBaseColorSampler] = context->device->CreateSampler(samplerCreateInfo);
-        if (createBaseColorSamplerResult != GraphicsResult::Success)
-        {
-            LUCH_ASSERT(false);
-            return { false };
-        }
-
-        resolveResources->baseColorSampler = std::move(createdBaseColorSampler);
-
-        auto[createNormalMapSamplerResult, createdNormalMapSampler] = context->device->CreateSampler(samplerCreateInfo);
-        if (createNormalMapSamplerResult != GraphicsResult::Success)
-        {
-            LUCH_ASSERT(false);
-            return { false };
-        }
-
-        resolveResources->normalMapSampler = std::move(createdNormalMapSampler);
-
-        auto[createDepthSamplerResult, createdDepthSampler] = context->device->CreateSampler(samplerCreateInfo);
-        if (createDepthSamplerResult != GraphicsResult::Success)
-        {
-            LUCH_ASSERT(false);
-            return { false };
-        }
-
-        resolveResources->depthStencilSampler = std::move(createdDepthSampler);
+        context->gbufferTextureDescriptorSetLayout = std::move(createdGBufferTextureDescriptorSetLayout);
 
         PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
         pipelineLayoutCreateInfo
-            .AddSetLayout(ShaderStage::Fragment, commonResources->cameraBufferDescriptorSetLayout)
-            .AddSetLayout(ShaderStage::Fragment, resolveResources->lightsBufferDescriptorSetLayout)
-            .AddSetLayout(ShaderStage::Fragment, resolveResources->gbufferTextureDescriptorSetLayout)
-            .AddSetLayout(ShaderStage::Fragment, resolveResources->gbufferSamplerDescriptorSetLayout);
+            .AddSetLayout(ShaderStage::Fragment, context->cameraBufferDescriptorSetLayout)
+            .AddSetLayout(ShaderStage::Fragment, context->lightsBufferDescriptorSetLayout)
+            .AddSetLayout(ShaderStage::Fragment, context->gbufferTextureDescriptorSetLayout);
 
         auto[createPipelineLayoutResult, createdPipelineLayout] = context->device->CreatePipelineLayout(pipelineLayoutCreateInfo);
         if (createPipelineLayoutResult != GraphicsResult::Success)
@@ -477,17 +387,17 @@ namespace Luch::Render::Deferred
             return { false };
         }
 
-        resolveResources->pipelineLayout = std::move(createdPipelineLayout);
+        context->pipelineLayout = std::move(createdPipelineLayout);
 
         // TODO result
-        resolveResources->pipelineState = CreateResolvePipelineState(resolveResources.get());
+        context->pipelineState = CreateResolvePipelineState(context);
 
         BufferCreateInfo quadBufferCreateInfo;
         quadBufferCreateInfo.length = fullscreenQuadVertices.size() * sizeof(QuadVertex);
         quadBufferCreateInfo.storageMode = ResourceStorageMode::Shared;
         quadBufferCreateInfo.usage = BufferUsageFlags::VertexBuffer;
 
-        auto[createQuadBufferResult, createdQuadBuffer] = context->device->CreateBuffer(
+        auto[createQuadBufferResult, createdQuadBuffer] = device->CreateBuffer(
             quadBufferCreateInfo,
             fullscreenQuadVertices.data());
 
@@ -497,92 +407,42 @@ namespace Luch::Render::Deferred
             return { false };
         }
 
-        resolveResources->fullscreenQuadBuffer = std::move(createdQuadBuffer);
+        context->fullscreenQuadBuffer = std::move(createdQuadBuffer);
 
-        auto [allocateTextureSetResult, allocatedTextureSet] = resolveResources->descriptorPool->AllocateDescriptorSet(
-                resolveResources->gbufferTextureDescriptorSetLayout);
+        auto [allocateTextureSetResult, allocatedTextureSet] = context->descriptorPool->AllocateDescriptorSet(
+                context->gbufferTextureDescriptorSetLayout);
 
         if (allocateTextureSetResult != GraphicsResult::Success)
         {
             return { false };
         }
 
-        resolveResources->gbufferTextureDescriptorSet = std::move(allocatedTextureSet);
+        context->gbufferTextureDescriptorSet = std::move(allocatedTextureSet);
 
-        auto [allocateSamplerSetResult, allocatedSamplerSet] = resolveResources->descriptorPool->AllocateDescriptorSet(
-            resolveResources->gbufferSamplerDescriptorSetLayout);
-
-        if (allocateSamplerSetResult != GraphicsResult::Success)
-        {
-            return { false };
-        }
-
-        resolveResources->gbufferSamplerDescriptorSet = std::move(allocatedSamplerSet);
-
-        resolveResources->gbufferSamplerDescriptorSet->WriteSampler(
-            resolveResources->baseColorSamplerBinding,
-            resolveResources->baseColorSampler);
-
-        resolveResources->gbufferSamplerDescriptorSet->WriteSampler(
-            resolveResources->normalMapSamplerBinding,
-            resolveResources->normalMapSampler);
-
-        resolveResources->gbufferSamplerDescriptorSet->WriteSampler(
-            resolveResources->depthStencilSamplerBinding,
-            resolveResources->depthStencilSampler);
-
-        resolveResources->gbufferSamplerDescriptorSet->Update();
-
-        auto [createDescriptorSetResult, createdDescriptorSet] = resolveResources->descriptorPool->AllocateDescriptorSet(
-            resolveResources->lightsBufferDescriptorSetLayout);
+        auto [createDescriptorSetResult, createdDescriptorSet] = context->descriptorPool->AllocateDescriptorSet(
+            context->lightsBufferDescriptorSetLayout);
 
         if(createDescriptorSetResult != GraphicsResult::Success)
         {
             return { false };
         }
 
-        resolveResources->lightsBufferDescriptorSet = createdDescriptorSet;
+        context->lightsBufferDescriptorSet = createdDescriptorSet;
 
         BufferCreateInfo bufferCreateInfo;
         bufferCreateInfo.length = SharedUniformBufferSize;
         bufferCreateInfo.storageMode = ResourceStorageMode::Shared;
         bufferCreateInfo.usage = BufferUsageFlags::Uniform;
 
-        auto [createBufferResult, createdBuffer] = context->device->CreateBuffer(bufferCreateInfo);
+        auto [createBufferResult, createdBuffer] = device->CreateBuffer(bufferCreateInfo);
         if(createBufferResult != GraphicsResult::Success)
         {
             LUCH_ASSERT(false);
             return { false };
         }
 
-        resolveResources->sharedBuffer = MakeUnique<SharedBuffer>(std::move(createdBuffer));
+        context->sharedBuffer = MakeUnique<SharedBuffer>(std::move(createdBuffer));
 
-        return { true, std::move(resolveResources) };
-    }
-
-    ResultValue<bool, RefPtr<Texture>> ResolveRenderer::CreateResolveTexture()
-    {
-        const auto& swapchainCreateInfo = context->swapchain->GetInfo();
-        int32 textureWidth = swapchainCreateInfo.width;
-        int32 textureHeight = swapchainCreateInfo.height;
-
-        TextureCreateInfo textureCreateInfo;
-        textureCreateInfo.format = colorFormat;
-        textureCreateInfo.width = textureWidth;
-        textureCreateInfo.height = textureHeight;
-        textureCreateInfo.usage =
-              TextureUsageFlags::ColorAttachment
-            | TextureUsageFlags::ShaderRead
-            | TextureUsageFlags::TransferSource;
-
-        auto[createTextureResult, createdTexture] = context->device->CreateTexture(
-            textureCreateInfo);
-
-        if (createTextureResult != GraphicsResult::Success)
-        {
-            return { false };
-        }
-
-        return { true, std::move(createdTexture) };
+        return { true, std::move(context) };
     }
 }
