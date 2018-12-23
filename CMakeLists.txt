@@ -48,7 +48,7 @@ include_directories(BEFORE SYSTEM
     ${LIB_DIR}/stb/
     ${LIB_DIR}/glm/
     ${LIB_DIR}/json/src/
-    ${SDL2_INCLUDE_DIR}
+    ${SDL2_INCLUDE_DIRS}
 )
 
 # Setup vulkan include and library paths
@@ -220,7 +220,6 @@ if(USE_METAL)
         ${LIB_DIR}/mtlpp/mtlpp.hpp
         ${LIB_DIR}/mtlpp/mtlpp.mm)
 
-    target_link_libraries(mtlpp ${SDL2_LIBRARY})
     target_link_libraries(mtlpp "-framework Foundation")
     target_link_libraries(mtlpp "-framework CoreVideo")
     target_link_libraries(mtlpp "-framework QuartzCore")
@@ -310,6 +309,7 @@ if(APPLE)
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/res/macOS/Sample/Info.plist.in
         RESOURCE "${SAMPLE_MACOS_RESOURCE_FILES}")
 
+    target_link_libraries(LuchEngineSample ${SDL2_LIBRARIES})
     target_link_libraries(LuchEngineSample "-framework Foundation")
     target_link_libraries(LuchEngineSample "-framework CoreVideo")
     target_link_libraries(LuchEngineSample "-framework QuartzCore")
