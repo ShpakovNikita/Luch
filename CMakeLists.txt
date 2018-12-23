@@ -5,8 +5,6 @@ set(CXX_STANDARD 17)
 
 set(LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
-set(SDL2_DIR ${LIB_DIR}/SDL2)
-
 find_package(SDL2 REQUIRED)
 
 if(MSVC)
