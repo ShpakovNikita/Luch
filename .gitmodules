@@ -13,3 +13,6 @@
 [submodule "lib/stb"]
 	path = lib/stb
 	url = https://github.com/nothings/stb.git
+[submodule "lib/SDL2"]
+	path = lib/SDL2
+	url = https://github.com/spurious/SDL-mirror.git
