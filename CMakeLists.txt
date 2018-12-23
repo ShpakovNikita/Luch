@@ -1,9 +1,13 @@
-cmake_minimum_required(VERSION 3.9.0)
+cmake_minimum_required(VERSION 3.12.0)
 
 project(Luch VERSION 0.1 LANGUAGES CXX)
 set(CXX_STANDARD 17)
 
-# set_property(GLOBAL PROPERTY USE_FOLDERS On) 
+set(LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib)
+
+set(SDL2_DIR ${LIB_DIR}/SDL2)
+
+find_package(SDL2 REQUIRED)
 
 if(MSVC)
     if (MSVC_VERSION GREATER_EQUAL "1900")
@@ -43,9 +47,10 @@ add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
 
 # Theese libs are always used
 include_directories(BEFORE SYSTEM
-    ${CMAKE_CURRENT_SOURCE_DIR}/lib/stb/
-    ${CMAKE_CURRENT_SOURCE_DIR}/lib/glm/
-    ${CMAKE_CURRENT_SOURCE_DIR}/lib/json/src/
+    ${LIB_DIR}/stb/
+    ${LIB_DIR}/glm/
+    ${LIB_DIR}/json/src/
+    ${SDL2_INCLUDE_DIR}
 )
 
 # Setup vulkan include and library paths
@@ -178,7 +183,6 @@ add_library(LuchEngine
     ${ENGINE_COMMON_CPP_FILES}
     ${ENGINE_COMMON_HEADER_FILES})
 
-
 # Add Luch Engine library
 if(APPLE)
     file(GLOB_RECURSE ENGINE_MACOS_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Luch/*.cpp)
@@ -212,12 +216,13 @@ if(USE_METAL)
     add_compile_definitions(GLM_FORCE_LEFT_HANDED)
     # Add mtlpp library and includes
     include_directories(AFTER
-        ${CMAKE_CURRENT_SOURCE_DIR}/lib/mtlpp/)
+        ${LIB_DIR}/mtlpp/)
 
     add_library(mtlpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/lib/mtlpp/mtlpp.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/lib/mtlpp/mtlpp.mm)
+        ${LIB_DIR}/mtlpp/mtlpp.hpp
+        ${LIB_DIR}/mtlpp/mtlpp.mm)
 
+    target_link_libraries(mtlpp ${SDL2_LIBRARY})
     target_link_libraries(mtlpp "-framework Foundation")
     target_link_libraries(mtlpp "-framework CoreVideo")
     target_link_libraries(mtlpp "-framework QuartzCore")
