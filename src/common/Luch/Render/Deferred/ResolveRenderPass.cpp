@@ -137,6 +137,21 @@ namespace Luch::Render::Deferred
         cmdList->End();
     }
 
+    void ResolveRenderPass::UpdateCamera(SceneV1::Camera* camera)
+    {
+        auto cameraUniform = RenderUtils::GetCameraUniform(camera, {});
+        auto cameraUniformSuballocation = context->sharedBuffer->Suballocate(sizeof(CameraUniform), 16);
+
+        memcpy(cameraUniformSuballocation.offsetMemory, &cameraUniform, sizeof(CameraUniform));
+
+        context->lightsBufferDescriptorSet->WriteUniformBuffer(
+            context->cameraUniformBufferBinding,
+            cameraUniformSuballocation.buffer,
+            cameraUniformSuballocation.offset);
+
+        context->cameraBufferDescriptorSet->Update();
+    }
+
     void ResolveRenderPass::UpdateLights(const RefPtrVector<SceneV1::Node>& lightNodes)
     {
         Vector<LightUniform> lightUniforms;
@@ -246,10 +261,10 @@ namespace Luch::Render::Deferred
         context->renderPass = std::move(createdRenderPass);
 
         DescriptorPoolCreateInfo descriptorPoolCreateInfo;
-        descriptorPoolCreateInfo.maxDescriptorSets = 3;
+        descriptorPoolCreateInfo.maxDescriptorSets = 4;
         descriptorPoolCreateInfo.descriptorCount =
         {
-            { ResourceType::UniformBuffer, 1 },
+            { ResourceType::UniformBuffer, 2 },
             { ResourceType::Texture, OffscreenImageCount + 1 },
             { ResourceType::Sampler, OffscreenImageCount + 1 },
         };
@@ -329,8 +344,25 @@ namespace Luch::Render::Deferred
 
         context->fragmentShader = std::move(fragmentShaderProgram);
 
+        context->cameraUniformBufferBinding.OfType(ResourceType::UniformBuffer);
+
+        DescriptorSetLayoutCreateInfo cameraDescriptorSetLayoutCreateInfo;
+        cameraDescriptorSetLayoutCreateInfo
+            .OfType(DescriptorSetType::Buffer)
+            .WithNBindings(1)
+            .AddBinding(&context->cameraUniformBufferBinding);
+
         context->lightingParamsBinding.OfType(ResourceType::UniformBuffer);
         context->lightsBufferBinding.OfType(ResourceType::UniformBuffer);
+
+        auto[createCameraDescriptorSetLayoutResult, createdCameraDescriptorSetLayout] = device->CreateDescriptorSetLayout(cameraDescriptorSetLayoutCreateInfo);
+        if (createCameraDescriptorSetLayoutResult != GraphicsResult::Success)
+        {
+            LUCH_ASSERT(false);
+            return { false };
+        }
+
+        context->cameraBufferDescriptorSetLayout = std::move(createdCameraDescriptorSetLayout);
 
         DescriptorSetLayoutCreateInfo lightsDescriptorSetLayoutCreateInfo;
         lightsDescriptorSetLayoutCreateInfo
@@ -347,6 +379,7 @@ namespace Luch::Render::Deferred
         }
 
         context->lightsBufferDescriptorSetLayout = std::move(createdLightsDescriptorSetLayout);
+
         for(int32 i = 0; i < DeferredConstants::GBufferColorAttachmentCount; i++)
         {
             context->colorTextureBindings[i].OfType(ResourceType::Texture);
@@ -362,7 +395,7 @@ namespace Luch::Render::Deferred
         {
             gbufferTextureDescriptorSetLayoutCreateInfo.AddBinding(&context->colorTextureBindings[i]);
         }
-            
+
         gbufferTextureDescriptorSetLayoutCreateInfo.AddBinding(&context->depthStencilTextureBinding);
 
         auto[createGBufferTextureDescriptorSetLayoutResult, createdGBufferTextureDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(gbufferTextureDescriptorSetLayoutCreateInfo);
@@ -419,15 +452,25 @@ namespace Luch::Render::Deferred
 
         context->gbufferTextureDescriptorSet = std::move(allocatedTextureSet);
 
-        auto [createDescriptorSetResult, createdDescriptorSet] = context->descriptorPool->AllocateDescriptorSet(
-            context->lightsBufferDescriptorSetLayout);
+        auto [allocateCameraDescriptorSetResult, allocatedCameraBufferSet] = context->descriptorPool->AllocateDescriptorSet(
+            context->cameraBufferDescriptorSetLayout);
 
-        if(createDescriptorSetResult != GraphicsResult::Success)
+        if(allocateCameraDescriptorSetResult != GraphicsResult::Success)
         {
             return { false };
         }
 
-        context->lightsBufferDescriptorSet = createdDescriptorSet;
+        context->cameraBufferDescriptorSet = allocatedCameraBufferSet;
+
+        auto [allocateLightsDescriptorSetResult, allocatedLightsBufferSet] = context->descriptorPool->AllocateDescriptorSet(
+            context->lightsBufferDescriptorSetLayout);
+
+        if(allocateLightsDescriptorSetResult != GraphicsResult::Success)
+        {
+            return { false };
+        }
+
+        context->lightsBufferDescriptorSet = allocatedLightsBufferSet;
 
         BufferCreateInfo bufferCreateInfo;
         bufferCreateInfo.length = SharedUniformBufferSize;

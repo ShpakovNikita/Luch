@@ -14,12 +14,9 @@ namespace Luch::Render::Deferred
 {
     using namespace Graphics;
 
-    struct ResolveRenderContext
+    struct ResolvePersistentRenderContext
     {
         GraphicsDevice* device = nullptr;
-        SceneV1::Scene* scene = nullptr;
-        GBufferReadOnly gbuffer;
-        Size2i attachmentSize;
 
         RefPtr<PipelineState> pipelineState;
         RefPtr<PipelineLayout> pipelineLayout;
@@ -27,12 +24,12 @@ namespace Luch::Render::Deferred
 
         RefPtr<Buffer> fullscreenQuadBuffer;
 
+        DescriptorSetBinding cameraUniformBufferBinding;
+
         Array<DescriptorSetBinding, DeferredConstants::GBufferColorAttachmentCount> colorTextureBindings;
         DescriptorSetBinding depthStencilTextureBinding;
 
-        RefPtr<DescriptorSet> gbufferTextureDescriptorSet;
-        RefPtr<DescriptorSet> gbufferSamplerDescriptorSet;
-
+        RefPtr<DescriptorSetLayout> cameraBufferDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> gbufferTextureDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> gbufferSamplerDescriptorSetLayout;
 
@@ -46,7 +43,14 @@ namespace Luch::Render::Deferred
         RefPtr<ShaderProgram> fragmentShader;
 
         RefPtr<RenderPass> renderPass;
+    };
 
-        UniquePtr<SharedBuffer> sharedBuffer;
+    struct ResolveTransientRenderContext
+    {
+        SceneV1::Scene* scene = nullptr;
+        GBufferReadOnly gbuffer;
+        Size2i attachmentSize;
+        SharedBuffer* sharedBuffer = nullptr;
+        DescriptorSet* cameraBufferDescriptorSet = nullptr;
     };
 }

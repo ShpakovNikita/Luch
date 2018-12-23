@@ -3,7 +3,12 @@
 #include <Luch/Render/ShaderDefines.h>
 #include <Luch/Render/MaterialManager.h>
 #include <Luch/Render/Deferred/DeferredShaderDefines.h>
-#include <Luch/Render/Deferred/GBufferRenderContext.h>
+#include <Luch/Render/Deferred/GBufferContext.h>
+#include <Luch/Render/RenderUtils.h>
+#include <Luch/Render/SharedBuffer.h>
+#include <Luch/Render/Graph/RenderGraphNode.h>
+#include <Luch/Render/Graph/RenderGraphBuilder.h>
+#include <Luch/Render/Graph/RenderGraphNodeBuilder.h>
 
 #include <Luch/SceneV1/Scene.h>
 #include <Luch/SceneV1/Node.h>
@@ -26,7 +31,6 @@
 #include <Luch/Graphics/PhysicalDevice.h>
 #include <Luch/Graphics/GraphicsDevice.h>
 #include <Luch/Graphics/CommandQueue.h>
-#include <Luch/Graphics/CommandPool.h>
 #include <Luch/Graphics/DescriptorPool.h>
 #include <Luch/Graphics/GraphicsCommandList.h>
 #include <Luch/Graphics/Swapchain.h>
@@ -41,14 +45,6 @@
 #include <Luch/Graphics/PipelineLayoutCreateInfo.h>
 #include <Luch/Graphics/IndexType.h>
 #include <Luch/Graphics/PipelineStateCreateInfo.h>
-
-#include <Luch/Render/RenderContext.h>
-#include <Luch/Render/RenderUtils.h>
-#include <Luch/Render/SharedBuffer.h>
-#include <Luch/Render/Deferred/GBufferRenderContext.h>
-#include <Luch/Render/Graph/RenderGraphNode.h>
-#include <Luch/Render/Graph/RenderGraphBuilder.h>
-#include <Luch/Render/Graph/RenderGraphNodeBuilder.h>
 
 namespace Luch::Render::Deferred
 {
@@ -90,25 +86,37 @@ namespace Luch::Render::Deferred
     const String GBufferRenderPass::RenderPassName{"GBuffer"};
 
     GBufferRenderPass::GBufferRenderPass(
-        GBufferRenderContext* aContext,
+        GBufferPersistentContext* aPersistentContext,
+        GBufferTransientContext* aTransientContext,
         RenderGraphBuilder* builder)
-        : context(aContext)
+        : persistentContext(aPersistentContext)
+        , transientContext(aTransientContext)
     {
-        auto node = builder->AddRenderPass(RenderPassName, context->renderPass, this);
+        auto node = builder->AddRenderPass(RenderPassName, persistentContext->renderPass, this);
 
         for(int32 i = 0; i < DeferredConstants::GBufferColorAttachmentCount; i++)
         {
-            gbuffer.color[i] = node->CreateColorAttachment(i, context->attachmentSize);
+            gbuffer.color[i] = node->CreateColorAttachment(i, transientContext->attachmentSize);
         }
 
-        gbuffer.depthStencil = node->CreateDepthStencilAttachment(context->attachmentSize);
+        gbuffer.depthStencil = node->CreateDepthStencilAttachment(transientContext->attachmentSize);
     }
 
     GBufferRenderPass::~GBufferRenderPass() = default;
 
     void GBufferRenderPass::PrepareScene()
     {
-        const auto& nodes = context->scene->GetNodes();
+        BufferCreateInfo bufferCreateInfo;
+        bufferCreateInfo.length = SharedUniformBufferSize;
+        bufferCreateInfo.storageMode = ResourceStorageMode::DeviceLocal;
+        bufferCreateInfo.usage = BufferUsageFlags::Uniform;
+
+        auto [createBufferResult, createdBuffer] = persistentContext->device->CreateBuffer(bufferCreateInfo);
+        LUCH_ASSERT(createBufferResult == GraphicsResult::Success);
+
+        sharedBuffer = MakeUnique<SharedBuffer>(std::move(createdBuffer));
+
+        const auto& nodes = transientContext->scene->GetNodes();
 
         for (const auto& node : nodes)
         {
@@ -116,14 +124,16 @@ namespace Luch::Render::Deferred
             {
                 PrepareMeshNode(node);
             }
+            if(node->GetCamera() != nullptr)
+            {
+                PrepareCameraNode(node);
+            }
         }
     }
 
     void GBufferRenderPass::UpdateScene()
     {
-        context->sharedBuffer->Reset();
-
-        for (const auto& node : context->scene->GetNodes())
+        for (const auto& node : transientContext->scene->GetNodes())
         {
             UpdateNode(node);
         }
@@ -135,11 +145,11 @@ namespace Luch::Render::Deferred
         GraphicsCommandList* commandList)
     {
         Viewport viewport;
-        viewport.width = static_cast<float32>(context->attachmentSize.width);
-        viewport.height = static_cast<float32>(context->attachmentSize.height);
+        viewport.width = static_cast<float32>(transientContext->attachmentSize.width);
+        viewport.height = static_cast<float32>(transientContext->attachmentSize.height);
 
         Rect2i scissorRect;
-        scissorRect.size = context->attachmentSize;
+        scissorRect.size = transientContext->attachmentSize;
 
         commandList->Begin();
         commandList->BeginRenderPass(frameBuffer);
@@ -147,16 +157,34 @@ namespace Luch::Render::Deferred
         commandList->SetScissorRects({ scissorRect });
         commandList->BindBufferDescriptorSet(
             ShaderStage::Vertex,
-            context->pipelineLayout,
-            camera->GetDescriptorSet(RenderPassName));
+            persistentContext->pipelineLayout,
+            transientContext->cameraBufferDescriptorSet);
 
-        for (const auto& node : context->scene->GetNodes())
+        for (const auto& node : transientContext->scene->GetNodes())
         {
             DrawNode(node, commandList);
         }
 
         commandList->EndRenderPass();
         commandList->End();
+    }
+
+    void GBufferRenderPass::PrepareNode(SceneV1::Node* node)
+    {
+        if (node->GetMesh() != nullptr)
+        {
+            PrepareMeshNode(node);
+        }
+
+        if(node->GetCamera() != nullptr)
+        {
+            PrepareCameraNode(node);
+        }
+
+        for (const auto& child : node->GetChildren())
+        {
+            PrepareNode(child);
+        }
     }
 
     void GBufferRenderPass::PrepareMeshNode(SceneV1::Node* node)
@@ -167,11 +195,15 @@ namespace Luch::Render::Deferred
         {
             PrepareMesh(mesh);
         }
+    }
 
-        // TODO sort out node hierarchy
-        for (const auto& child : node->GetChildren())
+    void GBufferRenderPass::PrepareCameraNode(SceneV1::Node* node)
+    {
+        const auto& mesh = node->GetMesh();
+
+        if (mesh != nullptr)
         {
-            PrepareMeshNode(child);
+            PrepareMesh(mesh);
         }
     }
 
@@ -192,12 +224,12 @@ namespace Luch::Render::Deferred
             PreparePrimitive(primitive);
         }
 
-        auto[allocateDescriptorSetResult, allocatedDescriptorSet] = context->descriptorPool->AllocateDescriptorSet(
-            context->meshBufferDescriptorSetLayout);
+        auto[allocateDescriptorSetResult, allocatedDescriptorSet] = transientContext->descriptorPool->AllocateDescriptorSet(
+            persistentContext->meshBufferDescriptorSetLayout);
 
         LUCH_ASSERT(allocateDescriptorSetResult == GraphicsResult::Success);
 
-        mesh->SetBufferDescriptorSet(RenderPassName, allocatedDescriptorSet);
+        meshDescriptorSets[mesh] = allocatedDescriptorSet;
     }
 
     void GBufferRenderPass::UpdateNode(SceneV1::Node* node)
@@ -222,14 +254,14 @@ namespace Luch::Render::Deferred
         meshUniform.inverseTransform = glm::inverse(transform);
 
         // TODO
-        auto suballocation = context->sharedBuffer->Suballocate(sizeof(MeshUniform), 16);
+        auto suballocation = sharedBuffer->Suballocate(sizeof(MeshUniform), 16);
 
         memcpy(suballocation.offsetMemory, &meshUniform, sizeof(MeshUniform));
 
-        auto descriptorSet = mesh->GetBufferDescriptorSet(RenderPassName);
+        auto& descriptorSet = meshDescriptorSets[mesh];
 
         descriptorSet->WriteUniformBuffer(
-            context->meshUniformBufferBinding,
+            persistentContext->meshUniformBufferBinding,
             suballocation.buffer,
             suballocation.offset);
 
@@ -254,24 +286,13 @@ namespace Luch::Render::Deferred
     {
         commandList->BindBufferDescriptorSet(
             ShaderStage::Vertex,
-            context->pipelineLayout,
-            mesh->GetBufferDescriptorSet(RenderPassName));
+            persistentContext->pipelineLayout,
+            meshDescriptorSets[mesh]);
 
         for (const auto& primitive : mesh->GetPrimitives())
         {
             const auto& material = primitive->GetMaterial();
             if (material->GetProperties().alphaMode != SceneV1::AlphaMode::Blend)
-            {
-                BindMaterial(material, commandList);
-                DrawPrimitive(primitive, commandList);
-            }
-        }
-
-        // TODO sort by distance to camera
-        for (const auto& primitive : mesh->GetPrimitives())
-        {
-            const auto& material = primitive->GetMaterial();
-            if (material->GetProperties().alphaMode == SceneV1::AlphaMode::Blend)
             {
                 BindMaterial(material, commandList);
                 DrawPrimitive(primitive, commandList);
@@ -283,17 +304,17 @@ namespace Luch::Render::Deferred
     {
         commandList->BindTextureDescriptorSet(
             ShaderStage::Fragment,
-            context->pipelineLayout,
+            persistentContext->pipelineLayout,
             material->GetTextureDescriptorSet());
 
         commandList->BindBufferDescriptorSet(
             ShaderStage::Fragment,
-            context->pipelineLayout,
+            persistentContext->pipelineLayout,
             material->GetBufferDescriptorSet());
 
         commandList->BindSamplerDescriptorSet(
             ShaderStage::Fragment,
-            context->pipelineLayout,
+            persistentContext->pipelineLayout,
             material->GetSamplerDescriptorSet());
     }
 
@@ -387,9 +408,8 @@ namespace Luch::Render::Deferred
         }
 
 
-        // TODO
-        //ci.renderPass = scene.gbuffer.renderPass;
-        ci.pipelineLayout = context->pipelineLayout;
+        ci.renderPass = persistentContext->renderPass;
+        ci.pipelineLayout = persistentContext->pipelineLayout;
 
         if (material->HasBaseColorTexture())
         {
@@ -422,7 +442,7 @@ namespace Luch::Render::Deferred
         }
 
         auto[vertexShaderLibraryCreated, vertexShaderLibrary] = RenderUtils::CreateShaderLibrary(
-            context->device,
+            persistentContext->device,
 #if _WIN32
             "C:\\Development\\Luch\\src\\Luch\\Render\\Shaders\\Deferred\\gbuffer.vert",
 #endif
@@ -450,7 +470,7 @@ namespace Luch::Render::Deferred
         auto vertexShader = std::move(createdVertexShader);
 
         auto[fragmentShaderLibraryCreated, fragmentShaderLibrary] = RenderUtils::CreateShaderLibrary(
-            context->device,
+            persistentContext->device,
 #if _WIN32
             "C:\\Development\\Luch\\src\\Luch\\Render\\Shaders\\Deferred\\gbuffer.frag",
 #endif
@@ -480,7 +500,7 @@ namespace Luch::Render::Deferred
         ci.vertexProgram = vertexShader;
         ci.fragmentProgram = fragmentShader;
 
-        auto[createPipelineResult, createdPipeline] = context->device->CreatePipelineState(ci);
+        auto[createPipelineResult, createdPipeline] = persistentContext->device->CreatePipelineState(ci);
         if (createPipelineResult != GraphicsResult::Success)
         {
             LUCH_ASSERT(false);
@@ -489,11 +509,11 @@ namespace Luch::Render::Deferred
         return createdPipeline;
     }
 
-    ResultValue<bool, UniquePtr<GBufferRenderContext>> GBufferRenderPass::PrepareGBufferRenderContext(
+    ResultValue<bool, UniquePtr<GBufferPersistentContext>> GBufferRenderPass::PrepareGBufferPersistentContext(
         GraphicsDevice* device,
         MaterialResources* materialResources)
     {
-        UniquePtr<GBufferRenderContext> context = MakeUnique<GBufferRenderContext>();
+        UniquePtr<GBufferPersistentContext> context = MakeUnique<GBufferPersistentContext>();
         context->device = device;
 
         Vector<Format> depthFormats =
@@ -612,20 +632,6 @@ namespace Luch::Render::Deferred
         }
 
         context->pipelineLayout = std::move(createdPipelineLayout);
-
-        BufferCreateInfo bufferCreateInfo;
-        bufferCreateInfo.length = SharedUniformBufferSize;
-        bufferCreateInfo.storageMode = ResourceStorageMode::Shared;
-        bufferCreateInfo.usage = BufferUsageFlags::Uniform;
-
-        auto [createBufferResult, createdBuffer] = device->CreateBuffer(bufferCreateInfo);
-        if(createBufferResult != GraphicsResult::Success)
-        {
-            LUCH_ASSERT(false);
-            return { false };
-        }
-
-        context->sharedBuffer = MakeUnique<SharedBuffer>(std::move(createdBuffer));
 
         return { true, std::move(context) };
     }

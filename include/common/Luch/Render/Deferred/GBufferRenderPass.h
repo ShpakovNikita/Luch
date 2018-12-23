@@ -34,12 +34,13 @@ namespace Luch::Render::Deferred
     public:
         static const String RenderPassName;
 
-        static ResultValue<bool, UniquePtr<GBufferRenderContext>> PrepareGBufferRenderContext(
+        static ResultValue<bool, UniquePtr<GBufferPersistentContext>> PrepareGBufferPersistentContext(
             GraphicsDevice* device,
             MaterialResources* materialResources);
 
         GBufferRenderPass(
-            GBufferRenderContext* context,
+            GBufferPersistentContext* persistentContext,
+            GBufferTransientContext* transientContext,
             RenderGraphBuilder* builder);
 
         ~GBufferRenderPass();
@@ -47,8 +48,8 @@ namespace Luch::Render::Deferred
         void PrepareScene();
         void UpdateScene();
 
-        SceneV1::Camera* GetCamera() { return camera; }
-        void SetCamera(SceneV1::Camera* aCamera) { camera = aCamera; }
+        SceneV1::Node* GetCameraNode() { return cameraNode; }
+        void SetCameraNode(SceneV1::Node* node){ cameraNode = node; }
 
         GBufferReadOnly GetGBuffer() { return gbuffer; }
 
@@ -57,13 +58,14 @@ namespace Luch::Render::Deferred
             FrameBuffer* frameBuffer, 
             GraphicsCommandList* commandList) override;
     private:
+        void PrepareNode(SceneV1::Node* node);
         void PrepareMeshNode(SceneV1::Node* node);
+        void PrepareCameraNode(SceneV1::Node* node);
         void PrepareMesh(SceneV1::Mesh* mesh);
         void PreparePrimitive(SceneV1::Primitive* primitive);
 
         void UpdateNode(SceneV1::Node* node);
         void UpdateMesh(SceneV1::Mesh* mesh, const Mat4x4& transform);
-        void UpdateCamera(SceneV1::Camera* camera, const Mat4x4& transform);
 
         void BindMaterial(SceneV1::PbrMaterial* material, GraphicsCommandList* commandList);
         void DrawNode(SceneV1::Node* node, GraphicsCommandList* commandList);
@@ -72,9 +74,13 @@ namespace Luch::Render::Deferred
 
         RefPtr<PipelineState> CreateGBufferPipelineState(SceneV1::Primitive* primitive);
 
-        GBufferRenderContext* context = nullptr;
+        GBufferPersistentContext* persistentContext = nullptr;
+        GBufferTransientContext* transientContext = nullptr;
         GBuffer gbuffer;
 
-        SceneV1::Camera* camera = nullptr;
+        UnorderedMap<SceneV1::Mesh*, RefPtr<DescriptorSet>> meshDescriptorSets;
+        UnorderedMap<SceneV1::Camera*, RefPtr<DescriptorSet>> cameraDescriptorSets;
+        UniquePtr<SharedBuffer> sharedBuffer;
+        SceneV1::Node* cameraNode = nullptr;
     };
 }

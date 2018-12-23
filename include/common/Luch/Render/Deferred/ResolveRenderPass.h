@@ -56,9 +56,10 @@ namespace Luch::Render::Deferred
             FrameBuffer* frameBuffer,
             GraphicsCommandList* commandList) override;
     private:
+        void UpdateCamera(SceneV1::Camera* camera);
         void UpdateLights(const RefPtrVector<SceneV1::Node>& lightNodes);
 
-        RefPtr<PipelineState> CreateResolvePipelineState(ResolveRenderContext* context);
+        static RefPtr<PipelineState> CreateResolvePipelineState(ResolveRenderContext* context);
 
         SceneV1::Camera* camera = nullptr;
         ResolveRenderContext* context;
