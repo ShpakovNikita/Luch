@@ -9,7 +9,7 @@
 
 @interface MetalView : NSView
 
-@property (nonatomic) CAMetalLayer *metalLayer;
+@property (nonatomic, assign) CAMetalLayer *metalLayer;
 
 @end
 
@@ -26,15 +26,29 @@
     return [CAMetalLayer class];
 }
 
+- (instancetype)initWithFrame:(CGRect)frame
+{
+    if ((self = [super initWithFrame:frame])) {
+        self.wantsLayer = YES;
+        _metalLayer = (CAMetalLayer *) self.layer;
+        [self updateDrawableSize];
+    }
+
+    return self;
+}
+
 -(CALayer*) makeBackingLayer
 {
     CAMetalLayer* layer = [self.class.layerClass layer];
-    layer.device = MTLCreateSystemDefaultDevice();
     layer.opaque = YES;
     layer.contentsScale = [[NSScreen mainScreen] backingScaleFactor];
     layer.pixelFormat =  MTLPixelFormatBGRA8Unorm_sRGB;
-    _metalLayer = layer;
     return layer;
+}
+
+- (void)updateDrawableSize
+{
+    _metalLayer.drawableSize = [self convertSizeToBacking:self.bounds.size];
 }
 
 @end
@@ -43,25 +57,22 @@ int main(int argc, const char * argv[])
 {
     SDL_InitSubSystem(SDL_INIT_VIDEO);
 
-    SDL_Window *window = SDL_CreateWindow("", 0, 0, 480, 320, SDL_WINDOW_RESIZABLE);
+    SDL_Window *window = SDL_CreateWindow("Luch Engine Sample", 0, 0, 500, 500, SDL_WINDOW_RESIZABLE);
 
     SDL_SysWMinfo info;
     SDL_VERSION(&info.version);
     SDL_GetWindowWMInfo(window, &info);
 
-    // NSView *sdlView = info.info.;
+    NSView* sdlView = info.info.cocoa.window.contentView;
+    MetalView *metalView = [[MetalView alloc] initWithFrame:sdlView.frame];
+    CGSize size = metalView.metalLayer.drawableSize;
+    [sdlView addSubview:metalView];
 
-    // MetalView *metalView = [[MetalView alloc] initWithFrame:sdlView.frame];
-    // [sdlView addSubview:metalView];
-
-    // NSRect bounds = metalView.bounds;
-    // CGSize backingSize = [metalView convertSizeToBacking:bounds.size];
-
-    // app = new SampleApplication();
-    // app->SetViewSize(static_cast<Luch::int32>(backingSize.width), static_cast<Luch::int32>(backingSize.height));
-    // app->SetView(metalView);
-    // [[maybe_unused]] bool result = app->Initialize({});
-    // LUCH_ASSERT(result);
+    auto app = Luch::MakeUnique<SampleApplication>();
+    app->SetViewSize(static_cast<Luch::int32>(size.width), static_cast<Luch::int32>(size.height));
+    app->SetView(metalView.metalLayer);
+    [[maybe_unused]] bool result = app->Initialize({});
+    LUCH_ASSERT(result);
 
     while(true)
     {
@@ -70,10 +81,10 @@ int main(int argc, const char * argv[])
             /* Handle SDL events. */
         }
 
-        // application->Process();
+        app->Process();
     }
 
-    //[metalview removeFromSuperview];
+    [metalView removeFromSuperview];
 
     SDL_DestroyWindow(window);
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
