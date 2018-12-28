@@ -167,7 +167,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     LUCH_ASSERT(cameraIt != scene->GetNodes().end());
     camera = (*cameraIt)->GetCamera();
 
-    auto renderer = MakeUnique<Render::SceneRenderer>(scene);
+    renderer = MakeUnique<Render::SceneRenderer>(scene);
 
     auto rendererInitialized = renderer->Initialize(context);
     if(!rendererInitialized)
@@ -213,9 +213,11 @@ void SampleApplication::Process()
 {
     scene->Update();
 
+    renderer->BeginRender();
     renderer->PrepareScene();
     renderer->UpdateScene();
     renderer->DrawScene(camera);
+    renderer->EndRender();
 
     context->commandQueue->Present(0, context->swapchain);
 }

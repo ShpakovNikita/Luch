@@ -148,6 +148,7 @@ namespace Luch::Render::Deferred
         Format swapchainFormat)
     {
         UniquePtr<TonemapPersistentContext> context = MakeUnique<TonemapPersistentContext>();
+        context->device = device;
 
         ColorAttachment colorAttachment;
         colorAttachment.format = swapchainFormat;

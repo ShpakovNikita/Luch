@@ -3,8 +3,6 @@ cmake_minimum_required(VERSION 3.9.0)
 project(Luch VERSION 0.1 LANGUAGES CXX)
 set(CXX_STANDARD 17)
 
-# set_property(GLOBAL PROPERTY USE_FOLDERS On) 
-
 if(MSVC)
     if (MSVC_VERSION GREATER_EQUAL "1900")
         include(CheckCXXCompilerFlag)
@@ -18,7 +16,11 @@ if(MSVC)
         if (_cpp_non_permissive_supported)
             add_compile_options("/permissive-")
         endif()
+
+        add_compile_options(/W4 /WX)
     endif()
+else()
+    add_compile_options(-Wall -Wextra -pedantic)
 endif()
 
 if(USE_METAL AND NOT APPLE)

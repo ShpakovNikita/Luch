@@ -39,6 +39,10 @@ namespace Luch::Render::Deferred
             CameraResources* cameraResources,
             MaterialResources* materialResources);
 
+        static ResultValue<bool, UniquePtr<GBufferTransientContext>> PrepareGBufferTransientContext(
+            GBufferPersistentContext* persistentContext,
+            RefPtr<DescriptorPool> descriptorPool);
+
         GBufferRenderPass(
             GBufferPersistentContext* persistentContext,
             GBufferTransientContext* transientContext,

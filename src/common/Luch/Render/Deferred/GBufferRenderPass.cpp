@@ -611,4 +611,13 @@ namespace Luch::Render::Deferred
 
         return { true, std::move(context) };
     }
+
+    ResultValue<bool, UniquePtr<GBufferTransientContext>> GBufferRenderPass::PrepareGBufferTransientContext(
+        GBufferPersistentContext* persistentContext,
+        RefPtr<DescriptorPool> descriptorPool)
+    {
+        auto context = MakeUnique<GBufferTransientContext>();
+        context->descriptorPool = descriptorPool;
+        return { true, std::move(context) };
+    }
 }
