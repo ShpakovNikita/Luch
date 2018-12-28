@@ -290,7 +290,7 @@ namespace Luch::Metal
             viewport.maxDepth});
     }
 
-    void MetalGraphicsCommandList::SetScissorRects(const ArrayProxy<IntRect>& scissorRects)
+    void MetalGraphicsCommandList::SetScissorRects(const ArrayProxy<Rect2i>& scissorRects)
     {
         LUCH_ASSERT(scissorRects.size() == 1);
 

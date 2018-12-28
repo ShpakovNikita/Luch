@@ -1,7 +1,8 @@
 #include <Luch/Render/Deferred/GBufferRenderPass.h>
 #include <Luch/Render/TextureUploader.h>
 #include <Luch/Render/ShaderDefines.h>
-#include <Luch/Render/MaterialManager.h>
+#include <Luch/Render/CameraResources.h>
+#include <Luch/Render/MaterialResources.h>
 #include <Luch/Render/Deferred/DeferredShaderDefines.h>
 #include <Luch/Render/Deferred/GBufferContext.h>
 #include <Luch/Render/RenderUtils.h>
@@ -106,16 +107,6 @@ namespace Luch::Render::Deferred
 
     void GBufferRenderPass::PrepareScene()
     {
-        BufferCreateInfo bufferCreateInfo;
-        bufferCreateInfo.length = SharedUniformBufferSize;
-        bufferCreateInfo.storageMode = ResourceStorageMode::DeviceLocal;
-        bufferCreateInfo.usage = BufferUsageFlags::Uniform;
-
-        auto [createBufferResult, createdBuffer] = persistentContext->device->CreateBuffer(bufferCreateInfo);
-        LUCH_ASSERT(createBufferResult == GraphicsResult::Success);
-
-        sharedBuffer = MakeUnique<SharedBuffer>(std::move(createdBuffer));
-
         const auto& nodes = transientContext->scene->GetNodes();
 
         for (const auto& node : nodes)
@@ -254,7 +245,7 @@ namespace Luch::Render::Deferred
         meshUniform.inverseTransform = glm::inverse(transform);
 
         // TODO
-        auto suballocation = sharedBuffer->Suballocate(sizeof(MeshUniform), 16);
+        auto suballocation = transientContext->sharedBuffer->Suballocate(sizeof(MeshUniform), 16);
 
         memcpy(suballocation.offsetMemory, &meshUniform, sizeof(MeshUniform));
 
@@ -511,10 +502,13 @@ namespace Luch::Render::Deferred
 
     ResultValue<bool, UniquePtr<GBufferPersistentContext>> GBufferRenderPass::PrepareGBufferPersistentContext(
         GraphicsDevice* device,
+        CameraResources* cameraResources,
         MaterialResources* materialResources)
     {
         UniquePtr<GBufferPersistentContext> context = MakeUnique<GBufferPersistentContext>();
         context->device = device;
+        context->cameraResources = cameraResources;
+        context->materialResources = materialResources;
 
         Vector<Format> depthFormats =
         {
@@ -578,30 +572,12 @@ namespace Luch::Render::Deferred
 
         context->descriptorPool = std::move(createdDescriptorPool);
 
-        context->cameraUniformBufferBinding.OfType(ResourceType::UniformBuffer);
-
         context->meshUniformBufferBinding.OfType(ResourceType::UniformBuffer);
-
-        DescriptorSetLayoutCreateInfo cameraDescriptorSetLayoutCreateInfo;
-        cameraDescriptorSetLayoutCreateInfo
-            .OfType(DescriptorSetType::Buffer)
-            .AddBinding(&context->cameraUniformBufferBinding);
 
         DescriptorSetLayoutCreateInfo meshDescriptorSetLayoutCreateInfo;
         meshDescriptorSetLayoutCreateInfo
             .OfType(DescriptorSetType::Buffer)
             .AddBinding(&context->meshUniformBufferBinding);
-
-        auto[createCameraDescriptorSetLayoutResult, createdCameraDescriptorSetLayout] = device->CreateDescriptorSetLayout(
-            cameraDescriptorSetLayoutCreateInfo);
-
-        if (createCameraDescriptorSetLayoutResult != GraphicsResult::Success)
-        {
-            LUCH_ASSERT(false);
-            return { false };
-        }
-
-        context->cameraBufferDescriptorSetLayout = std::move(createdCameraDescriptorSetLayout);
 
         auto[createMeshDescriptorSetLayoutResult, createdMeshDescriptorSetLayout] = device->CreateDescriptorSetLayout(
             meshDescriptorSetLayoutCreateInfo);
@@ -616,7 +592,7 @@ namespace Luch::Render::Deferred
 
         PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
         pipelineLayoutCreateInfo
-            .AddSetLayout(ShaderStage::Vertex, context->cameraBufferDescriptorSetLayout)
+            .AddSetLayout(ShaderStage::Vertex, cameraResources->cameraBufferDescriptorSetLayout)
             .AddSetLayout(ShaderStage::Vertex, context->meshBufferDescriptorSetLayout)
             .AddSetLayout(ShaderStage::Fragment, materialResources->materialTextureDescriptorSetLayout)
             .AddSetLayout(ShaderStage::Fragment, materialResources->materialBufferDescriptorSetLayout)

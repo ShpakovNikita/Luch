@@ -16,15 +16,24 @@
 #include <Luch/SceneV1/IndexBuffer.h>
 #include <Luch/SceneV1/AttributeSemantic.h>
 
+#include <Luch/Graphics/GraphicsDevice.h>
 #include <Luch/Graphics/CommandQueue.h>
 #include <Luch/Graphics/Swapchain.h>
 #include <Luch/Graphics/SwapchainInfo.h>
+#include <Luch/Graphics/BufferCreateInfo.h>
 #include <Luch/Graphics/DescriptorSet.h>
+#include <Luch/Graphics/DescriptorSetLayoutCreateInfo.h>
+#include <Luch/Graphics/DescriptorSetLayout.h>
 #include <Luch/Graphics/DescriptorPool.h>
+#include <Luch/Graphics/DescriptorPoolCreateInfo.h>
 
 #include <Luch/Render/RenderUtils.h>
 #include <Luch/Render/Deferred/GBufferRenderPass.h>
-#include <Luch/Render/Deferred/GBufferRenderContext.h>
+#include <Luch/Render/Deferred/GBufferContext.h>
+#include <Luch/Render/Deferred/ResolveRenderPass.h>
+#include <Luch/Render/Deferred/ResolveContext.h>
+#include <Luch/Render/Deferred/TonemapRenderPass.h>
+#include <Luch/Render/Deferred/TonemapContext.h>
 #include <Luch/Render/Graph/RenderGraph.h>
 #include <Luch/Render/Graph/RenderGraphBuilder.h>
 
@@ -47,7 +56,7 @@ namespace Luch::Render
         context = aContext;
         materialManager = MakeUnique<MaterialManager>();
 
-        auto materialManagerInitialized = materialManager->Initialize(context);
+        auto materialManagerInitialized = materialManager->Initialize(context->device);
 
         if(!materialManagerInitialized)
         {
@@ -62,20 +71,77 @@ namespace Luch::Render
 
         commandPool = std::move(createdCommandPool);
 
-        auto [createGBufferRenderContextResult, createdGBufferRenderContext] = GBufferRenderPass::PrepareGBufferRenderContext(
+        auto [createGBufferPersistentContextResult, createdGBufferPersistentContext] = GBufferRenderPass::PrepareGBufferPersistentContext(
             context->device,
+            cameraResources.get(),
             materialManager->GetResources());
 
-        if(!createGBufferRenderContextResult)
+        if(!createGBufferPersistentContextResult)
         {
             return false;
         }
 
-        gbufferRenderContext = std::move(createdGBufferRenderContext);
+        gbufferPersistentContext = std::move(createdGBufferPersistentContext);
 
-        auto swapchainInfo = context->swapchain->GetInfo();
-        gbufferRenderContext->attachmentSize = { swapchainInfo.width, swapchainInfo.height };
-        gbufferRenderContext->scene = scene;
+        auto [createResolvePersistentContextResult, createdResolvePersistentContext] = ResolveRenderPass::PrepareResolvePersistentContext(
+            context->device,
+            cameraResources.get());
+
+        if(!createResolvePersistentContextResult)
+        {
+            return false;
+        }
+
+        resolvePersistentContext = std::move(createdResolvePersistentContext);
+
+        auto [createTonemapPersistentContextResult, createdTonemapPersistentContext] = TonemapRenderPass::PrepareTonemapPersistentContext(
+            context->device,
+            context->swapchain->GetInfo().format);
+
+        if(!createTonemapPersistentContextResult)
+        {
+            return false;
+        }
+
+        tonemapPersistentContext = std::move(createdTonemapPersistentContext);
+
+        auto [createCameraResourcesResult, createdCameraResources] = PrepareCameraResources(context->device);
+        if(!createCameraResourcesResult)
+        {
+            return false;
+        }
+
+        cameraResources = std::move(createdCameraResources);
+
+        BufferCreateInfo sharedBufferCreateInfo;
+        sharedBufferCreateInfo.length = SharedBufferSize;
+        sharedBufferCreateInfo.storageMode = ResourceStorageMode::DeviceLocal;
+        sharedBufferCreateInfo.usage = BufferUsageFlags::Uniform;
+
+        auto [createBufferResult, createdBuffer] = context->device->CreateBuffer(sharedBufferCreateInfo);
+        if(createBufferResult != GraphicsResult::Success)
+        {
+            return false;
+        }
+
+        sharedBuffer = MakeShared<SharedBuffer>(std::move(createdBuffer));
+
+        DescriptorPoolCreateInfo descriptorPoolCreateInfo;
+        descriptorPoolCreateInfo.maxDescriptorSets = DescriptorSetCount;
+        descriptorPoolCreateInfo.descriptorCount = 
+        {
+            { ResourceType::Texture, DescriptorCount },
+            { ResourceType::Sampler, DescriptorCount },
+            { ResourceType::UniformBuffer, DescriptorCount },
+        };
+
+        auto [createDescriptorPoolResult, createdDescriptorPool] = context->device->CreateDescriptorPool(descriptorPoolCreateInfo);
+        if(createDescriptorPoolResult != GraphicsResult::Success)
+        {
+            return false;
+        }
+
+        descriptorPool = std::move(createdDescriptorPool);
 
         return true;
     }
@@ -83,7 +149,9 @@ namespace Luch::Render
     bool SceneRenderer::Deinitialize()
     {
         commandPool.Release();
-        gbufferRenderContext.reset();
+        tonemapPersistentContext.reset();
+        resolvePersistentContext.reset();
+        gbufferPersistentContext.reset();
         context.reset();
 
         auto materialManagerDeinitialized = materialManager->Deinitialize();
@@ -97,12 +165,51 @@ namespace Luch::Render
 
     void SceneRenderer::BeginRender()
     {
+        auto swapchainInfo = context->swapchain->GetInfo();
+        Size2i attachmentSize = { swapchainInfo.width, swapchainInfo.height };
+
+        auto gbufferTransientContext = MakeUnique<GBufferTransientContext>();
+        gbufferTransientContext->descriptorPool = descriptorPool;
+        gbufferTransientContext->attachmentSize = attachmentSize;
+        gbufferTransientContext->scene = scene;
+        gbufferTransientContext->sharedBuffer = sharedBuffer;
+
+        auto [createResolveTransientContextResult, resolveTransientContext] = ResolveRenderPass::PrepareResolveTransientContext(
+            resolvePersistentContext.get(),
+            descriptorPool);
+
+        LUCH_ASSERT(createResolveTransientContextResult);
+
+        resolveTransientContext->attachmentSize = attachmentSize;
+        resolveTransientContext->scene = scene;
+        resolveTransientContext->sharedBuffer = sharedBuffer;
+
+        auto [createTonemapTransientContextResult, createdTonemapTransientContext] = TonemapRenderPass::PrepareTonemapTransientContext(
+            tonemapPersistentContext.get(),
+            descriptorPool);
+
+        LUCH_ASSERT(createTonemapTransientContextResult);
+
+        tonemapTransientContext->attachmentSize = attachmentSize;
+        tonemapTransientContext->scene = scene;
+
         builder = MakeUnique<RenderGraphBuilder>();
         auto builderInitialized = builder->Initialize(context->device, commandPool);
         LUCH_ASSERT(builderInitialized);
 
         gbufferPass = MakeUnique<GBufferRenderPass>(
-            gbufferRenderContext,
+            gbufferPersistentContext.get(),
+            gbufferTransientContext.get(),
+            builder.get());
+
+        resolvePass = MakeUnique<ResolveRenderPass>(
+            resolvePersistentContext.get(),
+            resolveTransientContext.get(),
+            builder.get());
+
+        tonemapPass = MakeUnique<TonemapRenderPass>(
+            tonemapPersistentContext.get(),
+            tonemapTransientContext.get(),
             builder.get());
     }
 
@@ -132,6 +239,8 @@ namespace Luch::Render
         }
 
         gbufferPass->PrepareScene();
+        resolvePass->PrepareScene();
+        tonemapPass->PrepareScene();
 
         return true;
     }
@@ -146,12 +255,12 @@ namespace Luch::Render
         }
 
         gbufferPass->UpdateScene();
+        resolvePass->UpdateScene();
+        tonemapPass->UpdateScene();
     }
 
     void SceneRenderer::DrawScene(SceneV1::Camera* camera)
     {
-        gbufferPass->SetCamera(camera);
-
         auto [buildResult, renderGraph] = builder->Build();
         auto commandLists = renderGraph->Execute();
         for(auto& commandList : commandLists)
@@ -163,7 +272,49 @@ namespace Luch::Render
     void SceneRenderer::EndRender()
     {
         builder.reset();
+        gbufferTransientContext.reset();
+        resolveTransientContext.reset();
+        tonemapTransientContext.reset();
         gbufferPass.reset();
+        resolvePass.reset();
+        tonemapPass.reset();
+    }
+
+    ResultValue<bool, UniquePtr<CameraResources>> SceneRenderer::PrepareCameraResources(GraphicsDevice* device)
+    {
+        UniquePtr<CameraResources> cameraResources = MakeUnique<CameraResources>();
+
+        cameraResources->cameraUniformBufferBinding.OfType(ResourceType::UniformBuffer);
+
+        DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo;
+        descriptorSetLayoutCreateInfo
+            .AddBinding(&cameraResources->cameraUniformBufferBinding)
+            .OfType(DescriptorSetType::Buffer);
+
+        auto [createDescriptorSetLayoutResult, createdDescriptorSetLayout] = device->CreateDescriptorSetLayout(descriptorSetLayoutCreateInfo);
+        if(createDescriptorSetLayoutResult != GraphicsResult::Success)
+        {
+            return { false };
+        }
+
+        cameraResources->cameraBufferDescriptorSetLayout = std::move(createdDescriptorSetLayout);
+
+        DescriptorPoolCreateInfo descriptorPoolCreateInfo;
+        descriptorPoolCreateInfo.maxDescriptorSets = 10;
+        descriptorPoolCreateInfo.descriptorCount = 
+        {
+            { ResourceType::UniformBuffer, 10}
+        };
+
+        auto [createDescriptorPoolResult, createdDescriptorPool] = device->CreateDescriptorPool(descriptorPoolCreateInfo);
+        if(createDescriptorPoolResult != GraphicsResult::Success)
+        {
+            return { false };
+        }
+
+        cameraResources->descriptorPool = std::move(createdDescriptorPool);
+
+        return { true, std::move(cameraResources) };
     }
 
     bool SceneRenderer::UploadSceneTextures()

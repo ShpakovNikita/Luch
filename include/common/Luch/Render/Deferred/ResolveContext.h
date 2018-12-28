@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Luch/Render/RenderForwards.h>
 #include <Luch/Render/Deferred/DeferredForwards.h>
 #include <Luch/Render/SharedBuffer.h>
 #include <Luch/Render/Deferred/GBuffer.h>
@@ -14,22 +15,20 @@ namespace Luch::Render::Deferred
 {
     using namespace Graphics;
 
-    struct ResolvePersistentRenderContext
+    struct ResolvePersistentContext
     {
         GraphicsDevice* device = nullptr;
 
+        CameraResources* cameraResources = nullptr;
+
         RefPtr<PipelineState> pipelineState;
         RefPtr<PipelineLayout> pipelineLayout;
-        RefPtr<DescriptorPool> descriptorPool;
 
         RefPtr<Buffer> fullscreenQuadBuffer;
-
-        DescriptorSetBinding cameraUniformBufferBinding;
 
         Array<DescriptorSetBinding, DeferredConstants::GBufferColorAttachmentCount> colorTextureBindings;
         DescriptorSetBinding depthStencilTextureBinding;
 
-        RefPtr<DescriptorSetLayout> cameraBufferDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> gbufferTextureDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> gbufferSamplerDescriptorSetLayout;
 
@@ -37,7 +36,6 @@ namespace Luch::Render::Deferred
         DescriptorSetBinding lightsBufferBinding;
 
         RefPtr<DescriptorSetLayout> lightsBufferDescriptorSetLayout;
-        RefPtr<DescriptorSet> lightsBufferDescriptorSet;
 
         RefPtr<ShaderProgram> vertexShader;
         RefPtr<ShaderProgram> fragmentShader;
@@ -45,12 +43,15 @@ namespace Luch::Render::Deferred
         RefPtr<RenderPass> renderPass;
     };
 
-    struct ResolveTransientRenderContext
+    struct ResolveTransientContext
     {
         SceneV1::Scene* scene = nullptr;
+        RefPtr<DescriptorPool> descriptorPool;
+        SharedPtr<SharedBuffer> sharedBuffer;
         GBufferReadOnly gbuffer;
         Size2i attachmentSize;
-        SharedBuffer* sharedBuffer = nullptr;
         DescriptorSet* cameraBufferDescriptorSet = nullptr;
+        RefPtr<DescriptorSet> gbufferTextureDescriptorSet;
+        RefPtr<DescriptorSet> lightsBufferDescriptorSet;
     };
 }

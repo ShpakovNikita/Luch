@@ -49,7 +49,7 @@ namespace Luch::Metal
             int32 indexBufferOffset) override;
 
         void SetViewports(const ArrayProxy<Viewport>& viewports) override;
-        void SetScissorRects(const ArrayProxy<IntRect>& scissorRects) override;
+        void SetScissorRects(const ArrayProxy<Rect2i>& scissorRects) override;
 
         void Draw(
             int32 vertexStart,

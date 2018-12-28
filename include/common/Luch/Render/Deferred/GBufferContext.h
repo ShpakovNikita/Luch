@@ -17,13 +17,14 @@ namespace Luch::Render::Deferred
     {
         GraphicsDevice* device = nullptr;
 
+        MaterialResources* materialResources = nullptr;
+        CameraResources* cameraResources = nullptr;
+
         RefPtr<PipelineLayout> pipelineLayout;
         RefPtr<DescriptorPool> descriptorPool;
 
-        DescriptorSetBinding cameraUniformBufferBinding;
         DescriptorSetBinding meshUniformBufferBinding;
 
-        RefPtr<DescriptorSetLayout> cameraBufferDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> meshBufferDescriptorSetLayout;
 
         RefPtr<RenderPass> renderPass;
@@ -31,8 +32,9 @@ namespace Luch::Render::Deferred
 
     struct GBufferTransientContext
     {
-        Size2i attachmentSize;
         SceneV1::Scene* scene = nullptr;
+        Size2i attachmentSize;
+        SharedPtr<SharedBuffer> sharedBuffer;
         RefPtr<DescriptorPool> descriptorPool;
         DescriptorSet* cameraBufferDescriptorSet = nullptr;
     };

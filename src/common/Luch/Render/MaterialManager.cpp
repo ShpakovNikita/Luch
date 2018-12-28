@@ -1,45 +1,25 @@
 #include <Luch/Render/MaterialManager.h>
-#include <Luch/Render/ShaderDefines.h>
-#include <Luch/Render/RenderContext.h>
 #include <Luch/Render/SharedBuffer.h>
+#include <Luch/Render/RenderUtils.h>
 
-#include <Luch/SceneV1/Scene.h>
-#include <Luch/SceneV1/Node.h>
-#include <Luch/SceneV1/Mesh.h>
-#include <Luch/SceneV1/Primitive.h>
-#include <Luch/SceneV1/Camera.h>
-#include <Luch/SceneV1/AlphaMode.h>
 #include <Luch/SceneV1/PbrMaterial.h>
 #include <Luch/SceneV1/Texture.h>
-#include <Luch/SceneV1/Light.h>
 #include <Luch/SceneV1/Sampler.h>
-#include <Luch/SceneV1/VertexBuffer.h>
-#include <Luch/SceneV1/IndexBuffer.h>
-#include <Luch/SceneV1/AttributeSemantic.h>
 
 #include <Luch/Graphics/GraphicsDevice.h>
-#include <Luch/Graphics/CommandQueue.h>
-#include <Luch/Graphics/Swapchain.h>
-#include <Luch/Graphics/SwapchainInfo.h>
 #include <Luch/Graphics/DescriptorSet.h>
 #include <Luch/Graphics/DescriptorPool.h>
 #include <Luch/Graphics/DescriptorPoolCreateInfo.h>
 #include <Luch/Graphics/DescriptorSetLayoutCreateInfo.h>
 #include <Luch/Graphics/BufferCreateInfo.h>
 
-#include <Luch/Render/RenderUtils.h>
-#include <Luch/Render/Deferred/GBufferRenderPass.h>
-#include <Luch/Render/Deferred/GBufferPassResources.h>
-#include <Luch/Render/Graph/RenderGraph.h>
-#include <Luch/Render/Graph/RenderGraphBuilder.h>
-
 namespace Luch::Render
 {
     using namespace Graphics;
 
-    bool MaterialManager::Initialize(SharedPtr<RenderContext> aContext)
+    bool MaterialManager::Initialize(GraphicsDevice* aDevice)
     {
-        context = aContext;
+        device = aDevice;
 
         resources = MakeUnique<MaterialResources>();
 
@@ -52,7 +32,7 @@ namespace Luch::Render
             { ResourceType::UniformBuffer, DescriptorCount },
         };
 
-        auto[createDescriptorPoolResult, createdDescriptorPool] = context->device->CreateDescriptorPool(
+        auto[createDescriptorPoolResult, createdDescriptorPool] = device->CreateDescriptorPool(
             descriptorPoolCreateInfo);
 
         if (createDescriptorPoolResult != GraphicsResult::Success)
@@ -105,7 +85,7 @@ namespace Luch::Render
             .AddBinding(&resources->occlusionSamplerBinding)
             .AddBinding(&resources->emissiveSamplerBinding);
 
-        auto[createMaterialTextureDescriptorSetLayoutResult, createdMaterialTextureDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(
+        auto[createMaterialTextureDescriptorSetLayoutResult, createdMaterialTextureDescriptorSetLayout] = device->CreateDescriptorSetLayout(
             materialTextureDescriptorSetLayoutCreateInfo);
 
         if (createMaterialTextureDescriptorSetLayoutResult != GraphicsResult::Success)
@@ -115,7 +95,7 @@ namespace Luch::Render
 
         resources->materialTextureDescriptorSetLayout = std::move(createdMaterialTextureDescriptorSetLayout);
 
-        auto[createMaterialBufferDescriptorSetLayoutResult, createdMaterialBufferDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(
+        auto[createMaterialBufferDescriptorSetLayoutResult, createdMaterialBufferDescriptorSetLayout] = device->CreateDescriptorSetLayout(
             materialBufferDescriptorSetLayoutCreateInfo);
 
         if (createMaterialBufferDescriptorSetLayoutResult != GraphicsResult::Success)
@@ -125,7 +105,7 @@ namespace Luch::Render
 
         resources->materialBufferDescriptorSetLayout = std::move(createdMaterialBufferDescriptorSetLayout);
 
-        auto[createMaterialSamplerDescriptorSetLayoutResult, createdMaterialSamplerDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(
+        auto[createMaterialSamplerDescriptorSetLayoutResult, createdMaterialSamplerDescriptorSetLayout] = device->CreateDescriptorSetLayout(
             materialSamplerDescriptorSetLayoutCreateInfo);
 
         if (createMaterialSamplerDescriptorSetLayoutResult != GraphicsResult::Success)
@@ -139,7 +119,7 @@ namespace Luch::Render
         bufferCreateInfo.length = SharedBufferSize;
         bufferCreateInfo.usage = BufferUsageFlags::Uniform;
 
-        auto [createBufferResult, createdBuffer] = context->device->CreateBuffer(bufferCreateInfo);
+        auto [createBufferResult, createdBuffer] = device->CreateBuffer(bufferCreateInfo);
         if(createBufferResult != GraphicsResult::Success)
         {
             return false;
@@ -153,7 +133,7 @@ namespace Luch::Render
     bool MaterialManager::Deinitialize()
     {
         resources.reset();
-        context.reset();
+        device = nullptr;
 
         return true;
     }

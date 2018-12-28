@@ -7,6 +7,7 @@ namespace Luch::Render
     class SceneRenderer;
     class MaterialManager;
 
+    struct CameraResources;
     struct MaterialResources;
     struct RenderContext;
     struct SharedBufferSuballocation;

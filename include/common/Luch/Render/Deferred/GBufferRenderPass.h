@@ -36,6 +36,7 @@ namespace Luch::Render::Deferred
 
         static ResultValue<bool, UniquePtr<GBufferPersistentContext>> PrepareGBufferPersistentContext(
             GraphicsDevice* device,
+            CameraResources* cameraResources,
             MaterialResources* materialResources);
 
         GBufferRenderPass(
@@ -55,7 +56,7 @@ namespace Luch::Render::Deferred
 
         void ExecuteRenderPass(
             RenderGraphResourceManager* manager,
-            FrameBuffer* frameBuffer, 
+            FrameBuffer* frameBuffer,
             GraphicsCommandList* commandList) override;
     private:
         void PrepareNode(SceneV1::Node* node);
@@ -80,7 +81,6 @@ namespace Luch::Render::Deferred
 
         UnorderedMap<SceneV1::Mesh*, RefPtr<DescriptorSet>> meshDescriptorSets;
         UnorderedMap<SceneV1::Camera*, RefPtr<DescriptorSet>> cameraDescriptorSets;
-        UniquePtr<SharedBuffer> sharedBuffer;
         SceneV1::Node* cameraNode = nullptr;
     };
 }
