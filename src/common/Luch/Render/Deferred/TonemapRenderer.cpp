@@ -37,7 +37,7 @@ namespace Luch::Render::Deferred
 
     // Fullscreen quad for triangle list
     // One triangle that covers whole screen
-    constexpr Array<QuadVertex, 3> fullscreenQuadVertices =
+    Array<QuadVertex, 3> fullscreenQuadVertices =
     {
         QuadVertex { Vec3{-1.0f, -1.0f, 0.0f}, Vec2{0.0f, +1.0f} },
         QuadVertex { Vec3{+3.0f, -1.0f, 0.0f}, Vec2{2.0f, +1.0f} },
@@ -229,6 +229,9 @@ namespace Luch::Render::Deferred
             "",
     #endif
 #endif
+#if __linux__
+    "",
+#endif
             {});
 
         if (!vertexShaderLibraryCreated)
@@ -260,6 +263,9 @@ namespace Luch::Render::Deferred
     #else
             "",
     #endif
+#endif
+#if __linux__
+    "",
 #endif
             {});
 

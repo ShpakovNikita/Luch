@@ -47,6 +47,7 @@
 #include <Luch/Render/SharedBuffer.h>
 #include <Luch/Render/Deferred/GBufferPassResources.h>
 #include <Luch/Render/Deferred/GBufferTextures.h>
+#include <cstring>
 
 namespace Luch::Render::Deferred
 {
@@ -620,6 +621,9 @@ namespace Luch::Render::Deferred
             "",
     #endif
 #endif
+#if __linux__
+        "",
+#endif
             shaderDefines.defines);
 
         if (!vertexShaderLibraryCreated)
@@ -647,6 +651,9 @@ namespace Luch::Render::Deferred
     #else
             "",
     #endif
+#endif
+#if __linux__
+    "",
 #endif
             shaderDefines.defines);
 

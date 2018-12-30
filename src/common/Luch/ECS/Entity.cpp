@@ -2,6 +2,7 @@
 #include <Luch/ECS/Component.h>
 #include <Luch/ECS/System.h>
 #include <Luch/Assert.h>
+#include <algorithm>
 
 namespace Luch::ECS
 {

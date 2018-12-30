@@ -16,7 +16,6 @@ public:
 
     virtual const String& GetApplicationName() const = 0;
     virtual const String& GetMainWindowTitle() const = 0;
-    virtual const Version& GetApplicationVersion() const = 0;
 protected:
     BaseApplication() = default;
 };

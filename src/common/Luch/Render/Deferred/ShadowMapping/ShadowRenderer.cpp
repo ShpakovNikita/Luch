@@ -35,6 +35,7 @@
 #include <Luch/Render/RenderContext.h>
 #include <Luch/Render/RenderUtils.h>
 #include <Luch/Render/SharedBuffer.h>
+#include <cstring>
 
 namespace Luch::Render::Deferred::ShadowMapping
 {
@@ -548,6 +549,9 @@ namespace Luch::Render::Deferred::ShadowMapping
     #else
             "",
     #endif
+#endif
+#if __linux__
+    "",
 #endif
             {});
 

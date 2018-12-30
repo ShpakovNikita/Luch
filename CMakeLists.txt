@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.12.0)
 
 project(Luch VERSION 0.1 LANGUAGES CXX)
 set(CXX_STANDARD 17)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17") # for unix
 
 set(LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
@@ -56,12 +57,15 @@ if(USE_VULKAN)
     add_compile_definitions(GLM_FORCE_RIGHT_HANDED)
     find_package(Vulkan REQUIRED)
     set(Vulkan_SDK_DIR ${Vulkan_INCLUDE_DIR}/../)
-    set(GLSLANG_DIR ${Vulkan_SDK_DIR}/glslang/)
+
+    set(GLSLANG_DIR ${Vulkan_SDK_DIR}/lib/glslang)
 
     if(WIN32)
         add_definitions(-DVK_USE_PLATFORM_WIN32_KHR)
     elseif(APPLE)
         add_definitions(-DVK_USE_PLATFORM_MACOS_MVK)
+    elseif(UNIX)
+        add_definitions(-DVK_USE_PLATFORM_XCB_KHR)
     endif()
 
     if(WIN32)
@@ -88,6 +92,10 @@ if(USE_VULKAN)
         set (GLSLANG_SEARCH_PATH ${Vulkan_SDK}/lib/)
         set (SPIRV_TOOLS_SEARCH_PATH ${Vulkan_SDK}/lib/)
         set (SPIRV_TOOLS_OPT_SEARCH_PATH ${Vulkan_SDK}/lib/)
+    elseif(UNIX)
+        set (GLSLANG_SEARCH_PATH ${GLSLANG_DIR})
+        set (SPIRV_TOOLS_SEARCH_PATH "${Vulkan_SDK_DIR}/lib/spirv-tools/")
+        set (SPIRV_TOOLS_OPT_SEARCH_PATH ${Vulkan_SDK_DIR}/lib/spirv-tools/)
     endif()
 
     find_library(GLSLANG_LIB NAMES glslang REQUIRED HINTS ${GLSLANG_SEARCH_PATH})
@@ -166,14 +174,31 @@ if(USE_VULKAN)
             IMPORTED_LOCATION ${SPIRV_TOOLS_OPT_LIB})
         set_target_properties(SPVRemapper PROPERTIES
             IMPORTED_LOCATION ${SPIRV_REMAPPER_LIB})
+    elseif(UNIX)
+        set_target_properties(glslang PROPERTIES
+            IMPORTED_LOCATION ${GLSLANG_LIB})
+        set_target_properties(SPIRV PROPERTIES
+            IMPORTED_LOCATION ${SPIRV_LIB})
+        set_target_properties(OGLCompiler PROPERTIES
+            IMPORTED_LOCATION ${OGLCompiler_LIB})
+        set_target_properties(OSDependent PROPERTIES
+            IMPORTED_LOCATION ${OSDependent_LIB})
+        set_target_properties(HLSL PROPERTIES
+            IMPORTED_LOCATION ${HLSL_LIB})
+        set_target_properties(SPIRV-Tools PROPERTIES
+            IMPORTED_LOCATION ${SPIRV_TOOLS_LIB})
+        set_target_properties(SPIRV-Tools-opt PROPERTIES
+            IMPORTED_LOCATION ${SPIRV_TOOLS_OPT_LIB})
+        set_target_properties(SPVRemapper PROPERTIES
+            IMPORTED_LOCATION ${SPIRV_REMAPPER_LIB})
     endif()
 
     file(GLOB_RECURSE ENGINE_VULKAN_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Vulkan/Luch/*.cpp)
     file(GLOB_RECURSE ENGINE_VULKAN_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Vulkan/Luch/*.h)
 endif()
 
-file(GLOB_RECURSE ENGINE_COMMON_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Luch/*.cpp)
-file(GLOB_RECURSE ENGINE_COMMON_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/Common/Luch/*.h)
+file(GLOB_RECURSE ENGINE_COMMON_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/common/Luch/*.cpp)
+file(GLOB_RECURSE ENGINE_COMMON_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/common/Luch/*.h)
 
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/include/common/)
 
@@ -257,19 +282,17 @@ if(USE_METAL)
     # target_sources(LuchEngine PUBLIC ${MACOS_METAL_SHADER_FILES})
 endif()
 
-# TODO Add vulkan implementation
-
-# if(USE_VULKAN)
-#     target_link_libraries(LuchEngine ${Vulkan_LIBRARIES})
-#     target_link_libraries(LuchEngine glslang)
-#     target_link_libraries(LuchEngine SPIRV)
-#     target_link_libraries(LuchEngine OGLCompiler)
-#     target_link_libraries(LuchEngine OSDependent)
-#     target_link_libraries(LuchEngine HLSL)
-#     target_link_libraries(LuchEngine SPIRV-Tools)
-#     target_link_libraries(LuchEngine SPIRV-Tools-opt)
-#     target_link_libraries(LuchEngine SPVRemapper)
-# endif()
+if(USE_VULKAN)
+     target_link_libraries(LuchEngine ${Vulkan_LIBRARIES})
+     target_link_libraries(LuchEngine glslang)
+     target_link_libraries(LuchEngine SPIRV)
+     target_link_libraries(LuchEngine OGLCompiler)
+     target_link_libraries(LuchEngine OSDependent)
+     target_link_libraries(LuchEngine HLSL)
+     target_link_libraries(LuchEngine SPIRV-Tools)
+     target_link_libraries(LuchEngine SPIRV-Tools-opt)
+     target_link_libraries(LuchEngine SPVRemapper)
+endif()
 
 # Add sample
 file(GLOB_RECURSE SAMPLE_COMMON_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Sample/*.cpp)
@@ -316,13 +339,22 @@ if(APPLE)
     target_link_libraries(LuchEngineSample "-framework Cocoa")
 endif()
 
+if(UNIX)
+    file(GLOB_RECURSE SAMPLE_UNIX_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/unix/Sample/*.cpp)
+    file(GLOB_RECURSE SAMPLE_UNIX_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/unix/Sample/*.h)
+
+    target_sources(LuchEngineSample PUBLIC
+        ${SAMPLE_UNIX_CPP_FILES}
+        ${SAMPLE_UNIX_HEADER_FILES})
+endif()
+
 target_link_libraries(LuchEngineSample LuchEngine)
 
 if(WIN32)
     set(LUCH_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/_build)
     set(LUCH_OUTPUT_DIRECTORY_DEBUG ${LUCH_OUTPUT_DIRECTORY}/Debug)
     set(LUCH_OUTPUT_DIRECTORY_RELEASE ${LUCH_OUTPUT_DIRECTORY}/Release)
-    
+
     set_target_properties(LuchEngine PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY_DEBUG LUCH_OUTPUT_DIRECTORY_DEBUG)
     set_target_properties(LuchEngineSample PROPERTIES

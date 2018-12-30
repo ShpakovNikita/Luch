@@ -5,6 +5,7 @@
 #include <Luch/SceneV1/Primitive.h>
 #include <Luch/SceneV1/PbrMaterial.h>
 #include <Luch/SceneV1/Camera.h>
+#include <algorithm>
 
 namespace Luch::SceneV1
 {

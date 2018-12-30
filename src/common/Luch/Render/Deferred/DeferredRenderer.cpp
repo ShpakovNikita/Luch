@@ -44,6 +44,7 @@
 
 #include <Luch/Render/RenderUtils.h>
 #include <Luch/Render/SharedBuffer.h>
+#include <cstring>
 
 namespace Luch::Render::Deferred
 {

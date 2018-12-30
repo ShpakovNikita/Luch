@@ -36,12 +36,6 @@ public:
         return applicationName;
     }
 
-    const Luch::Version& GetApplicationVersion() const override
-    {
-        static Luch::Version applicationVersion{0, 1, 0};
-        return applicationVersion;
-    }
-
     const Luch::String& GetMainWindowTitle() const override
     {
         static Luch::String windowTitle = "Sample";
