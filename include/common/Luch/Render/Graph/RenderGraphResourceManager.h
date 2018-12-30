@@ -33,7 +33,7 @@ namespace Luch::Render::Graph
     private:
         GraphicsDevice* device = nullptr;
         RenderMutableResource GetNextHandle();
-        uint32 nextHandleValue = 0;
+        uint32 nextHandleValue = 1;
 
         UnorderedMap<RenderResource, AttachmentCreateInfo> pendingAttachments;
         UnorderedMap<RenderResource, RenderMutableResource> modifiedResources;

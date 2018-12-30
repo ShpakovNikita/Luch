@@ -17,7 +17,7 @@ namespace Luch::Render::Graph
     bool RenderGraphBuilder::Initialize(GraphicsDevice* aDevice, RefPtr<CommandPool> aCommandPool)
     {
         device = aDevice;
-        commandPool = commandPool;
+        commandPool = aCommandPool;
         resourceManager = MakeUnique<RenderGraphResourceManager>(device);
 
         return true;

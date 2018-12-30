@@ -165,7 +165,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
         [](const auto& node) { return node->GetCamera() != nullptr; });
 
     LUCH_ASSERT(cameraIt != scene->GetNodes().end());
-    camera = (*cameraIt)->GetCamera();
+    cameraNode = *cameraIt;
 
     renderer = MakeUnique<Render::SceneRenderer>(scene);
 
@@ -216,7 +216,7 @@ void SampleApplication::Process()
     renderer->BeginRender();
     renderer->PrepareScene();
     renderer->UpdateScene();
-    renderer->DrawScene(camera);
+    renderer->DrawScene(cameraNode);
     renderer->EndRender();
 
     context->commandQueue->Present(0, context->swapchain);

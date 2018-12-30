@@ -41,8 +41,7 @@ namespace Luch::Graphics
 
         virtual void BindVertexBuffers(
             const ArrayProxy<Buffer*>& buffers,
-            const ArrayProxy<int32>& offsets,
-            int32 firstBuffer = 0) = 0;
+            const ArrayProxy<int32>& offsets) = 0;
 
         virtual void BindIndexBuffer(
             Buffer* indexBuffer,

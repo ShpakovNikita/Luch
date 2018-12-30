@@ -330,7 +330,7 @@ namespace Luch::Render::Deferred
         const auto& indexBuffer = *primitive->GetIndexBuffer();
 
         commandList->BindPipelineState(pipelineState);
-        commandList->BindVertexBuffers(graphicsVertexBuffers, offsets, 0);
+        commandList->BindVertexBuffers(graphicsVertexBuffers, offsets);
 
         commandList->BindIndexBuffer(
                 indexBuffer.backingBuffer->GetDeviceBuffer(),

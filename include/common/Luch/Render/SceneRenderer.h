@@ -30,10 +30,10 @@ namespace Luch::Render
         bool Initialize(SharedPtr<RenderContext> context);
         bool Deinitialize();
 
-        void BeginRender();
+        bool BeginRender();
         bool PrepareScene();
         void UpdateScene();
-        void DrawScene(SceneV1::Camera* camera);
+        void DrawScene(SceneV1::Node* cameraNode);
         void EndRender();
     private:
         static ResultValue<bool, UniquePtr<CameraResources>> PrepareCameraResources(GraphicsDevice* device);
@@ -55,6 +55,8 @@ namespace Luch::Render
         UniquePtr<Deferred::GBufferTransientContext> gbufferTransientContext;
         UniquePtr<Deferred::ResolveTransientContext> resolveTransientContext;
         UniquePtr<Deferred::TonemapTransientContext> tonemapTransientContext;
+
+        RefPtr<DescriptorSet> cameraDescriptorSet;
 
         UniquePtr<CameraResources> cameraResources;
         SharedPtr<RenderContext> context;

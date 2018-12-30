@@ -36,6 +36,6 @@ namespace Luch::Render::Deferred
         Size2i attachmentSize;
         SharedPtr<SharedBuffer> sharedBuffer;
         RefPtr<DescriptorPool> descriptorPool;
-        DescriptorSet* cameraBufferDescriptorSet = nullptr;
+        RefPtr<DescriptorSet> cameraBufferDescriptorSet;
     };
 }

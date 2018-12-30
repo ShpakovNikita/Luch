@@ -50,7 +50,7 @@ namespace Luch::Render::Deferred
         SharedPtr<SharedBuffer> sharedBuffer;
         GBufferReadOnly gbuffer;
         Size2i attachmentSize;
-        DescriptorSet* cameraBufferDescriptorSet = nullptr;
+        RefPtr<DescriptorSet> cameraBufferDescriptorSet;
         RefPtr<DescriptorSet> gbufferTextureDescriptorSet;
         RefPtr<DescriptorSet> lightsBufferDescriptorSet;
     };

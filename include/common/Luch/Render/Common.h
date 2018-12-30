@@ -28,12 +28,12 @@ namespace Luch::Render
 
     struct CameraUniform
     {
-        Mat4x4 view = Mat4x4 { 1.0f };;
-        Mat4x4 inverseView = Mat4x4 { 1.0f };;
-        Mat4x4 projection = Mat4x4 { 1.0f };;
-        Mat4x4 inverseProjection = Mat4x4 { 1.0f };;
-        Mat4x4 viewProjection = Mat4x4 { 1.0f };;
-        Mat4x4 inverseViewProjection = Mat4x4 { 1.0f };;
+        Mat4x4 view = Mat4x4 { 1.0f };
+        Mat4x4 inverseView = Mat4x4 { 1.0f };
+        Mat4x4 projection = Mat4x4 { 1.0f };
+        Mat4x4 inverseProjection = Mat4x4 { 1.0f };
+        Mat4x4 viewProjection = Mat4x4 { 1.0f };
+        Mat4x4 inverseViewProjection = Mat4x4 { 1.0f };
         Vec4 positionWS = Vec4 { 0.0, 0.0, 0.0, 1.0 };
         Vec2 zMinMax = Vec2 { 0.0, 1.0 };
     };

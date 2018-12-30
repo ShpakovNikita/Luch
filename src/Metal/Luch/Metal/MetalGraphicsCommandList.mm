@@ -247,8 +247,7 @@ namespace Luch::Metal
 
     void MetalGraphicsCommandList::BindVertexBuffers(
         const ArrayProxy<Buffer*>& buffers,
-        const ArrayProxy<int32>& offsets,
-        int32 firstBuffer)
+        const ArrayProxy<int32>& offsets)
     {
         LUCH_ASSERT(buffers.size() == offsets.size());
         auto mtlGraphicsDevice = (MetalGraphicsDevice*)GetGraphicsDevice();

@@ -49,8 +49,7 @@ namespace Luch::Render::Deferred
         auto node = builder->AddRenderPass(RenderPassName, persistentContext->renderPass, this);
 
         input = node->ReadsTexture(transientContext->inputHandle);
-
-        output = node->CreateColorAttachment(0, transientContext->attachmentSize);
+        output = node->ImportColorAttachment(0, transientContext->outputTexture);
     }
 
     TonemapRenderPass::~TonemapRenderPass() = default;
@@ -91,7 +90,7 @@ namespace Luch::Render::Deferred
             persistentContext->pipelineLayout,
             transientContext->textureDescriptorSet);
 
-        cmdList->BindVertexBuffers({ persistentContext->fullscreenQuadBuffer }, {0}, 0);
+        cmdList->BindVertexBuffers({ persistentContext->fullscreenQuadBuffer }, {0});
         cmdList->Draw(0, fullscreenQuadVertices.size());
         cmdList->EndRenderPass();
         cmdList->End();

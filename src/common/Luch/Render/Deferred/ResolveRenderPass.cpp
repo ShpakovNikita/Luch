@@ -135,7 +135,7 @@ namespace Luch::Render::Deferred
             persistentContext->pipelineLayout,
             transientContext->lightsBufferDescriptorSet);
 
-        cmdList->BindVertexBuffers({ persistentContext->fullscreenQuadBuffer }, {0}, 0);
+        cmdList->BindVertexBuffers({ persistentContext->fullscreenQuadBuffer }, {0});
         cmdList->Draw(0, fullscreenQuadVertices.size());
         cmdList->EndRenderPass();
         cmdList->End();

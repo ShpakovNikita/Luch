@@ -18,7 +18,7 @@ namespace Luch
         {
         }
 
-        RefPtr(std::nullptr_t nptr) noexcept
+        RefPtr(std::nullptr_t) noexcept
             : ptr(nullptr)
         {
         }
@@ -65,8 +65,10 @@ namespace Luch
 
         RefPtr& operator=(const RefPtr& other) noexcept
         {
+            Release();
+
             ptr = other.ptr;
-            if (ptr)
+            if (ptr != nullptr)
             {
                 reinterpret_cast<BaseObject*>(ptr)->AddReference();
             }
@@ -76,6 +78,8 @@ namespace Luch
         template<typename U>
         RefPtr& operator=(const RefPtr<U>& other) noexcept
         {
+            Release();
+
             ptr = static_cast<T*>(other.ptr);
             if (ptr)
             {
@@ -86,6 +90,8 @@ namespace Luch
 
         RefPtr& operator=(RefPtr&& other) noexcept
         {
+            Release();
+
             ptr = other.ptr;
             other.ptr = nullptr;
             return *this;

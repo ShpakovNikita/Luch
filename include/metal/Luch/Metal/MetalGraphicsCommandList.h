@@ -40,8 +40,7 @@ namespace Luch::Metal
 
         void BindVertexBuffers(
             const ArrayProxy<Buffer*>& buffers,
-            const ArrayProxy<int32>& offsets,
-            int32 firstBuffer = 0) override;
+            const ArrayProxy<int32>& offsets) override;
 
         void BindIndexBuffer(
             Buffer* indexBuffer,
