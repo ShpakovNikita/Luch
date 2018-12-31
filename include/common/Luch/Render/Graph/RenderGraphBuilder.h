@@ -24,7 +24,10 @@ namespace Luch::Render::Graph
             String name,
             RefPtr<Graphics::RenderPass> renderPass,
             RenderGraphPass* pass);
+
         ResultValue<RenderGraphBuildResult, UniquePtr<RenderGraph>> Build();
+
+        RenderGraphResourceManager* GetResourceManager() { return resourceManager.get(); }
     private:
         GraphicsDevice* device = nullptr;
         RefPtr<CommandPool> commandPool;

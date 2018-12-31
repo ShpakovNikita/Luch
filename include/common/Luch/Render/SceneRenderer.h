@@ -13,6 +13,7 @@
 #include <Luch/Render/CameraResources.h>
 #include <Luch/Render/MaterialManager.h>
 #include <Luch/Render/Graph/RenderGraphForwards.h>
+#include <Luch/Render/Graph/RenderGraphResources.h>
 
 namespace Luch::Render
 {
@@ -57,6 +58,8 @@ namespace Luch::Render
         UniquePtr<Deferred::TonemapTransientContext> tonemapTransientContext;
 
         RefPtr<DescriptorSet> cameraDescriptorSet;
+
+        Graph::RenderMutableResource outputHandle;
 
         UniquePtr<CameraResources> cameraResources;
         SharedPtr<RenderContext> context;

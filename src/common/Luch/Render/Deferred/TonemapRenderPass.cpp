@@ -49,7 +49,7 @@ namespace Luch::Render::Deferred
         auto node = builder->AddRenderPass(RenderPassName, persistentContext->renderPass, this);
 
         input = node->ReadsTexture(transientContext->inputHandle);
-        output = node->ImportColorAttachment(0, transientContext->outputTexture);
+        output = node->WritesToColorAttachment(0, transientContext->outputHandle);
     }
 
     TonemapRenderPass::~TonemapRenderPass() = default;
@@ -69,7 +69,10 @@ namespace Luch::Render::Deferred
     {
         auto hdrTexture = manager->GetTexture(input);
 
-        transientContext->textureDescriptorSet->WriteTexture(persistentContext->colorTextureBinding, hdrTexture);
+        transientContext->textureDescriptorSet->WriteTexture(
+            persistentContext->colorTextureBinding,
+            hdrTexture);
+
         transientContext->textureDescriptorSet->Update();
 
         Viewport viewport;

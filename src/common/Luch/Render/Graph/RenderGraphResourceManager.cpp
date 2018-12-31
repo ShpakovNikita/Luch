@@ -16,6 +16,13 @@ namespace Luch::Render::Graph
         return handle;
     }
 
+    RenderMutableResource RenderGraphResourceManager::ImportAttachmentDeferred()
+    {
+        auto handle = GetNextHandle();
+        importedAttachments[handle] = nullptr;
+        return handle;
+    }
+
     RenderMutableResource RenderGraphResourceManager::CreateAttachment(Size2i size, Format format)
     {
         auto handle = GetNextHandle();
@@ -71,6 +78,13 @@ namespace Luch::Render::Graph
         pendingAttachments.clear();
 
         return true;
+    }
+
+    void RenderGraphResourceManager::ProvideDeferredAttachment(RenderMutableResource handle, RefPtr<Texture> texture)
+    {
+        LUCH_ASSERT(handle);
+        LUCH_ASSERT(importedAttachments[handle] == nullptr);
+        importedAttachments[handle] = std::move(texture);
     }
 
     RefPtr<Texture> RenderGraphResourceManager::GetTexture(RenderResource handle)

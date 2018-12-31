@@ -24,11 +24,13 @@ namespace Luch::Render::Graph
         RenderGraphResourceManager(GraphicsDevice* device);
 
         RenderMutableResource ImportAttachment(RefPtr<Texture> texture);
+        RenderMutableResource ImportAttachmentDeferred();
         RenderMutableResource CreateAttachment(Size2i size, Format format);
         RenderMutableResource ModifyResource(RenderMutableResource resource);
 
         bool Build();
 
+        void ProvideDeferredAttachment(RenderMutableResource handle, RefPtr<Texture> texture);
         RefPtr<Texture> GetTexture(RenderResource resource);
     private:
         GraphicsDevice* device = nullptr;

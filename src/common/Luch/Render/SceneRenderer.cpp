@@ -36,6 +36,7 @@
 #include <Luch/Render/Deferred/TonemapContext.h>
 #include <Luch/Render/Graph/RenderGraph.h>
 #include <Luch/Render/Graph/RenderGraphBuilder.h>
+#include <Luch/Render/Graph/RenderGraphResourceManager.h>
 
 namespace Luch::Render
 {
@@ -166,14 +167,6 @@ namespace Luch::Render
 
     bool SceneRenderer::BeginRender()
     {
-        auto swapchainInfo = context->swapchain->GetInfo();
-        Size2i attachmentSize = { swapchainInfo.width, swapchainInfo.height };
-        auto [getNextTextureResult, swapchainTexture] = context->swapchain->GetNextAvailableTexture(nullptr);
-        if(getNextTextureResult != GraphicsResult::Success)
-        {
-            return false;
-        }
-
         auto [allocateCamreraDescriptorSetResult, allocatedCameraDescriptorSet] = descriptorPool->AllocateDescriptorSet(cameraResources->cameraBufferDescriptorSetLayout);
         if(allocateCamreraDescriptorSetResult != GraphicsResult::Success)
         {
@@ -188,6 +181,11 @@ namespace Luch::Render
         {
             return false;
         }
+
+        auto swapchainInfo = context->swapchain->GetInfo();
+        Size2i attachmentSize = { swapchainInfo.width, swapchainInfo.height };
+
+        outputHandle = builder->GetResourceManager()->ImportAttachmentDeferred();
 
         auto [prepareGBufferTransientContextResult, preparedGBufferTransientContext] = GBufferRenderPass::PrepareGBufferTransientContext(
             gbufferPersistentContext.get(),
@@ -245,7 +243,7 @@ namespace Luch::Render
         tonemapTransientContext = std::move(preparedTonemapTransientContext);
 
         tonemapTransientContext->inputHandle = resolvePass->GetResolveTextureHandle();
-        tonemapTransientContext->outputTexture = swapchainTexture.texture;
+        tonemapTransientContext->outputHandle = outputHandle;
         tonemapTransientContext->attachmentSize = attachmentSize;
         tonemapTransientContext->scene = scene;
 
@@ -319,6 +317,11 @@ namespace Luch::Render
             suballocation.offset);
 
         cameraDescriptorSet->Update();
+
+        auto [getNextTextureResult, swapchainTexture] = context->swapchain->GetNextAvailableTexture(nullptr);
+        LUCH_ASSERT(getNextTextureResult == GraphicsResult::Success);
+
+        builder->GetResourceManager()->ProvideDeferredAttachment(outputHandle, swapchainTexture.texture);
 
         auto [buildResult, renderGraph] = builder->Build();
         auto commandLists = renderGraph->Execute();

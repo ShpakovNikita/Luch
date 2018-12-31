@@ -36,8 +36,8 @@ namespace Luch::Render::Deferred
         SceneV1::Scene* scene = nullptr;
         RefPtr<DescriptorPool> descriptorPool;
         RefPtr<DescriptorSet> textureDescriptorSet;
-        RefPtr<Texture> outputTexture;
         RenderResource inputHandle;
+        RenderMutableResource outputHandle;
         Size2i attachmentSize;
     };
 }
