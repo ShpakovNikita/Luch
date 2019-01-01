@@ -37,6 +37,7 @@
 #include <Luch/Render/Graph/RenderGraph.h>
 #include <Luch/Render/Graph/RenderGraphBuilder.h>
 #include <Luch/Render/Graph/RenderGraphResourceManager.h>
+#include <Luch/Render/Graph/RenderGraphResourcePool.h>
 
 namespace Luch::Render
 {
@@ -145,6 +146,8 @@ namespace Luch::Render
 
         descriptorPool = std::move(createdDescriptorPool);
 
+        resourcePool = MakeUnique<RenderGraphResourcePool>(context->device);
+
         return true;
     }
 
@@ -176,7 +179,7 @@ namespace Luch::Render
         cameraDescriptorSet = std::move(allocatedCameraDescriptorSet);
 
         builder = MakeUnique<RenderGraphBuilder>();
-        auto builderInitialized = builder->Initialize(context->device, commandPool);
+        auto builderInitialized = builder->Initialize(context->device, commandPool, resourcePool.get());
         if(!builderInitialized)
         {
             return false;
@@ -333,6 +336,8 @@ namespace Luch::Render
 
     void SceneRenderer::EndRender()
     {
+        resourcePool->Tick();
+
         builder.reset();
         gbufferTransientContext.reset();
         resolveTransientContext.reset();

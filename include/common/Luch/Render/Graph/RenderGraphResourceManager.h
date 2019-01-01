@@ -21,7 +21,8 @@ namespace Luch::Render::Graph
     public:
         static constexpr int32 MaxColorAttachmentCount = RenderPassCreateInfo::MaxColorAttachmentCount;
 
-        RenderGraphResourceManager(GraphicsDevice* device);
+        RenderGraphResourceManager(GraphicsDevice* device, RenderGraphResourcePool* pool);
+        ~RenderGraphResourceManager();
 
         RenderMutableResource ImportAttachment(RefPtr<Texture> texture);
         RenderMutableResource ImportAttachmentDeferred();
@@ -40,7 +41,9 @@ namespace Luch::Render::Graph
         UnorderedMap<RenderResource, AttachmentCreateInfo> pendingAttachments;
         UnorderedMap<RenderResource, RenderMutableResource> modifiedResources;
 
-        UnorderedMap<RenderResource, RefPtr<Texture>> createdTextures;
+        UnorderedMap<RenderResource, RefPtr<Texture>> acquiredTextures;
         UnorderedMap<RenderResource, RefPtr<Texture>> importedAttachments;
+
+        RenderGraphResourcePool* pool = nullptr;
     };
 }

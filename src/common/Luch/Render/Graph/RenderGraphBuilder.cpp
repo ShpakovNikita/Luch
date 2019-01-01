@@ -14,11 +14,14 @@ namespace Luch::Render::Graph
     RenderGraphBuilder::RenderGraphBuilder() = default;
     RenderGraphBuilder::~RenderGraphBuilder() = default;
 
-    bool RenderGraphBuilder::Initialize(GraphicsDevice* aDevice, RefPtr<CommandPool> aCommandPool)
+    bool RenderGraphBuilder::Initialize(
+        GraphicsDevice* aDevice,
+        RefPtr<CommandPool> aCommandPool,
+        RenderGraphResourcePool* aResourcePool)
     {
         device = aDevice;
         commandPool = aCommandPool;
-        resourceManager = MakeUnique<RenderGraphResourceManager>(device);
+        resourceManager = MakeUnique<RenderGraphResourceManager>(device, aResourcePool);
 
         return true;
     }

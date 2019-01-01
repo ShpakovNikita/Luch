@@ -17,7 +17,11 @@ namespace Luch::Render::Graph
         RenderGraphBuilder();
         ~RenderGraphBuilder();
 
-        bool Initialize(GraphicsDevice* device, RefPtr<CommandPool> commandPool);
+        bool Initialize(
+            GraphicsDevice* device,
+            RefPtr<CommandPool> commandPool,
+            RenderGraphResourcePool* resourcePool);
+
         bool Deinitialize();
 
         UniquePtr<RenderGraphNodeBuilder> AddRenderPass(

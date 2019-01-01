@@ -43,6 +43,7 @@ namespace Luch::Render
         bool UploadSceneBuffers();
 
         UniquePtr<MaterialManager> materialManager;
+        UniquePtr<Graph::RenderGraphResourcePool> resourcePool;
         UniquePtr<Graph::RenderGraphBuilder> builder;
 
         UniquePtr<Deferred::GBufferRenderPass> gbufferPass;

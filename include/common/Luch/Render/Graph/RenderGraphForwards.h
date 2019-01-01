@@ -9,6 +9,7 @@ namespace Luch::Render::Graph
     class RenderResource;
     class RenderMutableResource;
     class RenderGraphResourceManager;
+    class RenderGraphResourcePool;
 
     struct RenderGraphNode;
 }

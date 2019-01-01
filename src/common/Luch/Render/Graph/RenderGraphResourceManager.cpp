@@ -1,12 +1,24 @@
 #include <Luch/Render/Graph/RenderGraphResourceManager.h>
+#include <Luch/Render/Graph/RenderGraphResourcePool.h>
 #include <Luch/Graphics/TextureCreateInfo.h>
 #include <Luch/Graphics/GraphicsDevice.h>
 
 namespace Luch::Render::Graph
 {
-    RenderGraphResourceManager::RenderGraphResourceManager(GraphicsDevice* aDevice)
+    RenderGraphResourceManager::RenderGraphResourceManager(
+        GraphicsDevice* aDevice,
+        RenderGraphResourcePool* aPool)
         : device(aDevice)
+        , pool(aPool)
     {
+    }
+
+    RenderGraphResourceManager::~RenderGraphResourceManager()
+    {
+        for(auto& texture : acquiredTextures)
+        {
+            pool->ReturnTexture(texture.second);
+        }
     }
 
     RenderMutableResource RenderGraphResourceManager::ImportAttachment(RefPtr<Texture> texture)
@@ -66,13 +78,13 @@ namespace Luch::Render::Graph
                 ? TextureUsageFlags::DepthStencilAttachment
                 : TextureUsageFlags::ColorAttachment;
 
-            auto [createTextureResult, createdTexture] = device->CreateTexture(createInfo);
-            if(createTextureResult != GraphicsResult::Success)
+            auto [acquireTextureResult, acquiredTexture] = pool->AcquireTexture(createInfo);
+            if(acquireTextureResult != GraphicsResult::Success)
             {
                 return false;
             }
 
-            createdTextures[handle] = createdTexture;
+            acquiredTextures[handle] = acquiredTexture;
         }
 
         pendingAttachments.clear();
@@ -98,8 +110,8 @@ namespace Luch::Render::Graph
          }
 
          {
-            auto it = createdTextures.find(handle);
-            if(it != createdTextures.end())
+            auto it = acquiredTextures.find(handle);
+            if(it != acquiredTextures.end())
             {
                 return it->second;
             }

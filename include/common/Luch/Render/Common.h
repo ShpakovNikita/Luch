@@ -43,7 +43,7 @@ namespace Luch::Render
     struct MeshUniform
     {
         Mat4x4 transform = Mat4x4 { 1.0f };
-        Mat4x4 inverseTransform = Mat4x4 { 1.0f };;
+        Mat4x4 inverseTransform = Mat4x4 { 1.0f };
     };
 
     static_assert(sizeof(MeshUniform) % 4 == 0);
