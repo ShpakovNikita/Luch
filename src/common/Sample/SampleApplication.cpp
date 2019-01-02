@@ -110,15 +110,23 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     glTF::glTFParser glTFparser;
 
-#if __APPLE__
-    String rootDir{ "/Users/spo1ler/Development/Luch/res/gltf2/sponza/" };
+    String rootDir{ "Data/gltf2/sponza/" };
     String filename { "Sponza.gltf" };
-#endif
 
-#if _WIN32
-    String rootDir{ "C:\\Development\\LuchResources\\glTF-Sample-Models\\2.0\\Sponza\\glTF\\" };
-    String filename{ "Sponza.gltf" };
-#endif
+        FileStream fileStream{ rootDir + filename, FileOpenModes::Read };
+
+    auto root = glTFparser.ParseJSON(&fileStream);
+
+    SceneV1::Loader::glTFLoader loader{ rootDir, root };
+    scene = loader.LoadScene(0);
+
+    auto cameraIt = std::find_if(
+        scene->GetNodes().begin(),
+        scene->GetNodes().end(),
+        [](const auto& node) { return node->GetCamera() != nullptr; });
+
+    LUCH_ASSERT(cameraIt != scene->GetNodes().end());
+    cameraNode = *cameraIt;
 
     context = MakeShared<Render::RenderContext>();
 
@@ -151,21 +159,6 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     }
 
     context->swapchain = std::move(createdSwapchain);
-
-    FileStream fileStream{ rootDir + filename, FileOpenModes::Read };
-
-    auto root = glTFparser.ParseJSON(&fileStream);
-
-    SceneV1::Loader::glTFLoader loader{ rootDir, root };
-    scene = loader.LoadScene(0);
-
-    auto cameraIt = std::find_if(
-        scene->GetNodes().begin(),
-        scene->GetNodes().end(),
-        [](const auto& node) { return node->GetCamera() != nullptr; });
-
-    LUCH_ASSERT(cameraIt != scene->GetNodes().end());
-    cameraNode = *cameraIt;
 
     renderer = MakeUnique<Render::SceneRenderer>(scene);
 

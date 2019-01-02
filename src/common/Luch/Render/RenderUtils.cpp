@@ -88,7 +88,15 @@ namespace Luch::Render::RenderUtils
         const String& path,
         const UnorderedMap<String, Variant<int32, String>>& defines)
     {
-        auto shaderSource = LoadShaderSource(path);
+        #if LUCH_USE_METAL
+            String extension = ".metal";
+        #elif LUCH_USE_VULKAN
+            String extension = ".glsl";
+        #else
+            String extension = "";
+        #endif
+
+        auto shaderSource = LoadShaderSource(path + extension);
 
         auto [createLibraryResult, library] = device->CreateShaderLibraryFromSource(shaderSource, defines);
         if(createLibraryResult != GraphicsResult::Success && createLibraryResult != GraphicsResult::CompilerWarning)

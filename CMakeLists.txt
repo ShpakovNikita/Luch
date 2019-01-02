@@ -296,14 +296,12 @@ if(APPLE)
     file(GLOB_RECURSE SAMPLE_MACOS_OBJCPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Sample/*.mm)
     file(GLOB_RECURSE SAMPLE_MACOS_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Sample/*.cpp)
     file(GLOB_RECURSE SAMPLE_MACOS_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Sample/*.h)
-    set(SAMPLE_MACOS_RESOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/res/macOS/Sample/Main.storyboard)
 
     target_sources(LuchEngineSample PUBLIC
         ${SAMPLE_MACOS_CPP_FILES}
         ${SAMPLE_MACOS_OBJC_FILES}
         ${SAMPLE_MACOS_OBJCPP_FILES}
-        ${SAMPLE_MACOS_HEADER_FILES}
-        ${SAMPLE_MACOS_RESOURCE_FILES})
+        ${SAMPLE_MACOS_HEADER_FILES})
 
     set_target_properties(
         LuchEngineSample
@@ -317,6 +315,40 @@ if(APPLE)
     target_link_libraries(LuchEngineSample "-framework CoreVideo")
     target_link_libraries(LuchEngineSample "-framework QuartzCore")
     target_link_libraries(LuchEngineSample "-framework Cocoa")
+
+    set(SAMPLE_RUNTIME_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/$<$<CONFIG:Debug>:Debug>$<$<CONFIG:Release>:Release>)
+
+    set_target_properties(
+        LuchEngineSample PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${SAMPLE_RUNTIME_OUTPUT_DIR})
+
+    set(SAMPLE_DATA_DIR ${SAMPLE_RUNTIME_OUTPUT_DIR}/Data/)
+
+    add_custom_command(
+        TARGET LuchEngineSample
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E remove_directory
+        ${SAMPLE_DATA_DIR})
+
+    add_custom_command(
+        TARGET LuchEngineSample
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory
+        ${SAMPLE_DATA_DIR})
+
+    add_custom_command(
+        TARGET LuchEngineSample
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/Metal/Luch/Render/Shaders/
+        ${SAMPLE_DATA_DIR}/Shaders/)
+
+    add_custom_command(
+        TARGET LuchEngineSample
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/res/gltf2
+        ${SAMPLE_DATA_DIR}/gltf2/)
 endif()
 
 target_link_libraries(LuchEngineSample LuchEngine)

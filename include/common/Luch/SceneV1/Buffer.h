@@ -15,7 +15,7 @@ namespace Luch::SceneV1
         Buffer(const BufferSource& source);
         ~Buffer() override;
 
-        inline Vector<Byte> GetHostBuffer() { return hostBuffer; }
+        inline Vector<Byte>& GetHostBuffer() { return hostBuffer; }
         inline RefPtr<Graphics::Buffer> GetDeviceBuffer() { return deviceBuffer; }
 
         void SetHostBuffer(Vector<Byte> buffer);
