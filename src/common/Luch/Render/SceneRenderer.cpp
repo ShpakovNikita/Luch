@@ -296,7 +296,7 @@ namespace Luch::Render
 
         for(auto& material : materials)
         {
-            materialManager->UpdateMaterial(material);
+            materialManager->UpdateMaterial(material, sharedBuffer.get());
         }
 
         gbufferPass->UpdateScene();
@@ -345,6 +345,8 @@ namespace Luch::Render
         gbufferPass.reset();
         resolvePass.reset();
         tonemapPass.reset();
+
+        sharedBuffer->Reset();
     }
 
     ResultValue<bool, UniquePtr<CameraResources>> SceneRenderer::PrepareCameraResources(GraphicsDevice* device)

@@ -31,7 +31,5 @@ namespace Luch::Render
         RefPtr<DescriptorSetLayout> materialTextureDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> materialBufferDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> materialSamplerDescriptorSetLayout;
-
-        SharedPtr<SharedBuffer> sharedBuffer;
     };
 }

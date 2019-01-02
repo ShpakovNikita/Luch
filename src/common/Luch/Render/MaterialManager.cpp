@@ -115,18 +115,6 @@ namespace Luch::Render
 
         resources->materialSamplerDescriptorSetLayout = std::move(createdMaterialSamplerDescriptorSetLayout);
 
-        BufferCreateInfo bufferCreateInfo;
-        bufferCreateInfo.length = SharedBufferSize;
-        bufferCreateInfo.usage = BufferUsageFlags::Uniform;
-
-        auto [createBufferResult, createdBuffer] = device->CreateBuffer(bufferCreateInfo);
-        if(createBufferResult != GraphicsResult::Success)
-        {
-            return false;
-        }
-
-        resources->sharedBuffer = MakeUnique<SharedBuffer>(std::move(createdBuffer));
-
         return true;
     }
 
@@ -168,7 +156,7 @@ namespace Luch::Render
         return true;
     }
 
-    void MaterialManager::UpdateMaterial(SceneV1::PbrMaterial* material)
+    void MaterialManager::UpdateMaterial(SceneV1::PbrMaterial* material, SharedBuffer* sharedBuffer)
     {
         auto textureDescriptorSet = material->GetTextureDescriptorSet();
         auto samplerDescriptorSet = material->GetSamplerDescriptorSet();
@@ -232,7 +220,7 @@ namespace Luch::Render
         MaterialUniform materialUniform = RenderUtils::GetMaterialUniform(material);
 
         // TODO
-        auto suballocation = resources->sharedBuffer->Suballocate(sizeof(MaterialUniform), 16);
+        auto suballocation = sharedBuffer->Suballocate(sizeof(MaterialUniform), 16);
 
         bufferDescriptorSet->WriteUniformBuffer(
             resources->materialUniformBufferBinding,

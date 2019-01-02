@@ -431,12 +431,12 @@ namespace Luch::SceneV1::Loader
                 if(indexBuffer->indexType == Graphics::IndexType::UInt16)
                 {
                     const uint16* index = reinterpret_cast<const uint16*>(indexBytes) + i;
-                    indices.push_back(*index);
+                    indices[i] = *index;
                 }
                 else if(indexBuffer->indexType == Graphics::IndexType::UInt32)
                 {
                     const uint32* index = reinterpret_cast<const uint32*>(indexBytes) + i;
-                    indices.push_back(*index);
+                    indices[i] = *index;
                 }
                 else
                 {

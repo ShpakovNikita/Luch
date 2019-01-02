@@ -23,11 +23,11 @@ namespace Luch::Render
         SharedBuffer(RefPtr<Buffer> buffer);
         ~SharedBuffer();
 
+        bool CanSuballocate(int32 size, int32 alignment);
         SharedBufferSuballocation Suballocate(int32 size, int32 alignment);
         void Reset();
     private:
         RefPtr<Buffer> buffer;
-        int32 remainingSize = 0;
         int32 offset = 0;
     };
 }

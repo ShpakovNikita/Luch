@@ -24,7 +24,7 @@ namespace Luch::Render
         bool Deinitialize();
 
         bool PrepareMaterial(SceneV1::PbrMaterial* material);
-        void UpdateMaterial(SceneV1::PbrMaterial* material);
+        void UpdateMaterial(SceneV1::PbrMaterial* material, SharedBuffer* sharedBuffer);
 
         MaterialResources* GetResources() { return resources.get(); }
     private:
