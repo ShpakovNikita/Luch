@@ -3,6 +3,7 @@
 #include <Luch/Types.h>
 #include <Luch/Assert.h>
 #include <Luch/ResultValue.h>
+#include <functional>
 
 namespace Luch::Render::Graph
 {

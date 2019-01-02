@@ -45,6 +45,10 @@ namespace Luch::Render
     using namespace Deferred;
     using namespace Graph;
 
+    const int32 SceneRenderer::DescriptorSetCount;
+    const int32 SceneRenderer::DescriptorCount;
+    const int32 SceneRenderer::SharedBufferSize;
+
     SceneRenderer::SceneRenderer(
         RefPtr<SceneV1::Scene> aScene)
         : scene(std::move(aScene))

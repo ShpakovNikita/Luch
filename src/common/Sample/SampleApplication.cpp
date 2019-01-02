@@ -33,6 +33,7 @@
 #include <Luch/Graphics/SwapchainInfo.h>
 #include <Luch/Graphics/CommandQueue.h>
 #include <Luch/Render/SceneRenderer.h>
+#include <algorithm>
 
 using namespace Luch;
 using namespace Luch::Graphics;

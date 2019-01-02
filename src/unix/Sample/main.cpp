@@ -169,8 +169,7 @@ int32 main(int32 argc, char8** argv)
         printf("all good\n");
     }
 
-    // auto app = std::make_unique<SampleApplication>();
-    SampleApplication* a = new SampleApplication();
+    auto app = std::make_unique<SampleApplication>();
 
     bool run = true;
     while (run)

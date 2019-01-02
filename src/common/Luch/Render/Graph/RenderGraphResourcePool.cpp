@@ -2,6 +2,8 @@
 #include <Luch/Graphics/GraphicsDevice.h>
 #include <Luch/Graphics/Texture.h>
 
+#include <algorithm>
+
 namespace Luch::Render::Graph
 {
     RenderGraphResourcePool::RenderGraphResourcePool(GraphicsDevice* aDevice)
