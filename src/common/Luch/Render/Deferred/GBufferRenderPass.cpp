@@ -434,18 +434,7 @@ namespace Luch::Render::Deferred
 
         auto[vertexShaderLibraryCreated, vertexShaderLibrary] = RenderUtils::CreateShaderLibrary(
             persistentContext->device,
-#if _WIN32
-            "C:\\Development\\Luch\\src\\Luch\\Render\\Shaders\\Deferred\\gbuffer.vert",
-#endif
-#if __APPLE__
-    #if LUCH_USE_METAL
-            "/Users/spo1ler/Development/Luch/src/Metal/Luch/Render/Shaders/Deferred/gbuffer_vp.metal",
-    #elif LUCH_USE_VULKAN
-            "/Users/spo1ler/Development/Luch/src/Vulkan/Luch/Render/Shaders/Deferred/gbuffer.vert",
-    #else
-            "",
-    #endif
-#endif
+            "Data/Shaders/Deferred/gbuffer_vp",
             shaderDefines.defines);
 
         if (!vertexShaderLibraryCreated)
@@ -462,18 +451,7 @@ namespace Luch::Render::Deferred
 
         auto[fragmentShaderLibraryCreated, fragmentShaderLibrary] = RenderUtils::CreateShaderLibrary(
             persistentContext->device,
-#if _WIN32
-            "C:\\Development\\Luch\\src\\Luch\\Render\\Shaders\\Deferred\\gbuffer.frag",
-#endif
-#if __APPLE__
-    #if LUCH_USE_METAL
-            "/Users/spo1ler/Development/Luch/src/Metal/Luch/Render/Shaders/Deferred/gbuffer_fp.metal",
-    #elif LUCH_USE_VULKAN
-            "/Users/spo1ler/Development/Luch/src/Vulkan/Luch/Render/Shaders/Deferred/gbuffer.frag",
-    #else
-            "",
-    #endif
-#endif
+            "Data/Shaders/Deferred/gbuffer_fp",
             shaderDefines.defines);
 
         if (!fragmentShaderLibraryCreated)

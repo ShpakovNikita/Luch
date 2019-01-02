@@ -542,6 +542,7 @@ namespace Luch::SceneV1::Loader
             GenerateTangents(
                 glTFPrimitive.mode,
                 indices.size(),
+                *vertexCount,
                 indices.data(),
                 positions.data(),
                 normals.data(),

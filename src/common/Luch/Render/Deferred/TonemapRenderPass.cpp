@@ -172,18 +172,7 @@ namespace Luch::Render::Deferred
 
         auto [vertexShaderLibraryCreated, createdVertexShaderLibrary] = RenderUtils::CreateShaderLibrary(
             device,
-#if _WIN32 && LUCH_USE_VULKAN
-            "C:\\Development\\Luch\\src\\Luch\\Render\\Shaders\\Deferred\\tonemap.vert",
-#endif
-#if __APPLE__
-    #if LUCH_USE_METAL
-            "/Users/spo1ler/Development/Luch/src/Metal/Luch/Render/Shaders/Deferred/tonemap_vp.metal",
-    #elif LUCH_USE_VULKAN
-            "/Users/spo1ler/Development/Luch/src/Vulkan/Luch/Render/Shaders/Deferred/tonemap.vert",
-    #else
-            "",
-    #endif
-#endif
+            "Data/Shaders/Deferred/tonemap_vp",
             {});
 
         if (!vertexShaderLibraryCreated)
@@ -204,18 +193,7 @@ namespace Luch::Render::Deferred
 
         auto[fragmentShaderLibraryCreated, createdFragmentShaderLibrary] = RenderUtils::CreateShaderLibrary(
             device,
-#if _WIN32 && LUCH_USE_VULKAN
-            "C:\\Development\\Luch\\src\\Luch\\Render\\Shaders\\Deferred\\tonemap.frag",
-#endif
-#if __APPLE__
-    #if LUCH_USE_METAL
-            "/Users/spo1ler/Development/Luch/src/Metal/Luch/Render/Shaders/Deferred/tonemap_fp.metal",
-    #elif LUCH_USE_VULKAN
-            "/Users/spo1ler/Development/Luch/src/Vulkan/Luch/Render/Shaders/Deferred/tonemap.frag",
-    #else
-            "",
-    #endif
-#endif
+            "Data/Shaders/Deferred/tonemap_fp",
             {});
 
         if (!fragmentShaderLibraryCreated)

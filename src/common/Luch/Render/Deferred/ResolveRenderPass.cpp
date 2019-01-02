@@ -254,18 +254,7 @@ namespace Luch::Render::Deferred
 
         auto [vertexShaderLibraryCreated, createdVertexShaderLibrary] = RenderUtils::CreateShaderLibrary(
             context->device,
-#if _WIN32
-            "C:\\Development\\Luch\\src\\Luch\\Render\\Shaders\\Deferred\\resolve.vert",
-#endif
-#if __APPLE__
-    #if LUCH_USE_METAL
-            "/Users/spo1ler/Development/Luch/src/Metal/Luch/Render/Shaders/Deferred/resolve_vp.metal",
-    #elif LUCH_USE_VULKAN
-            "/Users/spo1ler/Development/Luch/src/Vulkan/Luch/Render/Shaders/Deferred/resolve.vert",
-    #else
-            "",
-    #endif
-#endif
+            "Data/Shaders/Deferred/resolve_vp",
             {});
 
         if (!vertexShaderLibraryCreated)
@@ -285,18 +274,7 @@ namespace Luch::Render::Deferred
 
         auto[fragmentShaderLibraryCreated, createdFragmentShaderLibrary] = RenderUtils::CreateShaderLibrary(
             device,
-#if _WIN32
-            "C:\\Development\\Luch\\src\\Luch\\Render\\Shaders\\Deferred\\resolve.frag",
-#endif
-#if __APPLE__
-    #if LUCH_USE_METAL
-            "/Users/spo1ler/Development/Luch/src/Metal/Luch/Render/Shaders/Deferred/resolve_fp.metal",
-    #elif LUCH_USE_VULKAN
-            "/Users/spo1ler/Development/Luch/src/Vulkan/Luch/Render/Shaders/Deferred/resolve.frag",
-    #else
-            "",
-    #endif
-#endif
+            "Data/Shaders/Deferred/resolve_fp",
             {});
 
         if (!fragmentShaderLibraryCreated)
