@@ -27,6 +27,13 @@
     static_assert(false, "Vulkan is not ready");
 #endif
 
+#include <Luch/Graphics/PhysicalDevice.h>
+#include <Luch/Graphics/GraphicsDevice.h>
+#include <Luch/Graphics/Swapchain.h>
+#include <Luch/Graphics/SwapchainInfo.h>
+#include <Luch/Graphics/CommandQueue.h>
+#include <Luch/Render/SceneRenderer.h>
+
 using namespace Luch;
 using namespace Luch::Graphics;
 
@@ -113,6 +120,38 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     String filename{ "Sponza.gltf" };
 #endif
 
+    context = MakeShared<Render::RenderContext>();
+
+    auto [createDeviceResult, createdDevice] = physicalDevice->CreateGraphicsDevice();
+    if(createDeviceResult != GraphicsResult::Success)
+    {
+        return false;
+    }
+
+    context->device = std::move(createdDevice);
+
+    auto [createCommandQueueResult, createdCommandQueue] = context->device->CreateCommandQueue();
+    if(createCommandQueueResult != GraphicsResult::Success)
+    {
+        return false;
+    }
+
+    context->commandQueue = std::move(createdCommandQueue);
+
+    SwapchainInfo swapchainInfo;
+    swapchainInfo.format = Format::B8G8R8A8Unorm_sRGB;
+    swapchainInfo.imageCount = 1;
+    swapchainInfo.width = width;
+    swapchainInfo.height = height;
+
+    auto [createSwapchainResult, createdSwapchain] = context->device->CreateSwapchain(swapchainInfo, surface);
+    if(createSwapchainResult != GraphicsResult::Success)
+    {
+        return false;
+    }
+
+    context->swapchain = std::move(createdSwapchain);
+
     FileStream fileStream{ rootDir + filename, FileOpenModes::Read };
 
     auto root = glTFparser.ParseJSON(&fileStream);
@@ -120,26 +159,33 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     SceneV1::Loader::glTFLoader loader{ rootDir, root };
     scene = loader.LoadScene(0);
 
-    deferredRenderer = MakeUnique<Render::Deferred::DeferredRenderer>(physicalDevice, surface, width, height);
-
-    deferredRenderer->Initialize();
-
     auto cameraIt = std::find_if(
         scene->GetNodes().begin(),
         scene->GetNodes().end(),
         [](const auto& node) { return node->GetCamera() != nullptr; });
 
     LUCH_ASSERT(cameraIt != scene->GetNodes().end());
-    camera = (*cameraIt)->GetCamera();
+    cameraNode = *cameraIt;
 
-    deferredRenderer->PrepareScene(scene);
-    deferredRenderer->UpdateScene(scene);
+    renderer = MakeUnique<Render::SceneRenderer>(scene);
+
+    auto rendererInitialized = renderer->Initialize(context);
+    if(!rendererInitialized)
+    {
+        return false;
+    }
 
     return true;
 }
 
 bool SampleApplication::Deinitialize()
 {
+    auto rendererDeinitialized = renderer->Deinitialize();
+    if(!rendererDeinitialized)
+    {
+        return false;
+    }
+
     return true;
 }
 
@@ -157,7 +203,7 @@ void SampleApplication::Run()
         }
         else
         {
-            deferredRenderer->DrawScene(scene);
+            // Draw
         }
     }
 #endif
@@ -166,8 +212,14 @@ void SampleApplication::Run()
 void SampleApplication::Process()
 {
     scene->Update();
-    deferredRenderer->UpdateScene(scene);
-    deferredRenderer->DrawScene(scene, camera);
+
+    renderer->BeginRender();
+    renderer->PrepareScene();
+    renderer->UpdateScene();
+    renderer->DrawScene(cameraNode);
+    renderer->EndRender();
+
+    context->commandQueue->Present(0, context->swapchain);
 }
 
 #ifdef _WIN32

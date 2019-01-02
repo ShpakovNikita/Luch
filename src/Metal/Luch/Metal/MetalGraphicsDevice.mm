@@ -206,6 +206,8 @@ namespace Luch::Metal
         MTLCompileOptions* o = (__bridge MTLCompileOptions*)options.GetPtr();
         [o setPreprocessorMacros:dict];
 
+        [dict release];
+
         auto mtlLibrary = device.NewLibrary((const char*)source.data(), options, &error);
 
         GraphicsResult result = LibraryErrorToGraphicsResult(error);

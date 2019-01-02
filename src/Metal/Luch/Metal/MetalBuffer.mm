@@ -17,6 +17,7 @@ namespace Luch::Metal
 
     GraphicsResultValue<void*> MetalBuffer::MapMemory(int32 size, int32 offset)
     {
+        LUCH_ASSERT(offset + size <= createInfo.length);
         mappedMemory = static_cast<Byte*>(buffer.GetContents()) + offset;
         return { GraphicsResult::Success, mappedMemory };
     }

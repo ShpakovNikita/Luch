@@ -65,4 +65,50 @@ namespace Luch::Graphics
         R32G32B32A32Uint,
         R32G32B32A32Sfloat
     };
+
+    inline bool FormatIsDepthOnlyFormat(Format format)
+    {
+        switch(format)
+        {
+        case Format::D16Unorm:
+        case Format::D32Sfloat:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    inline bool FormatIsStencilOnlyFormat(Format format)
+    {
+        switch(format)
+        {
+        case Format::S8Uint:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    inline bool FormatIsDepthStencilFormat(Format format)
+    {
+        switch(format)
+        {
+        case Format::D16UnormS8Uint:
+        case Format::D24UnormS8Uint:
+        case Format::D32SfloatS8Uint:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    inline bool FormatHasDepth(Format format)
+    {
+        return FormatIsDepthOnlyFormat(format) || FormatIsDepthStencilFormat(format);
+    }
+
+    inline bool FormatHasStencil(Format format)
+    {
+        return FormatIsStencilOnlyFormat(format) || FormatIsDepthStencilFormat(format);
+    }
 }

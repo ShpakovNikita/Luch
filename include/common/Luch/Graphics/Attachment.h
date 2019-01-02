@@ -29,7 +29,6 @@ namespace Luch::Graphics
 
     struct Attachment
     {
-        int32 index = -1;
         AttachmentTextureInfo output;
         Format format = Format::Undefined;
     };

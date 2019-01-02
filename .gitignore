@@ -296,3 +296,5 @@ __pycache__/
 *.xsd.cs
 
 .vscode
+
+.DS_Store
