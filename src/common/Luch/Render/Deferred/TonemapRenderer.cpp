@@ -37,7 +37,7 @@ namespace Luch::Render::Deferred
 
     // Fullscreen quad for triangle list
     // One triangle that covers whole screen
-    Array<QuadVertex, 3> fullscreenQuadVertices =
+    Array<QuadVertex, 3> fullscreenQuadVertices2 =
     {
         QuadVertex { Vec3{-1.0f, -1.0f, 0.0f}, Vec2{0.0f, +1.0f} },
         QuadVertex { Vec3{+3.0f, -1.0f, 0.0f}, Vec2{2.0f, +1.0f} },
@@ -111,7 +111,7 @@ namespace Luch::Render::Deferred
             resources->samplerDescriptorSet);
 
         cmdList->BindVertexBuffers({ resources->fullscreenQuadBuffer }, {0}, 0);
-        cmdList->Draw(0, fullscreenQuadVertices.size());
+        cmdList->Draw(0, fullscreenQuadVertices2.size());
         cmdList->EndRenderPass();
         cmdList->End();
 
@@ -350,14 +350,14 @@ namespace Luch::Render::Deferred
         tonemapResources->pipelineLayout = std::move(createdPipelineLayout);
 
         BufferCreateInfo quadBufferCreateInfo;
-        quadBufferCreateInfo.length = fullscreenQuadVertices.size() * sizeof(QuadVertex);
+        quadBufferCreateInfo.length = fullscreenQuadVertices2.size() * sizeof(QuadVertex);
         // TODO
         quadBufferCreateInfo.storageMode = ResourceStorageMode::Shared;
         quadBufferCreateInfo.usage = BufferUsageFlags::VertexBuffer;
 
         auto[createQuadBufferResult, createdQuadBuffer] = context->device->CreateBuffer(
             quadBufferCreateInfo,
-            fullscreenQuadVertices.data());
+            fullscreenQuadVertices2.data());
 
         if (createQuadBufferResult != GraphicsResult::Success)
         {

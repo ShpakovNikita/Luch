@@ -295,8 +295,8 @@ if(USE_VULKAN)
 endif()
 
 # Add sample
-file(GLOB_RECURSE SAMPLE_COMMON_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Sample/*.cpp)
-file(GLOB_RECURSE SAMPLE_COMMON_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Sample/*.h)
+file(GLOB_RECURSE SAMPLE_COMMON_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/common/Sample/*.cpp)
+file(GLOB_RECURSE SAMPLE_COMMON_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/common/Sample/*.h)
 
 add_executable(LuchEngineSample
         ${SAMPLE_COMMON_CPP_FILES}
@@ -346,6 +346,7 @@ if(UNIX)
     target_sources(LuchEngineSample PUBLIC
         ${SAMPLE_UNIX_CPP_FILES}
         ${SAMPLE_UNIX_HEADER_FILES})
+    target_link_libraries(LuchEngineSample ${SDL2_LIBRARIES})
 endif()
 
 target_link_libraries(LuchEngineSample LuchEngine)
