@@ -257,11 +257,12 @@ fragment FragmentOut fp_main(
     device Light* lights [[buffer(2)]],
     texture2d<half> baseColorMap [[texture(0)]],
     texture2d<float> normalMap [[texture(1)]],
-    depth2d<float> depthBuffer [[texture(2)]],
-    sampler baseColorSampler [[sampler(0)]],
-    sampler normalMapSampler [[sampler(1)]],
-    sampler depthBufferSampler [[sampler(2)]])
+    depth2d<float> depthBuffer [[texture(2)]])
 {
+    constexpr sampler baseColorSampler(coord::normalized);
+    constexpr sampler normalMapSampler(coord::normalized);
+    constexpr sampler depthBufferSampler(coord::normalized);
+
     float2 texCoord = in.texCoord;
 
     half4 baseColorSample = baseColorMap.sample(baseColorSampler, texCoord);

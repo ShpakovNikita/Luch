@@ -13,13 +13,15 @@ namespace Luch::SceneV1
         int32 requiredComponentCount = 4;
 
         // Force 4 components for now
-        const uchar8* data = stbi_load(filename.c_str(), &width, &height, &realComponentCount, requiredComponentCount);
+        uchar8* data = stbi_load(filename.c_str(), &width, &height, &realComponentCount, requiredComponentCount);
         if (data)
         {
             int32 sizeInBytes = width * height * requiredComponentCount;
             Vector<Byte> imageBuffer;
             imageBuffer.resize(sizeInBytes);
             memcpy(imageBuffer.data(), data, sizeInBytes);
+
+            stbi_image_free(data);
 
             Graphics::Format format = Graphics::Format::Undefined;
 

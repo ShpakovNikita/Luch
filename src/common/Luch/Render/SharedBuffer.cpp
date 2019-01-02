@@ -8,7 +8,7 @@ namespace Luch::Render
         : buffer(aBuffer)
     {
         Reset();
-        [[maybe_unused]] auto [mapResult, _] = buffer->MapMemory(remainingSize, 0);
+        [[maybe_unused]] auto [mapResult, _] = buffer->MapMemory(buffer->GetCreateInfo().length, 0);
         LUCH_ASSERT(mapResult == GraphicsResult::Success);
     }
 
@@ -17,9 +17,17 @@ namespace Luch::Render
         buffer->UnmapMemory();
     }
 
+    bool SharedBuffer::CanSuballocate(int32 size, int32 alignment)
+    {
+        int32 padding = (-offset & (alignment - 1));
+        int32 alignedOffset = padding + offset;
+
+        return (alignedOffset + size) < buffer->GetCreateInfo().length;
+    }
+
     SharedBufferSuballocation SharedBuffer::Suballocate(int32 size, int32 alignment)
     {
-        LUCH_ASSERT(size <= remainingSize);
+        LUCH_ASSERT(CanSuballocate(size, alignment));
 
         int32 padding = (-offset & (alignment - 1));
         int32 alignedOffset = padding + offset;
@@ -30,14 +38,12 @@ namespace Luch::Render
         suballocation.offset = alignedOffset;
         suballocation.size = padding + size;
         offset += padding + size;
-        remainingSize -= padding + size;
         return suballocation;
     }
 
     void SharedBuffer::Reset()
     {
         const auto& createInfo = buffer->GetCreateInfo();
-        remainingSize = createInfo.length;
         offset = 0;
     }
 }

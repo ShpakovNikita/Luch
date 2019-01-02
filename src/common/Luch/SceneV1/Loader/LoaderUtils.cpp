@@ -125,22 +125,20 @@ namespace Luch::SceneV1::Loader
     void GenerateTangents(
         glTF::PrimitiveMode mode,
         int32 indexCount,
+        int32 vertexCount,
         uint32* indices,
         Vec3* positions,
         Vec3* normals,
         Vec2* texcoords,
         Vec4* outTangents)
     {
-        //LUCH_ASSERT(mode == glTF::PrimitiveMode::Triangles || mode == glTF::PrimitiveMode::TriangleStrip);
         LUCH_ASSERT(mode == glTF::PrimitiveMode::Triangles);
-        //int32 verticesCount = mode == glTF::PrimitiveMode::Triangles ? indexCount * 3 : indexCount + 2;
-        int32 verticesCount = indexCount / 3;
-        LUCH_ASSERT(verticesCount % 3 == 0);
+        LUCH_ASSERT(vertexCount % 3 == 0);
 
         Vector<Vec3> tangents;
-        tangents.resize(verticesCount);
+        tangents.resize(vertexCount);
         Vector<Vec3> bitangents;
-        bitangents.resize(verticesCount);
+        bitangents.resize(vertexCount);
 
         for(int32 i = 0; i < indexCount; i += 3)
         {
@@ -174,7 +172,7 @@ namespace Luch::SceneV1::Loader
             bitangents[ti[2]] += bt;
         }
 
-        for (int32 i = 0; i < verticesCount; i++)
+        for (int32 i = 0; i < vertexCount; i++)
         {
             Vec3 n = normals[i];
             Vec3 t = tangents[i];

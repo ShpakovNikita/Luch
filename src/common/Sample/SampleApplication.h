@@ -4,7 +4,7 @@
 #include <Luch/glTF2/glTFParser.h>
 #include <Luch/glTF2/glTF.h>
 
-#include <Luch/Render/Deferred/DeferredRenderer.h>
+#include <Luch/Render/SceneRenderer.h>
 
 #ifdef _WIN32
     #if LUCH_USE_VULKAN
@@ -83,7 +83,8 @@ private:
     VulkanAllocator allocator;
 #endif
 
-    Luch::UniquePtr<Luch::Render::Deferred::DeferredRenderer> deferredRenderer;
+    Luch::SharedPtr<Luch::Render::RenderContext> context;
+    Luch::UniquePtr<Luch::Render::SceneRenderer> renderer;
     Luch::RefPtr<Luch::SceneV1::Scene> scene;
-    Luch::RefPtr<Luch::SceneV1::Camera> camera;
+    Luch::RefPtr<Luch::SceneV1::Node> cameraNode;
 };

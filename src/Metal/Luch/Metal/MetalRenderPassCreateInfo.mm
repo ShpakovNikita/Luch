@@ -73,7 +73,7 @@ namespace Luch::Metal
             auto mtlDepthStencilBuffer = static_cast<MetalTexture*>(frameBufferCreateInfo.depthStencilTexture);
             LUCH_ASSERT(mtlDepthStencilBuffer != nullptr);
 
-            if(depthStencilAttachment->format != Format::S8Uint)
+            if(FormatHasDepth(depthStencilAttachment->format))
             {
                 d.GetDepthAttachment().SetTexture(mtlDepthStencilBuffer->GetNativeTexture());
                 d.GetDepthAttachment().SetLevel(depthStencilAttachment->output.mipmapLevel);
@@ -84,7 +84,7 @@ namespace Luch::Metal
                 d.GetDepthAttachment().SetStoreAction(ToMetalStoreAction(depthStencilAttachment->depthStoreOperation));
             }
 
-            if(depthStencilAttachment->format != Format::D16Unorm && depthStencilAttachment->format != Format::D32Sfloat)
+            if(FormatHasStencil(depthStencilAttachment->format))
             {
                 d.GetStencilAttachment().SetTexture(mtlDepthStencilBuffer->GetNativeTexture());
                 d.GetStencilAttachment().SetLevel(depthStencilAttachment->output.mipmapLevel);

@@ -27,6 +27,7 @@ namespace Luch::SceneV1::Loader
     void GenerateTangents(
         glTF::PrimitiveMode mode,
         int32 indexCount,
+        int32 vertexCount,
         uint32* indices,
         Vec3* positions,
         Vec3* normals,
