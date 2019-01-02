@@ -1,24 +1,19 @@
 #pragma once
 
+#include <Luch/Types.h>
 #include <Luch/RefPtr.h>
-#include <Luch/UniquePtr.h>
+#include <Luch/SharedPtr.h>
 #include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/Graphics/DescriptorSetBinding.h>
 #include <Luch/Render/RenderForwards.h>
-#include <Luch/Render/Deferred/DeferredForwards.h>
 
-namespace Luch::Render::Deferred
+namespace Luch::Render
 {
     using namespace Graphics;
 
-    struct GBufferPassResources
+    struct MaterialResources
     {
-        RefPtr<CommandPool> commandPool;
-        RefPtr<PipelineLayout> pipelineLayout;
         RefPtr<DescriptorPool> descriptorPool;
-
-        // Mesh bindings
-        DescriptorSetBinding meshUniformBufferBinding;
 
         // Material bindings
         DescriptorSetBinding materialUniformBufferBinding;
@@ -33,13 +28,8 @@ namespace Luch::Render::Deferred
         DescriptorSetBinding emissiveTextureBinding;
         DescriptorSetBinding emissiveSamplerBinding;
 
-        RefPtr<DescriptorSetLayout> meshBufferDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> materialTextureDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> materialBufferDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> materialSamplerDescriptorSetLayout;
-
-        RefPtr<RenderPass> renderPass;
-
-        UniquePtr<SharedBuffer> sharedBuffer;
     };
 }

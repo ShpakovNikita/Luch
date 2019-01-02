@@ -40,8 +40,7 @@ namespace Luch::Metal
 
         void BindVertexBuffers(
             const ArrayProxy<Buffer*>& buffers,
-            const ArrayProxy<int32>& offsets,
-            int32 firstBuffer = 0) override;
+            const ArrayProxy<int32>& offsets) override;
 
         void BindIndexBuffer(
             Buffer* indexBuffer,
@@ -49,7 +48,7 @@ namespace Luch::Metal
             int32 indexBufferOffset) override;
 
         void SetViewports(const ArrayProxy<Viewport>& viewports) override;
-        void SetScissorRects(const ArrayProxy<IntRect>& scissorRects) override;
+        void SetScissorRects(const ArrayProxy<Rect2i>& scissorRects) override;
 
         void Draw(
             int32 vertexStart,

@@ -20,7 +20,11 @@ if(MSVC)
         if (_cpp_non_permissive_supported)
             add_compile_options("/permissive-")
         endif()
+
+        add_compile_options(/W4 /WX)
     endif()
+else()
+    add_compile_options(-Wall -Wextra -pedantic)
 endif()
 
 if(USE_METAL AND NOT APPLE)
@@ -28,7 +32,6 @@ if(USE_METAL AND NOT APPLE)
 endif()
 
 if(APPLE)
-    set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
     set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++17")
 endif()
 
@@ -172,8 +175,8 @@ if(USE_VULKAN)
     file(GLOB_RECURSE ENGINE_VULKAN_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Vulkan/Luch/*.h)
 endif()
 
-file(GLOB_RECURSE ENGINE_COMMON_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Luch/*.cpp)
-file(GLOB_RECURSE ENGINE_COMMON_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/Common/Luch/*.h)
+file(GLOB_RECURSE ENGINE_COMMON_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/common/Luch/*.cpp)
+file(GLOB_RECURSE ENGINE_COMMON_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/common/Luch/*.h)
 
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/include/common/)
 
@@ -199,10 +202,10 @@ if(APPLE)
 endif()
 
 if(WIN32)
-    file(GLOB_RECURSE ENGINE_WIN32_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Win32/Luch/*.cpp)
-    file(GLOB_RECURSE ENGINE_WIN32_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/Win32/Luch/*.h)
+    file(GLOB_RECURSE ENGINE_WIN32_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/win32/Luch/*.cpp)
+    file(GLOB_RECURSE ENGINE_WIN32_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/win32/Luch/*.h)
 
-    include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/include/Win32/)
+    include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/include/win32/)
 
     target_sources(LuchEngine
         ${ENGINE_WIN32_CPP_FILES}
@@ -272,16 +275,16 @@ endif()
 # endif()
 
 # Add sample
-file(GLOB_RECURSE SAMPLE_COMMON_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Sample/*.cpp)
-file(GLOB_RECURSE SAMPLE_COMMON_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Sample/*.h)
+file(GLOB_RECURSE SAMPLE_COMMON_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/common/Sample/*.cpp)
+file(GLOB_RECURSE SAMPLE_COMMON_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/common/Sample/*.h)
 
 add_executable(LuchEngineSample
         ${SAMPLE_COMMON_CPP_FILES}
         ${SAMPLE_COMMON_HEADER_FILES})
 
 if(WIN32)
-    file(GLOB_RECURSE SAMPLE_WIN32_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Win32/Sample/*.cpp)
-    file(GLOB_RECURSE SAMPLE_WIN32_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Win32/Sample/*.h)
+    file(GLOB_RECURSE SAMPLE_WIN32_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/win32/Sample/*.cpp)
+    file(GLOB_RECURSE SAMPLE_WIN32_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/win32/Sample/*.h)
 
     target_sources(LuchEngineSample PUBLIC
         ${SAMPLE_WIN32_CPP_FILES}

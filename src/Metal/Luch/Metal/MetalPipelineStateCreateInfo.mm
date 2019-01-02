@@ -88,19 +88,19 @@ namespace Luch::Metal
             d.GetColorAttachments()[i].SetWriteMask(ToMetalColorWriteMask(colorAttachment.colorWriteMask));
         }
 
+        // TODO depth writes without depth test?
         if(ci.depthStencil.depthTestEnable || ci.depthStencil.stencilTestEnable)
         {
             auto format = ci.depthStencil.depthStencilFormat;
 
-            // TODO functions to check if format is depth or stencil only
-            if(format != Format::S8Uint)
+            if(FormatHasDepth(format))
             {
-                d.SetDepthAttachmentPixelFormat(ToMetalPixelFormat(ci.depthStencil.depthStencilFormat));
+                d.SetDepthAttachmentPixelFormat(ToMetalPixelFormat(format));
             }
 
-            if(format != Format::D32Sfloat && format != Format::D16Unorm)
+            if(FormatHasStencil(format))
             {
-                d.SetStencilAttachmentPixelFormat(ToMetalPixelFormat(ci.depthStencil.depthStencilFormat));
+                d.SetStencilAttachmentPixelFormat(ToMetalPixelFormat(format));
             }
         }
 

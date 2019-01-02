@@ -113,8 +113,7 @@ namespace Luch::Graphics
         PipelineDepthStencilStateCreateInfo depthStencil;
         PipelineColorAttachmentsStateCreateInfo colorAttachments;
         PipelineLayout* pipelineLayout = nullptr;
-        // TODO
-        //RenderPass* renderPass = nullptr;
+        RenderPass* renderPass = nullptr;
         String name = "";
     };
 }
