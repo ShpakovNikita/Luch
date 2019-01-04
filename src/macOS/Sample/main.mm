@@ -6,6 +6,7 @@
 
 #include <SDL.h>
 #include <SDL_syswm.h>
+#include <SDL_events.h>
 
 @interface MetalView : NSView
 
@@ -55,37 +56,49 @@
 
 int main(int argc, const char * argv[])
 {
+    SDL_SetHint(SDL_HINT_RENDER_DRIVER, "metal");
     SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
 
-    SDL_Window *window = SDL_CreateWindow("Luch Engine Sample", 0, 0, 500, 500, SDL_WINDOW_RESIZABLE);
+    SDL_Window *window = SDL_CreateWindow("Luch Engine Sample", 0, 0, 500, 500, SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
-    SDL_SysWMinfo info;
-    SDL_VERSION(&info.version);
-    SDL_GetWindowWMInfo(window, &info);
+    int drawableWidth = 0;
+    int drawableHeight = 0;
+    SDL_RendererInfo rendererInfo;
+    SDL_GetRendererInfo(renderer, &rendererInfo);
+    SDL_GetRendererOutputSize(renderer, &drawableWidth, &drawableHeight);
 
-    NSView* sdlView = info.info.cocoa.window.contentView;
-    MetalView *metalView = [[MetalView alloc] initWithFrame:sdlView.frame];
-    CGSize size = metalView.metalLayer.drawableSize;
-    [sdlView addSubview:metalView];
+    CAMetalLayer *metalLayer = (__bridge CAMetalLayer *)SDL_RenderGetMetalLayer(renderer);
+    metalLayer.opaque = YES;
+    metalLayer.contentsScale = [[NSScreen mainScreen] backingScaleFactor];
+    metalLayer.pixelFormat =  MTLPixelFormatBGRA8Unorm_sRGB;
+    metalLayer.drawableSize = CGSize{(float)drawableWidth, (float)drawableHeight};
+
+    CGSize size = metalLayer.drawableSize;
 
     auto app = Luch::MakeUnique<SampleApplication>();
     app->SetViewSize(static_cast<Luch::int32>(size.width), static_cast<Luch::int32>(size.height));
-    app->SetView(metalView.metalLayer);
-    [[maybe_unused]] bool result = app->Initialize({});
-    LUCH_ASSERT(result);
+    app->SetView((__bridge void*)metalLayer);
+    [[maybe_unused]] bool initialized = app->Initialize({});
+    LUCH_ASSERT(initialized);
 
     while(true)
     {
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
-            /* Handle SDL events. */
+            app->HandleEvent(e);
         }
 
         app->Process();
     }
 
-    [metalView removeFromSuperview];
-
+    SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
-    SDL_QuitSubSystem(SDL_INIT_VIDEO);
+    SDL_QuitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
+
+    [[maybe_unused]] bool deinitialized = app->Deinitialize();
+    LUCH_ASSERT(deinitialized);
+    app.reset();
+
+    return 0;
 }
