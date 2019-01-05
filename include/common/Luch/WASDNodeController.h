@@ -19,7 +19,7 @@ namespace Luch
         const RefPtr<SceneV1::Node>& GetNode() { return node; }
         void SetNode(RefPtr<SceneV1::Node> aNode) { node = std::move(aNode); }
 
-        float32 GetSpeedd(int32 axis, int32 direction)
+        float32 GetSpeed(int32 axis, int32 direction)
         {
             return speed[axis][direction];
         }
@@ -43,7 +43,7 @@ namespace Luch
     private:
         RefPtr<SceneV1::Node> node;
 
-        Array<Array<float32, 2>, 3> speed = {};
+        Array<Array<float32, 2>, 3> speed = {}; // m/s
         Array<Array<bool, 2>, 3> moving = {};
     };
 }

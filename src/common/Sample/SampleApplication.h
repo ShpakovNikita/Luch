@@ -6,6 +6,7 @@
 #include <Luch/glTF2/glTFParser.h>
 #include <Luch/glTF2/glTF.h>
 #include <Luch/WASDNodeController.h>
+#include <Luch/MouseNodeController.h>
 #include <Luch/Render/SceneRenderer.h>
 
 class SampleApplication : public Luch::BaseApplication
@@ -66,4 +67,5 @@ private:
     Luch::RefPtr<Luch::SceneV1::Scene> scene;
     Luch::RefPtr<Luch::SceneV1::Node> cameraNode;
     Luch::WASDNodeController wasdController;
+    Luch::MouseNodeController mouseController;
 };

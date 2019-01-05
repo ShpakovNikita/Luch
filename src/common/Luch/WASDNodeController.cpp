@@ -16,7 +16,7 @@ namespace Luch
             return;
         }
 
-        Vec3 v;
+        Vec3 v {};
 
         for(int32 axis = XAxis; axis <= ZAxis; axis++)
         {

@@ -129,6 +129,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     cameraNode = *cameraIt;
 
     wasdController.SetNode(cameraNode);
+    mouseController.SetNode(cameraNode);
 
     context = MakeShared<Render::RenderContext>();
 
@@ -192,6 +193,7 @@ bool SampleApplication::Deinitialize()
 
 void SampleApplication::Process()
 {
+    mouseController.Tick();
     wasdController.Tick(16.0f / 1000.0f);
     scene->Update();
 
@@ -211,6 +213,8 @@ void SampleApplication::HandleEvent(const SDL_Event& event)
     case SDL_KEYDOWN:
     case SDL_KEYUP:
         HandleKeyboardEvent(event);
+    case SDL_MOUSEMOTION:
+        HandleMouseMotionEvent(event);
     default:
         return;
     }
@@ -271,5 +275,13 @@ void SampleApplication::HandleKeyboardEvent(const SDL_Event& event)
 
 void SampleApplication::HandleMouseMotionEvent(const SDL_Event& event)
 {
-    
+    if(event.motion.state & SDL_BUTTON_LMASK)
+    {
+        if(std::abs(event.motion.xrel) > 5000 || std::abs(event.motion.yrel) > 5000)
+        {
+            return;
+        }
+
+        mouseController.Add(event.motion.xrel, event.motion.yrel);
+    }
 }
