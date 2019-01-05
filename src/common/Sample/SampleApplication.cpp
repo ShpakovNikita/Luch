@@ -113,7 +113,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     String rootDir{ "Data/gltf2/sponza/" };
     String filename { "Sponza.gltf" };
 
-        FileStream fileStream{ rootDir + filename, FileOpenModes::Read };
+    FileStream fileStream{ rootDir + filename, FileOpenModes::Read };
 
     auto root = glTFparser.ParseJSON(&fileStream);
 
@@ -191,6 +191,11 @@ bool SampleApplication::Deinitialize()
     return true;
 }
 
+bool SampleApplication::ShouldQuit()
+{
+    return shouldQuit;
+}
+
 void SampleApplication::Process()
 {
     mouseController.Tick();
@@ -213,8 +218,13 @@ void SampleApplication::HandleEvent(const SDL_Event& event)
     case SDL_KEYDOWN:
     case SDL_KEYUP:
         HandleKeyboardEvent(event);
+        break;
     case SDL_MOUSEMOTION:
         HandleMouseMotionEvent(event);
+        break;
+    case SDL_QUIT:
+        shouldQuit = true;
+        break;
     default:
         return;
     }
@@ -262,6 +272,9 @@ void SampleApplication::HandleKeyboardEvent(const SDL_Event& event)
     case SDL_SCANCODE_E:
         axis = WASDNodeController::ZAxis;
         direction = WASDNodeController::Negative;
+        break;
+    case SDL_SCANCODE_ESCAPE:
+        shouldQuit = true;
         break;
     default:
         break;

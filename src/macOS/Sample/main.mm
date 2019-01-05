@@ -91,8 +91,17 @@ int main(int argc, const char * argv[])
             app->HandleEvent(e);
         }
 
-        app->Process();
+        if(app->ShouldQuit())
+        {
+            break;
+        }
+        else
+        {
+            app->Process();
+        }
     }
+
+    SDL_SetRelativeMouseMode(SDL_FALSE);
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);

@@ -16,6 +16,7 @@ public:
 
     bool Initialize(const Luch::Vector<Luch::String>& args) override;
     bool Deinitialize() override;
+    bool ShouldQuit() override;
     void Process();
 
     void HandleEvent(const SDL_Event& event);
@@ -58,6 +59,7 @@ private:
 
     Luch::int32 width = 1000;
     Luch::int32 height = 1000;
+    bool shouldQuit = false;
 
     Luch::RefPtr<Luch::Graphics::PhysicalDevice> physicalDevice;
     Luch::RefPtr<Luch::Graphics::Surface> surface;
