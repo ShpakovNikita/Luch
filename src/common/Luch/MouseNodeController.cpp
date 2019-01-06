@@ -24,7 +24,7 @@ namespace Luch
             auto mat = std::get<Mat4x4>(transform);
 
             mat *= glm::rotate(ds[0] * speed[0], Vec3 {0, 1, 0});
-            mat *= glm::rotate(ds[1]* speed[1], Vec3 {1, 0, 0});
+            mat *= glm::rotate(ds[1] * speed[1], Vec3 {1, 0, 0});
 
             transform = mat;
         }
@@ -32,8 +32,13 @@ namespace Luch
         {
             auto props = std::get<SceneV1::TransformProperties>(transform);
 
-            props.rotation = glm::rotate(props.rotation, ds[0] * speed[0], Vec3 {0, 1, 0});
-            props.rotation = glm::rotate(props.rotation, ds[1] * speed[1], Vec3 {1, 0, 0});
+            Vec3 pitchAxis{1, 0, 0};
+            Quaternion pitchQuat = glm::angleAxis(ds[1] * speed[1], pitchAxis);
+
+            Vec3 yawAxis{0, 1, 0};
+            Quaternion yawQuat = glm::angleAxis(ds[0] * speed[0], yawAxis);
+
+            props.rotation = yawQuat * props.rotation * pitchQuat;
 
             transform = props;
         }
