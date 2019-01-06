@@ -295,6 +295,6 @@ void SampleApplication::HandleMouseMotionEvent(const SDL_Event& event)
             return;
         }
 
-        mouseController.Add(event.motion.xrel, event.motion.yrel);
+        mouseController.AddMovement(event.motion.xrel, event.motion.yrel);
     }
 }

@@ -4,7 +4,7 @@
 
 namespace Luch
 {
-    void MouseNodeController::Add(float32 dx, float32 dy)
+    void MouseNodeController::AddMovement(float32 dx, float32 dy)
     {
         ds[0] += dx;
         ds[1] += dy;

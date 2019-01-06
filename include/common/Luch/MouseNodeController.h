@@ -12,7 +12,7 @@ namespace Luch
         const RefPtr<SceneV1::Node>& GetNode() { return node; }
         void SetNode(RefPtr<SceneV1::Node> aNode) { node = std::move(aNode); }
 
-        void Add(float32 dx, float32 dy);
+        void AddMovement(float32 dx, float32 dy);
 
         void Tick();
     private:
