@@ -184,6 +184,8 @@ add_library(LuchEngine
     ${ENGINE_COMMON_CPP_FILES}
     ${ENGINE_COMMON_HEADER_FILES})
 
+target_link_libraries(LuchEngine ${SDL2_LIBRARIES})
+
 # Add Luch Engine library
 if(APPLE)
     file(GLOB_RECURSE ENGINE_MACOS_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/macOS/Luch/*.cpp)
