@@ -18,7 +18,7 @@ namespace Luch
     private:
         RefPtr<SceneV1::Node> node;
 
-        Array<float32, 2> speed = { 0.01f, 0.01f }; // degrees / px
+        Array<float32, 2> sensitivity = { 0.01f, 0.01f };
         Array<float32, 2> ds = {};
     };
 }

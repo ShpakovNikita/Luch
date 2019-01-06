@@ -23,20 +23,20 @@ namespace Luch
         {
             auto mat = std::get<Mat4x4>(transform);
 
-            mat *= glm::rotate(ds[0] * speed[0], Vec3 {0, 1, 0});
-            mat *= glm::rotate(ds[1] * speed[1], Vec3 {1, 0, 0});
+            Mat4x4 pitchMat = glm::rotate(ds[1] * sensitivity[1], Vec3 {1, 0, 0});
+            Mat4x4 yawMat = glm::rotate(ds[0] * sensitivity[0], Vec3 {0, 1, 0});
 
-            transform = mat;
+            transform = yawMat * mat * pitchMat;
         }
         else if(std::holds_alternative<SceneV1::TransformProperties>(transform))
         {
             auto props = std::get<SceneV1::TransformProperties>(transform);
 
             Vec3 pitchAxis{1, 0, 0};
-            Quaternion pitchQuat = glm::angleAxis(ds[1] * speed[1], pitchAxis);
+            Quaternion pitchQuat = glm::angleAxis(ds[1] * sensitivity[1], pitchAxis);
 
             Vec3 yawAxis{0, 1, 0};
-            Quaternion yawQuat = glm::angleAxis(ds[0] * speed[0], yawAxis);
+            Quaternion yawQuat = glm::angleAxis(ds[0] * sensitivity[0], yawAxis);
 
             props.rotation = yawQuat * props.rotation * pitchQuat;
 
