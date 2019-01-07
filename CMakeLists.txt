@@ -99,9 +99,10 @@ if(USE_VULKAN)
         set (SPIRV_TOOLS_SEARCH_PATH ${Vulkan_SDK}/lib/)
         set (SPIRV_TOOLS_OPT_SEARCH_PATH ${Vulkan_SDK}/lib/)
     elseif(UNIX)
-        set (GLSLANG_SEARCH_PATH ${GLSLANG_DIR})
-        set (SPIRV_TOOLS_SEARCH_PATH "${Vulkan_SDK_DIR}/lib/spirv-tools/")
-        set (SPIRV_TOOLS_OPT_SEARCH_PATH ${Vulkan_SDK_DIR}/lib/spirv-tools/)
+        # install to `usr/local` on linux. `sudo make install` from sdk source glslang / spirv 
+        set (GLSLANG_SEARCH_PATH "")
+        set (SPIRV_TOOLS_SEARCH_PATH "")
+        set (SPIRV_TOOLS_OPT_SEARCH_PATH "")
     endif()
 
     find_library(GLSLANG_LIB NAMES glslang REQUIRED HINTS ${GLSLANG_SEARCH_PATH})
@@ -297,8 +298,8 @@ if(USE_VULKAN)
      target_link_libraries(LuchEngine OGLCompiler)
      target_link_libraries(LuchEngine OSDependent)
      target_link_libraries(LuchEngine HLSL)
-     target_link_libraries(LuchEngine SPIRV-Tools)
      target_link_libraries(LuchEngine SPIRV-Tools-opt)
+     target_link_libraries(LuchEngine SPIRV-Tools)
      target_link_libraries(LuchEngine SPVRemapper)
 
      include_directories(AFTER
