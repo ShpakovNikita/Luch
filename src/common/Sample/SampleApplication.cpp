@@ -114,7 +114,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     String rootDir{ "Data/gltf2/sponza/" };
     String filename { "Sponza.gltf" };
 
-        FileStream fileStream{ rootDir + filename, FileOpenModes::Read };
+    FileStream fileStream{ rootDir + filename, FileOpenModes::Read };
 
     auto root = glTFparser.ParseJSON(&fileStream);
 
@@ -128,6 +128,9 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     LUCH_ASSERT(cameraIt != scene->GetNodes().end());
     cameraNode = *cameraIt;
+
+    wasdController.SetNode(cameraNode);
+    mouseController.SetNode(cameraNode);
 
     context = MakeShared<Render::RenderContext>();
 
@@ -169,6 +172,12 @@ bool SampleApplication::Initialize(const Vector<String>& args)
         return false;
     }
 
+    for(int32 axis = WASDNodeController::XAxis; axis <= WASDNodeController::ZAxis; axis++)
+    {
+        wasdController.SetSpeed(axis, WASDNodeController::Negative, 2.5);
+        wasdController.SetSpeed(axis, WASDNodeController::Positive, 2.5);
+    }
+
     return true;
 }
 
@@ -183,28 +192,15 @@ bool SampleApplication::Deinitialize()
     return true;
 }
 
-void SampleApplication::Run()
+bool SampleApplication::ShouldQuit()
 {
-#if _WIN32
-    MSG msg{};
-
-    while (msg.message != WM_QUIT)
-    {
-        if (PeekMessage(&msg, hWnd, 0, 0, PM_REMOVE))
-        {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        }
-        else
-        {
-            // Draw
-        }
-    }
-#endif
+    return shouldQuit;
 }
 
 void SampleApplication::Process()
 {
+    mouseController.Tick();
+    wasdController.Tick(16.0f / 1000.0f);
     scene->Update();
 
     renderer->BeginRender();
@@ -216,76 +212,90 @@ void SampleApplication::Process()
     context->commandQueue->Present(0, context->swapchain);
 }
 
-#ifdef _WIN32
-
-LRESULT SampleApplication::WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+void SampleApplication::HandleEvent(const SDL_Event& event)
 {
-    switch (uMsg)
+    switch(event.type)
     {
-    case WM_DESTROY:
-    {
-        PostQuitMessage(0);
-        return 0;
-    }
-
-    case WM_PAINT:
-    {
-        PAINTSTRUCT ps;
-        HDC hdc = BeginPaint(hwnd, &ps);
-
-        FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1));
-
-        EndPaint(hwnd, &ps);
-        return 0;
-    }
-
+    case SDL_KEYDOWN:
+    case SDL_KEYUP:
+        HandleKeyboardEvent(event);
+        break;
+    case SDL_MOUSEMOTION:
+        HandleMouseMotionEvent(event);
+        break;
+    case SDL_QUIT:
+        shouldQuit = true;
+        break;
     default:
-    {
-        return DefWindowProc(hwnd, uMsg, wParam, lParam);
-    }
+        return;
     }
 }
 
-std::tuple<HINSTANCE, HWND> SampleApplication::CreateMainWindow(const Luch::String& title, int32 width, int32 height)
+void SampleApplication::HandleKeyboardEvent(const SDL_Event& event)
 {
-    static const TCHAR* className = TEXT("MAIN_WINDOW");
+    Optional<bool> moving;
 
-    HINSTANCE hInstance = GetModuleHandle(NULL);
-
-    WNDCLASS wc = {};
-    wc.hInstance = hInstance;
-    wc.lpfnWndProc = StaticWindowProc;
-    wc.cbWndExtra = sizeof(Luch::Platform::Win32::WndProcDelegate*);
-    wc.lpszClassName = className;
-
-    RegisterClass(&wc);
-
-    // TODO string conversion
-    HWND window = CreateWindowEx(
-        0,
-        className,
-        title.c_str(),
-        WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT,
-        CW_USEDEFAULT,
-        width,
-        height,
-        nullptr,
-        nullptr,
-        hInstance,
-        nullptr);
-
-    if (window)
+    if(event.type == SDL_KEYDOWN)
     {
-        using namespace Luch::Platform::Win32;
-        static_assert(sizeof(LONG_PTR) >= sizeof(WndProcDelegate*));
-        SetWindowLongPtr(window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(static_cast<WndProcDelegate*>(this)));
-
-        ShowWindow(window, SW_NORMAL);
+        moving = true;
     }
 
-    return { hInstance, window };
+    if(event.type == SDL_KEYUP)
+    {
+        moving = false;
+    }
+
+    Optional<int32> axis;
+    Optional<int32> direction;
+
+    switch(event.key.keysym.scancode)
+    {
+    case SDL_SCANCODE_W:
+        axis = WASDNodeController::XAxis;
+        direction = WASDNodeController::Positive;
+        break;
+    case SDL_SCANCODE_S:
+        axis = WASDNodeController::XAxis;
+        direction = WASDNodeController::Negative;
+        break;
+    case SDL_SCANCODE_A:
+        axis = WASDNodeController::YAxis;
+        direction = WASDNodeController::Negative;
+        break;
+    case SDL_SCANCODE_D:
+        axis = WASDNodeController::YAxis;
+        direction = WASDNodeController::Positive;
+        break;
+    case SDL_SCANCODE_Q:
+        axis = WASDNodeController::ZAxis;
+        direction = WASDNodeController::Positive;
+        break;
+    case SDL_SCANCODE_E:
+        axis = WASDNodeController::ZAxis;
+        direction = WASDNodeController::Negative;
+        break;
+    case SDL_SCANCODE_ESCAPE:
+        shouldQuit = true;
+        break;
+    default:
+        break;
+    }
+
+    if(moving.has_value() && axis.has_value() && direction.has_value())
+    {
+        wasdController.SetMoving(*axis, *direction, *moving);
+    }
 }
 
-#endif
+void SampleApplication::HandleMouseMotionEvent(const SDL_Event& event)
+{
+    if(event.motion.state & SDL_BUTTON_LMASK)
+    {
+        if(std::abs(event.motion.xrel) > 5000 || std::abs(event.motion.yrel) > 5000)
+        {
+            return;
+        }
 
+        mouseController.AddMovement(event.motion.xrel, event.motion.yrel);
+    }
+}

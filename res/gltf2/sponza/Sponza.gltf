@@ -49,8 +49,8 @@
             "type":"perspective",
             "perspective":{
                 "yfov": 1,
-                "znear": 2,
-                "zfar": 100
+                "znear": 0.1,
+                "zfar": 50
             }
         }
     ],
