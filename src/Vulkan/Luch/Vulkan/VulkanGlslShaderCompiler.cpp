@@ -1,11 +1,13 @@
 #include <Luch/Vulkan/VulkanGlslShaderCompiler.h>
 #include <Luch/Assert.h>
+#include <vulkan/spirv.hpp>
 #include <SPIRV/GlslangToSpv.h>
 
 #include <sstream>
 
 namespace Luch::Vulkan
 {
+using namespace Luch::Graphics;
 
 TBuiltInResource CreateDefaultResources()
 {
@@ -110,12 +112,12 @@ EShLanguage ToLanguage(ShaderStage shaderStage)
     switch (shaderStage) {
     case ShaderStage::Vertex:
         return EShLangVertex;
-    case ShaderStage::TessellationControl:
-        return EShLangTessControl;
-    case ShaderStage::TessellationEvaluation:
-        return EShLangTessEvaluation;
-    case ShaderStage::Geometry:
-        return EShLangGeometry;
+//    case ShaderStage::TessellationControl:
+//        return EShLangTessControl;
+//    case ShaderStage::TessellationEvaluation:
+//        return EShLangTessEvaluation;
+//    case ShaderStage::Geometry:
+//        return EShLangGeometry;
     case ShaderStage::Fragment:
         return EShLangFragment;
     case ShaderStage::Compute:

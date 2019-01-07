@@ -3,7 +3,6 @@
 #include <Luch/Vulkan.h>
 #include <Luch/Graphics/ShaderStage.h>
 #include <Luch/UniquePtr.h>
-#include <Luch/SampleCount.h>
 #include <Luch/Vulkan/VulkanForwards.h>
 
 namespace Luch::Vulkan
@@ -23,8 +22,8 @@ namespace Luch::Vulkan
 
     struct PipelineShaderStageCreateInfo
     {
-        ShaderModule* shaderModule = nullptr;
-        ShaderStage stage;
+        VulkanShaderModule* shaderModule = nullptr;
+        Graphics::ShaderStage stage;
         String name;
         // TODO specialization
     };
@@ -65,7 +64,7 @@ namespace Luch::Vulkan
 
     struct PipelineMultisampleStateCreateInfo
     {
-        SampleCount rasterizationSamples = SampleCount::e1;
+        // SampleCount rasterizationSamples = SampleCount::e1;
         bool sampleShadingEnable = false;
         float32  minSampleShading = 0;
         // TODO samplemask

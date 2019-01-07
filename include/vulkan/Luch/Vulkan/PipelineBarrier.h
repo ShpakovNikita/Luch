@@ -9,7 +9,7 @@ namespace Luch::Vulkan
 {
     class BufferMemoryBarrier
     {
-        friend class VulkanPipelineBarrier;
+        friend struct VulkanPipelineBarrier;
     public:
         static vk::BufferMemoryBarrier ToVulkanBufferMemoryBarrier(const BufferMemoryBarrier& bufferMemoryBarrier);
 
@@ -37,7 +37,7 @@ namespace Luch::Vulkan
             return *this;
         }
 
-        inline BufferMemoryBarrier& ForBuffer(DeviceBuffer* aBuffer, int32 aSize, int32 aOffset)
+        inline BufferMemoryBarrier& ForBuffer(VulkanDeviceBuffer* aBuffer, int32 aSize, int32 aOffset)
         {
             buffer = aBuffer;
             size = aSize;
@@ -45,7 +45,7 @@ namespace Luch::Vulkan
             return *this;
         }
     private:
-        DeviceBuffer* buffer;
+        VulkanDeviceBuffer* buffer;
         int32 size = 0;
         int32 offset = 0;
         vk::AccessFlags srcAccess;
@@ -57,7 +57,7 @@ namespace Luch::Vulkan
 
     class ImageMemoryBarrier
     {
-        friend class PipelineBarrier;
+        friend struct VulkanPipelineBarrier;
     public:
         static vk::ImageMemoryBarrier ToVulkanImageMemoryBarrier(const ImageMemoryBarrier& imageMemoryBarrier);
 

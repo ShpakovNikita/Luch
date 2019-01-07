@@ -11,7 +11,8 @@ namespace Luch::Vulkan
     class VulkanDescriptorSet;
     class VulkanDescriptorSetBinding;
     class VulkanDescriptorSetLayout;
-    class VulkanDescriptorSetLayoutCreateInfo;
+    struct VulkanDescriptorSetLayoutCreateInfo;
+    class DescriptorSetLayoutCreateInfo;
     class VulkanDescriptorSetWrites;
     class VulkanFence;
     class VulkanFramebuffer;
@@ -23,14 +24,16 @@ namespace Luch::Vulkan
     class VulkanIndexBuffer;
     class VulkanPhysicalDevice;
     class VulkanPipeline;
-    class VulkanPipelineBarrier;
+    struct VulkanPipelineBarrier;
     class VulkanPipelineCache;
     class VulkanPipelineLayout;
-    class VulkanPipelineLayoutCreateInfo;
+    struct VulkanPipelineLayoutCreateInfo;
+    class PipelineLayoutCreateInfo;
     class VulkanPresentQueue;
     class VulkanQueue;
     class VulkanRenderPass;
     class VulkanRenderPassCreateInfo;
+    struct VulkanRenderPassCreateInfoData;
     class VulkanSampler;
     class VulkanSemaphore;
     class VulkanShaderCompiler;

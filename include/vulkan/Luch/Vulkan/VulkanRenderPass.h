@@ -14,7 +14,7 @@ namespace Luch::Vulkan
             VulkanGraphicsDevice* device,
             vk::RenderPass renderPass,
             int32 attachmentCount);
-        ~RenderPass() override;
+        ~VulkanRenderPass() override;
 
         inline vk::RenderPass GetRenderPass() { return renderPass; }
         inline int32 GetAttachmentCount() const { return attachmentCount; }

@@ -4,7 +4,7 @@
 #include <Luch/RefPtr.h>
 #include <Luch/Graphics/Format.h>
 #include <Luch/Vulkan.h>
-#include <Luch/Vulkan/QueueInfo.h>
+#include <Luch/Vulkan/VulkanQueueInfo.h>
 #include <Luch/Vulkan/VulkanForwards.h>
 
 namespace Luch::Vulkan
@@ -20,15 +20,15 @@ namespace Luch::Vulkan
         inline const vk::Optional<const vk::AllocationCallbacks>& GetAllocationCAllbacks() const { return allocationCallbacks; }
         inline const vk::PhysicalDeviceMemoryProperties& GetPhysicalDeviceMemoryProperties() const { return physicalDeviceMemoryProperties; }
 
-        VulkanResultValue<QueueIndices> ChooseDeviceQueues(Surface* surface);
+        VulkanResultValue<QueueIndices> ChooseDeviceQueues(VulkanSurface* surface);
 
-        VulkanRefResultValue<GraphicsDevice> CreateDevice(
+        VulkanRefResultValue<VulkanGraphicsDevice> CreateDevice(
             QueueIndices&& queueIndices,
             const Luch::Vector<const char8*>& requiredDeviceExtensionNames);
 
-        Vector<Format> GetSupportedDepthStencilFormats(const Vector<Format>& formats);
+        Vector<Graphics::Format> GetSupportedDepthStencilFormats(const Vector<Graphics::Format>& formats);
     private:
-        QueueInfo ObtainQueueInfo(vk::Device & device, QueueIndices&& indices);
+        VulkanQueueInfo ObtainQueueInfo(vk::Device & device, QueueIndices&& indices);
 
         vk::PhysicalDevice physicalDevice;
         vk::PhysicalDeviceMemoryProperties physicalDeviceMemoryProperties;

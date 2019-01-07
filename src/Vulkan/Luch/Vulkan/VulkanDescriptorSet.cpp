@@ -1,3 +1,4 @@
+#include <Luch/Vulkan.h>
 #include <Luch/Vulkan/VulkanDescriptorSet.h>
 #include <Luch/Vulkan/VulkanGraphicsDevice.h>
 #include <Luch/Vulkan/VulkanDescriptorSetLayout.h>
@@ -18,7 +19,7 @@ namespace Luch::Vulkan
         return device->GetDevice().freeDescriptorSets(descriptorPool, { descriptorSet });
     }
 
-    void VulkanDescriptorSet::Update(const DescriptorSetWrites& writes)
+    void VulkanDescriptorSet::Update(const VulkanDescriptorSetWrites& writes)
     {
         if (writes.writes.empty())
         {

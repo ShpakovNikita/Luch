@@ -2,9 +2,9 @@
 
 #include <Luch/UniquePtr.h>
 #include <Luch/Vulkan.h>
-#include <Luch/Vulkan/Attachment.h>
-#include <Luch/Vulkan/SubpassDescription.h>
-#include <Luch/Vulkan/SubpassDependency.h>
+#include <Luch/Vulkan/VulkanAttachment.h>
+#include <Luch/Vulkan/VulkanSubpassDescription.h>
+#include <Luch/Vulkan/VulkanSubpassDependency.h>
 
 namespace Luch::Vulkan
 {
@@ -27,17 +27,18 @@ namespace Luch::Vulkan
             Vector<vk::AttachmentReference> resolveAttachments;
             UniquePtr<vk::AttachmentReference> depthStencilAttachment;
             Vector<uint32> preserveAttachments;
+            int32 index = -1;
         };
 
-        struct VulkanRenderPassCreateInfo
+        struct VulkanRenderPassCreateInfoData
         {
-            VulkanRenderPassCreateInfo() = default;
+            VulkanRenderPassCreateInfoData() = default;
 
-            VulkanRenderPassCreateInfo(const VulkanRenderPassCreateInfo& other) = delete;
-            VulkanRenderPassCreateInfo(VulkanRenderPassCreateInfo&& other) = default;
+            VulkanRenderPassCreateInfoData(const VulkanRenderPassCreateInfoData& other) = delete;
+            VulkanRenderPassCreateInfoData(VulkanRenderPassCreateInfoData&& other) = default;
 
-            VulkanRenderPassCreateInfo& operator=(const VulkanRenderPassCreateInfo& other) = delete;
-            VulkanRenderPassCreateInfo& operator=(VulkanRenderPassCreateInfo&& other) = default;
+            VulkanRenderPassCreateInfoData& operator=(const VulkanRenderPassCreateInfoData& other) = delete;
+            VulkanRenderPassCreateInfoData& operator=(VulkanRenderPassCreateInfoData&& other) = default;
 
             vk::RenderPassCreateInfo createInfo;
             Vector<vk::AttachmentDescription> attachments;
@@ -46,11 +47,11 @@ namespace Luch::Vulkan
             Vector<vk::SubpassDependency> subpassDependencies;
         };
 
-        static VulkanRenderPassCreateInfo ToVulkanCreateInfo(const RenderPassCreateInfo& createInfo);
+        static VulkanRenderPassCreateInfoData ToVulkanCreateInfo(const VulkanRenderPassCreateInfo& createInfo);
 
         // attachment must be in a valid state
         // changing the attachment after calling this function can lead to undefined behavior
-        inline RenderPassCreateInfo& AddAttachment(Attachment* attachment)
+        inline VulkanRenderPassCreateInfo& AddAttachment(VulkanAttachment* attachment)
         {
             if (attachment->index < 0)
             {
@@ -70,31 +71,31 @@ namespace Luch::Vulkan
             return *this;
         }
 
-        inline RenderPassCreateInfo& AddSubpass(SubpassDescription&& subpassDescription)
+        inline VulkanRenderPassCreateInfo& AddSubpass(VulkanSubpassDescription&& subpassDescription)
         {
             LUCH_ASSERT_MSG(subpassDescription.index < 0, "Can't use subpass description multiple times");
             subpassDescription.index = nextSubpassIndex;
             nextSubpassIndex++;
 
-            subpasses.emplace_back(subpassDescription);
+            subpasses.emplace_back(std::move(subpassDescription));
 
             return *this;
         }
 
-        inline RenderPassCreateInfo& AddSubpassDependency(const SubpassDependency& dependency)
+        inline VulkanRenderPassCreateInfo& AddSubpassDependency(const VulkanSubpassDependency& dependency)
         {
             subpassDependencies.push_back(dependency);
             return *this;
         }
     private:
-        static vk::AttachmentDescription ToVulkanAttachmentDescription(const Attachment* attachment);
-        static VulkanSubpassDescription ToVulkanSubpassDescription(const SubpassDescription& subpassDescription);
-        static vk::SubpassDependency ToVulkanSubpassDependency(const SubpassDependency& subpassDependency);
+        static vk::AttachmentDescription ToVulkanAttachmentDescription(const VulkanAttachment* attachment);
+        static VulkanSubpassDescription ToVulkanSubpassDescription(const VulkanSubpassDescription& subpassDescription);
+        static vk::SubpassDependency ToVulkanSubpassDependency(const VulkanSubpassDependency& subpassDependency);
 
         int32 nextAttachmentIndex = 0;
         int32 nextSubpassIndex = 0;
-        Vector<Attachment*> attachments;
-        Vector<SubpassDescription> subpasses;
-        Vector<SubpassDependency> subpassDependencies;
+        Vector<VulkanAttachment*> attachments;
+        Vector<VulkanSubpassDescription> subpasses;
+        Vector<VulkanSubpassDependency> subpassDependencies;
     };
 }

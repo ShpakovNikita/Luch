@@ -1,5 +1,5 @@
 #include <Luch/Vulkan/VulkanGraphicsDevice.h>
-#include <Luch/Vulkan/Format.h>
+#include <Luch/Vulkan/VulkanFormat.h>
 #include <Luch/Vulkan/VulkanPhysicalDevice.h>
 #include <Luch/Vulkan/VulkanShaderCompiler.h>
 #include <Luch/Vulkan/VulkanSurface.h>
@@ -14,17 +14,17 @@
 #include <Luch/Vulkan/VulkanImage.h>
 #include <Luch/Vulkan/VulkanImageView.h>
 #include <Luch/Vulkan/VulkanPipeline.h>
-#include <Luch/Vulkan/PipelineCache.h>
+#include <Luch/Vulkan/VulkanPipelineCache.h>
 #include <Luch/Vulkan/PipelineCreateInfo.h>
-#include <Luch/Vulkan/PipelineLayout.h>
+#include <Luch/Vulkan/VulkanPipelineLayout.h>
 #include <Luch/Vulkan/VulkanRenderPass.h>
 #include <Luch/Vulkan/VulkanSemaphore.h>
 #include <Luch/Vulkan/VulkanShaderModule.h>
 #include <Luch/Vulkan/VulkanSwapchain.h>
 #include <Luch/Vulkan/VulkanSampler.h>
-#include <Luch/Vulkan/RenderPassCreateInfo.h>
-#include <Luch/Vulkan/DescriptorSetLayoutCreateInfo.h>
-#include <Luch/Vulkan/PipelineLayoutCreateInfo.h>
+#include <Luch/Vulkan/VulkanRenderPassCreateInfo.h>
+#include <Luch/Vulkan/VulkanDescriptorSetLayoutCreateInfo.h>
+#include <Luch/Vulkan/VulkanPipelineLayoutCreateInfo.h>
 #include <Luch/Vulkan/FramebufferCreateInfo.h>
 
 namespace Luch::Vulkan
@@ -157,7 +157,7 @@ namespace Luch::Vulkan
     }
 
     VulkanRefResultValue<VulkanSwapchain> VulkanGraphicsDevice::CreateSwapchain(
-        const SwapchainCreateInfo& swapchainCreateInfo,
+        const VulkanSwapchainCreateInfo& swapchainCreateInfo,
         VulkanSurface* surface)
     {
         vk::SwapchainCreateInfoKHR ci;
@@ -314,7 +314,7 @@ namespace Luch::Vulkan
         }
         else
         {
-            return { createBufferResult, MakeRef<DeviceBuffer>(this, vulkanBuffer, vulkanMemory, ci) };
+            return { createBufferResult, MakeRef<VulkanDeviceBuffer>(this, vulkanBuffer, vulkanMemory, ci) };
         }
     }
 
@@ -338,7 +338,7 @@ namespace Luch::Vulkan
         }
         else
         {
-            return { createResult, MakeRef<DeviceBufferView>(this, vulkanBufferView) };
+            return { createResult, MakeRef<VulkanDeviceBufferView>(this, vulkanBufferView) };
         }
     }
 
@@ -414,7 +414,7 @@ namespace Luch::Vulkan
         }
     }
 
-    VulkanRefResultValue<PipelineCache> VulkanGraphicsDevice::CreatePipelineCache()
+    VulkanRefResultValue<VulkanPipelineCache> VulkanGraphicsDevice::CreatePipelineCache()
     {
         vk::PipelineCacheCreateInfo ci;
         auto [createResult, vulkanPipelineCache] = device.createPipelineCache(ci, allocationCallbacks);
@@ -425,13 +425,13 @@ namespace Luch::Vulkan
         }
         else
         {
-            return { createResult, MakeRef<PipelineCache>(this, vulkanPipelineCache) };
+            return { createResult, MakeRef<VulkanPipelineCache>(this, vulkanPipelineCache) };
         }
     }
 
-    VulkanRefResultValue<Pipeline> VulkanGraphicsDevice::CreateGraphicsPipeline(
+    VulkanRefResultValue<VulkanPipeline> VulkanGraphicsDevice::CreateGraphicsPipeline(
         const GraphicsPipelineCreateInfo & graphicsPipelineCreateInfo,
-        PipelineCache* pipelineCache)
+        VulkanPipelineCache* pipelineCache)
     {
         auto vkci = GraphicsPipelineCreateInfo::ToVulkanCreateInfo(graphicsPipelineCreateInfo);
 
@@ -445,13 +445,13 @@ namespace Luch::Vulkan
         }
         else
         {
-            return { createResult, MakeRef<Pipeline>(this, vulkanPipeline) };
+            return { createResult, MakeRef<VulkanPipeline>(this, vulkanPipeline) };
         }
     }
 
-    VulkanRefResultValue<RenderPass> VulkanGraphicsDevice::CreateRenderPass(const RenderPassCreateInfo& ci)
+    VulkanRefResultValue<VulkanRenderPass> VulkanGraphicsDevice::CreateRenderPass(const VulkanRenderPassCreateInfo& ci)
     {
-        auto vkci = RenderPassCreateInfo::ToVulkanCreateInfo(ci);
+        auto vkci = VulkanRenderPassCreateInfo::ToVulkanCreateInfo(ci);
         auto [createResult, vulkanRenderPass] = device.createRenderPass(vkci.createInfo, allocationCallbacks);
         if (createResult != vk::Result::eSuccess)
         {
@@ -460,11 +460,11 @@ namespace Luch::Vulkan
         }
         else
         {
-            return { createResult, MakeRef<RenderPass>(this, vulkanRenderPass, (int32)vkci.attachments.size()) };
+            return { createResult, MakeRef<VulkanRenderPass>(this, vulkanRenderPass, (int32)vkci.attachments.size()) };
         }
     }
 
-    VulkanRefResultValue<DescriptorSetLayout> VulkanGraphicsDevice::CreateDescriptorSetLayout(
+    VulkanRefResultValue<VulkanDescriptorSetLayout> VulkanGraphicsDevice::CreateDescriptorSetLayout(
         const DescriptorSetLayoutCreateInfo& ci)
     {
         auto vkci = DescriptorSetLayoutCreateInfo::ToVulkanCreateInfo(ci);
@@ -476,11 +476,11 @@ namespace Luch::Vulkan
         }
         else
         {
-            return { createResult, MakeRef<DescriptorSetLayout>(this, vulkanDescriptorSetLayout) };
+            return { createResult, MakeRef<VulkanDescriptorSetLayout>(this, vulkanDescriptorSetLayout) };
         }
     }
 
-    VulkanRefResultValue<DescriptorPool> VulkanGraphicsDevice::CreateDescriptorPool(
+    VulkanRefResultValue<VulkanDescriptorPool> VulkanGraphicsDevice::CreateDescriptorPool(
         int32 maxSets,
         const UnorderedMap<vk::DescriptorType, int32>& poolSizes,
         bool canFreeDescriptors)
@@ -515,11 +515,11 @@ namespace Luch::Vulkan
         }
         else
         {
-            return { createResult, MakeRef<DescriptorPool>(this, vulkanDescriptorPool) };
+            return { createResult, MakeRef<VulkanDescriptorPool>(this, vulkanDescriptorPool) };
         }
     }
 
-    VulkanRefResultValue<PipelineLayout> VulkanGraphicsDevice::CreatePipelineLayout(
+    VulkanRefResultValue<VulkanPipelineLayout> VulkanGraphicsDevice::CreatePipelineLayout(
         const PipelineLayoutCreateInfo& createInfo)
     {
         auto vkci = PipelineLayoutCreateInfo::ToVulkanCreateInfo(createInfo);
@@ -531,11 +531,11 @@ namespace Luch::Vulkan
         }
         else
         {
-            return { createResult, MakeRef<PipelineLayout>(this, vulkanPipelineLayout) };
+            return { createResult, MakeRef<VulkanPipelineLayout>(this, vulkanPipelineLayout) };
         }
     }
 
-    VulkanRefResultValue<Framebuffer> VulkanGraphicsDevice::CreateFramebuffer(
+    VulkanRefResultValue<VulkanFramebuffer> VulkanGraphicsDevice::CreateFramebuffer(
         const FramebufferCreateInfo & createInfo)
     {
         auto vkci = FramebufferCreateInfo::ToVulkanCreateInfo(createInfo);
@@ -547,11 +547,11 @@ namespace Luch::Vulkan
         }
         else
         {
-            return { createResult, MakeRef<Framebuffer>(this, vulkanFramebuffer) };
+            return { createResult, MakeRef<VulkanFramebuffer>(this, vulkanFramebuffer) };
         }
     }
 
-    VulkanRefResultValue<Fence> VulkanGraphicsDevice::CreateFence(bool signaled)
+    VulkanRefResultValue<VulkanFence> VulkanGraphicsDevice::CreateFence(bool signaled)
     {
         vk::FenceCreateInfo vkci;
         if (signaled)
@@ -567,11 +567,11 @@ namespace Luch::Vulkan
         }
         else
         {
-            return { createResult, MakeRef<Fence>(this, vulkanFence) };
+            return { createResult, MakeRef<VulkanFence>(this, vulkanFence) };
         }
     }
 
-    VulkanRefResultValue<Semaphore> VulkanGraphicsDevice::CreateSemaphore()
+    VulkanRefResultValue<VulkanSemaphore> VulkanGraphicsDevice::CreateSemaphore()
     {
         vk::SemaphoreCreateInfo vkci;
         
@@ -583,11 +583,11 @@ namespace Luch::Vulkan
         }
         else
         {
-            return { createResult, MakeRef<Semaphore>(this, vulkanSemaphore) };
+            return { createResult, MakeRef<VulkanSemaphore>(this, vulkanSemaphore) };
         }
     }
 
-    VulkanRefResultValue<Sampler> VulkanGraphicsDevice::CreateSampler(const vk::SamplerCreateInfo& createInfo)
+    VulkanRefResultValue<VulkanSampler> VulkanGraphicsDevice::CreateSampler(const vk::SamplerCreateInfo& createInfo)
     {
         auto [createResult, vulkanSampler] = device.createSampler(createInfo, allocationCallbacks);
         if (createResult != vk::Result::eSuccess)
@@ -597,7 +597,7 @@ namespace Luch::Vulkan
         }
         else
         {
-            return { createResult, MakeRef<Sampler>(this, vulkanSampler) };
+            return { createResult, MakeRef<VulkanSampler>(this, vulkanSampler) };
         }
     }
 
@@ -639,87 +639,87 @@ namespace Luch::Vulkan
         }
     }
 
-    void VulkanGraphicsDevice::DestroySwapchain(Swapchain* swapchain)
+    void VulkanGraphicsDevice::DestroySwapchain(VulkanSwapchain* swapchain)
     {
         device.destroySwapchainKHR(swapchain->swapchain, allocationCallbacks);
     }
 
-    void VulkanGraphicsDevice::DestroyCommandPool(CommandPool* commandPool)
+    void VulkanGraphicsDevice::DestroyCommandPool(VulkanCommandPool* commandPool)
     {
         device.destroyCommandPool(commandPool->commandPool, allocationCallbacks);
     }
-    void VulkanGraphicsDevice::DestroyBuffer(DeviceBuffer* buffer)
+    void VulkanGraphicsDevice::DestroyBuffer(VulkanDeviceBuffer* buffer)
     {
         device.destroyBuffer(buffer->buffer, allocationCallbacks);
         device.freeMemory(buffer->memory, allocationCallbacks);
     }
 
-    void VulkanGraphicsDevice::DestroyBufferView(DeviceBufferView* bufferView)
+    void VulkanGraphicsDevice::DestroyBufferView(VulkanDeviceBufferView* bufferView)
     {
         device.destroyBufferView(bufferView->bufferView, allocationCallbacks);
     }
 
-    void VulkanGraphicsDevice::DestroyImage(Image* image)
+    void VulkanGraphicsDevice::DestroyImage(VulkanImage* image)
     {
         device.destroyImage(image->image, allocationCallbacks);
         device.freeMemory(image->memory, allocationCallbacks);
     }
 
-    void VulkanGraphicsDevice::DestroyImageView(ImageView* imageView)
+    void VulkanGraphicsDevice::DestroyImageView(VulkanImageView* imageView)
     {
         device.destroyImageView(imageView->imageView, allocationCallbacks);
     }
 
-    void VulkanGraphicsDevice::DestroyPipeline(Pipeline* pipeline)
+    void VulkanGraphicsDevice::DestroyPipeline(VulkanPipeline* pipeline)
     {
         device.destroyPipeline(pipeline->pipeline, allocationCallbacks);
     }
 
-    void VulkanGraphicsDevice::DestroyPipelineLayout(PipelineLayout * pipelineLayout)
+    void VulkanGraphicsDevice::DestroyPipelineLayout(VulkanPipelineLayout* pipelineLayout)
     {
         device.destroyPipelineLayout(pipelineLayout->pipelineLayout, allocationCallbacks);
     }
 
-    void VulkanGraphicsDevice::DestroyPipelineCache(PipelineCache* pipelineCache)
+    void VulkanGraphicsDevice::DestroyPipelineCache(VulkanPipelineCache* pipelineCache)
     {
         device.destroyPipelineCache(pipelineCache->pipelineCache, allocationCallbacks);
     }
 
-    void VulkanGraphicsDevice::DestroyShaderModule(ShaderModule* module)
+    void VulkanGraphicsDevice::DestroyShaderModule(VulkanShaderModule* module)
     {
         device.destroyShaderModule(module->module, allocationCallbacks);
     }
 
-    void VulkanGraphicsDevice::DestroyRenderPass(RenderPass* renderPass)
+    void VulkanGraphicsDevice::DestroyRenderPass(VulkanRenderPass* renderPass)
     {
         device.destroyRenderPass(renderPass->renderPass, allocationCallbacks);
     }
-    void VulkanGraphicsDevice::DestroyDescriptorSetLayout(DescriptorSetLayout* descriptorSetLayout)
+    void VulkanGraphicsDevice::DestroyDescriptorSetLayout(VulkanDescriptorSetLayout* descriptorSetLayout)
     {
         device.destroyDescriptorSetLayout(descriptorSetLayout->descriptorSetLayout, allocationCallbacks);
     }
 
-    void VulkanGraphicsDevice::DestroyDescriptorPool(DescriptorPool* descriptorPool)
+    void VulkanGraphicsDevice::DestroyDescriptorPool(VulkanDescriptorPool* descriptorPool)
     {
         device.destroyDescriptorPool(descriptorPool->descriptorPool, allocationCallbacks);
     }
 
-    void VulkanGraphicsDevice::DestroyFramebuffer(Framebuffer* framebuffer)
+    void VulkanGraphicsDevice::DestroyFramebuffer(VulkanFramebuffer* framebuffer)
     {
         device.destroyFramebuffer(framebuffer->framebuffer, allocationCallbacks);
     }
 
-    void VulkanGraphicsDevice::DestroyFence(Fence* fence)
+    void VulkanGraphicsDevice::DestroyFence(VulkanFence* fence)
     {
         device.destroyFence(fence->fence, allocationCallbacks);
     }
 
-    void VulkanGraphicsDevice::DestroySemaphore(Semaphore* semaphore)
+    void VulkanGraphicsDevice::DestroySemaphore(VulkanSemaphore* semaphore)
     {
         device.destroySemaphore(semaphore->semaphore, allocationCallbacks);
     }
 
-    void VulkanGraphicsDevice::DestroySampler(Sampler* sampler)
+    void VulkanGraphicsDevice::DestroySampler(VulkanSampler* sampler)
     {
         device.destroySampler(sampler->sampler, allocationCallbacks);
     }

@@ -34,10 +34,10 @@ namespace Luch::Vulkan
         friend class VulkanQueueInfo;
     public:
         explicit VulkanQueue(vk::Queue queue);
-        ~Queue() = default; // Queues are owned by device, so we don't destroy them in destructor
+        ~VulkanQueue() = default; // Queues are owned by device, so we don't destroy them in destructor
 
         vk::Result WaitIdle();
-        vk::Result Submit(const Submission& submission);
+        vk::Result Submit(const VulkanSubmission& submission);
     protected:
         vk::Queue queue;
     };

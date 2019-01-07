@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vulkan/vulkan.hpp>
 #include <Luch/BaseObject.h>
 #include <Luch/Vulkan.h>
 #include <Luch/Vulkan/VulkanForwards.h>

@@ -2,14 +2,14 @@
 
 #include <Luch/Assert.h>
 #include <Luch/Vulkan.h>
-#include <Luch/Vulkan/Attachment.h>
+#include <Luch/Vulkan/VulkanAttachment.h>
 #include <Luch/Vulkan/VulkanForwards.h>
 
 namespace Luch::Vulkan
 {
     class VulkanSubpassDescription
     {
-        friend class RenderPassCreateInfo;
+        friend class VulkanRenderPassCreateInfo;
     public:
         inline int32 GetIndex() const { return index; }
 
@@ -31,13 +31,13 @@ namespace Luch::Vulkan
             return *this;
         }
 
-        inline VulkanSubpassDescription& AddInputAttachment(const Attachment* attachment, vk::ImageLayout layout)
+        inline VulkanSubpassDescription& AddInputAttachment(const VulkanAttachment* attachment, vk::ImageLayout layout)
         {
             inputAttachments.push_back({ attachment, layout });
             return *this;
         }
 
-        inline VulkanSubpassDescription& AddColorAttachment(const Attachment* attachment, vk::ImageLayout layout)
+        inline VulkanSubpassDescription& AddColorAttachment(const VulkanAttachment* attachment, vk::ImageLayout layout)
         {
             SubpassAttachmentReference colorAttachment = { attachment, layout };
             SubpassAttachmentReference resolveAttachment = { nullptr, vk::ImageLayout::eUndefined };
@@ -48,9 +48,9 @@ namespace Luch::Vulkan
         }
 
         inline VulkanSubpassDescription& AddColorAttachmentWithResolve(
-            const Attachment* colorAttachment,
+            const VulkanAttachment* colorAttachment,
             vk::ImageLayout colorAttachmentLayout,
-            const Attachment* resolveAttachment,
+            const VulkanAttachment* resolveAttachment,
             vk::ImageLayout resolveAttachmentLayout)
         {
             LUCH_ASSERT_MSG(resolveAttachment != nullptr, "Null resolve attachment");
@@ -62,13 +62,13 @@ namespace Luch::Vulkan
             return *this;
         }
 
-        inline VulkanSubpassDescription& AddPreserveAttachment(const Attachment* attachment)
+        inline VulkanSubpassDescription& AddPreserveAttachment(const VulkanAttachment* attachment)
         {
             preserveAttachments.push_back(attachment);
             return *this;
         }
 
-        inline VulkanSubpassDescription& WithDepthStencilAttachment(const Attachment* attachment, vk::ImageLayout layout)
+        inline VulkanSubpassDescription& WithDepthStencilAttachment(const VulkanAttachment* attachment, vk::ImageLayout layout)
         {
             depthStencilAttachment = { attachment, layout };
             return *this;
@@ -76,7 +76,7 @@ namespace Luch::Vulkan
     private:
         struct SubpassAttachmentReference
         {
-            const Attachment* attachment = nullptr;
+            const VulkanAttachment* attachment = nullptr;
             vk::ImageLayout layout = vk::ImageLayout::eUndefined;
         };
 
@@ -89,7 +89,7 @@ namespace Luch::Vulkan
         int32 index = -1;
         Vector<SubpassAttachmentReference> inputAttachments;
         Vector<ColorAttachmentReference> colorAttachments;
-        Vector<const Attachment*> preserveAttachments;
+        Vector<const VulkanAttachment*> preserveAttachments;
         SubpassAttachmentReference depthStencilAttachment;
     };
 }

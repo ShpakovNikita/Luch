@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Luch/ImageAspects.h>
+#include <Luch/Graphics/ImageAspects.h>
 
 namespace Luch::Vulkan
 {

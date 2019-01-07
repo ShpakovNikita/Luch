@@ -1,5 +1,5 @@
 #pragma once
-#if USE_VULKAN
+#if LUCH_USE_VULKAN
 #include <chrono>
 
 #define NOMINMAX

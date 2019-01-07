@@ -23,8 +23,6 @@
 #if LUCH_USE_METAL
     #include <Luch/Metal/MetalPhysicalDevice.h>
     #include <Luch/Metal/MetalSurface.h>
-#elif USE_VULKAN
-    static_assert(false, "Vulkan is not ready");
 #endif
 
 #include <Luch/Graphics/PhysicalDevice.h>
@@ -71,66 +69,8 @@ static LRESULT CALLBACK StaticWindowProc(
 
 bool SampleApplication::Initialize(const Vector<String>& args)
 {
-#if _WIN32
-    allocationCallbacks = allocator.GetAllocationCallbacks();
-#endif
-
-#if LUCH_USE_METAL
-    auto [enumeratePhysicalDevicesResult, physicalDevices] = MetalPhysicalDevice::EnumeratePhysicalDevices();
-    if (enumeratePhysicalDevicesResult != GraphicsResult::Success || physicalDevices.empty())
-    {
-        // TODO
-        return false;
-    }
-
-    physicalDevice = physicalDevices.front();
-
-    surface = MakeRef<MetalSurface>(view);
-#endif
-
-#if _WIN32
-    std::tie(hInstance, hWnd) = CreateMainWindow(GetMainWindowTitle(), width, height);
-
-    if (hWnd == nullptr)
-    {
-        // TODO
-        return false;
-    }
-
-    auto [createSurfaceResult, createdSurface] = Surface::CreateWin32Surface(instance, hInstance, hWnd, allocationCallbacks);
-    if (createSurfaceResult != vk::Result::eSuccess)
-    {
-        // TODO
-        return false;
-    }
-
-    surface = std::move(createdSurface);
-
-    ShowWindow(hWnd, SW_SHOW);
-#endif
-
-    glTF::glTFParser glTFparser;
-
-    String rootDir{ "Data/gltf2/sponza/" };
-    String filename { "Sponza.gltf" };
-
-    FileStream fileStream{ rootDir + filename, FileOpenModes::Read };
-
-    auto root = glTFparser.ParseJSON(&fileStream);
-
-    SceneV1::Loader::glTFLoader loader{ rootDir, root };
-    scene = loader.LoadScene(0);
-
-    auto cameraIt = std::find_if(
-        scene->GetNodes().begin(),
-        scene->GetNodes().end(),
-        [](const auto& node) { return node->GetCamera() != nullptr; });
-
-    LUCH_ASSERT(cameraIt != scene->GetNodes().end());
-    cameraNode = *cameraIt;
-
-    wasdController.SetNode(cameraNode);
-    mouseController.SetNode(cameraNode);
+    CreateWindow();
+    SetupScene();
 
     context = MakeShared<Render::RenderContext>();
 
@@ -181,6 +121,77 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     return true;
 }
 
+void SampleApplication::CreateWindow()
+{
+#if _WIN32
+    allocationCallbacks = allocator.GetAllocationCallbacks();
+#endif
+
+#if LUCH_USE_METAL
+    auto [enumeratePhysicalDevicesResult, physicalDevices] = MetalPhysicalDevice::EnumeratePhysicalDevices();
+    if (enumeratePhysicalDevicesResult != GraphicsResult::Success || physicalDevices.empty())
+    {
+        // TODO
+        return false;
+    }
+
+    physicalDevice = physicalDevices.front();
+
+    surface = MakeRef<MetalSurface>(view);
+#endif
+
+#if _WIN32
+    std::tie(hInstance, hWnd) = CreateMainWindow(GetMainWindowTitle(), width, height);
+
+    if (hWnd == nullptr)
+    {
+        // TODO
+        return false;
+    }
+
+    auto [createSurfaceResult, createdSurface] = Surface::CreateWin32Surface(instance, hInstance, hWnd, allocationCallbacks);
+    if (createSurfaceResult != vk::Result::eSuccess)
+    {
+        // TODO
+        return false;
+    }
+
+    surface = std::move(createdSurface);
+
+    ShowWindow(hWnd, SW_SHOW);
+#endif
+
+#if LUCH_USE_VULKAN
+
+#endif
+}
+
+void SampleApplication::SetupScene()
+{
+    glTF::glTFParser glTFparser;
+
+    String rootDir{ "../res/gltf2/sponza/" };
+    String filename { "Sponza.gltf" };
+
+    FileStream fileStream{ rootDir + filename, FileOpenModes::Read };
+
+    auto root = glTFparser.ParseJSON(&fileStream);
+
+    SceneV1::Loader::glTFLoader loader{ rootDir, root };
+    scene = loader.LoadScene(0);
+
+    auto cameraIt = std::find_if(
+        scene->GetNodes().begin(),
+        scene->GetNodes().end(),
+        [](const auto& node) { return node->GetCamera() != nullptr; });
+
+    LUCH_ASSERT(cameraIt != scene->GetNodes().end());
+    cameraNode = *cameraIt;
+
+    wasdController.SetNode(cameraNode);
+    mouseController.SetNode(cameraNode);
+}
+
 bool SampleApplication::Deinitialize()
 {
     auto rendererDeinitialized = renderer->Deinitialize();
@@ -192,24 +203,25 @@ bool SampleApplication::Deinitialize()
     return true;
 }
 
-bool SampleApplication::ShouldQuit()
+bool SampleApplication::ShouldQuit() const
 {
     return shouldQuit;
 }
 
 void SampleApplication::Process()
 {
-    mouseController.Tick();
-    wasdController.Tick(16.0f / 1000.0f);
-    scene->Update();
+//    mouseController.Tick();
+//    wasdController.Tick(16.0f / 1000.0f);
+//    scene->Update();
 
-    renderer->BeginRender();
-    renderer->PrepareScene();
-    renderer->UpdateScene();
-    renderer->DrawScene(cameraNode);
-    renderer->EndRender();
+//    renderer->BeginRender();
+//    renderer->PrepareScene();
+//    renderer->UpdateScene();
+//    renderer->DrawScene(cameraNode);
+//    renderer->EndRender();
 
-    context->commandQueue->Present(0, context->swapchain);
+//    context->commandQueue->Present(0, context->swapchain);
+    printf("Update\n");
 }
 
 void SampleApplication::HandleEvent(const SDL_Event& event)

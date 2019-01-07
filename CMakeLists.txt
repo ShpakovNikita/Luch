@@ -297,6 +297,13 @@ if(USE_VULKAN)
      target_link_libraries(LuchEngine SPIRV-Tools)
      target_link_libraries(LuchEngine SPIRV-Tools-opt)
      target_link_libraries(LuchEngine SPVRemapper)
+
+     include_directories(AFTER
+         ${CMAKE_CURRENT_SOURCE_DIR}/include/vulkan/)
+
+     target_sources(LuchEngine PUBLIC
+         ${ENGINE_VULKAN_CPP_FILES}
+         ${ENGINE_VULKAN_HEADER_FILES})
 endif()
 
 # Add sample
@@ -383,7 +390,6 @@ if(UNIX)
     target_sources(LuchEngineSample PUBLIC
         ${SAMPLE_UNIX_CPP_FILES}
         ${SAMPLE_UNIX_HEADER_FILES})
-    target_link_libraries(LuchEngineSample ${SDL2_LIBRARIES})
 endif()
 
 target_link_libraries(LuchEngineSample LuchEngine)

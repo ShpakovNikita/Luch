@@ -91,7 +91,7 @@ namespace Luch::Vulkan
     {
         if (device)
         {
-            device->DestroyCommandPool(this);
+              device->DestroyCommandPool(this);
         }
     }
 }

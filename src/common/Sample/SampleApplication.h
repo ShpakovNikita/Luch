@@ -16,7 +16,7 @@ public:
 
     bool Initialize(const Luch::Vector<Luch::String>& args) override;
     bool Deinitialize() override;
-    bool ShouldQuit() override;
+    bool ShouldQuit() const override;
     void Process();
 
     void HandleEvent(const SDL_Event& event);
@@ -45,6 +45,8 @@ public:
     }
 #endif
 private:
+    void CreateWindow();
+    void SetupScene();
     void HandleKeyboardEvent(const SDL_Event& event);
     void HandleMouseMotionEvent(const SDL_Event& event);
 

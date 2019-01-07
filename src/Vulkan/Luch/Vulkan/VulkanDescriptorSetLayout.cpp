@@ -1,6 +1,6 @@
 #include <Luch/Vulkan/VulkanDescriptorSetLayout.h>
 #include <Luch/Vulkan/VulkanGraphicsDevice.h>
-#include <Luch/Vulkan/ShaderStage.h>
+#include <Luch/Vulkan/VulkanShaderStage.h>
 
 namespace Luch::Vulkan
 {

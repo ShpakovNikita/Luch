@@ -1,17 +1,16 @@
-#include <Luch/Vulkan/DescriptorSetWrites.h>
-#include <Luch/Vulkan/DeviceBuffer.h>
-#include <Luch/Vulkan/Image.h>
-#include <Luch/Vulkan/Sampler.h>
-#include <Luch/Vulkan/ImageView.h>
-#include <Luch/Vulkan/DescriptorSet.h>
-#include <Luch/Vulkan/DescriptorSetBinding.h>
-
+#include <Luch/Vulkan/VulkanDescriptorSetWrites.h>
+#include <Luch/Vulkan/VulkanDeviceBuffer.h>
+#include <Luch/Vulkan/VulkanImage.h>
+#include <Luch/Vulkan/VulkanSampler.h>
+#include <Luch/Vulkan/VulkanImageView.h>
+#include <Luch/Vulkan/VulkanDescriptorSet.h>
+#include <Luch/Vulkan/VulkanDescriptorSetBinding.h>
 namespace Luch::Vulkan
 {
-    DescriptorSetWrites& DescriptorSetWrites::WriteUniformBufferDescriptors(
-        DescriptorSet* descriptorSet,
-        DescriptorSetBinding* binding,
-        const Vector<DeviceBuffer*>& buffers)
+    VulkanDescriptorSetWrites& VulkanDescriptorSetWrites::WriteUniformBufferDescriptors(
+        VulkanDescriptorSet* descriptorSet,
+        VulkanDescriptorSetBinding* binding,
+        const Vector<VulkanDeviceBuffer*>& buffers)
     {
         if (buffers.empty())
         {
@@ -49,10 +48,10 @@ namespace Luch::Vulkan
 
 
     // TODO get rid of copy-paste
-    DescriptorSetWrites& DescriptorSetWrites::WriteStorageBufferDescriptors(
-        DescriptorSet* descriptorSet,
-        DescriptorSetBinding* binding,
-        const Vector<DeviceBuffer*>& buffers)
+    VulkanDescriptorSetWrites& VulkanDescriptorSetWrites::WriteStorageBufferDescriptors(
+        VulkanDescriptorSet* descriptorSet,
+        VulkanDescriptorSetBinding* binding,
+        const Vector<VulkanDeviceBuffer*>& buffers)
     {
         if (buffers.empty())
         {
@@ -88,10 +87,10 @@ namespace Luch::Vulkan
         return *this;
     }
 
-    DescriptorSetWrites & DescriptorSetWrites::WriteImageDescriptors(
-        DescriptorSet* descriptorSet,
-        DescriptorSetBinding* binding,
-        const Vector<ImageDescriptorInfo>& images)
+    VulkanDescriptorSetWrites & VulkanDescriptorSetWrites::WriteImageDescriptors(
+        VulkanDescriptorSet* descriptorSet,
+        VulkanDescriptorSetBinding* binding,
+        const Vector<VulkanImageDescriptorInfo>& images)
     {
         if (images.empty())
         {
@@ -127,10 +126,10 @@ namespace Luch::Vulkan
         return *this;
     }
 
-    DescriptorSetWrites& DescriptorSetWrites::WriteSamplerDescriptors(
-        DescriptorSet* descriptorSet,
-        DescriptorSetBinding* binding,
-        const Vector<Sampler*>& samplers)
+    VulkanDescriptorSetWrites& VulkanDescriptorSetWrites::WriteSamplerDescriptors(
+        VulkanDescriptorSet* descriptorSet,
+        VulkanDescriptorSetBinding* binding,
+        const Vector<VulkanSampler*>& samplers)
     {
         if (samplers.empty())
         {
@@ -163,10 +162,10 @@ namespace Luch::Vulkan
 
         return *this;
     }
-    DescriptorSetWrites & DescriptorSetWrites::WriteCombinedImageDescriptors(
-        DescriptorSet* descriptorSet,
-        DescriptorSetBinding* binding,
-        const Vector<ImageDescriptorInfo>& images)
+    VulkanDescriptorSetWrites & VulkanDescriptorSetWrites::WriteCombinedImageDescriptors(
+        VulkanDescriptorSet* descriptorSet,
+        VulkanDescriptorSetBinding* binding,
+        const Vector<VulkanImageDescriptorInfo>& images)
     {
         if (images.empty())
         {

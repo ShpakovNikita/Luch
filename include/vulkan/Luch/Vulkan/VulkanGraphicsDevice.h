@@ -9,6 +9,9 @@
 
 namespace Luch::Vulkan
 {
+    struct GraphicsPipelineCreateInfo;
+    class FramebufferCreateInfo;
+
     class VulkanGraphicsDevice : public BaseObject
     {
         friend class VulkanCommandBuffer;
@@ -55,10 +58,10 @@ namespace Luch::Vulkan
         vk::ImageViewCreateInfo GetDefaultImageViewCreateInfo(VulkanImage* image);
 
         VulkanRefResultValue<VulkanSwapchain> CreateSwapchain(
-            const SwapchainCreateInfo& swapchainCreateInfo,
+            const VulkanSwapchainCreateInfo& swapchainCreateInfo,
             VulkanSurface* surface);
 
-        VulkanRefResultValue<CommandPool> CreateCommandPool(
+        VulkanRefResultValue<VulkanCommandPool> CreateCommandPool(
             QueueIndex queueIndex,
             bool transient = false,
             bool canReset = false);
@@ -71,7 +74,7 @@ namespace Luch::Vulkan
 
         VulkanRefResultValue<VulkanDeviceBufferView> CreateBufferView(
             VulkanDeviceBuffer* buffer,
-            Format format,
+            Graphics::Format format,
             int64 offset,
             int64 size);
 
@@ -93,7 +96,7 @@ namespace Luch::Vulkan
             const GraphicsPipelineCreateInfo& graphicsPipelineCreateInfo,
             VulkanPipelineCache* pipelineCache = nullptr);
 
-        VulkanRefResultValue<VulkanRenderPass> CreateRenderPass(const RenderPassCreateInfo& createInfo);
+        VulkanRefResultValue<VulkanRenderPass> CreateRenderPass(const VulkanRenderPassCreateInfo& createInfo);
 
         VulkanRefResultValue<VulkanDescriptorSetLayout> CreateDescriptorSetLayout(
             const DescriptorSetLayoutCreateInfo& createInfo);
@@ -121,27 +124,27 @@ namespace Luch::Vulkan
 
         void Destroy();
 
-        void DestroySwapchain(Swapchain* swapchain);
-        void DestroyCommandPool(CommandPool* commandPool);
-        void DestroyBuffer(DeviceBuffer* buffer);
-        void DestroyBufferView(DeviceBufferView* bufferView);
-        void DestroyImage(Image* image);
-        void DestroyImageView(ImageView* imageView);
-        void DestroyPipeline(Pipeline* pipeline);
-        void DestroyPipelineLayout(PipelineLayout* pipelineLayout);
-        void DestroyPipelineCache(PipelineCache* pipelineCache);
-        void DestroyShaderModule(ShaderModule* module);
-        void DestroyRenderPass(RenderPass* renderPass);
-        void DestroyDescriptorSetLayout(DescriptorSetLayout* descriptorSetLayout);
-        void DestroyDescriptorPool(DescriptorPool* descriptorPool);
-        void DestroyFramebuffer(Framebuffer* framebuffer);
-        void DestroyFence(Fence* fence);
-        void DestroySemaphore(Semaphore* semaphore);
-        void DestroySampler(Sampler* sampler);
+        void DestroySwapchain(VulkanSwapchain* swapchain);
+        void DestroyCommandPool(VulkanCommandPool* commandPool);
+        void DestroyBuffer(VulkanDeviceBuffer* buffer);
+        void DestroyBufferView(VulkanDeviceBufferView* bufferView);
+        void DestroyImage(VulkanImage* image);
+        void DestroyImageView(VulkanImageView* imageView);
+        void DestroyPipeline(VulkanPipeline* pipeline);
+        void DestroyPipelineLayout(VulkanPipelineLayout* pipelineLayout);
+        void DestroyPipelineCache(VulkanPipelineCache* pipelineCache);
+        void DestroyShaderModule(VulkanShaderModule* module);
+        void DestroyRenderPass(VulkanRenderPass* renderPass);
+        void DestroyDescriptorSetLayout(VulkanDescriptorSetLayout* descriptorSetLayout);
+        void DestroyDescriptorPool(VulkanDescriptorPool* descriptorPool);
+        void DestroyFramebuffer(VulkanFramebuffer* framebuffer);
+        void DestroyFence(VulkanFence* fence);
+        void DestroySemaphore(VulkanSemaphore* semaphore);
+        void DestroySampler(VulkanSampler* sampler);
 
-        PhysicalDevice* physicalDevice = nullptr;
+        VulkanPhysicalDevice* physicalDevice = nullptr;
         vk::Device device;
-        QueueInfo queueInfo;
+        VulkanQueueInfo queueInfo;
 
         // Workaround for vk::Optional not holding to the value itself
         Luch::Optional<vk::AllocationCallbacks> callbacks;

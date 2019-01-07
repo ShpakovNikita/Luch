@@ -1,8 +1,8 @@
 #pragma once
 
 #include <Luch/Vulkan.h>
-#include <Luch/ShaderStage.h>
-#include <Luch/Vulkan/DescriptorSetBinding.h>
+#include <Luch/Graphics/ShaderStage.h>
+#include <Luch/Vulkan/VulkanDescriptorSetBinding.h>
 
 namespace Luch::Vulkan
 {
@@ -28,15 +28,15 @@ namespace Luch::Vulkan
 
         // descriptor set binding must be in a valid state
         // changing the binding after calling this function can lead to undefined behavior
-        inline DescriptorSetLayoutCreateInfo& AddBinding(DescriptorSetBinding* binding)
+        inline DescriptorSetLayoutCreateInfo& AddBinding(VulkanDescriptorSetBinding* binding)
         {
-            binding->index = currentBindingIndex;
-            currentBindingIndex += binding->count;
+            binding->SetIndex(currentBindingIndex);
+            currentBindingIndex += binding->GetCount();
             bindings.push_back(binding);
             return *this;
         }
     private:
-        Vector<DescriptorSetBinding*> bindings;
+        Vector<VulkanDescriptorSetBinding*> bindings;
         int32 currentBindingIndex = 0;
     };
 }

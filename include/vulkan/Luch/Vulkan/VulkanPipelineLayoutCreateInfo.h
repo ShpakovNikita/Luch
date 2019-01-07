@@ -1,8 +1,8 @@
 #pragma once
 
 #include <Luch/Vulkan.h>
-#include <Luch/Vulkan/DescriptorSetLayout.h>
-#include <Luch/Vulkan/PushConstantRange.h>
+#include <Luch/Vulkan/VulkanDescriptorSetLayout.h>
+#include <Luch/Vulkan/VulkanPushConstantRange.h>
 
 namespace Luch::Vulkan
 {
@@ -32,7 +32,7 @@ namespace Luch::Vulkan
             return *this;
         }
 
-        inline PipelineLayoutCreateInfo& AddSetLayout(DescriptorSetLayout* setLayout)
+        inline PipelineLayoutCreateInfo& AddSetLayout(VulkanDescriptorSetLayout* setLayout)
         {
             setLayouts.push_back(setLayout);
             return *this;
@@ -44,15 +44,15 @@ namespace Luch::Vulkan
             return *this;
         }
 
-        inline PipelineLayoutCreateInfo& AddPushConstantRange(const PushConstantRange& pushConstantRange)
+        inline PipelineLayoutCreateInfo& AddPushConstantRange(const VulkanPushConstantRange& pushConstantRange)
         {
             pushConstantRanges.push_back(pushConstantRange);
             return *this;
         }
 
-        inline PipelineLayoutCreateInfo& AddPushConstantRange(ShaderStage stages, int32 size)
+        inline PipelineLayoutCreateInfo& AddPushConstantRange(Graphics::ShaderStage stages, int32 size)
         {
-            PushConstantRange range;
+            VulkanPushConstantRange range;
             range.stages = stages;
             range.offset = currentPushConstantOffset;
             range.size = size;
@@ -63,8 +63,8 @@ namespace Luch::Vulkan
 
         // TODO push constants
     private:
-        Vector<DescriptorSetLayout*> setLayouts;
-        Vector<PushConstantRange> pushConstantRanges;
+        Vector<VulkanDescriptorSetLayout*> setLayouts;
+        Vector<VulkanPushConstantRange> pushConstantRanges;
         int32 currentPushConstantOffset = 0;
     };
 }

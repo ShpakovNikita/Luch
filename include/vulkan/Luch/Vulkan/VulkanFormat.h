@@ -1,8 +1,9 @@
 #pragma once
 
 #include <Luch/Vulkan.h>
-#include <Luch/Format.h>
+#include <Luch/Graphics/Format.h>
 
+using namespace Luch::Graphics;
 namespace Luch::Vulkan
 {
     // TODO move to cpp

@@ -1,7 +1,7 @@
 #include <Luch/Vulkan/PipelineBarrier.h>
-#include <Luch/Vulkan/VuklanDeviceBuffer.h>
-#include <Luch/Vulkan/VuklanImage.h>
-#include <Luch/Vulkan/VuklanImageAspects.h>
+#include <Luch/Vulkan/VulkanDeviceBuffer.h>
+#include <Luch/Vulkan/VulkanImage.h>
+#include <Luch/Vulkan/VulkanImageAspects.h>
 
 namespace Luch::Vulkan
 {

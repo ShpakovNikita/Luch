@@ -11,7 +11,7 @@ namespace Luch::Vulkan
     {
     }
 
-    VulkanSemaphore:~VulkanSemaphore()
+    VulkanSemaphore::~VulkanSemaphore()
     {
         Destroy();
     }

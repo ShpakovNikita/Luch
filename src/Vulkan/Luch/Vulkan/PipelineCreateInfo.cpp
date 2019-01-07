@@ -65,7 +65,7 @@ namespace Luch::Vulkan
 
         result->createInfo.setPRasterizationState(&result->rasterizationState);
 
-        result->multisampleState.rasterizationSamples = ToVulkanSampleCount(ci.multisampleState.rasterizationSamples);
+        // result->multisampleState.rasterizationSamples = ToVulkanSampleCount(ci.multisampleState.rasterizationSamples);
         result->multisampleState.sampleShadingEnable = ci.multisampleState.sampleShadingEnable;
         result->multisampleState.minSampleShading = ci.multisampleState.minSampleShading;
         // TODO samplemask

@@ -7,39 +7,49 @@ namespace Luch::Vulkan
 {
     class VulkanDescriptorSetBinding
     {
-        friend class VulkanDescriptorSetLayoutCreateInfo;
+        friend class DescriptorSetLayoutCreateInfo;
     public:
-        inline DescriptorSetBinding& OfType(vk::DescriptorType aType)
+        inline VulkanDescriptorSetBinding& OfType(vk::DescriptorType aType)
         {
             type = aType;
             return *this;
         }
 
-        inline DescriptorSetBinding& WithNBindings(int32 aCount)
+        inline VulkanDescriptorSetBinding& WithNBindings(int32 aCount)
         {
             count = aCount;
             return *this;
         }
 
-        inline DescriptorSetBinding& AtStages(ShaderStage aStages)
+        inline VulkanDescriptorSetBinding& AtStages(Graphics::ShaderStage aStages)
         {
             stages = aStages;
             return *this;
         }
 
-        inline DescriptorSetBinding& AddImmutableSampler(vk::Sampler sampler)
+        inline VulkanDescriptorSetBinding& AddImmutableSampler(vk::Sampler sampler)
         {
             immutableSamplers.push_back(sampler);
             return *this;
         }
 
+        inline void SetIndex(int32 aIndex) { index = aIndex; }
+
         inline int32 GetCount() const { return count; }
         inline int32 GetBinding() const { return index; }
+        inline vk::DescriptorType GetType() const { return type; }
+        inline Graphics::ShaderStage GetStages() const  { return stages; }
+
+        inline const Vector<vk::Sampler>& GetImmutableSamplers() const
+        {
+            return immutableSamplers;
+        }
+
     private:
         vk::DescriptorType type;
         int32 count = 1;
         int32 index = -1;
-        ShaderStage stages;
+        Graphics::ShaderStage stages;
         Vector<vk::Sampler> immutableSamplers;
     };
 }

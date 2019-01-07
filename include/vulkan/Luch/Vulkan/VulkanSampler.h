@@ -11,7 +11,7 @@ namespace Luch::Vulkan
         friend class VulkanGraphicsDevice;
     public:
         VulkanSampler(VulkanGraphicsDevice* device, vk::Sampler sampler);
-        ~Sampler();
+        ~VulkanSampler();
 
         inline vk::Sampler GetSampler() { return sampler; }
         inline VulkanGraphicsDevice* GetDevice() const { return device; }

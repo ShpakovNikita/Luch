@@ -12,7 +12,7 @@
 #include <Luch/Vulkan/VulkanPipeline.h>
 #include <Luch/Vulkan/VulkanPipelineLayout.h>
 #include <Luch/Vulkan/VulkanRenderPass.h>
-#include <Luch/Vulkan/VulkanPipelineBarrier.h>
+#include <Luch/Vulkan/PipelineBarrier.h>
 #include <Luch/Vulkan/VulkanImage.h>
 #include <Luch/Vulkan/VulkanImageAspects.h>
 
@@ -108,7 +108,7 @@ namespace Luch::Vulkan
             return this;
         }
 
-        inline CommandBuffer* BindDescriptorSets(
+        inline VulkanCommandBuffer* BindDescriptorSets(
             VulkanPipelineLayout* layout,
             int32 firstSet,
             Vector<VulkanDescriptorSet*> sets)

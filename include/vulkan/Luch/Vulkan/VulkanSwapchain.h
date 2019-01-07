@@ -7,7 +7,7 @@
 #include <Luch/Vulkan/VulkanForwards.h>
 #include <Luch/Vulkan/VulkanImage.h>
 #include <Luch/Vulkan/VulkanImageView.h>
-#include <Luch/Vulkan/SwapchainCreateInfo.h>
+#include <Luch/Vulkan/VulkanSwapchainCreateInfo.h>
 
 namespace Luch::Vulkan
 {
@@ -24,29 +24,29 @@ namespace Luch::Vulkan
         VulkanSwapchain(
             VulkanGraphicsDevice* device,
             vk::SwapchainKHR swapchain,
-            SwapchainCreateInfo createInfo,
+            VulkanSwapchainCreateInfo createInfo,
             int32 swapchainImageCount,
             Vector<VulkanSwapchainImage>&& swapchainImages);
 
         ~VulkanSwapchain() override;
 
-        static VulkanResultValue<SwapchainCreateInfo> ChooseSwapchainCreateInfo(
+        static VulkanResultValue<VulkanSwapchainCreateInfo> ChooseSwapchainCreateInfo(
             int32 width,
             int32 height,
             VulkanPhysicalDevice* physicalDevice,
             VulkanSurface* surface);
 
         // TODO semaphores and fences
-        VulkanResultValue<int32> AcquireNextImage(VulkanFence* fence, Semaphore* semaphore, Optional<Timeout> timeout = {});
+        VulkanResultValue<int32> AcquireNextImage(VulkanFence* fence, VulkanSemaphore* semaphore, Optional<Timeout> timeout = {});
 
-        inline SwapchainCreateInfo GetSwapchainCreateInfo() const { return createInfo; }
+        inline VulkanSwapchainCreateInfo GetSwapchainCreateInfo() const { return createInfo; }
         inline Format GetFormat() const { return createInfo.format; }
         inline VulkanImageView* GetImageView(int index) { return swapchainImages[index].imageView; }
         inline vk::SwapchainKHR GetSwapchain() { return swapchain; }
     private:
         void Destroy();
 
-        SwapchainCreateInfo createInfo;
+        VulkanSwapchainCreateInfo createInfo;
         // TODO use static vector
         Vector<VulkanSwapchainImage> swapchainImages;
         int32 swapchainImageCount = 0;

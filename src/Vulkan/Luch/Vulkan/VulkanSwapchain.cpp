@@ -12,7 +12,7 @@ namespace Luch::Vulkan
     VulkanSwapchain::VulkanSwapchain(
         VulkanGraphicsDevice* aDevice,
         vk::SwapchainKHR aSwapchain,
-        SwapchainCreateInfo aCreateInfo,
+        VulkanSwapchainCreateInfo aCreateInfo,
         int32 aSwapchainImageCount,
         Vector<VulkanSwapchainImage>&& aSwapchainImages)
         : device(aDevice)
@@ -64,15 +64,15 @@ namespace Luch::Vulkan
 
     // TODO use static vector
 
-    VulkanResultValue<SwapchainCreateInfo> VulkanSwapchain::ChooseSwapchainCreateInfo(
+    VulkanResultValue<VulkanSwapchainCreateInfo> VulkanSwapchain::ChooseSwapchainCreateInfo(
         int32 width,
         int32 height,
         VulkanPhysicalDevice* physicalDevice,
-        Surface* surface)
+        VulkanSurface* surface)
     {
         using namespace Luch::Math;
 
-        SwapchainCreateInfo swapchainCreateInfo;
+        VulkanSwapchainCreateInfo swapchainCreateInfo;
 
         auto vulkanSurface = surface->GetSurface();
         auto vulkanPhysicalDevice = physicalDevice->GetPhysicalDevice();

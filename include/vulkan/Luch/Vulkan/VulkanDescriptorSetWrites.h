@@ -5,48 +5,48 @@
 
 namespace Luch::Vulkan
 {
-    struct ImageDescriptorInfo
+    struct VulkanImageDescriptorInfo
     {
-        ImageView* imageView = nullptr;
-        Sampler* sampler = nullptr;
+        VulkanImageView* imageView = nullptr;
+        VulkanSampler* sampler = nullptr;
         vk::ImageLayout layout = vk::ImageLayout::eGeneral;
     };
 
-    class DescriptorSetWrites
+    class VulkanDescriptorSetWrites
     {
-        friend class DescriptorSet;
+        friend class VulkanDescriptorSet;
     public:
-        DescriptorSetWrites() = default;
-        DescriptorSetWrites(DescriptorSetWrites&& other) = default;
-        DescriptorSetWrites& operator=(DescriptorSetWrites&& other) = default;
+        VulkanDescriptorSetWrites() = default;
+        VulkanDescriptorSetWrites(VulkanDescriptorSetWrites&& other) = default;
+        VulkanDescriptorSetWrites& operator=(VulkanDescriptorSetWrites&& other) = default;
 
-        DescriptorSetWrites& WriteUniformBufferDescriptors(
-            DescriptorSet* descriptorSet,
-            DescriptorSetBinding* binding,
-            const Vector<DeviceBuffer*>& buffers);
+        VulkanDescriptorSetWrites& WriteUniformBufferDescriptors(
+            VulkanDescriptorSet* descriptorSet,
+            VulkanDescriptorSetBinding* binding,
+            const Vector<VulkanDeviceBuffer*>& buffers);
 
-        DescriptorSetWrites& WriteStorageBufferDescriptors(
-            DescriptorSet* descriptorSet,
-            DescriptorSetBinding* binding,
-            const Vector<DeviceBuffer*>& buffers);
+        VulkanDescriptorSetWrites& WriteStorageBufferDescriptors(
+            VulkanDescriptorSet* descriptorSet,
+            VulkanDescriptorSetBinding* binding,
+            const Vector<VulkanDeviceBuffer*>& buffers);
 
-        DescriptorSetWrites& WriteImageDescriptors(
-            DescriptorSet* descriptorSet,
-            DescriptorSetBinding* binding,
-            const Vector<ImageDescriptorInfo>& images);
+        VulkanDescriptorSetWrites& WriteImageDescriptors(
+            VulkanDescriptorSet* descriptorSet,
+            VulkanDescriptorSetBinding* binding,
+            const Vector<VulkanImageDescriptorInfo>& images);
 
-        DescriptorSetWrites& WriteSamplerDescriptors(
-            DescriptorSet* descriptorSet,
-            DescriptorSetBinding* binding,
-            const Vector<Sampler*>& samplers);
+        VulkanDescriptorSetWrites& WriteSamplerDescriptors(
+            VulkanDescriptorSet* descriptorSet,
+            VulkanDescriptorSetBinding* binding,
+            const Vector<VulkanSampler*>& samplers);
 
-        DescriptorSetWrites& WriteCombinedImageDescriptors(
-            DescriptorSet* descriptorSet,
-            DescriptorSetBinding* binding,
-            const Vector<ImageDescriptorInfo>& images);
+        VulkanDescriptorSetWrites& WriteCombinedImageDescriptors(
+            VulkanDescriptorSet* descriptorSet,
+            VulkanDescriptorSetBinding* binding,
+            const Vector<VulkanImageDescriptorInfo>& images);
 
     private:
-        GraphicsDevice* device = nullptr;
+        VulkanGraphicsDevice* device = nullptr;
         Vector<vk::WriteDescriptorSet> writes;
         Vector<Vector<vk::DescriptorBufferInfo>> bufferInfos;
         Vector<Vector<vk::DescriptorImageInfo>> imageInfos;

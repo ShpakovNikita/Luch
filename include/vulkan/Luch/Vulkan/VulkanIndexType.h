@@ -1,8 +1,8 @@
 #pragma once
 
 #include <Luch/Assert.h>
-#include <Luch/IndexType.h>
 #include <Luch/Vulkan.h>
+#include <Luch/Graphics/IndexType.h>
 
 namespace Luch::Vulkan
 {

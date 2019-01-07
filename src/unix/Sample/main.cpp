@@ -19,14 +19,14 @@ bool enableValidationLayers = true;
 VkInstance instance;
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallback(
-    VkDebugReportFlagsEXT flags,
-    VkDebugReportObjectTypeEXT objType,
-    uint64_t obj,
-    size_t location,
-    int32_t code,
-    const char* layerPrefix,
+    VkDebugReportFlagsEXT /*flags*/,
+    VkDebugReportObjectTypeEXT /*objType*/,
+    uint64_t /*obj*/,
+    size_t /*location*/,
+    int32_t /*code*/,
+    const char* /*layerPrefix*/,
     const char* msg,
-    void* userData)
+    void* /*userData*/)
 {
     printf("VULKAN VALIDATION: %s\n", msg);
     return VK_FALSE;
@@ -43,7 +43,10 @@ VkResult CreateDebugReportCallbackEXT(VkInstance instance, const VkDebugReportCa
 }
 
 bool SetupDebugCallback() {
-    if (!enableValidationLayers) return true;
+    if (!enableValidationLayers)
+    {
+        return true;
+    }
 
     VkDebugReportCallbackCreateInfoEXT createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
@@ -125,17 +128,7 @@ bool CreateVulkanInstance()
     createResult = vkCreateInstance(&createInfo, nullptr, &instance);
     if (createResult != VK_SUCCESS)
     {
-        if (createResult == VK_ERROR_LAYER_NOT_PRESENT)
-        {
-            printf("1\n");
-        } else if (createResult == VK_ERROR_EXTENSION_NOT_PRESENT)
-        {
-            printf("2\n");
-        } else if (createResult == VK_ERROR_INCOMPATIBLE_DRIVER)
-        {
-            printf("incomp driver\n");
-        }
-        printf("Can't create vk instance\n");
+        LUCH_ASSERT_MSG(false, "Failed to create Vulkan Instance");
         return false;
     }
 
@@ -164,31 +157,14 @@ int32 main(int32 argc, char8** argv)
 
     SDL_bool result = SDL_Vulkan_CreateSurface(window, instance, &surface);
 
-    if (window != 0 && result == SDL_TRUE)
+    if (window == 0 || result != SDL_TRUE)
     {
-        printf("all good\n");
+        LUCH_ASSERT_MSG(false, "Failed to create Vulkan Surface");
+        return EXIT_FAILURE;
     }
 
     auto app = std::make_unique<SampleApplication>();
 
-    bool run = true;
-    while (run)
-    {
-        SDL_Event evt;
-        while (SDL_PollEvent(&evt))
-        {
-            if (evt.type == SDL_QUIT)
-            {
-                run = false;
-            }
-            if (evt.type == SDL_KEYDOWN)
-            {
-                printf("Keydown\n");
-                run = false;
-            }
-        }
-    }
-/*
     Vector<String> args;
     args.reserve(argc);
     for (int32 i = 0; i < argc; i++)
@@ -196,16 +172,31 @@ int32 main(int32 argc, char8** argv)
         args.push_back(argv[i]);
     }
 
-    bool initialized = application.Initialize(args);
+    bool initialized = app->Initialize(args);
     LUCH_ASSERT_MSG(initialized, "Application failed to initialize");
 
-    application.Run();
+    while (true)
+    {
+        SDL_Event evt;
+        while (SDL_PollEvent(&evt))
+        {
+            app->HandleEvent(evt);
+        }
+        if(app->ShouldQuit())
+        {
+            break;
+        }
+        else
+        {
+            app->Process();
+        }
+    }
 
-    bool deinitialized = application.Deinitialize();
-    LUCH_ASSERT_MSG(deinitialized, "Application failed to deinitialize");*/
+    bool deinitialized = app->Deinitialize();
+    app.reset();
+    LUCH_ASSERT_MSG(deinitialized, "Application failed to deinitialize");
     SDL_Quit();
 
-    printf("quit\n");
     return EXIT_SUCCESS;
 }
-#endif
+#endif // __linux__

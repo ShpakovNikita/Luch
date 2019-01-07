@@ -15,7 +15,7 @@ namespace Luch::Vulkan
 
     class VulkanCommandPool : public BaseObject
     {
-        friend class GraphicsDevice;
+        friend class VulkanGraphicsDevice;
     public:
         VulkanCommandPool(
             VulkanGraphicsDevice* device,

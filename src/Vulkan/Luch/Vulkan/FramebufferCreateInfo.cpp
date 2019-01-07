@@ -1,10 +1,10 @@
 #include <Luch/Vulkan/FramebufferCreateInfo.h>
-#include <Luch/Vulkan/RenderPass.h>
+#include <Luch/Vulkan/VulkanRenderPass.h>
 
 namespace Luch::Vulkan
 {
     FramebufferCreateInfo::FramebufferCreateInfo(
-        RenderPass* aRenderPass,
+        VulkanRenderPass* aRenderPass,
         int32 aWidth,
         int32 aHeight,
         int32 aLayers)

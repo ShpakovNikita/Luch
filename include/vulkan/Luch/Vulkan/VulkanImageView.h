@@ -8,7 +8,7 @@ namespace Luch::Vulkan
 {
     class VulkanImageView : public BaseObject
     {
-        friend class GraphicsDevice;
+        friend class VulkanGraphicsDevice;
     public:
         VulkanImageView(VulkanGraphicsDevice* device, vk::ImageView imageView);
         ~VulkanImageView();
