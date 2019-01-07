@@ -1,8 +1,11 @@
 cmake_minimum_required(VERSION 3.12.0)
 
-project(Luch VERSION 0.1 LANGUAGES CXX)
+project(Luch VERSION 0.1 LANGUAGES C CXX)
 set(CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17") # for unix
+
+if(UNIX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -pthread")
+endif()
 
 set(LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
