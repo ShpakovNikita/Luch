@@ -24,6 +24,12 @@
     #include <Luch/Metal/MetalPhysicalDevice.h>
     #include <Luch/Metal/MetalSurface.h>
 #endif
+#if LUCH_USE_VULKAN
+    #include <vulkan/vulkan.hpp>
+    #include <SDL2/SDL.h>
+    #include <SDL2/SDL_vulkan.h>
+    #include <Luch/Vulkan/VulkanInstance.h>
+#endif
 
 #include <Luch/Graphics/PhysicalDevice.h>
 #include <Luch/Graphics/GraphicsDevice.h>
@@ -69,7 +75,10 @@ static LRESULT CALLBACK StaticWindowProc(
 
 bool SampleApplication::Initialize(const Vector<String>& args)
 {
-    CreateWindow();
+    if (!CreateWindow())
+    {
+        return false;
+    }
     SetupScene();
 
     context = MakeShared<Render::RenderContext>();
@@ -121,7 +130,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     return true;
 }
 
-void SampleApplication::CreateWindow()
+bool SampleApplication::CreateWindow()
 {
 #if _WIN32
     allocationCallbacks = allocator.GetAllocationCallbacks();
@@ -162,8 +171,32 @@ void SampleApplication::CreateWindow()
 #endif
 
 #if LUCH_USE_VULKAN
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
 
+    SDL_Window* window = SDL_CreateWindow(
+        "Sample app",
+        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+        500, 500,
+        SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE
+    );
+
+    Luch::Vulkan::VulkanInstance vulkanInstance;
+    if (!vulkanInstance.Init())
+    {
+        LUCH_ASSERT_MSG(false, "Failed to create Vulkan Instance");
+        return false;
+    }
+
+    VkSurfaceKHR surface = nullptr;
+    SDL_bool result = SDL_Vulkan_CreateSurface(window, vulkanInstance.GetInstance(), &surface);
+
+    if (window == 0 || result != SDL_TRUE)
+    {
+        LUCH_ASSERT_MSG(false, "Failed to create Vulkan Surface");
+        return false;
+    }
 #endif
+    return true;
 }
 
 void SampleApplication::SetupScene()
@@ -199,6 +232,9 @@ bool SampleApplication::Deinitialize()
     {
         return false;
     }
+    #if LUCH_USE_VULKAN
+    SDL_Quit();
+    #endif
 
     return true;
 }

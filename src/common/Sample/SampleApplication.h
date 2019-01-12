@@ -45,7 +45,7 @@ public:
     }
 #endif
 private:
-    void CreateWindow();
+    bool CreateWindow();
     void SetupScene();
     void HandleKeyboardEvent(const SDL_Event& event);
     void HandleMouseMotionEvent(const SDL_Event& event);

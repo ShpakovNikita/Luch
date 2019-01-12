@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vulkan/vulkan.hpp>
 #include <Luch/BaseObject.h>
 
 namespace Luch::Vulkan
@@ -7,11 +8,14 @@ namespace Luch::Vulkan
     class VulkanInstance : public BaseObject
     {
     public:
-        VulkanInstance();
-        ~VulkanInstance() override;
+        bool Init();
+        VkInstance GetInstance() { return instance; }
 
-// GetInstance
     private:
-        void Destroy();
+        bool SetupDebugCallback();
+        bool CheckValidationLayerSupport();
+
+        VkInstance instance;
+        std::vector<const char*> supportedExtensions;
     };
 }
