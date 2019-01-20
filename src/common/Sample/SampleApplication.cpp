@@ -110,7 +110,12 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     glTF::glTFParser glTFparser;
 
+#if LUCH_PLATFORM_IOS
+    String rootDir{ "" };
+#else
     String rootDir{ "Data/gltf2/sponza/" };
+#endif
+
     String filename { "Sponza.gltf" };
 
     FileStream fileStream{ rootDir + filename, FileOpenModes::Read };

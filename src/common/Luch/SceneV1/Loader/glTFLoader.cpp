@@ -710,6 +710,8 @@ namespace Luch::SceneV1::Loader
 
         RefPtr<Image> image = ReadHostImage(source);
 
+        LUCH_ASSERT(image != nullptr);
+
         return MakeRef<Texture>(sampler, image, name);
     }
 
@@ -766,6 +768,6 @@ namespace Luch::SceneV1::Loader
 
     RefPtr<Image> glTFLoader::ReadHostImage(const TextureSource& source)
     {
-        return Image::LoadFromFile(source.root + "/" + source.filename);
+        return Image::LoadFromFile(source.root + source.filename);
     }
 }

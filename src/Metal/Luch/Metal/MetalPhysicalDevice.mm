@@ -10,10 +10,15 @@ namespace Luch::Metal
 
     GraphicsResultValue<RefPtrVector<MetalPhysicalDevice>> MetalPhysicalDevice::EnumeratePhysicalDevices()
     {
+        RefPtrVector<MetalPhysicalDevice> mtlDevices;
+#if LUCH_PLATFORM_MACOS
         auto devices = mtlpp::Device::CopyAllDevices();
         int32 deviceCount = devices.GetSize();
-
-        RefPtrVector<MetalPhysicalDevice> mtlDevices;
+#elif LUCH_PLATFORM_IOS
+        Array<mtlpp::Device, 1> devices;
+        devices[0] = mtlpp::Device::CreateSystemDefaultDevice();
+        int32 deviceCount = 1;
+#endif
         mtlDevices.reserve(deviceCount);
 
         for(int32 i = 0; i < deviceCount; i++)

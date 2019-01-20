@@ -38,6 +38,7 @@ namespace Luch::Render::Graph
     RenderMutableResource RenderGraphResourceManager::CreateAttachment(Size2i size, Format format)
     {
         auto handle = GetNextHandle();
+        LUCH_ASSERT(size.width > 0 && size.height > 0);
         pendingAttachments[handle] = AttachmentCreateInfo { size, format };
         return handle;
     }
