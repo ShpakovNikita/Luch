@@ -85,7 +85,8 @@ namespace Luch::Render::RenderUtils
 
     ResultValue<bool, RefPtr<ShaderLibrary>> CreateShaderLibrary(
         GraphicsDevice* device,
-        const String& path,
+        const String& dir,
+        const String& filename,
         const UnorderedMap<String, Variant<int32, String>>& defines)
     {
         #if LUCH_USE_METAL
@@ -96,7 +97,13 @@ namespace Luch::Render::RenderUtils
             String extension = "";
         #endif
 
-        auto shaderSource = LoadShaderSource(path + extension);
+        #if LUCH_PLATFORM_IOS
+            String path = filename + extension;
+        #else
+            String path = dir + filename + extension;
+        #endif
+
+        auto shaderSource = LoadShaderSource(path);
 
         auto [createLibraryResult, library] = device->CreateShaderLibraryFromSource(shaderSource, defines);
         if(createLibraryResult != GraphicsResult::Success && createLibraryResult != GraphicsResult::CompilerWarning)

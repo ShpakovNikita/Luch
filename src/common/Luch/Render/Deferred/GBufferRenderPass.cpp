@@ -434,7 +434,8 @@ namespace Luch::Render::Deferred
 
         auto[vertexShaderLibraryCreated, vertexShaderLibrary] = RenderUtils::CreateShaderLibrary(
             persistentContext->device,
-            "Data/Shaders/Deferred/gbuffer_vp",
+            "Data/Shaders/Deferred/",
+            "gbuffer_vp",
             shaderDefines.defines);
 
         if (!vertexShaderLibraryCreated)
@@ -451,7 +452,8 @@ namespace Luch::Render::Deferred
 
         auto[fragmentShaderLibraryCreated, fragmentShaderLibrary] = RenderUtils::CreateShaderLibrary(
             persistentContext->device,
-            "Data/Shaders/Deferred/gbuffer_fp",
+            "Data/Shaders/Deferred/",
+            "gbuffer_fp",
             shaderDefines.defines);
 
         if (!fragmentShaderLibraryCreated)

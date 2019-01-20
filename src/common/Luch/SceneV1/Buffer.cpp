@@ -29,7 +29,7 @@ namespace Luch::SceneV1
 
         LUCH_ASSERT(source.has_value());
 
-        UniquePtr<FileStream> stream = MakeUnique<FileStream>(source->root + "/" + source->filename, FileOpenModes::Read);
+        UniquePtr<FileStream> stream = MakeUnique<FileStream>(source->root + source->filename, FileOpenModes::Read);
         hostBuffer.resize(source->byteLength);
 
         stream->Read(hostBuffer.data(), source->byteLength, 1);

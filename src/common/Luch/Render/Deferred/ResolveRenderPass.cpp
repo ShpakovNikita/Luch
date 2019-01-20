@@ -254,7 +254,8 @@ namespace Luch::Render::Deferred
 
         auto [vertexShaderLibraryCreated, createdVertexShaderLibrary] = RenderUtils::CreateShaderLibrary(
             context->device,
-            "Data/Shaders/Deferred/resolve_vp",
+            "Data/Shaders/Deferred/",
+            "resolve_vp",
             {});
 
         if (!vertexShaderLibraryCreated)
@@ -274,7 +275,8 @@ namespace Luch::Render::Deferred
 
         auto[fragmentShaderLibraryCreated, createdFragmentShaderLibrary] = RenderUtils::CreateShaderLibrary(
             device,
-            "Data/Shaders/Deferred/resolve_fp",
+            "Data/Shaders/Deferred/",
+            "resolve_fp",
             {});
 
         if (!fragmentShaderLibraryCreated)

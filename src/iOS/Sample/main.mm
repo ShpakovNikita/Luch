@@ -8,6 +8,10 @@
 #include <SDL_events.h>
 #include <SDL_main.h>
 
+#if !SDL_VIDEO_RENDER_METAL
+#error "SDL is compiled without Metal"
+#endif
+
 int main(int argc, char * argv[])
 {
     SDL_SetHint(SDL_HINT_RENDER_DRIVER, "metal");
@@ -35,8 +39,6 @@ int main(int argc, char * argv[])
     app->SetView((__bridge void*)metalLayer);
     [[maybe_unused]] bool initialized = app->Initialize({});
     LUCH_ASSERT(initialized);
-
-    SDL_SetRelativeMouseMode(SDL_TRUE);
 
     while(true)
     {

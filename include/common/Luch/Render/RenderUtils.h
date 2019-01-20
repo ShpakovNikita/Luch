@@ -17,7 +17,8 @@ namespace Luch::Render
 
         ResultValue<bool, RefPtr<ShaderLibrary>> CreateShaderLibrary(
             GraphicsDevice* device,
-            const String& path,
+            const String& dir,
+            const String& filename,
             const UnorderedMap<String, Variant<int32, String>>& defines);
     }
 }

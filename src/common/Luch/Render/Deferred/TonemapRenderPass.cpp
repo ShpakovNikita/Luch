@@ -172,7 +172,8 @@ namespace Luch::Render::Deferred
 
         auto [vertexShaderLibraryCreated, createdVertexShaderLibrary] = RenderUtils::CreateShaderLibrary(
             device,
-            "Data/Shaders/Deferred/tonemap_vp",
+            "Data/Shaders/Deferred/",
+            "tonemap_vp",
             {});
 
         if (!vertexShaderLibraryCreated)
@@ -193,7 +194,8 @@ namespace Luch::Render::Deferred
 
         auto[fragmentShaderLibraryCreated, createdFragmentShaderLibrary] = RenderUtils::CreateShaderLibrary(
             device,
-            "Data/Shaders/Deferred/tonemap_fp",
+            "Data/Shaders/Deferred/",
+            "tonemap_fp",
             {});
 
         if (!fragmentShaderLibraryCreated)
