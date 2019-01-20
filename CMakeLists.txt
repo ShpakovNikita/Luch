@@ -69,6 +69,10 @@ if(PLATFORM STREQUAL "macOS")
     add_compile_definitions(LUCH_PLATFORM_MACOS)
 endif()
 
+if(LUCH_PLATFORM_APPLE)
+    add_compile_definitions(LUCH_PLATFORM_APPLE)
+endif()
+
 if(PLATFORM STREQUAL "iOS")
     set(SDL2_INCLUDE_DIRS ${LIB_DIR}/SDL_iOS/include/SDL2/)
     set(SDL2_LIBRARIES -L${LIB_DIR}/SDL_iOS/lib/ -lSDL2 -lSDL2main)
@@ -315,50 +319,51 @@ set_target_properties(
     LuchEngineSample PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${SAMPLE_RUNTIME_OUTPUT_DIR})
 
-set(SAMPLE_DATA_DIR ${SAMPLE_RUNTIME_OUTPUT_DIR}/Resources/)
+set(SAMPLE_DATA_DIR ${SAMPLE_RUNTIME_OUTPUT_DIR}/Data/)
 
-set(SAMPLE_RESOURCES)
+if(LUCH_PLATFORM_IOS)
+    set(SAMPLE_RESOURCES)
 
-file(GLOB_RECURSE SAMPLE_GLTF2_FILES ${CMAKE_CURRENT_SOURCE_DIR}/res/gltf2/*)
-list(APPEND SAMPLE_RESOURCES ${SAMPLE_GLTF2_FILES})
-if(USE_METAL)
-    file(GLOB_RECURSE SAMPLE_SHADERS ${CMAKE_CURRENT_SOURCE_DIR}/src/Metal/Luch/Render/Shaders/*)
-    list(APPEND SAMPLE_RESOURCES ${SAMPLE_SHADERS})
+    file(GLOB_RECURSE SAMPLE_GLTF2_FILES ${CMAKE_CURRENT_SOURCE_DIR}/res/gltf2/*)
+    list(APPEND SAMPLE_RESOURCES ${SAMPLE_GLTF2_FILES})
+    if(USE_METAL)
+        file(GLOB_RECURSE SAMPLE_SHADERS ${CMAKE_CURRENT_SOURCE_DIR}/src/Metal/Luch/Render/Shaders/*)
+        list(APPEND SAMPLE_RESOURCES ${SAMPLE_SHADERS})
+    endif()
+
+    set_source_files_properties(
+        ${SAMPLE_RESOURCES}
+        PROPERTIES
+        MACOSX_PACKAGE_LOCATION Resources)
+else()
+    add_custom_command(
+        TARGET LuchEngineSample
+        PRE_BUILD
+        COMMAND ${CMAKE_COMMAND} -E remove_directory
+        ${SAMPLE_DATA_DIR})
+
+    add_custom_command(
+        TARGET LuchEngineSample
+        PRE_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory
+        ${SAMPLE_DATA_DIR})
+
+    if(USE_METAL)
+        add_custom_command(
+            TARGET LuchEngineSample
+            PRE_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/Metal/Luch/Render/Shaders/
+            ${SAMPLE_DATA_DIR}/Shaders/)
+    endif()
+
+    add_custom_command(
+        TARGET LuchEngineSample
+        PRE_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/res/gltf2
+        ${SAMPLE_DATA_DIR}/gltf2/)
 endif()
-
-set_source_files_properties(
-    ${SAMPLE_RESOURCES}
-    PROPERTIES
-    MACOSX_PACKAGE_LOCATION Resources)
-
-# add_custom_command(
-#     TARGET LuchEngineSample
-#     PRE_BUILD
-#     COMMAND ${CMAKE_COMMAND} -E remove_directory
-#     ${SAMPLE_DATA_DIR})
-
-# add_custom_command(
-#     TARGET LuchEngineSample
-#     PRE_BUILD
-#     COMMAND ${CMAKE_COMMAND} -E make_directory
-#     ${SAMPLE_DATA_DIR})
-
-# if(USE_METAL)
-#     add_custom_command(
-#         TARGET LuchEngineSample
-#         PRE_BUILD
-#         COMMAND ${CMAKE_COMMAND} -E copy_directory
-#         ${CMAKE_CURRENT_SOURCE_DIR}/src/Metal/Luch/Render/Shaders/
-#         ${SAMPLE_DATA_DIR}/Shaders/)
-#     )
-# endif()
-
-# add_custom_command(
-#     TARGET LuchEngineSample
-#     PRE_BUILD
-#     COMMAND ${CMAKE_COMMAND} -E copy_directory
-#     ${CMAKE_CURRENT_SOURCE_DIR}/res/gltf2
-#     ${SAMPLE_DATA_DIR}/gltf2/)
 
 if(LUCH_PLATFORM_WIN32)
     file(GLOB_RECURSE SAMPLE_WIN32_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/win32/Sample/*.cpp)
@@ -396,7 +401,9 @@ if(LUCH_PLATFORM_APPLE)
         HEADER_FILE_ONLY ON
         XCODE_EXPLICIT_FILE_TYPE "compiled")
 
-    set_xcode_property(LuchEngineSample DEVELOPMENT_TEAM ${DEVELOPMENT_TEAM_ID})
+    if(DEVELOPMENT_TEAM_ID)
+        set_xcode_property(LuchEngineSample DEVELOPMENT_TEAM ${DEVELOPMENT_TEAM_ID})
+    endif()
     set_xcode_property(LuchEngineSample ENABLE_BITCODE false)
     set_xcode_property(LuchEngineSample PRODUCT_BUNDLE_IDENTIFIER "es.LuchEngineSample")
 
@@ -412,16 +419,19 @@ if(LUCH_PLATFORM_APPLE)
     target_link_libraries(LuchEngineSample "-framework Foundation")
     target_link_libraries(LuchEngineSample "-framework CoreVideo")
     target_link_libraries(LuchEngineSample "-framework QuartzCore")
+    target_link_libraries(LuchEngineSample "-framework Metal")
+
+    if(LUCH_PLATFORM_MACOS)
+        target_link_libraries(LuchEngineSample "-framework Cocoa")
+        target_link_libraries(LuchEngineSample "-framework AppKit")
+    endif()
 
     if(LUCH_PLATFORM_IOS)
         target_link_libraries(LuchEngineSample "-framework OpenGLES")
         target_link_libraries(LuchEngineSample "-framework UIKit")
-        target_link_libraries(LuchEngineSample "-framework Metal")
-
         target_link_libraries(LuchEngineSample "-framework CoreGraphics")
         target_link_libraries(LuchEngineSample "-framework CoreMotion")
         target_link_libraries(LuchEngineSample "-framework MediaPlayer")
-        
         target_link_libraries(LuchEngineSample "-framework AVFoundation")
     endif()
 endif()

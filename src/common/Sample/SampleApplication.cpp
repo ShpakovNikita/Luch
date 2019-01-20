@@ -113,7 +113,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 #if LUCH_PLATFORM_IOS
     String rootDir{ "" };
 #else
-    String rootDir{ "resources/gltf2/sponza/" };
+    String rootDir{ "Data/gltf2/sponza/" };
 #endif
 
     String filename { "Sponza.gltf" };
