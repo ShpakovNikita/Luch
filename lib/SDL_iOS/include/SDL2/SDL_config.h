@@ -133,8 +133,6 @@
 /* Enable the stub haptic driver (src/haptic/dummy/\*.c) */
 #define SDL_HAPTIC_DUMMY 1
 
-/*#define SDL_JOYSTICK_HIDAPI 1*/
-
 #define SDL_SENSOR_DUMMY    1
 
 /* Enable Unix style SO loading */
@@ -151,25 +149,10 @@
 #define SDL_VIDEO_DRIVER_UIKIT  1
 #define SDL_VIDEO_DRIVER_DUMMY  1
 
-/* Enable OpenGL ES */
-#define SDL_VIDEO_OPENGL_ES2 1
-#define SDL_VIDEO_OPENGL_ES 1
-#define SDL_VIDEO_RENDER_OGL_ES 1
-#define SDL_VIDEO_RENDER_OGL_ES2    1
-
-/* Metal supported on 64-bit devices running iOS 8.0 and tvOS 9.0 and newer */
-#if !TARGET_OS_SIMULATOR && !TARGET_CPU_ARM && ((__IPHONE_OS_VERSION_MIN_REQUIRED >= 80000) || (__TV_OS_VERSION_MIN_REQUIRED >= 90000))
 #define SDL_PLATFORM_SUPPORTS_METAL	1
-#else
-#define SDL_PLATFORM_SUPPORTS_METAL	0
-#endif
 
 #if SDL_PLATFORM_SUPPORTS_METAL
 #define SDL_VIDEO_RENDER_METAL  1
-#endif
-
-#if SDL_PLATFORM_SUPPORTS_METAL
-#define SDL_VIDEO_VULKAN 1
 #endif
 
 /* Enable system power support */
