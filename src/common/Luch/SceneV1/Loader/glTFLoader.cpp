@@ -349,7 +349,7 @@ namespace Luch::SceneV1::Loader
         positionAttribute.semantic = AttributeSemantic::Position;
         positionAttribute.componentType = ComponentType::Float;
         positionAttribute.attributeType = AttributeType::Vec4;
-        positionAttribute.format = Format::R32G32B32A32Sfloat;
+        positionAttribute.format = Format::RGBA32Sfloat;
         positionAttribute.offset = offsetof(Render::Vertex, position);
         positionAttribute.vertexBufferIndex = 0;
 
@@ -357,7 +357,7 @@ namespace Luch::SceneV1::Loader
         normalAttribute.semantic = AttributeSemantic::Normal;
         normalAttribute.componentType = ComponentType::Float;
         normalAttribute.attributeType = AttributeType::Vec4;
-        normalAttribute.format = Format::R32G32B32A32Sfloat;
+        normalAttribute.format = Format::RGBA32Sfloat;
         normalAttribute.offset = offsetof(Render::Vertex, normal);
         normalAttribute.vertexBufferIndex = 0;
 
@@ -365,7 +365,7 @@ namespace Luch::SceneV1::Loader
         tangentAttribute.semantic = AttributeSemantic::Tangent;
         tangentAttribute.componentType = ComponentType::Float;
         tangentAttribute.attributeType = AttributeType::Vec4;
-        tangentAttribute.format = Format::R32G32B32A32Sfloat;
+        tangentAttribute.format = Format::RGBA32Sfloat;
         tangentAttribute.offset = offsetof(Render::Vertex, tangent);
         tangentAttribute.vertexBufferIndex = 0;
 
@@ -373,7 +373,7 @@ namespace Luch::SceneV1::Loader
         texcoordAttribute.semantic = AttributeSemantic::Texcoord_0;
         texcoordAttribute.componentType = ComponentType::Float;
         texcoordAttribute.attributeType = AttributeType::Vec2;
-        texcoordAttribute.format = Format::R32G32Sfloat;
+        texcoordAttribute.format = Format::RG32Sfloat;
         texcoordAttribute.offset = offsetof(Render::Vertex, texcoord);
         texcoordAttribute.vertexBufferIndex = 0;
 

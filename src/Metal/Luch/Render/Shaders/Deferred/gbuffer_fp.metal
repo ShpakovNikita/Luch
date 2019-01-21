@@ -35,8 +35,9 @@ struct VertexOut
 
 struct FragmentOut
 {
-    half4 baseColor [[color(0)]];
-    float4 normal [[color(1)]];
+    half4 gbuffer0 [[color(0)]];
+    half4 gbuffer1 [[color(1)]];
+    half4 gbuffer2 [[color(2)]];
 };
 
 float3 ExtractNormal(float3 normalTS, float normalScale, float3x3 TBN)
@@ -151,10 +152,27 @@ fragment FragmentOut fp_main(
         roughness *= clamp(metallicRoughnessSample.g, 0.04h, 1.0h);
     #endif
 
-    out.baseColor = baseColor;
+    half3 emissive = half3(material.emissiveFactor);
 
-    out.normal.xy = N.xy;
-    out.normal.zw = float2(metallic, roughness);
+    #if HAS_EMISSIVE_TEXTURE && HAS_TEXCOORD_0
+        half4 emissiveSample = emissiveMap.sample(emissiveSampler, texCoord);
+        emissive *= emissiveSample.rgb;
+    #endif
+
+    #if HAS_OCCLUSION_TEXTURE && HAS_TEXCOORD_0
+        half occlusion = occlusionMap.sample(occlusionSampler, texCoord).r;
+    #else
+        half occlusion = 1.0h;
+    #endif
+
+    out.gbuffer0.rgb = baseColor.rgb;
+    out.gbuffer0.a = material.occlusionStrength;
+
+    out.gbuffer1.rg = half2(N.xy);
+    out.gbuffer1.ba = half2(metallic, roughness);
+
+    out.gbuffer2.rgb = emissive.rgb;
+    out.gbuffer2.a = occlusion;
 
     return out;
 }

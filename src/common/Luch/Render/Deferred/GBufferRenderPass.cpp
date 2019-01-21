@@ -245,7 +245,7 @@ namespace Luch::Render::Deferred
         meshUniform.inverseTransform = glm::inverse(transform);
 
         // TODO
-        auto suballocation = transientContext->sharedBuffer->Suballocate(sizeof(MeshUniform), 16);
+        auto suballocation = transientContext->sharedBuffer->Suballocate(sizeof(MeshUniform), 256);
 
         memcpy(suballocation.offsetMemory, &meshUniform, sizeof(MeshUniform));
 

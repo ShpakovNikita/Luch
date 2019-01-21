@@ -110,12 +110,12 @@ namespace Luch::Render::Deferred
 
         auto& positionAttributeDescription = ci.inputAssembler.attributes.emplace_back();
         positionAttributeDescription.binding = 0;
-        positionAttributeDescription.format = Format::R32G32B32Sfloat;
+        positionAttributeDescription.format = Format::RGB32Sfloat;
         positionAttributeDescription.offset = offsetof(QuadVertex, position);
 
         auto& texCoordAttributeDescription = ci.inputAssembler.attributes.emplace_back();
         texCoordAttributeDescription.binding = 0;
-        texCoordAttributeDescription.format = Format::R32G32Sfloat;
+        texCoordAttributeDescription.format = Format::RG32Sfloat;
         texCoordAttributeDescription.offset = offsetof(QuadVertex, texCoord);
 
         ci.inputAssembler.primitiveTopology = PrimitiveTopology::TriangleList;

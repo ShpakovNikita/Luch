@@ -31,13 +31,13 @@ namespace Luch::SceneV1
                 format = Graphics::Format::R8Unorm;
                 break;
             case 2:
-                format = Graphics::Format::R8G8Unorm;
+                format = Graphics::Format::RG8Unorm;
                 break;
             case 3:
-                format = Graphics::Format::R8G8B8Unorm;
+                format = Graphics::Format::RGB8Unorm;
                 break;
             case 4:
-                format = Graphics::Format::R8G8B8A8Unorm;
+                format = Graphics::Format::RGBA8Unorm;
                 break;
             default:
                 LUCH_ASSERT(false);

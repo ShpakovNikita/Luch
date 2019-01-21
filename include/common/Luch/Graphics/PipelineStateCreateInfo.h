@@ -84,7 +84,7 @@ namespace Luch::Graphics
 
     struct PipelineColorAttachmentState
     {
-        Format format = Format::R8G8B8A8Unorm;
+        Format format = Format::RGBA8Unorm;
         bool blendEnable = false;
         BlendFactor srcColorBlendFactor = BlendFactor::One;
         BlendFactor dstColorBlendFactor = BlendFactor::Zero;

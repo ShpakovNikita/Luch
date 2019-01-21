@@ -155,7 +155,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     context->commandQueue = std::move(createdCommandQueue);
 
     SwapchainInfo swapchainInfo;
-    swapchainInfo.format = Format::B8G8R8A8Unorm_sRGB;
+    swapchainInfo.format = Format::BGRA8Unorm_sRGB;
     swapchainInfo.imageCount = 1;
     swapchainInfo.width = width;
     swapchainInfo.height = height;

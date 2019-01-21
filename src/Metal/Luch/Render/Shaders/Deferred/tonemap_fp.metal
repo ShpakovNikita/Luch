@@ -16,15 +16,15 @@ struct FragmentOut
 
 fragment FragmentOut fp_main(
     VertexOut in [[stage_in]],
-    texture2d<float> luminanceMap [[texture(0)]])
+    texture2d<half> luminanceMap [[texture(0)]])
 {
-    constexpr sampler luminanceSampler(coord::normalized);
+    constexpr sampler luminanceSampler(coord::normalized, filter::nearest);
     FragmentOut result;
 
     float2 texCoord = in.texCoord;
-    float4 colorSample = luminanceMap.sample(luminanceSampler, texCoord);
+    half4 colorSample = luminanceMap.sample(luminanceSampler, texCoord);
 
-    result.color = half4(colorSample);
+    result.color = colorSample;
 
     return result;
 }

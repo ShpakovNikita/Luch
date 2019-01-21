@@ -310,7 +310,7 @@ namespace Luch::Render
         LUCH_ASSERT(camera != nullptr);
 
         CameraUniform cameraUniform = RenderUtils::GetCameraUniform(camera, cameraNode->GetWorldTransform());
-        auto suballocation = sharedBuffer->Suballocate(sizeof(CameraUniform), 16);
+        auto suballocation = sharedBuffer->Suballocate(sizeof(CameraUniform), 256);
 
         memcpy(suballocation.offsetMemory, &cameraUniform, sizeof(CameraUniform));
 
