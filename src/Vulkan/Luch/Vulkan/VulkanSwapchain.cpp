@@ -67,15 +67,12 @@ namespace Luch::Vulkan
     VulkanResultValue<VulkanSwapchainCreateInfo> VulkanSwapchain::ChooseSwapchainCreateInfo(
         int32 width,
         int32 height,
-        VulkanPhysicalDevice* physicalDevice,
-        VulkanSurface* surface)
+        vk::PhysicalDevice vulkanPhysicalDevice,
+        vk::SurfaceKHR vulkanSurface)
     {
         using namespace Luch::Math;
 
         VulkanSwapchainCreateInfo swapchainCreateInfo;
-
-        auto vulkanSurface = surface->GetSurface();
-        auto vulkanPhysicalDevice = physicalDevice->GetPhysicalDevice();
 
         auto [getSurfaceCapabilitiesResult, surfaceCapabilities] = vulkanPhysicalDevice.getSurfaceCapabilitiesKHR(vulkanSurface);
         if (getSurfaceCapabilitiesResult != vk::Result::eSuccess)

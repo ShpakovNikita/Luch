@@ -29,6 +29,7 @@
     #include <SDL2/SDL.h>
     #include <SDL2/SDL_vulkan.h>
     #include <Luch/Vulkan/VulkanInstance.h>
+    #include <Luch/Vulkan/VulkanPhysicalDevice.h>
 #endif
 
 #include <Luch/Graphics/PhysicalDevice.h>
@@ -73,21 +74,23 @@ static LRESULT CALLBACK StaticWindowProc(
 }
 #endif
 
-bool SampleApplication::Initialize(const Vector<String>& args)
+bool SampleApplication::Initialize(const Vector<String>& /*args*/)
 {
     if (!CreateWindow())
     {
         return false;
     }
+
     SetupScene();
 
     context = MakeShared<Render::RenderContext>();
 
     auto [createDeviceResult, createdDevice] = physicalDevice->CreateGraphicsDevice();
-    if(createDeviceResult != GraphicsResult::Success)
+    if (createDeviceResult != GraphicsResult::Success)
     {
         return false;
     }
+    // /////////////////////////////////////////////////
 
     context->device = std::move(createdDevice);
 
@@ -195,7 +198,17 @@ bool SampleApplication::CreateWindow()
         LUCH_ASSERT_MSG(false, "Failed to create Vulkan Surface");
         return false;
     }
+
+    physicalDevice = MakeRef<Luch::Vulkan::VulkanPhysicalDevice>(vulkanInstance.GetInstance(), surface, nullptr);
+    if (!physicalDevice->Init())
+    {
+        LUCH_ASSERT_MSG(false, "Failed to create Vulkan Physical Device");
+        return false;
+    }
+
 #endif
+
+    LUCH_ASSERT_MSG(physicalDevice.Get() != nullptr, "Uninitialized physical device");
     return true;
 }
 
@@ -232,9 +245,9 @@ bool SampleApplication::Deinitialize()
     {
         return false;
     }
-    #if LUCH_USE_VULKAN
+#if LUCH_USE_VULKAN
     SDL_Quit();
-    #endif
+#endif
 
     return true;
 }

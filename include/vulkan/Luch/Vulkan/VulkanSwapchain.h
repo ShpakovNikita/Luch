@@ -33,8 +33,8 @@ namespace Luch::Vulkan
         static VulkanResultValue<VulkanSwapchainCreateInfo> ChooseSwapchainCreateInfo(
             int32 width,
             int32 height,
-            VulkanPhysicalDevice* physicalDevice,
-            VulkanSurface* surface);
+            vk::PhysicalDevice vulkanPhysicalDevice,
+            vk::SurfaceKHR vulkanSurface);
 
         // TODO semaphores and fences
         VulkanResultValue<int32> AcquireNextImage(VulkanFence* fence, VulkanSemaphore* semaphore, Optional<Timeout> timeout = {});

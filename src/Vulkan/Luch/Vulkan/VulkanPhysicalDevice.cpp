@@ -3,21 +3,128 @@
 #include <Luch/Vulkan/VulkanSurface.h>
 #include <Luch/Vulkan/VulkanFormat.h>
 #include <Luch/Vulkan/VulkanQueue.h>
+#include <Luch/Vulkan/VulkanSwapchain.h>
 
 namespace Luch::Vulkan
 {
-    VulkanPhysicalDevice::VulkanPhysicalDevice(
-        vk::PhysicalDevice aPhysicalDevice,
-        Luch::Optional<vk::AllocationCallbacks> aAllocationCallbacks)
-        : physicalDevice(aPhysicalDevice)
+    VulkanPhysicalDevice::VulkanPhysicalDevice(vk::Instance aInstance, vk::SurfaceKHR aSurface, Luch::Optional<vk::AllocationCallbacks> aAllocationCallbacks)
+        : instance(aInstance)
+        , surface(aSurface)
         , callbacks(aAllocationCallbacks)
-        , physicalDeviceMemoryProperties(aPhysicalDevice.getMemoryProperties())
-        , allocationCallbacks(nullptr)
     {
         if(callbacks.has_value())
         {
             allocationCallbacks = *callbacks;
         }
+    }
+
+    struct QueueFamilyIndices {
+        int graphicsFamily = -1;
+        int presentFamily = -1;
+
+        bool isComplete() {
+            return graphicsFamily >= 0 && presentFamily >= 0;
+        }
+    };
+
+    QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {
+        QueueFamilyIndices indices;
+
+        uint32_t queueFamilyCount = 0;
+        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+        std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+        int i = 0;
+        for (const auto& queueFamily : queueFamilies) {
+            if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+                indices.graphicsFamily = i;
+            }
+
+            VkBool32 presentSupport = false;
+            vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+
+            if (queueFamily.queueCount > 0 && presentSupport) {
+                indices.presentFamily = i;
+            }
+
+            if (indices.isComplete()) {
+                break;
+            }
+
+            i++;
+        }
+
+        return indices;
+    }
+
+    const std::vector<const char*> requiredDeviceExtensions = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    };
+
+    bool CheckDeviceExtensionSupport(vk::PhysicalDevice device) {
+        uint32_t extensionCount;
+        vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+        std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+        vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+
+        std::set<std::string> requiredExtensions(requiredDeviceExtensions.begin(), requiredDeviceExtensions.end());
+
+        for (const auto& extension : availableExtensions) {
+            requiredExtensions.erase(extension.extensionName);
+        }
+
+        return requiredExtensions.empty();
+    }
+
+    bool IsDeviceSuitable(vk::PhysicalDevice device, vk::SurfaceKHR surface) {
+        QueueFamilyIndices indices = FindQueueFamilies(device, surface);
+        if (!indices.isComplete())
+        {
+            return false;
+        }
+
+        if (!CheckDeviceExtensionSupport(device))
+        {
+            return false;
+        }
+
+        int width = 640;
+        int height = 480;
+        VulkanResultValue<VulkanSwapchainCreateInfo> swapchainCreateInfo =
+                VulkanSwapchain::ChooseSwapchainCreateInfo(width, height, device, surface);
+        return swapchainCreateInfo.result == vk::Result::eSuccess;
+    }
+
+    bool VulkanPhysicalDevice::Init()
+    {
+        uint32_t deviceCount = 0;
+        vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+
+        if (deviceCount == 0) {
+            LUCH_ASSERT_MSG(false, "failed to find any GPU with Vulkan support.");
+            return false;
+        }
+
+        std::vector<VkPhysicalDevice> devices(deviceCount);
+        vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+
+        for (const auto& device : devices) {
+            if (IsDeviceSuitable(device, surface)) {
+                physicalDevice = device;
+                break;
+            }
+        }
+
+        if (!physicalDevice) {
+            LUCH_ASSERT_MSG(false, "failed to find a suitable GPU");
+            return false;
+        }
+        physicalDeviceMemoryProperties = physicalDevice.getMemoryProperties();
+
+        return true;
     }
 
     VulkanResultValue<QueueIndices> VulkanPhysicalDevice::ChooseDeviceQueues(VulkanSurface* surface)
@@ -98,10 +205,11 @@ namespace Luch::Vulkan
         return { vk::Result::eSuccess, std::move(indices) };
     }
 
-    VulkanRefResultValue<VulkanGraphicsDevice> VulkanPhysicalDevice::CreateDevice(
-        QueueIndices&& queueIndices,
-        const Luch::Vector<const char8*>& requiredDeviceExtensionNames)
+    GraphicsResultRefPtr<GraphicsDevice> VulkanPhysicalDevice::CreateGraphicsDevice()
     {
+        // QueueIndices&& queueIndices,
+        // const Luch::Vector<const char8*>& requiredDeviceExtensionNames
+        /*
         static float32 queuePriorities[] = { 1.0 };
 
         vk::DeviceQueueCreateInfo graphicsCi;
@@ -168,7 +276,7 @@ namespace Luch::Vulkan
         {
             vulkanDevice.destroy(allocationCallbacks);
             return { result };
-        }
+        }*/
     }
 
     VulkanQueueInfo VulkanPhysicalDevice::ObtainQueueInfo(vk::Device& device, QueueIndices&& indices)
@@ -194,7 +302,7 @@ namespace Luch::Vulkan
         return queueInfo;
     }
 
-    Vector<Format> VulkanPhysicalDevice::GetSupportedDepthStencilFormats(const Vector<Format>& formats)
+    Vector<Format> VulkanPhysicalDevice::GetSupportedDepthStencilFormats(const Vector<Format>& formats) const
     {
         const vk::FormatFeatureFlags requiredBits =
               vk::FormatFeatureFlagBits::eSampledImage
