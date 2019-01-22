@@ -7,7 +7,6 @@
 #include <Luch/Vulkan/VulkanForwards.h>
 #include <Luch/Vulkan/VulkanImage.h>
 #include <Luch/Vulkan/VulkanImageView.h>
-#include <Luch/Vulkan/VulkanSwapchainCreateInfo.h>
 
 namespace Luch::Vulkan
 {
@@ -15,6 +14,17 @@ namespace Luch::Vulkan
     {
         RefPtr<VulkanImage> image;
         RefPtr<VulkanImageView> imageView;
+    };
+
+    struct VulkanSwapchainCreateInfo
+    {
+        int32 imageCount = 0;
+        int32 width = 0;
+        int32 height = 0;
+        int32 arrayLayers = 1;
+        Format format = Format::Undefined;
+        vk::ColorSpaceKHR colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
+        vk::PresentModeKHR presentMode = vk::PresentModeKHR::eFifo;
     };
 
     class VulkanSwapchain : public BaseObject
