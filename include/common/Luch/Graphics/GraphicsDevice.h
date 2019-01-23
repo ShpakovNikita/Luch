@@ -52,7 +52,7 @@ namespace Luch::Graphics
             const SwapchainInfo& createInfo,
             Surface* surface) = 0;
 
-        virtual GraphicsResultRefPtr<Semaphore> CreateSemaphore() = 0;
+        virtual GraphicsResultRefPtr<Semaphore> CreateSemaphore(int32 value) = 0;
     };
 
     inline GraphicsDevice::~GraphicsDevice() {}

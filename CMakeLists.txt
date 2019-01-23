@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12.0)
 
-project(Luch VERSION 0.1 LANGUAGES CXX)
+project(Luch_${PLATFORM} VERSION 0.1 LANGUAGES CXX)
 set(CXX_STANDARD 17)
 
 set(LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib)

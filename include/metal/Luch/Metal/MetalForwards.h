@@ -18,6 +18,7 @@ namespace Luch::Metal
     class MetalTexture;
     class MetalSampler;
     class MetalSwapchain;
+    class MetalSwapchainTexture;
     class MetalSurface;
     class MetalDescriptorPool;
     class MetalDescriptorSetLayout;

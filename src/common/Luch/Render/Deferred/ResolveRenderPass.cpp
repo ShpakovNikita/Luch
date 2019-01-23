@@ -185,6 +185,8 @@ namespace Luch::Render::Deferred
     {
         PipelineStateCreateInfo ci;
 
+        ci.name = "Resolve";
+
         auto& bindingDescription = ci.inputAssembler.bindings.emplace_back();
         bindingDescription.stride = sizeof(QuadVertex);
         bindingDescription.inputRate = VertexInputRate::PerVertex;

@@ -28,6 +28,7 @@ namespace Luch::Graphics
     class ShaderProgram;
     class Surface;
     class Swapchain;
+    class SwapchainTexture;
     class Semaphore;
     class Texture;
 

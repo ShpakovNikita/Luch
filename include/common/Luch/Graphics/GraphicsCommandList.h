@@ -19,6 +19,8 @@ namespace Luch::Graphics
         virtual void Begin() = 0;
         virtual void End() = 0;
 
+        virtual void SetLabel(const String& label) = 0;
+
         virtual void BeginRenderPass(FrameBuffer* framebuffer) = 0;
         virtual void EndRenderPass() = 0;
 

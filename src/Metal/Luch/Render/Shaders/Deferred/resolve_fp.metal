@@ -77,23 +77,23 @@ half G_CookTorranceGGX(half VdotH, half NdotH, half NdotV, half NdotL)
 
 half3 F_Schlick(half cosTheta, half3 F0)
 {
-    return F0 + (1 - F0) * pow(1 - cosTheta, 5.0h);
+    return F0 + (1.0h - F0) * pow(1.0h - cosTheta, 5.0h);
 }
 
-half3 DiffuseLighting(half3 color, float3 L, float3 N)
+half3 DiffuseLighting(half3 color, half3 L, half3 N)
 {
     half NdotL = max(half(dot(N, L)), 0.0h);
     return color * NdotL;
 }
 
-half3 SpecularLighting(half3 color, float3 V, float3 L, float3 N, half3 F, half roughness)
+half3 SpecularLighting(half3 color, half3 V, half3 L, half3 N, half3 F, half roughness)
 {
-    float3 H = normalize(V + L);
+    half3 H = normalize(V + L);
 
-    half VdotH = saturate(half(dot(V, H)));
-    half NdotV = saturate(half(dot(N, V)));
-    half NdotH = saturate(half(dot(N, H)));
-    half NdotL = saturate(half(dot(N, L)));
+    half VdotH = saturate(dot(V, H));
+    half NdotV = saturate(dot(N, V));
+    half NdotH = saturate(dot(N, H));
+    half NdotL = saturate(dot(N, L));
 
     half den = 4 * NdotV * NdotL + 0.001h;
     half D = D_GGX(NdotH, roughness);
@@ -115,8 +115,8 @@ half Attenuation(Light light, half d)
 LightingResult ApplyDirectionalLight(
     CameraUniform camera,
     Light light,
-    float3 V,
-    float3 N,
+    half3 V,
+    half3 N,
     half3 F0,
     half metallic,
     half roughness)
@@ -124,8 +124,8 @@ LightingResult ApplyDirectionalLight(
     LightingResult result;
 
     half3 color = half3(light.color.xyz);
-    float3 directionVS = (camera.view * light.directionWS).xyz;
-    float3 L = directionVS.xyz;
+    half3 directionVS = half3((camera.view * light.directionWS).xyz);
+    half3 L = directionVS.xyz;
     half NdotV = saturate(half(dot(N, V)));
 
     half3 F = F_Schlick(NdotV, F0);
@@ -139,11 +139,11 @@ LightingResult ApplyDirectionalLight(
 
 LightingResult ApplyPointlLightImpl(
     Light light,
-    float3 L,
-    float dist,
-    float3 V,
-    float3 P,
-    float3 N,
+    half3 L,
+    half dist,
+    half3 V,
+    half3 P,
+    half3 N,
     half3 F0,
     half metallic,
     half roughness)
@@ -168,26 +168,26 @@ LightingResult ApplyPointlLightImpl(
 LightingResult ApplyPointlLight(
     CameraUniform camera,
     Light light,
-    float3 V,
-    float3 P,
-    float3 N,
+    half3 V,
+    half3 P,
+    half3 N,
     half3 F0,
     half metallic,
     half roughness)
 {
-    float3 positionVS = (camera.view * light.positionWS).xyz;
-    float3 L = positionVS.xyz - P;
-    float dist = length(L);
+    half3 positionVS = half3((camera.view * light.positionWS).xyz);
+    half3 L = positionVS.xyz - P;
+    half dist = length(L);
     L = L/dist;
 
-    return ApplyPointlLightImpl(light, L, half(dist), V, P, N, F0, metallic, roughness);
+    return ApplyPointlLightImpl(light, L, dist, V, P, N, F0, metallic, roughness);
 }
 
-half SpotCone(half innerConeAngle, half outerConeAngle, float3 directionVS, float3 L)
+half SpotCone(half innerConeAngle, half outerConeAngle, half3 directionVS, half3 L)
 {
     half lightAngleScale = 1.0h / max(0.001h, cos(innerConeAngle) - cos(outerConeAngle));
     half lightAngleOffset = -cos(outerConeAngle) * lightAngleScale;
-    half cosAngle = half(dot(directionVS, -L));
+    half cosAngle = dot(directionVS, -L);
     half angularAttenuation = saturate(cosAngle * lightAngleScale + lightAngleOffset);
     return angularAttenuation * angularAttenuation;
 }
@@ -195,23 +195,23 @@ half SpotCone(half innerConeAngle, half outerConeAngle, float3 directionVS, floa
 LightingResult ApplySpotLight(
     CameraUniform camera,
     Light light,
-    float3 V,
-    float3 P,
-    float3 N,
+    half3 V,
+    half3 P,
+    half3 N,
     half3 F0,
     half metallic,
     half roughness)
 {
     LightingResult result;
 
-    float3 positionVS = (camera.view * light.positionWS).xyz;
-    float3 directionVS = (camera.view * light.directionWS).xyz;
-    float3 L = positionVS - P;
-    float dist = length(L);
+    half3 positionVS = half3((camera.view * light.positionWS).xyz);
+    half3 directionVS = half3((camera.view * light.directionWS).xyz);
+    half3 L = positionVS - P;
+    half dist = length(L);
     L = L/dist;
 
-    LightingResult pointLighting = ApplyPointlLightImpl(light, L, half(dist), V, P, N, F0, metallic, roughness);
-    float spotIntensity = SpotCone(light.innerConeAngle, light.outerConeAngle, directionVS, L);
+    LightingResult pointLighting = ApplyPointlLightImpl(light, L, dist, V, P, N, F0, metallic, roughness);
+    half spotIntensity = SpotCone(light.innerConeAngle, light.outerConeAngle, directionVS, L);
 
     result.diffuse = pointLighting.diffuse * spotIntensity;
     result.specular = pointLighting.specular * spotIntensity;
@@ -219,20 +219,19 @@ LightingResult ApplySpotLight(
     return result;
 }
 
-float2 FragCoordToNDC(float2 fragCoord, float2 size)
+half2 FragCoordToNDC(half2 fragCoord, half2 size)
 {
-    float2 pd = 2 * fragCoord / size - float2(1.0);
-    return float2(pd.x, -pd.y);
+    half2 pd = 2 * fragCoord / size - half2(1.0h);
+    return half2(pd.x, -pd.y);
 }
 
-float3 UncompressNormal(half2 normalXY)
+half3 UncompressNormal(half2 normalXY)
 {
     // This function uncompresses a _view space_ normal
     // Normal is packed by using just its xy view space coordinates
     // z always looks towards camera (-Z) since we are in view space
-    //float2 normalXY = normalMapSample.xy * 2 - float2(1.0);
     half normalZ = sqrt(saturate(1 - length_squared(normalXY)));
-    return float3(normalXY.x, normalXY.y, -normalZ);
+    return half3(normalXY.xy, -normalZ);
 }
 
 struct VertexOut
@@ -264,16 +263,16 @@ fragment FragmentOut fp_main(
     half4 gbuffer0Sample = gbuffer0.sample(gbufferSampler, texCoord);
     half4 gbuffer1Sample = gbuffer1.sample(gbufferSampler, texCoord);
     half4 gbuffer2Sample = gbuffer2.sample(gbufferSampler, texCoord);
+    half depth = depthBuffer.sample(depthBufferSampler, texCoord);
 
     half3 baseColor = gbuffer0Sample.rgb;
-    half occlusionStrength = gbuffer0Sample.a;
+    half occlusion = gbuffer0Sample.a;
 
-    float3 N = UncompressNormal(gbuffer1Sample.rg);
+    half3 N = UncompressNormal(gbuffer1Sample.rg);
     half metallic = half(gbuffer1Sample.b);
     half roughness = half(gbuffer1Sample.a);
 
     half3 emitted = gbuffer2Sample.rgb;
-    half occlusion = gbuffer2Sample.a;
 
     half3 F0 = half3(0.04h);
     // If material is dielectrict, it's reflection coefficient can be approximated by 0.04
@@ -281,14 +280,13 @@ fragment FragmentOut fp_main(
     F0 = mix(F0, baseColor, metallic);
 
     // Reconstruct view-space position
-    float2 attachmentSize = float2(depthBuffer.get_width(), depthBuffer.get_height());
-    float2 positionSS = in.position.xy;
-    float depth = depthBuffer.sample(depthBufferSampler, texCoord);
-    float2 xyNDC = FragCoordToNDC(positionSS, attachmentSize);
-    float4 intermediatePosition = camera.inverseProjection * float4(xyNDC, depth, 1.0);
-    float3 P = intermediatePosition.xyz / intermediatePosition.w;
-    float3 eyePosVS = float3(0); // in view space eye is at origin
-    float3 V = normalize(eyePosVS - P);
+    half2 attachmentSize = half2(depthBuffer.get_width(), depthBuffer.get_height());
+    half2 positionSS = half2(in.position.xy);
+    half2 xyNDC = FragCoordToNDC(positionSS, attachmentSize);
+    float4 intermediatePosition = camera.inverseProjection * float4(xyNDC.x, xyNDC.y, depth, 1.0);
+    half3 P = half3(intermediatePosition.xyz / intermediatePosition.w);
+    constexpr half3 eyePosVS = half3(0); // in view space eye is at origin
+    half3 V = normalize(eyePosVS - P);
 
     LightingResult lightingResult;
 
@@ -319,7 +317,7 @@ fragment FragmentOut fp_main(
 
     FragmentOut result;
 
-    result.color.rgb = emitted + half3(baseColor) * (lightingResult.diffuse + lightingResult.specular);
+    result.color.rgb = emitted + baseColor * (lightingResult.diffuse + lightingResult.specular);
     result.color.a = 1.0;
 
     return result;

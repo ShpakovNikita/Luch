@@ -36,14 +36,13 @@ namespace Luch::Render
         suballocation.buffer = buffer;
         suballocation.offsetMemory = (Byte*)buffer->GetMappedMemory() + alignedOffset;
         suballocation.offset = alignedOffset;
-        suballocation.size = padding + size;
+        suballocation.size = size;
         offset += padding + size;
         return suballocation;
     }
 
     void SharedBuffer::Reset()
     {
-        const auto& createInfo = buffer->GetCreateInfo();
         offset = 0;
     }
 }

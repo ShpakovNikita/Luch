@@ -70,7 +70,7 @@ float3x3 TangentFrame(float3 dp1, float3 dp2, float3 N, float2 uv)
 #endif
 fragment FragmentOut fp_main(
     VertexOut in [[stage_in]],
-    device MaterialUniform& material [[buffer(0)]]
+    constant MaterialUniform& material [[buffer(0)]]
 
 #if HAS_BASE_COLOR_TEXTURE
     , texture2d<half> baseColorMap [[texture(0)]]         // RGB - color, A - opacity
@@ -166,13 +166,12 @@ fragment FragmentOut fp_main(
     #endif
 
     out.gbuffer0.rgb = baseColor.rgb;
-    out.gbuffer0.a = material.occlusionStrength;
+    out.gbuffer0.a = mix(1, occlusion, half(material.occlusionStrength));
 
     out.gbuffer1.rg = half2(N.xy);
     out.gbuffer1.ba = half2(metallic, roughness);
 
     out.gbuffer2.rgb = emissive.rgb;
-    out.gbuffer2.a = occlusion;
 
     return out;
 }

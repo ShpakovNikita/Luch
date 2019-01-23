@@ -344,6 +344,8 @@ namespace Luch::Render::Deferred
     {
         PipelineStateCreateInfo ci;
 
+        ci.name = "GBuffer";
+
         ShaderDefines<DeferredShaderDefines> shaderDefines;
         shaderDefines.mapping = &FlagToString;
 
@@ -351,7 +353,7 @@ namespace Luch::Render::Deferred
         LUCH_ASSERT(vertexBuffers.size() == 1);
 
         ci.inputAssembler.bindings.resize(vertexBuffers.size());
-        for (int i = 0; i < vertexBuffers.size(); i++)
+        for (int32 i = 0; i < vertexBuffers.size(); i++)
         {
             const auto& vertexBuffer = vertexBuffers[i];
             auto& bindingDescription = ci.inputAssembler.bindings[i];
@@ -398,7 +400,6 @@ namespace Luch::Render::Deferred
             ci.colorAttachments.attachments[i].format = DeferredConstants::GBufferColorAttachmentFormats[i];
         }
 
-
         ci.renderPass = persistentContext->renderPass;
         ci.pipelineLayout = persistentContext->pipelineLayout;
 
@@ -429,6 +430,7 @@ namespace Luch::Render::Deferred
 
         if (material->GetProperties().alphaMode == SceneV1::AlphaMode::Mask)
         {
+            ci.name += " (Alphatest)";
             shaderDefines.AddFlag(DeferredShaderDefines::AlphaMask);
         }
 

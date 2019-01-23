@@ -19,11 +19,29 @@ namespace Luch::Render
 {
     using namespace Graphics;
 
+    struct FrameResources
+    {
+        SharedPtr<SharedBuffer> sharedBuffer;
+        RefPtr<DescriptorSet> cameraDescriptorSet;
+
+        UniquePtr<Graph::RenderGraphBuilder> builder;
+        UniquePtr<Deferred::GBufferRenderPass> gbufferPass;
+        UniquePtr<Deferred::ResolveRenderPass> resolvePass;
+        UniquePtr<Deferred::TonemapRenderPass> tonemapPass;
+        UniquePtr<Deferred::GBufferTransientContext> gbufferTransientContext;
+        UniquePtr<Deferred::ResolveTransientContext> resolveTransientContext;
+        UniquePtr<Deferred::TonemapTransientContext> tonemapTransientContext;
+        RefPtr<SwapchainTexture> swapchainTexture;
+
+        void Reset();
+    };
+
     class SceneRenderer
     {
-        static const int32 DescriptorSetCount = 2048;
-        static const int32 DescriptorCount = 8192;
-        static const int32 SharedBufferSize = 1024 * 1024;
+        static constexpr int32 MaxSwapchainTextures = 3;
+        static constexpr int32 DescriptorSetCount = 2048;
+        static constexpr int32 DescriptorCount = 8192;
+        static constexpr int32 SharedBufferSize = 1024 * 1024;
     public:
         SceneRenderer(RefPtr<SceneV1::Scene> scene);
         ~SceneRenderer();
@@ -37,6 +55,7 @@ namespace Luch::Render
         void DrawScene(SceneV1::Node* cameraNode);
         void EndRender();
     private:
+        int32 GetCurrentFrameResourceIndex() const;
         static ResultValue<bool, UniquePtr<CameraResources>> PrepareCameraResources(GraphicsDevice* device);
 
         bool UploadSceneTextures();
@@ -44,29 +63,21 @@ namespace Luch::Render
 
         UniquePtr<MaterialManager> materialManager;
         UniquePtr<Graph::RenderGraphResourcePool> resourcePool;
-        UniquePtr<Graph::RenderGraphBuilder> builder;
-
-        UniquePtr<Deferred::GBufferRenderPass> gbufferPass;
-        UniquePtr<Deferred::ResolveRenderPass> resolvePass;
-        UniquePtr<Deferred::TonemapRenderPass> tonemapPass;
 
         UniquePtr<Deferred::GBufferPersistentContext> gbufferPersistentContext;
         UniquePtr<Deferred::ResolvePersistentContext> resolvePersistentContext;
         UniquePtr<Deferred::TonemapPersistentContext> tonemapPersistentContext;
 
-        UniquePtr<Deferred::GBufferTransientContext> gbufferTransientContext;
-        UniquePtr<Deferred::ResolveTransientContext> resolveTransientContext;
-        UniquePtr<Deferred::TonemapTransientContext> tonemapTransientContext;
-
-        RefPtr<DescriptorSet> cameraDescriptorSet;
-
         Graph::RenderMutableResource outputHandle;
 
+        Array<FrameResources, MaxSwapchainTextures> frameResources;
         UniquePtr<CameraResources> cameraResources;
         SharedPtr<RenderContext> context;
+        RefPtr<Semaphore> semaphore;
         RefPtr<CommandPool> commandPool;
         RefPtr<DescriptorPool> descriptorPool;
-        SharedPtr<SharedBuffer> sharedBuffer;
         RefPtr<SceneV1::Scene> scene;
+
+        int32 frameIndex = 0;
     };
 }

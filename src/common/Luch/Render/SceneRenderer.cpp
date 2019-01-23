@@ -19,6 +19,7 @@
 #include <Luch/Graphics/GraphicsDevice.h>
 #include <Luch/Graphics/CommandQueue.h>
 #include <Luch/Graphics/Swapchain.h>
+#include <Luch/Graphics/Semaphore.h>
 #include <Luch/Graphics/SwapchainInfo.h>
 #include <Luch/Graphics/BufferCreateInfo.h>
 #include <Luch/Graphics/DescriptorSet.h>
@@ -44,6 +45,18 @@ namespace Luch::Render
     using namespace Graphics;
     using namespace Deferred;
     using namespace Graph;
+
+    void FrameResources::Reset()
+    {
+        builder.reset();
+        gbufferPass.reset();
+        resolvePass.reset();
+        tonemapPass.reset();
+        gbufferTransientContext.reset();
+        resolveTransientContext.reset();
+        tonemapTransientContext.reset();
+        swapchainTexture.Release();
+    }
 
     SceneRenderer::SceneRenderer(
         RefPtr<SceneV1::Scene> aScene)
@@ -82,6 +95,14 @@ namespace Luch::Render
 
         commandPool = std::move(createdCommandPool);
 
+        auto [createSemaphoreResult, createdSemaphore] = context->device->CreateSemaphore(context->swapchain->GetInfo().imageCount);
+        if(createSemaphoreResult != GraphicsResult::Success)
+        {
+            return false;
+        }
+
+        semaphore = std::move(createdSemaphore);
+
         auto [createGBufferPersistentContextResult, createdGBufferPersistentContext] = GBufferRenderPass::PrepareGBufferPersistentContext(
             context->device,
             cameraResources.get(),
@@ -116,22 +137,9 @@ namespace Luch::Render
 
         tonemapPersistentContext = std::move(createdTonemapPersistentContext);
 
-        BufferCreateInfo sharedBufferCreateInfo;
-        sharedBufferCreateInfo.length = SharedBufferSize;
-        sharedBufferCreateInfo.storageMode = ResourceStorageMode::Shared;
-        sharedBufferCreateInfo.usage = BufferUsageFlags::Uniform;
-
-        auto [createBufferResult, createdBuffer] = context->device->CreateBuffer(sharedBufferCreateInfo);
-        if(createBufferResult != GraphicsResult::Success)
-        {
-            return false;
-        }
-
-        sharedBuffer = MakeShared<SharedBuffer>(std::move(createdBuffer));
-
         DescriptorPoolCreateInfo descriptorPoolCreateInfo;
         descriptorPoolCreateInfo.maxDescriptorSets = DescriptorSetCount;
-        descriptorPoolCreateInfo.descriptorCount = 
+        descriptorPoolCreateInfo.descriptorCount =
         {
             { ResourceType::Texture, DescriptorCount },
             { ResourceType::Sampler, DescriptorCount },
@@ -145,6 +153,30 @@ namespace Luch::Render
         }
 
         descriptorPool = std::move(createdDescriptorPool);
+
+        BufferCreateInfo sharedBufferCreateInfo;
+        sharedBufferCreateInfo.length = SharedBufferSize;
+        sharedBufferCreateInfo.storageMode = ResourceStorageMode::Shared;
+        sharedBufferCreateInfo.usage = BufferUsageFlags::Uniform;
+
+        for(int32 i = 0; i < MaxSwapchainTextures; i++)
+        {
+            auto [createBufferResult, createdBuffer] = context->device->CreateBuffer(sharedBufferCreateInfo);
+            if(createBufferResult != GraphicsResult::Success)
+            {
+                return false;
+            }
+
+            frameResources[i].sharedBuffer = MakeShared<SharedBuffer>(std::move(createdBuffer));
+
+            auto [allocateCamreraDescriptorSetResult, allocatedCameraDescriptorSet] = descriptorPool->AllocateDescriptorSet(cameraResources->cameraBufferDescriptorSetLayout);
+            if(allocateCamreraDescriptorSetResult != GraphicsResult::Success)
+            {
+                return false;
+            }
+
+            frameResources[i].cameraDescriptorSet = std::move(allocatedCameraDescriptorSet);
+        }
 
         resourcePool = MakeUnique<RenderGraphResourcePool>(context->device);
 
@@ -170,16 +202,18 @@ namespace Luch::Render
 
     bool SceneRenderer::BeginRender()
     {
-        auto [allocateCamreraDescriptorSetResult, allocatedCameraDescriptorSet] = descriptorPool->AllocateDescriptorSet(cameraResources->cameraBufferDescriptorSetLayout);
-        if(allocateCamreraDescriptorSetResult != GraphicsResult::Success)
+        bool timedOut = semaphore->Wait(1 * 1000 * 1000 * 1000);
+        if(timedOut)
         {
             return false;
         }
 
-        cameraDescriptorSet = std::move(allocatedCameraDescriptorSet);
+        auto& frame = frameResources[GetCurrentFrameResourceIndex()];
 
-        builder = MakeUnique<RenderGraphBuilder>();
-        auto builderInitialized = builder->Initialize(context->device, commandPool, resourcePool.get());
+        frame.sharedBuffer->Reset();
+
+        frame.builder = MakeUnique<RenderGraphBuilder>();
+        auto builderInitialized = frame.builder->Initialize(context->device, commandPool, resourcePool.get());
         if(!builderInitialized)
         {
             return false;
@@ -188,7 +222,7 @@ namespace Luch::Render
         auto swapchainInfo = context->swapchain->GetInfo();
         Size2i attachmentSize = { swapchainInfo.width, swapchainInfo.height };
 
-        outputHandle = builder->GetResourceManager()->ImportAttachmentDeferred();
+        outputHandle = frame.builder->GetResourceManager()->ImportAttachmentDeferred();
 
         auto [prepareGBufferTransientContextResult, preparedGBufferTransientContext] = GBufferRenderPass::PrepareGBufferTransientContext(
             gbufferPersistentContext.get(),
@@ -199,18 +233,18 @@ namespace Luch::Render
             return false;
         }
 
-        gbufferTransientContext = std::move(preparedGBufferTransientContext);
+        frame.gbufferTransientContext = std::move(preparedGBufferTransientContext);
 
-        gbufferTransientContext->descriptorPool = descriptorPool;
-        gbufferTransientContext->attachmentSize = attachmentSize;
-        gbufferTransientContext->scene = scene;
-        gbufferTransientContext->sharedBuffer = sharedBuffer;
-        gbufferTransientContext->cameraBufferDescriptorSet = cameraDescriptorSet;
+        frame.gbufferTransientContext->descriptorPool = descriptorPool;
+        frame.gbufferTransientContext->attachmentSize = attachmentSize;
+        frame.gbufferTransientContext->scene = scene;
+        frame.gbufferTransientContext->sharedBuffer = frame.sharedBuffer;
+        frame.gbufferTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
 
-        gbufferPass = MakeUnique<GBufferRenderPass>(
+        frame.gbufferPass = MakeUnique<GBufferRenderPass>(
             gbufferPersistentContext.get(),
-            gbufferTransientContext.get(),
-            builder.get());
+            frame.gbufferTransientContext.get(),
+            frame.builder.get());
 
         auto [prepareResolveTransientContextResult, preparedResolveTransientContext] = ResolveRenderPass::PrepareResolveTransientContext(
             resolvePersistentContext.get(),
@@ -221,18 +255,18 @@ namespace Luch::Render
             return false;
         }
 
-        resolveTransientContext = std::move(preparedResolveTransientContext);
+        frame.resolveTransientContext = std::move(preparedResolveTransientContext);
 
-        resolveTransientContext->gbuffer = gbufferPass->GetGBuffer();
-        resolveTransientContext->attachmentSize = attachmentSize;
-        resolveTransientContext->scene = scene;
-        resolveTransientContext->sharedBuffer = sharedBuffer;
-        resolveTransientContext->cameraBufferDescriptorSet = cameraDescriptorSet;
+        frame.resolveTransientContext->gbuffer = frame.gbufferPass->GetGBuffer();
+        frame.resolveTransientContext->attachmentSize = attachmentSize;
+        frame.resolveTransientContext->scene = scene;
+        frame.resolveTransientContext->sharedBuffer = frame.sharedBuffer;
+        frame.resolveTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
 
-        resolvePass = MakeUnique<ResolveRenderPass>(
+        frame.resolvePass = MakeUnique<ResolveRenderPass>(
             resolvePersistentContext.get(),
-            resolveTransientContext.get(),
-            builder.get());
+            frame.resolveTransientContext.get(),
+            frame.builder.get());
 
         auto [prepareTonemapTransientContextResult, preparedTonemapTransientContext] = TonemapRenderPass::PrepareTonemapTransientContext(
             tonemapPersistentContext.get(),
@@ -243,23 +277,25 @@ namespace Luch::Render
             return false;
         }
 
-        tonemapTransientContext = std::move(preparedTonemapTransientContext);
+        frame.tonemapTransientContext = std::move(preparedTonemapTransientContext);
 
-        tonemapTransientContext->inputHandle = resolvePass->GetResolveTextureHandle();
-        tonemapTransientContext->outputHandle = outputHandle;
-        tonemapTransientContext->attachmentSize = attachmentSize;
-        tonemapTransientContext->scene = scene;
+        frame.tonemapTransientContext->inputHandle = frame.resolvePass->GetResolveTextureHandle();
+        frame.tonemapTransientContext->outputHandle = outputHandle;
+        frame.tonemapTransientContext->attachmentSize = attachmentSize;
+        frame.tonemapTransientContext->scene = scene;
 
-        tonemapPass = MakeUnique<TonemapRenderPass>(
+        frame.tonemapPass = MakeUnique<TonemapRenderPass>(
             tonemapPersistentContext.get(),
-            tonemapTransientContext.get(),
-            builder.get());
+            frame.tonemapTransientContext.get(),
+            frame.builder.get());
 
         return true;
     }
 
     bool SceneRenderer::PrepareScene()
     {
+        auto& frame = frameResources[GetCurrentFrameResourceIndex()];
+
         auto texturesUploaded = UploadSceneTextures();
         if(!texturesUploaded)
         {
@@ -283,25 +319,27 @@ namespace Luch::Render
             }
         }
 
-        gbufferPass->PrepareScene();
-        resolvePass->PrepareScene();
-        tonemapPass->PrepareScene();
+        frame.gbufferPass->PrepareScene();
+        frame.resolvePass->PrepareScene();
+        frame.tonemapPass->PrepareScene();
 
         return true;
     }
 
     void SceneRenderer::UpdateScene()
     {
+        auto& frame = frameResources[GetCurrentFrameResourceIndex()];
+
         auto& materials = scene->GetSceneProperties().materials;
 
         for(auto& material : materials)
         {
-            materialManager->UpdateMaterial(material, sharedBuffer.get());
+            materialManager->UpdateMaterial(material, frame.sharedBuffer.get());
         }
 
-        gbufferPass->UpdateScene();
-        resolvePass->UpdateScene();
-        tonemapPass->UpdateScene();
+        frame.gbufferPass->UpdateScene();
+        frame.resolvePass->UpdateScene();
+        frame.tonemapPass->UpdateScene();
     }
 
     void SceneRenderer::DrawScene(SceneV1::Node* cameraNode)
@@ -309,24 +347,28 @@ namespace Luch::Render
         auto camera = cameraNode->GetCamera();
         LUCH_ASSERT(camera != nullptr);
 
+        auto& frame = frameResources[GetCurrentFrameResourceIndex()];
+
         CameraUniform cameraUniform = RenderUtils::GetCameraUniform(camera, cameraNode->GetWorldTransform());
-        auto suballocation = sharedBuffer->Suballocate(sizeof(CameraUniform), 256);
+        auto suballocation = frame.sharedBuffer->Suballocate(sizeof(CameraUniform), 256);
 
         memcpy(suballocation.offsetMemory, &cameraUniform, sizeof(CameraUniform));
 
-        cameraDescriptorSet->WriteUniformBuffer(
+        frame.cameraDescriptorSet->WriteUniformBuffer(
             cameraResources->cameraUniformBufferBinding,
             suballocation.buffer,
             suballocation.offset);
 
-        cameraDescriptorSet->Update();
+        frame.cameraDescriptorSet->Update();
 
-        auto [getNextTextureResult, swapchainTexture] = context->swapchain->GetNextAvailableTexture(nullptr);
+        auto [getNextTextureResult, swapchainTexture] = context->swapchain->GetNextAvailableTexture();
         LUCH_ASSERT(getNextTextureResult == GraphicsResult::Success);
 
-        builder->GetResourceManager()->ProvideDeferredAttachment(outputHandle, swapchainTexture.texture);
+        frame.swapchainTexture = swapchainTexture;
 
-        auto [buildResult, renderGraph] = builder->Build();
+        frame.builder->GetResourceManager()->ProvideDeferredAttachment(outputHandle, swapchainTexture->GetTexture());
+
+        auto [buildResult, renderGraph] = frame.builder->Build();
         auto commandLists = renderGraph->Execute();
         for(auto& commandList : commandLists)
         {
@@ -336,17 +378,24 @@ namespace Luch::Render
 
     void SceneRenderer::EndRender()
     {
-        resourcePool->Tick();
+        auto index = GetCurrentFrameResourceIndex();
 
-        builder.reset();
-        gbufferTransientContext.reset();
-        resolveTransientContext.reset();
-        tonemapTransientContext.reset();
-        gbufferPass.reset();
-        resolvePass.reset();
-        tonemapPass.reset();
+        context->commandQueue->Present(
+            frameResources[index].swapchainTexture,
+            [this, index]()
+            {
+                frameResources[index].Reset();
+                resourcePool->Tick();
+                semaphore->Signal();
+            });
 
-        sharedBuffer->Reset();
+        frameIndex++;
+    }
+
+    int32 SceneRenderer::GetCurrentFrameResourceIndex() const
+    {
+        auto swapchainImageCount = context->swapchain->GetInfo().imageCount;
+        return frameIndex % swapchainImageCount;
     }
 
     ResultValue<bool, UniquePtr<CameraResources>> SceneRenderer::PrepareCameraResources(GraphicsDevice* device)
@@ -414,7 +463,7 @@ namespace Luch::Render
         }
 
         TextureUploader textureUploader{ context->device, commandPool };
-        auto [uploadTexturesSucceeded, uploadTexturesResult] = textureUploader.UploadTextures(texturesVector);
+        auto [uploadTexturesSucceeded, uploadTexturesResult] = textureUploader.UploadTextures(texturesVector, true);
 
         if(!uploadTexturesSucceeded)
         {

@@ -21,8 +21,8 @@ namespace Luch::Graphics
             CopyCommandList* commandList) = 0;
 
         virtual GraphicsResult Present(
-            int32 imageIndex,
-            Swapchain* swapchain) = 0;
+            SwapchainTexture* swapchainTexture,
+            std::function<void()> presentedHandler) = 0;
     };
 
     inline CommandQueue::~CommandQueue() {}

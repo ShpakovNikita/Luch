@@ -7,6 +7,14 @@ namespace Luch::Metal
 {
     using namespace Graphics;
 
+    MetalSwapchainTexture::MetalSwapchainTexture(
+        RefPtr<Texture> aTexture,
+        mtlpp::Drawable aDrawable)
+        : texture(aTexture)
+        , drawable(aDrawable)
+    {
+    }
+
     MetalSwapchain::MetalSwapchain(
         MetalGraphicsDevice* device,
         const SwapchainInfo& aCreateInfo,
@@ -15,24 +23,21 @@ namespace Luch::Metal
         , swapchainInfo(aCreateInfo)
         , layer(aLayer)
     {
-        LUCH_ASSERT(swapchainInfo.imageCount == 1);
-        //frameSemaphore = dispatch_semaphore_create(createInfo.imageCount);
-        auto mtlDevice = static_cast<MetalGraphicsDevice*>(GetGraphicsDevice());
-
-        layer.device = (__bridge id<MTLDevice>)mtlDevice->device.GetPtr();
     }
 
-    GraphicsResultValue<AcquiredTexture> MetalSwapchain::GetNextAvailableTexture(
-        Semaphore* semaphore)
+    GraphicsResultRefPtr<SwapchainTexture> MetalSwapchain::GetNextAvailableTexture()
     {
         auto mtlDevice = static_cast<MetalGraphicsDevice*>(GetGraphicsDevice());
 
         TextureCreateInfo textureCreateInfo;
-        // TODO
-        drawable = [layer nextDrawable];
+
+        id<CAMetalDrawable> drawable = [layer nextDrawable];
+        mtlpp::Drawable mtlDrawable = ns::Handle{ (__bridge void*)drawable };
         mtlpp::Texture mtlTexture = ns::Handle{ (__bridge void*)drawable.texture };
 
         auto texture = MakeRef<MetalTexture>(mtlDevice, textureCreateInfo, mtlTexture);
-        return { GraphicsResult::Success, { 0, texture } };
+        auto swapchainTexture = MakeRef<MetalSwapchainTexture>(texture, mtlDrawable);
+
+        return { GraphicsResult::Success, swapchainTexture };
     }
 }
