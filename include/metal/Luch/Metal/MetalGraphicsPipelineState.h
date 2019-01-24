@@ -1,27 +1,27 @@
 #pragma once
 
 #include <Luch/Graphics/GraphicsForwards.h>
-#include <Luch/Graphics/PipelineState.h>
-#include <Luch/Graphics/PipelineStateCreateInfo.h>
+#include <Luch/Graphics/GraphicsPipelineState.h>
+#include <Luch/Graphics/GraphicsPipelineStateCreateInfo.h>
 #include <Luch/Metal/MetalForwards.h>
 
 namespace Luch::Metal
 {
     using namespace Graphics;
 
-    class MetalPipelineState : public PipelineState
+    class MetalGraphicsPipelineState : public GraphicsPipelineState
     {
         friend class MetalGraphicsCommandList;
     public:
-        MetalPipelineState(
+        MetalGraphicsPipelineState(
             MetalGraphicsDevice* device,
-            const PipelineStateCreateInfo& createInfo,
+            const GraphicsPipelineStateCreateInfo& createInfo,
             mtlpp::RenderPipelineState pipelineState,
             Optional<mtlpp::DepthStencilState> depthStencilState);
 
-        const PipelineStateCreateInfo& GetCreateInfo() const override { return createInfo; }
+        const GraphicsPipelineStateCreateInfo& GetCreateInfo() const override { return createInfo; }
     private:
-        PipelineStateCreateInfo createInfo;
+        GraphicsPipelineStateCreateInfo createInfo;
         mtlpp::RenderPipelineState pipelineState;
         Optional<mtlpp::DepthStencilState> depthStencilState;
     };

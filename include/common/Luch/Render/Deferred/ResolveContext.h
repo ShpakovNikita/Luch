@@ -21,7 +21,7 @@ namespace Luch::Render::Deferred
 
         CameraResources* cameraResources = nullptr;
 
-        RefPtr<PipelineState> pipelineState;
+        RefPtr<GraphicsPipelineState> pipelineState;
         RefPtr<PipelineLayout> pipelineLayout;
 
         RefPtr<Buffer> fullscreenQuadBuffer;

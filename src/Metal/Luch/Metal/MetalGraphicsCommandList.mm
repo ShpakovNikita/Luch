@@ -2,7 +2,7 @@
 #include <Luch/Graphics/PipelineLayoutCreateInfo.h>
 #include <Luch/Metal/MetalGraphicsDevice.h>
 #include <Luch/Metal/MetalCommandQueue.h>
-#include <Luch/Metal/MetalPipelineState.h>
+#include <Luch/Metal/MetalGraphicsPipelineState.h>
 #include <Luch/Metal/MetalPipelineLayout.h>
 #include <Luch/Metal/MetalDescriptorSet.h>
 #include <Luch/Metal/MetalFrameBuffer.h>
@@ -88,9 +88,9 @@ namespace Luch::Metal
         commandEncoder = { };
     }
 
-    void MetalGraphicsCommandList::BindPipelineState(PipelineState* pipelineState)
+    void MetalGraphicsCommandList::BindGraphicsPipelineState(GraphicsPipelineState* pipelineState)
     {
-        auto mtlPipelineState = static_cast<MetalPipelineState*>(pipelineState);
+        auto mtlPipelineState = static_cast<MetalGraphicsPipelineState*>(pipelineState);
         const auto& ci = mtlPipelineState->GetCreateInfo();
 
         primitiveType = ToMetalPrimitiveType(ci.inputAssembler.primitiveTopology);

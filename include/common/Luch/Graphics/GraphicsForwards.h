@@ -8,6 +8,7 @@ namespace Luch::Graphics
     class CommandPool;
     class CommandQueue;
     class ComputeCommandList;
+    class ComputePipelineState;
     class CopyCommandList;
     class DescriptorPool;
     class DescriptorSet;
@@ -18,9 +19,9 @@ namespace Luch::Graphics
     class GraphicsCommandList;
     class GraphicsDevice;
     class GraphicsObject;
+    class GraphicsPipelineState;
     class PhysicalDevice;
     class PipelineLayout;
-    class PipelineState;
     class Queue;
     class RenderPass;
     class Sampler;
@@ -35,11 +36,12 @@ namespace Luch::Graphics
     struct Attachment;
     struct BufferCreateInfo;
     struct ColorAttachment;
+    struct ComputePipelineStateCreateInfo;
     struct DepthStencilAttachment;
     struct DescriptorPoolCreateInfo;
     struct FrameBufferCreateInfo;
+    struct GraphicsPipelineStateCreateInfo;
     struct PipelineLayoutCreateInfo;
-    struct PipelineStateCreateInfo;
     struct RenderPassCreateInfo;
     struct SamplerCreateInfo;
     struct SwapchainInfo;

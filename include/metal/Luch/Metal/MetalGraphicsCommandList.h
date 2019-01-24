@@ -23,7 +23,7 @@ namespace Luch::Metal
         void BeginRenderPass(FrameBuffer* frameBuffer) override;
         void EndRenderPass() override;
 
-        void BindPipelineState(PipelineState* pipelineState) override;
+        void BindGraphicsPipelineState(GraphicsPipelineState* pipelineState) override;
 
         void BindTextureDescriptorSet(
             ShaderStage stage,
@@ -68,7 +68,7 @@ namespace Luch::Metal
             int32 instanceCount,
             int32 baseInstance) override;
     private:
-        PipelineState* pipelineState = nullptr;
+        GraphicsPipelineState* pipelineState = nullptr;
         mtlpp::CommandBuffer commandBuffer;
         mtlpp::RenderCommandEncoder commandEncoder;
         mtlpp::Buffer indexBuffer;

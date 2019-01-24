@@ -2,7 +2,8 @@
 #include <Luch/Graphics/BufferCreateInfo.h>
 #include <Luch/Metal/MetalCommandQueue.h>
 #include <Luch/Metal/MetalDescriptorPool.h>
-#include <Luch/Metal/MetalPipelineState.h>
+#include <Luch/Metal/MetalGraphicsPipelineState.h>
+#include <Luch/Metal/MetalComputePipelineState.h>
 #include <Luch/Metal/MetalDescriptorSetLayout.h>
 #include <Luch/Metal/MetalPipelineLayout.h>
 #include <Luch/Metal/MetalShaderLibrary.h>
@@ -86,10 +87,10 @@ namespace Luch::Metal
         return { GraphicsResult::Success, MakeRef<MetalPipelineLayout>(this, createInfo) };
     }
 
-    GraphicsResultRefPtr<PipelineState> MetalGraphicsDevice::CreatePipelineState(
-        const PipelineStateCreateInfo& createInfo)
+    GraphicsResultRefPtr<GraphicsPipelineState> MetalGraphicsDevice::CreateGraphicsPipelineState(
+        const GraphicsPipelineStateCreateInfo& createInfo)
     {
-        auto mtlPipelineDescriptor = ToMetalPipelineStateCreateInfo(createInfo);
+        auto mtlGraphicsPipelineDescriptor = ToMetalGraphicsPipelineStateCreateInfo(createInfo);
 
         Optional<mtlpp::DepthStencilState> mtlDepthStencilState;
         if(createInfo.depthStencil.depthTestEnable || createInfo.depthStencil.stencilTestEnable)
@@ -100,13 +101,35 @@ namespace Luch::Metal
 
         ns::Error error;
 
-        auto mtlPipelineState = device.NewRenderPipelineState(mtlPipelineDescriptor, &error);
+        auto mtlPipelineState = device.NewRenderPipelineState(mtlGraphicsPipelineDescriptor, &error);
 
         auto result = PipelineErrorToGraphicsResult(error);
 
         if(result == GraphicsResult::Success)
         {
-            return { result, MakeRef<MetalPipelineState>(this, createInfo, mtlPipelineState, mtlDepthStencilState) };
+            return { result, MakeRef<MetalGraphicsPipelineState>(this, createInfo, mtlPipelineState, mtlDepthStencilState) };
+        }
+        else
+        {
+            return { result };
+        }
+    }
+
+    GraphicsResultRefPtr<ComputePipelineState> MetalGraphicsDevice::CreateComputePipelineState(
+        const ComputePipelineStateCreateInfo& createInfo)
+    {
+        auto mtlComputePipelineDescriptor = ToMetalComputePipelineStateCreateInfo(createInfo);
+
+        ns::Error error;
+        mtlpp::PipelineOption options = mtlpp::PipelineOption::None;
+
+        auto mtlPipelineState = device.NewComputePipelineState(mtlComputePipelineDescriptor, options, nullptr, &error);
+
+        auto result = PipelineErrorToGraphicsResult(error);
+
+        if(result == GraphicsResult::Success)
+        {
+            return { result, MakeRef<MetalComputePipelineState>(this, createInfo, mtlPipelineState) };
         }
         else
         {

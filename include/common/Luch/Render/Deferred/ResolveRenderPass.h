@@ -61,7 +61,7 @@ namespace Luch::Render::Deferred
     private:
         void UpdateLights(const RefPtrVector<SceneV1::Node>& lightNodes);
 
-        static RefPtr<PipelineState> CreateResolvePipelineState(ResolvePersistentContext* context);
+        static RefPtr<GraphicsPipelineState> CreateResolvePipelineState(ResolvePersistentContext* context);
 
         SceneV1::Camera* camera = nullptr;
         ResolvePersistentContext* persistentContext = nullptr;

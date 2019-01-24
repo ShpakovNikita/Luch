@@ -24,7 +24,7 @@ namespace Luch::Graphics
         virtual void BeginRenderPass(FrameBuffer* framebuffer) = 0;
         virtual void EndRenderPass() = 0;
 
-        virtual void BindPipelineState(PipelineState* pipelineState) = 0;
+        virtual void BindGraphicsPipelineState(GraphicsPipelineState* pipelineState) = 0;
 
         virtual void BindTextureDescriptorSet(
             ShaderStage stage,

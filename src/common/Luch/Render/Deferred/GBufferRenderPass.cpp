@@ -36,7 +36,8 @@
 #include <Luch/Graphics/GraphicsCommandList.h>
 #include <Luch/Graphics/Swapchain.h>
 #include <Luch/Graphics/SwapchainInfo.h>
-#include <Luch/Graphics/PipelineState.h>
+#include <Luch/Graphics/GraphicsPipelineState.h>
+#include <Luch/Graphics/GraphicsPipelineStateCreateInfo.h>
 #include <Luch/Graphics/PrimitiveTopology.h>
 #include <Luch/Graphics/DescriptorSetBinding.h>
 #include <Luch/Graphics/RenderPassCreateInfo.h>
@@ -45,7 +46,6 @@
 #include <Luch/Graphics/DescriptorSetLayoutCreateInfo.h>
 #include <Luch/Graphics/PipelineLayoutCreateInfo.h>
 #include <Luch/Graphics/IndexType.h>
-#include <Luch/Graphics/PipelineStateCreateInfo.h>
 
 namespace Luch::Render::Deferred
 {
@@ -200,11 +200,11 @@ namespace Luch::Render::Deferred
 
     void GBufferRenderPass::PreparePrimitive(SceneV1::Primitive* primitive)
     {
-        RefPtr<PipelineState> pipelineState = primitive->GetPipelineState(RenderPassName);
+        RefPtr<GraphicsPipelineState> pipelineState = primitive->GetGraphicsPipelineState(RenderPassName);
         if (pipelineState == nullptr)
         {
             pipelineState = CreateGBufferPipelineState(primitive);
-            primitive->SetPipelineState(RenderPassName, pipelineState);
+            primitive->SetGraphicsPipelineState(RenderPassName, pipelineState);
         }
     }
 
@@ -311,7 +311,7 @@ namespace Luch::Render::Deferred
 
     void GBufferRenderPass::DrawPrimitive(SceneV1::Primitive* primitive, GraphicsCommandList* commandList)
     {
-        auto& pipelineState = primitive->GetPipelineState(RenderPassName);
+        auto& pipelineState = primitive->GetGraphicsPipelineState(RenderPassName);
 
         const auto& vertexBuffers = primitive->GetVertexBuffers();
 
@@ -329,7 +329,7 @@ namespace Luch::Render::Deferred
         LUCH_ASSERT(primitive->GetIndexBuffer().has_value());
         const auto& indexBuffer = *primitive->GetIndexBuffer();
 
-        commandList->BindPipelineState(pipelineState);
+        commandList->BindGraphicsPipelineState(pipelineState);
         commandList->BindVertexBuffers(graphicsVertexBuffers, offsets);
 
         commandList->BindIndexBuffer(
@@ -340,9 +340,9 @@ namespace Luch::Render::Deferred
         commandList->DrawIndexedInstanced(indexBuffer.count, 0, 1, 0);
     }
 
-    RefPtr<PipelineState> GBufferRenderPass::CreateGBufferPipelineState(SceneV1::Primitive* primitive)
+    RefPtr<GraphicsPipelineState> GBufferRenderPass::CreateGBufferPipelineState(SceneV1::Primitive* primitive)
     {
-        PipelineStateCreateInfo ci;
+        GraphicsPipelineStateCreateInfo ci;
 
         ci.name = "GBuffer";
 
@@ -473,7 +473,7 @@ namespace Luch::Render::Deferred
         ci.vertexProgram = vertexShader;
         ci.fragmentProgram = fragmentShader;
 
-        auto[createPipelineResult, createdPipeline] = persistentContext->device->CreatePipelineState(ci);
+        auto[createPipelineResult, createdPipeline] = persistentContext->device->CreateGraphicsPipelineState(ci);
         if (createPipelineResult != GraphicsResult::Success)
         {
             LUCH_ASSERT(false);

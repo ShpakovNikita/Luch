@@ -2,7 +2,6 @@
 
 #include <Luch/Types.h>
 #include <Luch/VectorTypes.h>
-#include <Luch/Version.h>
 
 namespace Luch::glTF
 {

@@ -77,7 +77,7 @@ namespace Luch::Render::Deferred
         void DrawMesh(SceneV1::Mesh* mesh, GraphicsCommandList* commandList);
         void DrawPrimitive(SceneV1::Primitive* primitive, GraphicsCommandList* commandList);
 
-        RefPtr<PipelineState> CreateGBufferPipelineState(SceneV1::Primitive* primitive);
+        RefPtr<GraphicsPipelineState> CreateGBufferPipelineState(SceneV1::Primitive* primitive);
 
         GBufferPersistentContext* persistentContext = nullptr;
         GBufferTransientContext* transientContext = nullptr;

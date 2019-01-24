@@ -26,7 +26,8 @@
 #include <Luch/Graphics/FrameBuffer.h>
 #include <Luch/Graphics/Texture.h>
 #include <Luch/Graphics/SwapchainInfo.h>
-#include <Luch/Graphics/PipelineState.h>
+#include <Luch/Graphics/GraphicsPipelineState.h>
+#include <Luch/Graphics/GraphicsPipelineStateCreateInfo.h>
 #include <Luch/Graphics/PrimitiveTopology.h>
 #include <Luch/Graphics/DescriptorSetBinding.h>
 #include <Luch/Graphics/RenderPassCreateInfo.h>
@@ -35,7 +36,6 @@
 #include <Luch/Graphics/DescriptorSetLayoutCreateInfo.h>
 #include <Luch/Graphics/PipelineLayoutCreateInfo.h>
 #include <Luch/Graphics/IndexType.h>
-#include <Luch/Graphics/PipelineStateCreateInfo.h>
 
 namespace Luch::Render::Deferred
 {
@@ -116,7 +116,7 @@ namespace Luch::Render::Deferred
 
         cmdList->Begin();
         cmdList->BeginRenderPass(frameBuffer);
-        cmdList->BindPipelineState(persistentContext->pipelineState);
+        cmdList->BindGraphicsPipelineState(persistentContext->pipelineState);
         cmdList->SetViewports({ viewport });
         cmdList->SetScissorRects({ scissorRect });
 
@@ -181,9 +181,9 @@ namespace Luch::Render::Deferred
         transientContext->lightsBufferDescriptorSet->Update();
     }
 
-    RefPtr<PipelineState> ResolveRenderPass::CreateResolvePipelineState(ResolvePersistentContext* context)
+    RefPtr<GraphicsPipelineState> ResolveRenderPass::CreateResolvePipelineState(ResolvePersistentContext* context)
     {
-        PipelineStateCreateInfo ci;
+        GraphicsPipelineStateCreateInfo ci;
 
         ci.name = "Resolve";
 
@@ -219,7 +219,7 @@ namespace Luch::Render::Deferred
         ci.vertexProgram = context->vertexShader;
         ci.fragmentProgram = context->fragmentShader;
 
-        auto[createPipelineResult, createdPipeline] = context->device->CreatePipelineState(ci);
+        auto[createPipelineResult, createdPipeline] = context->device->CreateGraphicsPipelineState(ci);
         if (createPipelineResult != GraphicsResult::Success)
         {
             LUCH_ASSERT(false);

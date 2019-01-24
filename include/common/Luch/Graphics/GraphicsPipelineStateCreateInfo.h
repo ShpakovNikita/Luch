@@ -30,14 +30,14 @@ namespace Luch::Graphics
         VertexInputRate inputRate = VertexInputRate::PerVertex;
     };
 
-    struct PipelineVertexInputStateCreateInfo
+    struct GraphicsPipelineVertexInputStateCreateInfo
     {
         Vector<VertexInputAttributeDescription> attributes;
         Vector<VertexInputBindingDescription> bindings;
         PrimitiveTopology primitiveTopology = PrimitiveTopology::TriangleList;
     };
 
-    struct PipelineRasterizationStateCreateInfo
+    struct GraphicsPipelineRasterizationStateCreateInfo
     {
         PolygonMode polygonMode = PolygonMode::Fill;
         CullMode cullMode = CullMode::None;
@@ -50,7 +50,7 @@ namespace Luch::Graphics
         bool rasterizerDiscardEnable = false;
     };
 
-    struct PipelineMultisampleStateCreateInfo
+    struct GraphicsPipelineMultisampleStateCreateInfo
     {
         int32 rasterizationSamples = 1;
         bool sampleShadingEnable = false;
@@ -59,7 +59,7 @@ namespace Luch::Graphics
         bool alphaToOneEnable = false;
     };
 
-    struct PipelineStencilStateCreateInfo
+    struct GraphicsPipelineStencilStateCreateInfo
     {
         StencilOperation depthFailOperation = StencilOperation::Keep;
         StencilOperation stencilFailOperation = StencilOperation::Keep;
@@ -70,7 +70,7 @@ namespace Luch::Graphics
         uint32 reference = 0;
     };
 
-    struct PipelineDepthStencilStateCreateInfo
+    struct GraphicsPipelineDepthStencilStateCreateInfo
     {
         bool depthTestEnable = false;
         bool stencilTestEnable = false;
@@ -78,11 +78,11 @@ namespace Luch::Graphics
         CompareFunction depthCompareFunction = CompareFunction::Always;
         bool depthBoundsTestEnable = false;
         Format depthStencilFormat = Format::D32SfloatS8Uint;
-        PipelineStencilStateCreateInfo front;
-        PipelineStencilStateCreateInfo back;
+        GraphicsPipelineStencilStateCreateInfo front;
+        GraphicsPipelineStencilStateCreateInfo back;
     };
 
-    struct PipelineColorAttachmentState
+    struct GraphicsPipelineColorAttachmentState
     {
         Format format = Format::RGBA8Unorm;
         bool blendEnable = false;
@@ -95,23 +95,23 @@ namespace Luch::Graphics
         ColorComponentFlags colorWriteMask = ColorComponentFlags::All;
     };
 
-    struct PipelineColorAttachmentsStateCreateInfo
+    struct GraphicsPipelineColorAttachmentsStateCreateInfo
     {
-        Vector<PipelineColorAttachmentState> attachments;
+        Vector<GraphicsPipelineColorAttachmentState> attachments;
         ColorSNorm32 blendColor;
     };
 
-    struct PipelineStateCreateInfo
+    struct GraphicsPipelineStateCreateInfo
     {
         // We store shader programs in pipeline create info
         RefPtr<ShaderProgram> vertexProgram;
         RefPtr<ShaderProgram> fragmentProgram;
 
-        PipelineVertexInputStateCreateInfo inputAssembler;
-        PipelineMultisampleStateCreateInfo multisampling;
-        PipelineRasterizationStateCreateInfo rasterization;
-        PipelineDepthStencilStateCreateInfo depthStencil;
-        PipelineColorAttachmentsStateCreateInfo colorAttachments;
+        GraphicsPipelineVertexInputStateCreateInfo inputAssembler;
+        GraphicsPipelineMultisampleStateCreateInfo multisampling;
+        GraphicsPipelineRasterizationStateCreateInfo rasterization;
+        GraphicsPipelineDepthStencilStateCreateInfo depthStencil;
+        GraphicsPipelineColorAttachmentsStateCreateInfo colorAttachments;
         PipelineLayout* pipelineLayout = nullptr;
         RenderPass* renderPass = nullptr;
         String name = "";
