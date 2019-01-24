@@ -66,7 +66,7 @@ int main(int argc, const char * argv[])
     SDL_SetHint(SDL_HINT_RENDER_DRIVER, "metal");
     SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
 
-    SDL_Window *window = SDL_CreateWindow("Luch Engine Sample", 0, 0, 500, 500, SDL_WINDOW_ALLOW_HIGHDPI);
+    SDL_Window *window = SDL_CreateWindow("Luch Engine Sample", 0, 0, 700, 700, SDL_WINDOW_ALLOW_HIGHDPI);
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
     int drawableWidth = 0;
