@@ -5,11 +5,14 @@
 
 namespace Luch::Graphics
 {
-    struct AcquiredTexture
+    class SwapchainTexture : public BaseObject
     {
-        int32 index = 0;
-        RefPtr<Texture> texture;
+    public:
+        virtual ~SwapchainTexture() = 0;
+        virtual RefPtr<Texture> GetTexture() = 0;
     };
+
+    inline SwapchainTexture::~SwapchainTexture() = default;
 
     class Swapchain : public GraphicsObject
     {
@@ -18,7 +21,7 @@ namespace Luch::Graphics
         virtual ~Swapchain() = 0;
 
         virtual const SwapchainInfo& GetInfo() const = 0;
-        virtual GraphicsResultValue<AcquiredTexture> GetNextAvailableTexture(Semaphore* semaphore) = 0;
+        virtual GraphicsResultRefPtr<SwapchainTexture> GetNextAvailableTexture() = 0;
     };
 
     inline Swapchain::~Swapchain() {}

@@ -13,7 +13,10 @@ namespace Luch::Metal
         friend class MetalSwapchain;
         friend class MetalCommandQueue;
     public:
-        MetalSemaphore(MetalGraphicsDevice* device);
+        MetalSemaphore(MetalGraphicsDevice* device, int32 value);
+        ~MetalSemaphore();
+        bool Wait(int64 timeoutNS) override;
+        void Signal() override;
     private:
         dispatch_semaphore_t semaphore;
     };

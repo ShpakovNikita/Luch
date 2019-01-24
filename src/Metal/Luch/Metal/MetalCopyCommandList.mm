@@ -44,5 +44,12 @@ namespace Luch::Metal
             copy.destinationMipmapLevel,
             { (uint32)copy.destinationOrigin.x, (uint32)copy.destinationOrigin.y, 0 });
     }
+
+    void MetalCopyCommandList::GenerateMipMaps(Texture* texture)
+    {
+        auto mtlTexture = static_cast<MetalTexture*>(texture)->texture;
+
+        commandEncoder.GenerateMipmaps(mtlTexture);
+    }
 }
 

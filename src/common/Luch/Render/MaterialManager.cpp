@@ -220,7 +220,7 @@ namespace Luch::Render
         MaterialUniform materialUniform = RenderUtils::GetMaterialUniform(material);
 
         // TODO
-        auto suballocation = sharedBuffer->Suballocate(sizeof(MaterialUniform), 16);
+        auto suballocation = sharedBuffer->Suballocate(sizeof(MaterialUniform), 256);
 
         bufferDescriptorSet->WriteUniformBuffer(
             resources->materialUniformBufferBinding,

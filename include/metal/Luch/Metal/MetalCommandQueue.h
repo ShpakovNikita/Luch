@@ -24,8 +24,8 @@ namespace Luch::Metal
             CopyCommandList* commandList) override;
 
         GraphicsResult Present(
-            int32 imageIndex,
-            Swapchain* swapchain) override;
+            SwapchainTexture* swapchainTexture,
+            std::function<void()> presentedHandler) override;
     private:
         mtlpp::CommandQueue queue;
     };

@@ -10,6 +10,7 @@
 #include <Luch/Metal/MetalRenderPass.h>
 #include <Luch/Metal/MetalTexture.h>
 #include <Luch/Metal/MetalBuffer.h>
+#include <Luch/Metal/MetalFormat.h>
 #include <Luch/Metal/MetalSampler.h>
 #include <Luch/Metal/MetalSwapchain.h>
 #include <Luch/Metal/MetalSurface.h>
@@ -169,7 +170,15 @@ namespace Luch::Metal
         Surface* surface)
     {
         auto mtlSurface = static_cast<MetalSurface*>(surface);
-        return { GraphicsResult::Success, MakeRef<MetalSwapchain>(this, createInfo, (CAMetalLayer*)mtlSurface->layer) };
+        CAMetalLayer* layer = (CAMetalLayer*)mtlSurface->layer;
+        MTLPixelFormat pixelFormat = (MTLPixelFormat)ToMetalPixelFormat(createInfo.format);
+
+        layer.pixelFormat= pixelFormat;
+        layer.maximumDrawableCount = createInfo.imageCount;
+        layer.drawableSize = CGSize{ (CGFloat)createInfo.width, (CGFloat)createInfo.height };
+        layer.device = (__bridge id<MTLDevice>)device.GetPtr();
+
+        return { GraphicsResult::Success, MakeRef<MetalSwapchain>(this, createInfo, layer) };
     }
 
     GraphicsResultRefPtr<ShaderLibrary> MetalGraphicsDevice::CreateShaderLibraryFromSource(
@@ -223,8 +232,8 @@ namespace Luch::Metal
         }
     }
 
-    GraphicsResultRefPtr<Semaphore> MetalGraphicsDevice::CreateSemaphore()
+    GraphicsResultRefPtr<Semaphore> MetalGraphicsDevice::CreateSemaphore(int32 value)
     {
-        return { GraphicsResult::Success, MakeRef<MetalSemaphore>(this) };
+        return { GraphicsResult::Success, MakeRef<MetalSemaphore>(this, value) };
     }
 }

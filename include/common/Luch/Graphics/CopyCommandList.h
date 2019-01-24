@@ -29,5 +29,6 @@ namespace Luch::Graphics
         virtual void End() = 0;
 
         virtual void CopyBufferToTexture(Buffer* buffer, Texture* texture, const BufferToTextureCopy& copy) = 0;
+        virtual void GenerateMipMaps(Texture* texture) = 0;
     };
 }

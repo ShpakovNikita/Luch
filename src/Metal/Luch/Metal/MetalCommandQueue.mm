@@ -49,15 +49,19 @@ namespace Luch::Metal
     }
 
     GraphicsResult MetalCommandQueue::Present(
-        int32 imageIndex,
-        Swapchain* swapchain)
+        SwapchainTexture* swapchainTexture,
+        std::function<void()> presentedHandler)
     {
-        auto mtlSwapchain = static_cast<MetalSwapchain*>(swapchain);
-
+        auto mtlSwapchainTexture = static_cast<MetalSwapchainTexture*>(swapchainTexture);
         auto commandBuffer = queue.CommandBuffer();
-        commandBuffer.Present(ns::Handle{ (__bridge void*)mtlSwapchain->drawable });
+
+        commandBuffer.AddCompletedHandler([presentedHandler](auto buffer)
+        {
+            presentedHandler();
+        });
+
+        commandBuffer.Present(mtlSwapchainTexture->drawable);
         commandBuffer.Commit();
-        commandBuffer.WaitUntilCompleted();
 
         return GraphicsResult::Success;
     }

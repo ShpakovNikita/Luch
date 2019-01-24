@@ -19,7 +19,9 @@ namespace Luch::Render
     {
     }
 
-    ResultValue<bool, TextureUploaderResult> TextureUploader::UploadTextures(const Vector<SceneV1::Texture*>& textures)
+    ResultValue<bool, TextureUploaderResult> TextureUploader::UploadTextures(
+        const Vector<SceneV1::Texture*>& textures,
+        bool generateMipmaps)
     {
         TextureUploaderResult result;
 
@@ -41,7 +43,7 @@ namespace Luch::Render
                 continue;
             }
 
-            auto [succeeded, intermediateResult] = UploadTexture(texture);
+            auto [succeeded, intermediateResult] = UploadTexture(texture, generateMipmaps);
 
             // TODO
             LUCH_ASSERT(succeeded);
@@ -58,6 +60,11 @@ namespace Luch::Render
                 intermediateResult.stagingBuffer,
                 intermediateResult.texture,
                 intermediateResult.copy);
+
+            if(generateMipmaps)
+            {
+                commandList->GenerateMipMaps(intermediateResult.texture);;
+            }
         }
 
         commandList->End();
@@ -67,7 +74,9 @@ namespace Luch::Render
         return { true, result };
     }
 
-    ResultValue<bool, TextureUploadIntermediateResult> TextureUploader::UploadTexture(SceneV1::Texture* texture)
+    ResultValue<bool, TextureUploadIntermediateResult> TextureUploader::UploadTexture(
+        SceneV1::Texture* texture,
+        bool generateMipmaps)
     {
         TextureUploadIntermediateResult result;
 
@@ -80,6 +89,12 @@ namespace Luch::Render
         textureCreateInfo.height = hostImage->GetHeight();
         textureCreateInfo.usage = Graphics::TextureUsageFlags::ShaderRead | Graphics::TextureUsageFlags::TransferDestination;
         textureCreateInfo.storageMode = Graphics::ResourceStorageMode::DeviceLocal;
+
+        if(generateMipmaps)
+        {
+            int32 mipmapLevelCount = floor(log2f(std::max(textureCreateInfo.width, textureCreateInfo.height))) + 1;
+            textureCreateInfo.mipmapLevelCount = mipmapLevelCount;
+        }
 
         auto[createTextureResult, createdTexture] = device->CreateTexture(textureCreateInfo);
         if (createTextureResult != Graphics::GraphicsResult::Success)

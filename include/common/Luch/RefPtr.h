@@ -90,7 +90,10 @@ namespace Luch
 
         RefPtr& operator=(RefPtr&& other) noexcept
         {
-            Release();
+            if(ptr != other.ptr)
+            {
+                Release();
+            }
 
             ptr = other.ptr;
             other.ptr = nullptr;

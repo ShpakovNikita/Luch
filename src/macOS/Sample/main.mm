@@ -56,10 +56,17 @@
 
 int main(int argc, const char * argv[])
 {
+    Luch::Vector<Luch::String> args;
+    args.reserve(argc);
+    for(int i = 0; i < argc; i++)
+    {
+        args.push_back(Luch::String{argv[i]});
+    }
+
     SDL_SetHint(SDL_HINT_RENDER_DRIVER, "metal");
     SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
 
-    SDL_Window *window = SDL_CreateWindow("Luch Engine Sample", 0, 0, 500, 500, SDL_WINDOW_ALLOW_HIGHDPI);
+    SDL_Window *window = SDL_CreateWindow("Luch Engine Sample", 0, 0, 700, 700, SDL_WINDOW_ALLOW_HIGHDPI);
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
     int drawableWidth = 0;
@@ -71,18 +78,14 @@ int main(int argc, const char * argv[])
     CAMetalLayer *metalLayer = (__bridge CAMetalLayer *)SDL_RenderGetMetalLayer(renderer);
     metalLayer.opaque = YES;
     metalLayer.contentsScale = [[NSScreen mainScreen] backingScaleFactor];
-    metalLayer.pixelFormat =  MTLPixelFormatBGRA8Unorm_sRGB;
-    metalLayer.drawableSize = CGSize{(float)drawableWidth, (float)drawableHeight};
-
-    CGSize size = metalLayer.drawableSize;
 
     auto app = Luch::MakeUnique<SampleApplication>();
-    app->SetViewSize(static_cast<Luch::int32>(size.width), static_cast<Luch::int32>(size.height));
+    app->SetViewSize(static_cast<Luch::int32>(drawableWidth), static_cast<Luch::int32>(drawableHeight));
     app->SetView((__bridge void*)metalLayer);
-    [[maybe_unused]] bool initialized = app->Initialize({});
+    [[maybe_unused]] bool initialized = app->Initialize(args);
     LUCH_ASSERT(initialized);
 
-    SDL_SetRelativeMouseMode(SDL_TRUE);
+    //SDL_SetRelativeMouseMode(SDL_TRUE);
 
     while(true)
     {

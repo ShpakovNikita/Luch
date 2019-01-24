@@ -22,6 +22,8 @@ namespace Luch::Metal
             Buffer* buffer,
             Texture* texture,
             const BufferToTextureCopy& copy) override;
+
+        void GenerateMipMaps(Texture* texture) override;
     private:
         mtlpp::CommandBuffer commandBuffer;
         mtlpp::BlitCommandEncoder commandEncoder;

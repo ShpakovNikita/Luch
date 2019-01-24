@@ -104,6 +104,8 @@ namespace Luch::Metal
             }
         }
 
+        d.SetLabel(ns::String(ci.name.c_str()));
+
         return d;
     }
 

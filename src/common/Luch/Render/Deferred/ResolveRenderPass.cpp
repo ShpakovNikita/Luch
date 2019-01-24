@@ -162,8 +162,8 @@ namespace Luch::Render::Deferred
         LightingParamsUniform lightingParams;
         lightingParams.lightCount = enabledLightsCount;
 
-        auto lightingParamsSuballocation = transientContext->sharedBuffer->Suballocate(sizeof(LightingParamsUniform), 16);
-        auto lightsSuballocation = transientContext->sharedBuffer->Suballocate(enabledLightsCount * sizeof(LightUniform), 16);
+        auto lightingParamsSuballocation = transientContext->sharedBuffer->Suballocate(sizeof(LightingParamsUniform), 256);
+        auto lightsSuballocation = transientContext->sharedBuffer->Suballocate(enabledLightsCount * sizeof(LightUniform), 256);
 
         memcpy(lightingParamsSuballocation.offsetMemory, &lightingParams, sizeof(LightingParamsUniform));
         memcpy(lightsSuballocation.offsetMemory, lightUniforms.data(), enabledLightsCount * sizeof(LightUniform));
@@ -185,18 +185,20 @@ namespace Luch::Render::Deferred
     {
         PipelineStateCreateInfo ci;
 
+        ci.name = "Resolve";
+
         auto& bindingDescription = ci.inputAssembler.bindings.emplace_back();
         bindingDescription.stride = sizeof(QuadVertex);
         bindingDescription.inputRate = VertexInputRate::PerVertex;
 
         auto& positionAttributeDescription = ci.inputAssembler.attributes.emplace_back();
         positionAttributeDescription.binding = 0;
-        positionAttributeDescription.format = Format::R32G32B32Sfloat;
+        positionAttributeDescription.format = Format::RGB32Sfloat;
         positionAttributeDescription.offset = offsetof(QuadVertex, position);
 
         auto& texCoordAttributeDescription = ci.inputAssembler.attributes.emplace_back();
         texCoordAttributeDescription.binding = 0;
-        texCoordAttributeDescription.format = Format::R32G32Sfloat;
+        texCoordAttributeDescription.format = Format::RG32Sfloat;
         texCoordAttributeDescription.offset = offsetof(QuadVertex, texCoord);
 
         ci.inputAssembler.primitiveTopology = PrimitiveTopology::TriangleList;

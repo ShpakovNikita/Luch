@@ -15,6 +15,8 @@ namespace Luch::Metal
             MetalGraphicsDevice* device,
             mtlpp::CommandBuffer commandBuffer);
 
+        void SetLabel(const String& label) override;
+
         inline void Begin() override {};
         inline void End() override {};
 

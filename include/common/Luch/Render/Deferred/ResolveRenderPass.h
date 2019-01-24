@@ -27,7 +27,7 @@ namespace Luch::Render::Deferred
         static constexpr int32 SharedUniformBufferSize = 1024 * 1024;
         static constexpr int32 MaxDescriptorSetCount = 4096;
         static constexpr int32 MaxDescriptorCount = 4096;
-        static constexpr Format ColorFormat = Format::R32G32B32A32Sfloat;
+        static constexpr Format ColorFormat = Format::RGBA16Sfloat;
     public:
         static const String RenderPassName;
 

@@ -155,8 +155,8 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     context->commandQueue = std::move(createdCommandQueue);
 
     SwapchainInfo swapchainInfo;
-    swapchainInfo.format = Format::B8G8R8A8Unorm_sRGB;
-    swapchainInfo.imageCount = 1;
+    swapchainInfo.format = Format::BGRA8Unorm_sRGB;
+    swapchainInfo.imageCount = 3;
     swapchainInfo.width = width;
     swapchainInfo.height = height;
 
@@ -207,13 +207,21 @@ void SampleApplication::Process()
     wasdController.Tick(16.0f / 1000.0f);
     scene->Update();
 
-    renderer->BeginRender();
-    renderer->PrepareScene();
+    bool beginSucceeded = renderer->BeginRender();
+    if(!beginSucceeded)
+    {
+        return;
+    }
+
+    bool prepareSucceeded = renderer->PrepareScene();
+    if(!prepareSucceeded)
+    {
+        return;
+    }
+
     renderer->UpdateScene();
     renderer->DrawScene(cameraNode);
     renderer->EndRender();
-
-    context->commandQueue->Present(0, context->swapchain);
 }
 
 void SampleApplication::HandleEvent(const SDL_Event& event)

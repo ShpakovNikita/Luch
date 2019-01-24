@@ -59,7 +59,7 @@ namespace Luch::Metal
             const Vector<Byte>& source,
             const UnorderedMap<String, Variant<int32, String>>& defines) override;
 
-        GraphicsResultRefPtr<Semaphore> CreateSemaphore() override;
+        GraphicsResultRefPtr<Semaphore> CreateSemaphore(int32 value) override;
     private:
         PhysicalDevice* physicalDevice = nullptr;
         mtlpp::Device device;

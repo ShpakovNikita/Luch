@@ -2,6 +2,7 @@
 #include <Luch/Render/Graph/RenderGraphPass.h>
 #include <Luch/Render/Graph/RenderGraphResourceManager.h>
 #include <Luch/Graphics/CommandPool.h>
+#include <Luch/Graphics/GraphicsCommandList.h>
 
 namespace Luch::Render::Graph
 {
@@ -25,7 +26,9 @@ namespace Luch::Render::Graph
         {
             auto [allocateResult, allocatedList] = commandPool->AllocateGraphicsCommandList();
             LUCH_ASSERT(allocateResult == GraphicsResult::Success);
-            
+
+            allocatedList->SetLabel(node.name);
+
             node.pass->ExecuteRenderPass(
                 resourceManager.get(),
                 node.frameBuffer,

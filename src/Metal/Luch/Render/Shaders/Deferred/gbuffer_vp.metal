@@ -62,8 +62,8 @@ struct VertexOut
 
 vertex VertexOut vp_main(
     VertexIn in [[ stage_in ]],
-    device CameraUniform& camera [[ buffer(0) ]],
-    device MeshUniform& mesh [[ buffer(1) ]])
+    constant CameraUniform& camera [[ buffer(0) ]],
+    constant MeshUniform& mesh [[ buffer(1) ]])
 {
     VertexOut out;
 
