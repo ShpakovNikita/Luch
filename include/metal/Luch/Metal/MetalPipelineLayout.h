@@ -11,6 +11,7 @@ namespace Luch::Metal
     class MetalPipelineLayout : public PipelineLayout
     {
         friend class MetalGraphicsCommandList;
+        friend class MetalComputeCommandList;
     public:
         MetalPipelineLayout(
             MetalGraphicsDevice* device,

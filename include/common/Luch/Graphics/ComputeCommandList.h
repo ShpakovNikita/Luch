@@ -2,11 +2,7 @@
 
 #include <Luch/ArrayProxy.h>
 #include <Luch/BaseObject.h>
-#include <Luch/Graphics/IndexType.h>
-#include <Luch/Graphics/ShaderStage.h>
-#include <Luch/Graphics/Rect2.h>
-#include <Luch/Graphics/Viewport.h>
-#include <Luch/Graphics/Color.h>
+#include <Luch/Graphics/Size3.h>
 #include <Luch/Graphics/GraphicsObject.h>
 
 namespace Luch::Graphics
@@ -24,46 +20,23 @@ namespace Luch::Graphics
         virtual void BindPipelineState(ComputePipelineState* pipelineState) = 0;
 
         virtual void BindTextureDescriptorSet(
-            ShaderStage stage,
             PipelineLayout* pipelineLayout,
             DescriptorSet* descriptorSet) = 0;
 
         virtual void BindBufferDescriptorSet(
-            ShaderStage stage,
             PipelineLayout* pipelineLayout,
             DescriptorSet* descriptorSet) = 0;
 
         virtual void BindSamplerDescriptorSet(
-            ShaderStage stage,
             PipelineLayout* pipelineLayout,
             DescriptorSet* descriptorSet) = 0;
 
-        virtual void BindVertexBuffers(
-            const ArrayProxy<Buffer*>& buffers,
-            const ArrayProxy<int32>& offsets) = 0;
+//        virtual void DispatchThreads(
+//            Size2i threadsPerGrid,
+//            Size2i threadsPerThreadgroup) = 0;
 
-        virtual void BindIndexBuffer(
-            Buffer* indexBuffer,
-            IndexType indexType,
-            int32 indexBufferOffset) = 0;
-
-        virtual void SetViewports(const ArrayProxy<Viewport>& viewports) = 0;
-        virtual void SetScissorRects(const ArrayProxy<Rect2i>& scissorRects) = 0;
-
-        virtual void Draw(
-            int32 vertexStart,
-            int32 vertexCount) = 0;
-
-        virtual void DrawInstanced(
-            int32 vertexStart,
-            int32 vertexCount,
-            int32 instanceCount,
-            int32 baseInstance) = 0;
-
-        virtual void DrawIndexedInstanced(
-            int32 indexCount,
-            int32 baseVertex,
-            int32 instanceCount,
-            int32 baseInstance) = 0;
+        virtual void DispatchThreadgroups(
+            Size3i threadgroupsPerGrid,
+            Size3i threadsPerThreadgroup) = 0;
     };
 }

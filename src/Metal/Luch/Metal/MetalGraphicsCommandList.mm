@@ -71,7 +71,7 @@ namespace Luch::Metal
 
     void MetalGraphicsCommandList::SetLabel(const String& label)
     {
-        commandBuffer.SetLabel(ns::String(label.c_str()));
+        commandBuffer.SetLabel(ns::String{ label.c_str() });
     }
 
     void MetalGraphicsCommandList::BeginRenderPass(FrameBuffer* frameBuffer)

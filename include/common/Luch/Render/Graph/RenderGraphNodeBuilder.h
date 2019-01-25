@@ -27,6 +27,11 @@ namespace Luch::Render::Graph
         RenderMutableResource WritesToDepthStencilAttachment(RenderMutableResource resource);
 
         RenderResource ReadsTexture(RenderResource resource);
+
+        RenderMutableResource ImportBuffer(RefPtr<Buffer> buffer);
+        RenderMutableResource CreateBuffer(const BufferCreateInfo& createInfo);
+        RenderMutableResource WritesToBuffer(RenderMutableResource resource);
+        RenderResource ReadsBuffer(RenderResource resource);
     private:
         RenderGraphNode* GetNode() const;
         RenderGraphBuilder* graphBuilder = nullptr;

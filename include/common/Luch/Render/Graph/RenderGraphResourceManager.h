@@ -6,6 +6,7 @@
 #include <Luch/Graphics/Size2.h>
 #include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/Graphics/RenderPassCreateInfo.h>
+#include <Luch/Graphics/BufferCreateInfo.h>
 
 namespace Luch::Render::Graph
 {
@@ -29,20 +30,29 @@ namespace Luch::Render::Graph
         RenderMutableResource CreateAttachment(Size2i size, Format format);
         RenderMutableResource ModifyResource(RenderMutableResource resource);
 
+        RenderMutableResource ImportBuffer(RefPtr<Buffer> buffer);
+        RenderMutableResource CreateBuffer(const BufferCreateInfo& createInfo);
+
         bool Build();
 
         void ProvideDeferredAttachment(RenderMutableResource handle, RefPtr<Texture> texture);
         RefPtr<Texture> GetTexture(RenderResource resource);
+        RefPtr<Buffer> GetBuffer(RenderResource resource);
     private:
         GraphicsDevice* device = nullptr;
         RenderMutableResource GetNextHandle();
         uint32 nextHandleValue = 1;
 
         UnorderedMap<RenderResource, AttachmentCreateInfo> pendingAttachments;
+        UnorderedMap<RenderResource, BufferCreateInfo> pendingBuffers;
+
         UnorderedMap<RenderResource, RenderMutableResource> modifiedResources;
 
         UnorderedMap<RenderResource, RefPtr<Texture>> acquiredTextures;
         UnorderedMap<RenderResource, RefPtr<Texture>> importedAttachments;
+
+        UnorderedMap<RenderResource, RefPtr<Buffer>> acquiredBuffers;
+        UnorderedMap<RenderResource, RefPtr<Buffer>> importedBuffers;
 
         RenderGraphResourcePool* pool = nullptr;
     };

@@ -63,6 +63,20 @@ namespace Luch::Render::Graph
         return nextHandle;
     }
 
+    RenderMutableResource RenderGraphResourceManager::ImportBuffer(RefPtr<Buffer> buffer)
+    {
+        auto handle = GetNextHandle();
+        importedBuffers[handle] = buffer;
+        return handle;
+    }
+
+    RenderMutableResource RenderGraphResourceManager::CreateBuffer(const BufferCreateInfo& createInfo)
+    {
+        auto handle = GetNextHandle();
+        pendingBuffers[handle] = createInfo;
+        return handle;
+    }
+
     bool RenderGraphResourceManager::Build()
     {
         for(const auto& [handle, info] : pendingAttachments)
@@ -89,6 +103,17 @@ namespace Luch::Render::Graph
         }
 
         pendingAttachments.clear();
+
+        for(const auto& [handle, ci] : pendingBuffers)
+        {
+            auto [acquireBufferResult, acquiredBuffer] = pool->AcquireBuffer(ci);
+            if(acquireBufferResult != GraphicsResult::Success)
+            {
+                return false;
+            }
+
+            acquiredBuffers[handle] = acquiredBuffer;
+        }
 
         return true;
     }

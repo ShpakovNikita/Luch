@@ -118,6 +118,44 @@ namespace Luch::Render::Graph
         return resource;
     }
 
+    RenderMutableResource RenderGraphNodeBuilder::ImportBuffer(RefPtr<Buffer> buffer)
+    {
+        auto node = GetNode();
+
+        RenderMutableResource resource = resourceManager->ImportBuffer(buffer);
+        node->importedResources.push_back(resource);
+
+        return resource;
+    }
+
+    RenderMutableResource RenderGraphNodeBuilder::CreateBuffer(const BufferCreateInfo& createInfo)
+    {
+        auto node = GetNode();
+
+        RenderMutableResource resource = resourceManager->CreateBuffer(createInfo);
+        node->createdResources.push_back(resource);
+
+        return resource;
+    }
+
+    RenderMutableResource RenderGraphNodeBuilder::WritesToBuffer(RenderMutableResource resource)
+    {
+        auto node = GetNode();
+
+        RenderMutableResource modifiedResource = resourceManager->ModifyResource(resource);
+        node->writtenResources.push_back(modifiedResource);
+
+        return resource;
+    }
+
+    RenderResource RenderGraphNodeBuilder::ReadsBuffer(RenderResource resource)
+    {
+        auto node = GetNode();
+        node->readResources.push_back(resource);
+        return resource;
+    }
+
+
     RenderGraphNode* RenderGraphNodeBuilder::GetNode() const
     {
         return &(graphBuilder->renderGraphNodes[nodeIndex]);

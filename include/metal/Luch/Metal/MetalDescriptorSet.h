@@ -13,6 +13,7 @@ namespace Luch::Metal
     class MetalDescriptorSet : public DescriptorSet
     {
         friend class MetalGraphicsCommandList;
+        friend class MetalComputeCommandList;
     public:
         MetalDescriptorSet(
             MetalGraphicsDevice* device,
