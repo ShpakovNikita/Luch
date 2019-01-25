@@ -317,7 +317,7 @@ fragment FragmentOut fp_main(
 
     FragmentOut result;
 
-    result.color.rgb = emitted + baseColor * (lightingResult.diffuse + lightingResult.specular);
+    result.color.rgb = emitted + baseColor * lightingResult.diffuse + lightingResult.specular;
     result.color.a = 1.0;
 
     return result;
