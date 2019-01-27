@@ -26,6 +26,9 @@ namespace Luch::Render::Graph
         RenderMutableResource WritesToColorAttachment(int32 index, RenderMutableResource resource);
         RenderMutableResource WritesToDepthStencilAttachment(RenderMutableResource resource);
 
+        RenderMutableResource ImportTexture(RefPtr<Texture> texture);
+        RenderMutableResource CreateTexture(const TextureCreateInfo& createInfo);
+        RenderMutableResource WritesToTexture(RenderMutableResource resource);
         RenderResource ReadsTexture(RenderResource resource);
 
         RenderMutableResource ImportBuffer(RefPtr<Buffer> buffer);

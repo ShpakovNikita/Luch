@@ -38,7 +38,6 @@ namespace Luch::Render::Deferred
         RefPtr<DescriptorSet> textureDescriptorSet;
         RenderResource inputHandle;
         RenderMutableResource outputHandle;
-        Size2i attachmentSize;
+        Size2i outputSize;
     };
 }
-

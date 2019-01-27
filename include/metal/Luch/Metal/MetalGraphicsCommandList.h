@@ -2,12 +2,15 @@
 
 #include <Luch/Graphics/GraphicsCommandList.h>
 #include <Luch/Metal/MetalForwards.h>
+#include <Luch/Metal/MetalCommandList.h>
 
 namespace Luch::Metal
 {
     using namespace Graphics;
 
-    class MetalGraphicsCommandList : public GraphicsCommandList
+    class MetalGraphicsCommandList 
+        : public GraphicsCommandList
+        , public MetalCommandList
     {
         friend class MetalCommandQueue;
     public:
@@ -69,11 +72,11 @@ namespace Luch::Metal
             int32 baseInstance) override;
     private:
         GraphicsPipelineState* pipelineState = nullptr;
-        mtlpp::CommandBuffer commandBuffer;
         mtlpp::RenderCommandEncoder commandEncoder;
         mtlpp::Buffer indexBuffer;
         mtlpp::IndexType indexType = mtlpp::IndexType::UInt16;
         int32 indexBufferOffset;
         mtlpp::PrimitiveType primitiveType = mtlpp::PrimitiveType::Triangle;
+        String label;
     };
 }

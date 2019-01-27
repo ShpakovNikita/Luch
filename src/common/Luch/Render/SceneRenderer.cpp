@@ -33,6 +33,8 @@
 #include <Luch/Render/Deferred/GBufferContext.h>
 #include <Luch/Render/Deferred/ResolveRenderPass.h>
 #include <Luch/Render/Deferred/ResolveContext.h>
+#include <Luch/Render/Deferred/ResolveComputeRenderPass.h>
+#include <Luch/Render/Deferred/ResolveComputeContext.h>
 #include <Luch/Render/Deferred/TonemapRenderPass.h>
 #include <Luch/Render/Deferred/TonemapContext.h>
 #include <Luch/Render/Graph/RenderGraph.h>
@@ -51,6 +53,7 @@ namespace Luch::Render
         builder.reset();
         gbufferPass.reset();
         resolvePass.reset();
+        resolveComputePass.reset();
         tonemapPass.reset();
         gbufferTransientContext.reset();
         resolveTransientContext.reset();
@@ -66,9 +69,10 @@ namespace Luch::Render
 
     SceneRenderer::~SceneRenderer() = default;
 
-    bool SceneRenderer::Initialize(SharedPtr<RenderContext> aContext)
+    bool SceneRenderer::Initialize(SharedPtr<RenderContext> aContext, SceneRendererConfig aConfig)
     {
         context = aContext;
+        config = aConfig;
 
         auto [createCameraResourcesResult, createdCameraResources] = PrepareCameraResources(context->device);
         if(!createCameraResourcesResult)
@@ -115,16 +119,32 @@ namespace Luch::Render
 
         gbufferPersistentContext = std::move(createdGBufferPersistentContext);
 
-        auto [createResolvePersistentContextResult, createdResolvePersistentContext] = ResolveRenderPass::PrepareResolvePersistentContext(
-            context->device,
-            cameraResources.get());
-
-        if(!createResolvePersistentContextResult)
+        if(config.useComputeResolve)
         {
-            return false;
-        }
+            auto [createResolvePersistentContextResult, createdResolvePersistentContext] = ResolveComputeRenderPass::PrepareResolvePersistentContext(
+                context->device,
+                cameraResources.get());
 
-        resolvePersistentContext = std::move(createdResolvePersistentContext);
+            if(!createResolvePersistentContextResult)
+            {
+                return false;
+            }
+
+            resolveComputePersistentContext = std::move(createdResolvePersistentContext);
+        }
+        else
+        {
+            auto [createResolvePersistentContextResult, createdResolvePersistentContext] = ResolveRenderPass::PrepareResolvePersistentContext(
+                context->device,
+                cameraResources.get());
+
+            if(!createResolvePersistentContextResult)
+            {
+                return false;
+            }
+
+            resolvePersistentContext = std::move(createdResolvePersistentContext);
+        }
 
         auto [createTonemapPersistentContextResult, createdTonemapPersistentContext] = TonemapRenderPass::PrepareTonemapPersistentContext(
             context->device,
@@ -220,9 +240,9 @@ namespace Luch::Render
         }
 
         auto swapchainInfo = context->swapchain->GetInfo();
-        Size2i attachmentSize = { swapchainInfo.width, swapchainInfo.height };
+        Size2i outputSize = { swapchainInfo.width, swapchainInfo.height };
 
-        outputHandle = frame.builder->GetResourceManager()->ImportAttachmentDeferred();
+        outputHandle = frame.builder->GetResourceManager()->ImportTextureDeferred();
 
         auto [prepareGBufferTransientContextResult, preparedGBufferTransientContext] = GBufferRenderPass::PrepareGBufferTransientContext(
             gbufferPersistentContext.get(),
@@ -236,7 +256,7 @@ namespace Luch::Render
         frame.gbufferTransientContext = std::move(preparedGBufferTransientContext);
 
         frame.gbufferTransientContext->descriptorPool = descriptorPool;
-        frame.gbufferTransientContext->attachmentSize = attachmentSize;
+        frame.gbufferTransientContext->outputSize = outputSize;
         frame.gbufferTransientContext->scene = scene;
         frame.gbufferTransientContext->sharedBuffer = frame.sharedBuffer;
         frame.gbufferTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
@@ -246,27 +266,61 @@ namespace Luch::Render
             frame.gbufferTransientContext.get(),
             frame.builder.get());
 
-        auto [prepareResolveTransientContextResult, preparedResolveTransientContext] = ResolveRenderPass::PrepareResolveTransientContext(
-            resolvePersistentContext.get(),
-            descriptorPool);
-
-        if(!prepareResolveTransientContextResult)
+        RenderMutableResource luminanceTextureHandle;
+        if(config.useComputeResolve)
         {
-            return false;
+            auto [prepareResolveTransientContextResult, preparedResolveTransientContext] = ResolveComputeRenderPass::PrepareResolveTransientContext(
+                resolveComputePersistentContext.get(),
+                descriptorPool);
+
+            if(!prepareResolveTransientContextResult)
+            {
+                return false;
+            }
+
+            frame.resolveComputeTransientContext = std::move(preparedResolveTransientContext);
+
+            frame.resolveComputeTransientContext->gbuffer = frame.gbufferPass->GetGBuffer();
+            frame.resolveComputeTransientContext->outputSize = outputSize;
+            frame.resolveComputeTransientContext->scene = scene;
+            frame.resolveComputeTransientContext->sharedBuffer = frame.sharedBuffer;
+            frame.resolveComputeTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
+
+            frame.resolveComputePass = MakeUnique<ResolveComputeRenderPass>(
+                resolveComputePersistentContext.get(),
+                frame.resolveComputeTransientContext.get(),
+                frame.builder.get());
+
+            luminanceTextureHandle = frame.resolveComputePass->GetResolveTextureHandle();;
+        }
+        else
+        {
+            auto [prepareResolveTransientContextResult, preparedResolveTransientContext] = ResolveRenderPass::PrepareResolveTransientContext(
+                resolvePersistentContext.get(),
+                descriptorPool);
+
+            if(!prepareResolveTransientContextResult)
+            {
+                return false;
+            }
+
+            frame.resolveTransientContext = std::move(preparedResolveTransientContext);
+
+            frame.resolveTransientContext->gbuffer = frame.gbufferPass->GetGBuffer();
+            frame.resolveTransientContext->outputSize = outputSize;
+            frame.resolveTransientContext->scene = scene;
+            frame.resolveTransientContext->sharedBuffer = frame.sharedBuffer;
+            frame.resolveTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
+
+            frame.resolvePass = MakeUnique<ResolveRenderPass>(
+                resolvePersistentContext.get(),
+                frame.resolveTransientContext.get(),
+                frame.builder.get());
+
+            luminanceTextureHandle = frame.resolvePass->GetResolveTextureHandle();
         }
 
-        frame.resolveTransientContext = std::move(preparedResolveTransientContext);
-
-        frame.resolveTransientContext->gbuffer = frame.gbufferPass->GetGBuffer();
-        frame.resolveTransientContext->attachmentSize = attachmentSize;
-        frame.resolveTransientContext->scene = scene;
-        frame.resolveTransientContext->sharedBuffer = frame.sharedBuffer;
-        frame.resolveTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
-
-        frame.resolvePass = MakeUnique<ResolveRenderPass>(
-            resolvePersistentContext.get(),
-            frame.resolveTransientContext.get(),
-            frame.builder.get());
+        LUCH_ASSERT_MSG(!config.useComputeTonemap, "Not implemented");
 
         auto [prepareTonemapTransientContextResult, preparedTonemapTransientContext] = TonemapRenderPass::PrepareTonemapTransientContext(
             tonemapPersistentContext.get(),
@@ -279,9 +333,9 @@ namespace Luch::Render
 
         frame.tonemapTransientContext = std::move(preparedTonemapTransientContext);
 
-        frame.tonemapTransientContext->inputHandle = frame.resolvePass->GetResolveTextureHandle();
+        frame.tonemapTransientContext->inputHandle = luminanceTextureHandle;
         frame.tonemapTransientContext->outputHandle = outputHandle;
-        frame.tonemapTransientContext->attachmentSize = attachmentSize;
+        frame.tonemapTransientContext->outputSize = outputSize;
         frame.tonemapTransientContext->scene = scene;
 
         frame.tonemapPass = MakeUnique<TonemapRenderPass>(
@@ -338,7 +392,14 @@ namespace Luch::Render
         }
 
         frame.gbufferPass->UpdateScene();
-        frame.resolvePass->UpdateScene();
+        if(config.useComputeResolve)
+        {
+            frame.resolveComputePass->UpdateScene();
+        }
+        else
+        {
+            frame.resolvePass->UpdateScene();
+        }
         frame.tonemapPass->UpdateScene();
     }
 
@@ -366,7 +427,7 @@ namespace Luch::Render
 
         frame.swapchainTexture = swapchainTexture;
 
-        frame.builder->GetResourceManager()->ProvideDeferredAttachment(outputHandle, swapchainTexture->GetTexture());
+        frame.builder->GetResourceManager()->ProvideDeferredTexture(outputHandle, swapchainTexture->GetTexture());
 
         auto [buildResult, renderGraph] = frame.builder->Build();
         auto commandLists = renderGraph->Execute();

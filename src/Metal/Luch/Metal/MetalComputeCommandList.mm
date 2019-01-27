@@ -17,7 +17,7 @@ namespace Luch::Metal
         MetalGraphicsDevice* device,
         mtlpp::CommandBuffer aCommandBuffer)
         : ComputeCommandList(device)
-        , commandBuffer(aCommandBuffer)
+        , MetalCommandList(aCommandBuffer)
     {
     }
 
@@ -28,13 +28,14 @@ namespace Luch::Metal
 
     void MetalComputeCommandList::End()
     {
+        commandEncoder.SetLabel(ns::String{ label.c_str() });
         commandEncoder.EndEncoding();
         commandEncoder = { };
     }
 
-    void MetalComputeCommandList::SetLabel(const String& label)
+    void MetalComputeCommandList::SetLabel(const String& aLabel)
     {
-        commandEncoder.SetLabel(ns::String{ label.c_str() });
+        label = aLabel;
     }
 
     void MetalComputeCommandList::BindPipelineState(ComputePipelineState* pipelineState)
@@ -127,13 +128,6 @@ namespace Luch::Metal
 
         commandEncoder.SetSamplerStates(samplers, range);
     }
-
-//    void MetalComputeCommandList::DispatchThreads(
-//        Size2i threadsPerGrid,
-//        Size2i threadsPerThreadgroup)
-//    {
-//        commandEncoder.dispatch
-//    }
 
     void MetalComputeCommandList::DispatchThreadgroups(
         Size3i threadgroupsPerGrid,

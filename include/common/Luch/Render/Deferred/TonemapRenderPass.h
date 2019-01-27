@@ -45,7 +45,7 @@ namespace Luch::Render::Deferred
         void PrepareScene();
         void UpdateScene();
 
-        void ExecuteRenderPass(
+        void ExecuteGraphicsRenderPass(
             RenderGraphResourceManager* manager,
             FrameBuffer* frameBuffer,
             GraphicsCommandList* commandList) override;

@@ -7,19 +7,19 @@
 #include <Luch/Graphics/Rect2.h>
 #include <Luch/Graphics/Viewport.h>
 #include <Luch/Graphics/Color.h>
-#include <Luch/Graphics/GraphicsObject.h>
+#include <Luch/Graphics/CommandList.h>
 
 namespace Luch::Graphics
 {
-    class GraphicsCommandList : public GraphicsObject
+    class GraphicsCommandList : public CommandList
     {
     public:
-        GraphicsCommandList(GraphicsDevice* device) : GraphicsObject(device) {}
+        GraphicsCommandList(GraphicsDevice* device) : CommandList(device) {}
 
         virtual void Begin() = 0;
         virtual void End() = 0;
 
-        virtual void SetLabel(const String& label) = 0;
+        CommandListType GetType() const override { return CommandListType::Graphics; }
 
         virtual void BeginRenderPass(FrameBuffer* framebuffer) = 0;
         virtual void EndRenderPass() = 0;

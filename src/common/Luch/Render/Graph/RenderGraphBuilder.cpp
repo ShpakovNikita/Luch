@@ -34,7 +34,7 @@ namespace Luch::Render::Graph
         return true;
     }
 
-    UniquePtr<RenderGraphNodeBuilder> RenderGraphBuilder::AddRenderPass(
+    UniquePtr<RenderGraphNodeBuilder> RenderGraphBuilder::AddGraphicsRenderPass(
         String name,
         RefPtr<Graphics::RenderPass> renderPass,
         RenderGraphPass* pass)
@@ -43,6 +43,19 @@ namespace Luch::Render::Graph
         node.name = name;
         node.pass = pass;
         node.renderPass = renderPass;
+        node.type = RenderGraphPassType::Graphics;
+
+        return MakeUnique<RenderGraphNodeBuilder>(this, renderGraphNodes.size() - 1, resourceManager.get());
+    }
+
+    UniquePtr<RenderGraphNodeBuilder> RenderGraphBuilder::AddComputeRenderPass(
+        String name,
+        RenderGraphPass* pass)
+    {
+        auto& node = renderGraphNodes.emplace_back();
+        node.name = name;
+        node.pass = pass;
+        node.type = RenderGraphPassType::Compute;
 
         return MakeUnique<RenderGraphNodeBuilder>(this, renderGraphNodes.size() - 1, resourceManager.get());
     }
@@ -109,6 +122,11 @@ namespace Luch::Render::Graph
 
         for(auto& node : data.nodes)
         {
+            if(node.type != RenderGraphPassType::Graphics)
+            {
+                continue;
+            }
+
             FrameBufferCreateInfo frameBufferCreateInfo;
             frameBufferCreateInfo.renderPass = node.renderPass;
 

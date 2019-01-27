@@ -8,18 +8,15 @@
 #include <Luch/ResultValue.h>
 #include <Luch/Graphics/Format.h>
 #include <Luch/Graphics/GraphicsForwards.h>
-#include <Luch/Graphics/DescriptorSetBinding.h>
-#include <Luch/Graphics/Attachment.h>
 #include <Luch/SceneV1/SceneV1Forwards.h>
 #include <Luch/Render/Common.h>
+#include <Luch/Render/SharedBuffer.h>
 #include <Luch/Render/RenderForwards.h>
 #include <Luch/Render/Deferred/DeferredForwards.h>
 #include <Luch/Render/Deferred/GBuffer.h>
 #include <Luch/Render/Deferred/DeferredConstants.h>
 #include <Luch/Render/Graph/RenderGraphForwards.h>
 #include <Luch/Render/Graph/RenderGraphPass.h>
-
-#include <Luch/Render/SharedBuffer.h>
 
 namespace Luch::Render::Deferred
 {
@@ -58,7 +55,7 @@ namespace Luch::Render::Deferred
 
         GBufferReadOnly GetGBuffer() { return gbuffer; }
 
-        void ExecuteRenderPass(
+        void ExecuteGraphicsRenderPass(
             RenderGraphResourceManager* manager,
             FrameBuffer* frameBuffer,
             GraphicsCommandList* commandList) override;

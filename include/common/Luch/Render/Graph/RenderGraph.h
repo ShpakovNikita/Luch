@@ -31,7 +31,7 @@ namespace Luch::Render::Graph
             RenderGraphData graphData);
         ~RenderGraph();
         
-        RefPtrVector<GraphicsCommandList> Execute();
+        RefPtrVector<CommandList> Execute();
     private:
         CommandPool* commandPool = nullptr;
         UniquePtr<RenderGraphResourceManager> resourceManager;

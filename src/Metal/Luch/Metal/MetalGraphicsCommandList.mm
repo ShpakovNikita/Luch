@@ -65,13 +65,13 @@ namespace Luch::Metal
         MetalGraphicsDevice* device,
         mtlpp::CommandBuffer aCommandBuffer)
         : GraphicsCommandList(device)
-        , commandBuffer(aCommandBuffer)
+        , MetalCommandList(aCommandBuffer)
     {
     }
 
-    void MetalGraphicsCommandList::SetLabel(const String& label)
+    void MetalGraphicsCommandList::SetLabel(const String& aLabel)
     {
-        commandBuffer.SetLabel(ns::String{ label.c_str() });
+        label = aLabel;
     }
 
     void MetalGraphicsCommandList::BeginRenderPass(FrameBuffer* frameBuffer)
@@ -84,6 +84,7 @@ namespace Luch::Metal
 
     void MetalGraphicsCommandList::EndRenderPass()
     {
+        commandBuffer.SetLabel(ns::String{ label.c_str() });
         commandEncoder.EndEncoding();
         commandEncoder = { };
     }

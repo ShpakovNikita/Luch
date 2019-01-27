@@ -6,6 +6,7 @@
 #include <Luch/SharedPtr.h>
 #include <Luch/ResultValue.h>
 #include <Luch/Graphics/Format.h>
+#include <Luch/Graphics/Size3.h>
 #include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/SceneV1/SceneV1Forwards.h>
 #include <Luch/Render/Common.h>
@@ -22,29 +23,30 @@ namespace Luch::Render::Deferred
     using namespace Graphics;
     using namespace Graph;
 
-    class ResolveRenderPass : public RenderGraphPass
+    class ResolveComputeRenderPass : public RenderGraphPass
     {
         static constexpr int32 SharedUniformBufferSize = 1024 * 1024;
         static constexpr int32 MaxDescriptorSetCount = 4096;
         static constexpr int32 MaxDescriptorCount = 4096;
+        static constexpr Size3i ThreadsPerThreadgroup = { 16, 16, 1 };
         static constexpr Format ColorFormat = Format::RGBA16Sfloat;
     public:
         static const String RenderPassName;
 
-        static ResultValue<bool, UniquePtr<ResolvePersistentContext>> PrepareResolvePersistentContext(
+        static ResultValue<bool, UniquePtr<ResolveComputePersistentContext>> PrepareResolvePersistentContext(
             GraphicsDevice* device,
             CameraResources* cameraResources);
 
-        static ResultValue<bool, UniquePtr<ResolveTransientContext>> PrepareResolveTransientContext(
-            ResolvePersistentContext* persistentContext,
+        static ResultValue<bool, UniquePtr<ResolveComputeTransientContext>> PrepareResolveTransientContext(
+            ResolveComputePersistentContext* persistentContext,
             RefPtr<DescriptorPool> descriptorPool);
 
-        ResolveRenderPass(
-            ResolvePersistentContext* persistentContext,
-            ResolveTransientContext* transientContext,
+        ResolveComputeRenderPass(
+            ResolveComputePersistentContext* persistentContext,
+            ResolveComputeTransientContext* transientContext,
             RenderGraphBuilder* builder);
 
-        ~ResolveRenderPass();
+        ~ResolveComputeRenderPass();
 
         void PrepareScene();
         void UpdateScene();
@@ -54,18 +56,17 @@ namespace Luch::Render::Deferred
         SceneV1::Camera* GetCamera() { return camera; }
         void SetCamera(SceneV1::Camera* aCamera) { camera = aCamera; }
 
-        void ExecuteGraphicsRenderPass(
+        void ExecuteComputeRenderPass(
             RenderGraphResourceManager* manager,
-            FrameBuffer* frameBuffer,
-            GraphicsCommandList* commandList) override;
+            ComputeCommandList* commandList) override;
     private:
         void UpdateLights(const RefPtrVector<SceneV1::Node>& lightNodes);
 
-        static RefPtr<GraphicsPipelineState> CreateResolvePipelineState(ResolvePersistentContext* context);
+        static RefPtr<ComputePipelineState> CreateResolvePipelineState(ResolveComputePersistentContext* context);
 
         SceneV1::Camera* camera = nullptr;
-        ResolvePersistentContext* persistentContext = nullptr;
-        ResolveTransientContext* transientContext = nullptr;
+        ResolveComputePersistentContext* persistentContext = nullptr;
+        ResolveComputeTransientContext* transientContext = nullptr;
         GBufferReadOnly gbuffer;
 
         RenderMutableResource resolveTextureHandle;

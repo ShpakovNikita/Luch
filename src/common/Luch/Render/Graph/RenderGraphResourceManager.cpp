@@ -21,25 +21,25 @@ namespace Luch::Render::Graph
         }
     }
 
-    RenderMutableResource RenderGraphResourceManager::ImportAttachment(RefPtr<Texture> texture)
+    RenderMutableResource RenderGraphResourceManager::ImportTexture(RefPtr<Texture> texture)
     {
         auto handle = GetNextHandle();
-        importedAttachments[handle] = texture;
+        importedTextures[handle] = texture;
         return handle;
     }
 
-    RenderMutableResource RenderGraphResourceManager::ImportAttachmentDeferred()
+    RenderMutableResource RenderGraphResourceManager::ImportTextureDeferred()
     {
         auto handle = GetNextHandle();
-        importedAttachments[handle] = nullptr;
+        importedTextures[handle] = nullptr;
         return handle;
     }
 
-    RenderMutableResource RenderGraphResourceManager::CreateAttachment(Size2i size, Format format)
+    RenderMutableResource RenderGraphResourceManager::CreateTexture(const TextureCreateInfo& createInfo)
     {
         auto handle = GetNextHandle();
-        LUCH_ASSERT(size.width > 0 && size.height > 0);
-        pendingAttachments[handle] = AttachmentCreateInfo { size, format };
+        LUCH_ASSERT(createInfo.width > 0 && createInfo.height > 0);
+        pendingTextures[handle] = createInfo;
         return handle;
     }
 
@@ -79,21 +79,9 @@ namespace Luch::Render::Graph
 
     bool RenderGraphResourceManager::Build()
     {
-        for(const auto& [handle, info] : pendingAttachments)
+        for(const auto& [handle, ci] : pendingTextures)
         {
-            TextureCreateInfo createInfo;
-
-            bool hasDepthOrStencil = FormatHasDepth(info.format) || FormatHasStencil(info.format);
-            createInfo.width = info.size.width;
-            createInfo.height = info.size.height;
-            createInfo.format = info.format;
-            createInfo.storageMode = ResourceStorageMode::DeviceLocal;
-            createInfo.usage = TextureUsageFlags::ShaderRead;
-            createInfo.usage |= hasDepthOrStencil 
-                ? TextureUsageFlags::DepthStencilAttachment
-                : TextureUsageFlags::ColorAttachment;
-
-            auto [acquireTextureResult, acquiredTexture] = pool->AcquireTexture(createInfo);
+            auto [acquireTextureResult, acquiredTexture] = pool->AcquireTexture(ci);
             if(acquireTextureResult != GraphicsResult::Success)
             {
                 return false;
@@ -102,7 +90,7 @@ namespace Luch::Render::Graph
             acquiredTextures[handle] = acquiredTexture;
         }
 
-        pendingAttachments.clear();
+        pendingTextures.clear();
 
         for(const auto& [handle, ci] : pendingBuffers)
         {
@@ -115,14 +103,16 @@ namespace Luch::Render::Graph
             acquiredBuffers[handle] = acquiredBuffer;
         }
 
+        pendingBuffers.clear();
+
         return true;
     }
 
-    void RenderGraphResourceManager::ProvideDeferredAttachment(RenderMutableResource handle, RefPtr<Texture> texture)
+    void RenderGraphResourceManager::ProvideDeferredTexture(RenderMutableResource handle, RefPtr<Texture> texture)
     {
         LUCH_ASSERT(handle);
-        LUCH_ASSERT(importedAttachments[handle] == nullptr);
-        importedAttachments[handle] = std::move(texture);
+        LUCH_ASSERT(importedTextures[handle] == nullptr);
+        importedTextures[handle] = std::move(texture);
     }
 
     RefPtr<Texture> RenderGraphResourceManager::GetTexture(RenderResource handle)
@@ -144,8 +134,8 @@ namespace Luch::Render::Graph
          }
 
          {
-            auto it = importedAttachments.find(handle);
-            if(it != importedAttachments.end())
+            auto it = importedTextures.find(handle);
+            if(it != importedTextures.end())
             {
                 return it->second;
             }

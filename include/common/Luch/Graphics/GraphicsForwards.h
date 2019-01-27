@@ -7,6 +7,7 @@ namespace Luch::Graphics
     class Buffer;
     class CommandPool;
     class CommandQueue;
+    class CommandList;
     class ComputeCommandList;
     class ComputePipelineState;
     class CopyCommandList;

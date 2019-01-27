@@ -33,6 +33,7 @@
 #include <Luch/Graphics/SwapchainInfo.h>
 #include <Luch/Graphics/CommandQueue.h>
 #include <Luch/Render/SceneRenderer.h>
+#include <Luch/Render/SceneRendererConfig.h>
 
 using namespace Luch;
 using namespace Luch::Graphics;
@@ -170,7 +171,10 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     renderer = MakeUnique<Render::SceneRenderer>(scene);
 
-    auto rendererInitialized = renderer->Initialize(context);
+    Render::SceneRendererConfig rendererConfig;
+    rendererConfig.useComputeResolve = false;
+
+    auto rendererInitialized = renderer->Initialize(context, rendererConfig);
     if(!rendererInitialized)
     {
         return false;

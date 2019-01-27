@@ -46,7 +46,7 @@ namespace Luch::Render::Deferred
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
-        auto node = builder->AddRenderPass(RenderPassName, persistentContext->renderPass, this);
+        auto node = builder->AddGraphicsRenderPass(RenderPassName, persistentContext->renderPass, this);
 
         input = node->ReadsTexture(transientContext->inputHandle);
         output = node->WritesToColorAttachment(0, transientContext->outputHandle);
@@ -62,7 +62,7 @@ namespace Luch::Render::Deferred
     {
     }
 
-    void TonemapRenderPass::ExecuteRenderPass(
+    void TonemapRenderPass::ExecuteGraphicsRenderPass(
         RenderGraphResourceManager* manager,
         FrameBuffer* frameBuffer,
         GraphicsCommandList* cmdList)
@@ -76,11 +76,11 @@ namespace Luch::Render::Deferred
         transientContext->textureDescriptorSet->Update();
 
         Viewport viewport;
-        viewport.width = transientContext->attachmentSize.width;
-        viewport.height = transientContext->attachmentSize.height;
+        viewport.width = transientContext->outputSize.width;
+        viewport.height = transientContext->outputSize.height;
 
         Rect2i scissorRect;
-        scissorRect.size = transientContext->attachmentSize;
+        scissorRect.size = transientContext->outputSize;
 
         cmdList->Begin();
         cmdList->BeginRenderPass(frameBuffer);

@@ -18,10 +18,7 @@ namespace Luch::Metal
         GraphicsResultRefPtr<CommandPool> CreateCommandPool() override;
 
         GraphicsResult Submit(
-            GraphicsCommandList* commandList) override;
-
-        GraphicsResult Submit(
-            CopyCommandList* commandList) override;
+            CommandList* commandList) override;
 
         GraphicsResult Present(
             SwapchainTexture* swapchainTexture,

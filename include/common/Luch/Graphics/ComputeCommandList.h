@@ -3,19 +3,19 @@
 #include <Luch/ArrayProxy.h>
 #include <Luch/BaseObject.h>
 #include <Luch/Graphics/Size3.h>
-#include <Luch/Graphics/GraphicsObject.h>
+#include <Luch/Graphics/CommandList.h>
 
 namespace Luch::Graphics
 {
-    class ComputeCommandList : public GraphicsObject
+    class ComputeCommandList : public CommandList
     {
     public:
-        ComputeCommandList(GraphicsDevice* device) : GraphicsObject(device) {}
+        ComputeCommandList(GraphicsDevice* device) : CommandList(device) {}
 
         virtual void Begin() = 0;
         virtual void End() = 0;
 
-        virtual void SetLabel(const String& label) = 0;
+        CommandListType GetType() const override { return CommandListType::Compute; }
 
         virtual void BindPipelineState(ComputePipelineState* pipelineState) = 0;
 

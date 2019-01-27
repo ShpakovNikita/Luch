@@ -24,6 +24,8 @@
 #include <Luch/SceneV1/IndexBuffer.h>
 #include <Luch/SceneV1/AttributeSemantic.h>
 
+#include <Luch/Graphics/DescriptorSetBinding.h>
+#include <Luch/Graphics/Attachment.h>
 #include <Luch/Graphics/BufferCreateInfo.h>
 #include <Luch/Graphics/TextureCreateInfo.h>
 #include <Luch/Graphics/Buffer.h>
@@ -93,14 +95,14 @@ namespace Luch::Render::Deferred
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
-        auto node = builder->AddRenderPass(RenderPassName, persistentContext->renderPass, this);
+        auto node = builder->AddGraphicsRenderPass(RenderPassName, persistentContext->renderPass, this);
 
         for(int32 i = 0; i < DeferredConstants::GBufferColorAttachmentCount; i++)
         {
-            gbuffer.color[i] = node->CreateColorAttachment(i, transientContext->attachmentSize);
+            gbuffer.color[i] = node->CreateColorAttachment(i, transientContext->outputSize);
         }
 
-        gbuffer.depthStencil = node->CreateDepthStencilAttachment(transientContext->attachmentSize);
+        gbuffer.depthStencil = node->CreateDepthStencilAttachment(transientContext->outputSize);
     }
 
     GBufferRenderPass::~GBufferRenderPass() = default;
@@ -130,17 +132,17 @@ namespace Luch::Render::Deferred
         }
     }
 
-    void GBufferRenderPass::ExecuteRenderPass(
+    void GBufferRenderPass::ExecuteGraphicsRenderPass(
         RenderGraphResourceManager* manager,
         FrameBuffer* frameBuffer, 
         GraphicsCommandList* commandList)
     {
         Viewport viewport;
-        viewport.width = static_cast<float32>(transientContext->attachmentSize.width);
-        viewport.height = static_cast<float32>(transientContext->attachmentSize.height);
+        viewport.width = static_cast<float32>(transientContext->outputSize.width);
+        viewport.height = static_cast<float32>(transientContext->outputSize.height);
 
         Rect2i scissorRect;
-        scissorRect.size = transientContext->attachmentSize;
+        scissorRect.size = transientContext->outputSize;
 
         commandList->Begin();
         commandList->BeginRenderPass(frameBuffer);

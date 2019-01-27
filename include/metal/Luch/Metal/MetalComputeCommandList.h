@@ -2,12 +2,15 @@
 
 #include <Luch/Graphics/ComputeCommandList.h>
 #include <Luch/Metal/MetalForwards.h>
+#include <Luch/Metal/MetalCommandList.h>
 
 namespace Luch::Metal
 {
     using namespace Graphics;
 
-    class MetalComputeCommandList : public ComputeCommandList
+    class MetalComputeCommandList 
+        : public ComputeCommandList
+        , public MetalCommandList
     {
         friend class MetalCommandQueue;
     public:
@@ -34,16 +37,12 @@ namespace Luch::Metal
             PipelineLayout* pipelineLayout,
             DescriptorSet* descriptorSet) override;
 
-//        void DispatchThreads(
-//            Size2i threadsPerGrid,
-//            Size2i threadsPerThreadgroup) override;
-
         void DispatchThreadgroups(
             Size3i threadgroupsPerGrid,
             Size3i threadsPerThreadgroup) override;
     private:
-        mtlpp::CommandBuffer commandBuffer;
         mtlpp::ComputeCommandEncoder commandEncoder;
+        String label;
     };
 }
 
