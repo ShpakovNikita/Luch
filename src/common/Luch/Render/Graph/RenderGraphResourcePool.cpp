@@ -1,6 +1,7 @@
 #include <Luch/Render/Graph/RenderGraphResourcePool.h>
 #include <Luch/Graphics/GraphicsDevice.h>
 #include <Luch/Graphics/Texture.h>
+#include <Luch/Graphics/Buffer.h>
 
 namespace Luch::Render::Graph
 {
@@ -12,7 +13,7 @@ namespace Luch::Render::Graph
     void RenderGraphResourcePool::Tick()
     {
         ticksElapsed++;
-        // TODO discard textures
+        // TODO discard textures and buffers
     }
 
     GraphicsResultRefPtr<Texture> RenderGraphResourcePool::AcquireTexture(const TextureCreateInfo& ci)
@@ -50,6 +51,46 @@ namespace Luch::Render::Graph
 
         TexturePoolEntry newEntry;
         newEntry.texture = texture;
+        newEntry.addedOnTick = ticksElapsed;
+
+        matchingEntries.push_back(newEntry);
+    }
+
+    GraphicsResultRefPtr<Buffer> RenderGraphResourcePool::AcquireBuffer(const BufferCreateInfo& ci)
+    {
+        auto& matchingEntries = bufferEntries[ci];
+
+        if(!matchingEntries.empty())
+        {
+            auto it = std::min_element(
+                matchingEntries.begin(),
+                matchingEntries.end(),
+                [](auto left, auto right) { return left.addedOnTick < right.addedOnTick; });
+
+            auto buffer = it->buffer;
+            matchingEntries.erase(it);
+            return { GraphicsResult::Success, buffer };
+        }
+        else
+        {
+            return device->CreateBuffer(ci); 
+        }
+    }
+
+    void RenderGraphResourcePool::ReturnBuffer(RefPtr<Buffer> buffer)
+    {
+        const auto& ci = buffer->GetCreateInfo();
+
+        auto& matchingEntries = bufferEntries[ci];
+
+        auto it = std::find_if(
+            matchingEntries.begin(),
+            matchingEntries.end(),
+            [&buffer](auto entry) { return entry.buffer == buffer; });
+        LUCH_ASSERT(it == matchingEntries.end());
+
+        BufferPoolEntry newEntry;
+        newEntry.buffer = buffer;
         newEntry.addedOnTick = ticksElapsed;
 
         matchingEntries.push_back(newEntry);

@@ -12,8 +12,13 @@ namespace Luch::Metal
         MetalGraphicsDevice* device,
         mtlpp::CommandBuffer aCommandBuffer)
         : CopyCommandList(device)
-        , commandBuffer(aCommandBuffer)
+        , MetalCommandList(aCommandBuffer)
     {
+    }
+
+    void MetalCopyCommandList::SetLabel(const String& aLabel)
+    {
+        label = aLabel;
     }
 
     void MetalCopyCommandList::Begin()
@@ -23,7 +28,9 @@ namespace Luch::Metal
 
     void MetalCopyCommandList::End()
     {
+        commandEncoder.SetLabel(ns::String{ label.c_str() });
         commandEncoder.EndEncoding();
+        commandEncoder = {};
     }
 
     void MetalCopyCommandList::CopyBufferToTexture(

@@ -2,7 +2,7 @@
 #include <Luch/Graphics/PipelineLayoutCreateInfo.h>
 #include <Luch/Metal/MetalGraphicsDevice.h>
 #include <Luch/Metal/MetalCommandQueue.h>
-#include <Luch/Metal/MetalPipelineState.h>
+#include <Luch/Metal/MetalGraphicsPipelineState.h>
 #include <Luch/Metal/MetalPipelineLayout.h>
 #include <Luch/Metal/MetalDescriptorSet.h>
 #include <Luch/Metal/MetalFrameBuffer.h>
@@ -65,13 +65,13 @@ namespace Luch::Metal
         MetalGraphicsDevice* device,
         mtlpp::CommandBuffer aCommandBuffer)
         : GraphicsCommandList(device)
-        , commandBuffer(aCommandBuffer)
+        , MetalCommandList(aCommandBuffer)
     {
     }
 
-    void MetalGraphicsCommandList::SetLabel(const String& label)
+    void MetalGraphicsCommandList::SetLabel(const String& aLabel)
     {
-        commandBuffer.SetLabel(ns::String(label.c_str()));
+        label = aLabel;
     }
 
     void MetalGraphicsCommandList::BeginRenderPass(FrameBuffer* frameBuffer)
@@ -84,13 +84,14 @@ namespace Luch::Metal
 
     void MetalGraphicsCommandList::EndRenderPass()
     {
+        commandBuffer.SetLabel(ns::String{ label.c_str() });
         commandEncoder.EndEncoding();
         commandEncoder = { };
     }
 
-    void MetalGraphicsCommandList::BindPipelineState(PipelineState* pipelineState)
+    void MetalGraphicsCommandList::BindGraphicsPipelineState(GraphicsPipelineState* pipelineState)
     {
-        auto mtlPipelineState = static_cast<MetalPipelineState*>(pipelineState);
+        auto mtlPipelineState = static_cast<MetalGraphicsPipelineState*>(pipelineState);
         const auto& ci = mtlPipelineState->GetCreateInfo();
 
         primitiveType = ToMetalPrimitiveType(ci.inputAssembler.primitiveTopology);

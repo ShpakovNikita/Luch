@@ -8,11 +8,14 @@ namespace Luch::SceneV1
 
     void Node::AddChild(const RefPtr<Node>& child)
     {
-        
+        children.push_back(child);
     }
 
     void Node::RemoveChild(Node* child)
     {
-
+        // TODO
+        // auto it = std::find(children.begin(), children.end(), child);
+        // LUCH_ASSERT(it != children.end());
+        // children.erase(it);
     }
 }

@@ -38,8 +38,11 @@ namespace Luch::Metal
         GraphicsResultRefPtr<FrameBuffer> CreateFrameBuffer(
             const FrameBufferCreateInfo& createInfo) override;
 
-        GraphicsResultRefPtr<PipelineState> CreatePipelineState(
-            const PipelineStateCreateInfo& createInfo) override;
+        GraphicsResultRefPtr<GraphicsPipelineState> CreateGraphicsPipelineState(
+            const GraphicsPipelineStateCreateInfo& createInfo) override;
+
+        GraphicsResultRefPtr<ComputePipelineState> CreateComputePipelineState(
+            const ComputePipelineStateCreateInfo& createInfo) override;
 
         GraphicsResultRefPtr<Texture> CreateTexture(
             const TextureCreateInfo& createInfo) override;

@@ -33,7 +33,7 @@ namespace Luch::Render::Deferred
     struct GBufferTransientContext
     {
         SceneV1::Scene* scene = nullptr;
-        Size2i attachmentSize;
+        Size2i outputSize;
         SharedPtr<SharedBuffer> sharedBuffer;
         RefPtr<DescriptorPool> descriptorPool;
         RefPtr<DescriptorSet> cameraBufferDescriptorSet;

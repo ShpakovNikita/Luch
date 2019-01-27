@@ -1,8 +1,10 @@
 #include <Luch/Metal/MetalCommandQueue.h>
 #include <Luch/Metal/MetalGraphicsDevice.h>
 #include <Luch/Metal/MetalCommandPool.h>
-#include <Luch/Metal/MetalGraphicsCommandList.h>
+#include <Luch/Metal/MetalCommandList.h>
 #include <Luch/Metal/MetalCopyCommandList.h>
+#include <Luch/Metal/MetalGraphicsCommandList.h>
+#include <Luch/Metal/MetalComputeCommandList.h>
 #include <Luch/Metal/MetalSemaphore.h>
 #include <Luch/Metal/MetalSwapchain.h>
 
@@ -14,12 +16,6 @@ namespace Luch::Metal
     {
     }
 
-//    GraphicsResultRefPtr<GraphicsCommandList> MetalCommandQueue::AllocateGraphicsCommandList()
-//    {
-//        auto metalCommandBuffer = queue.CommandBuffer();
-//        return { GraphicsResult::Success, MakeRef<MetalGraphicsCommandList>(this, metalCommandBuffer) };
-//    }
-
     GraphicsResultRefPtr<CommandPool> MetalCommandQueue::CreateCommandPool()
     {
         auto mtlDevice = static_cast<MetalGraphicsDevice*>(GetGraphicsDevice());
@@ -27,24 +23,27 @@ namespace Luch::Metal
     }
 
     GraphicsResult MetalCommandQueue::Submit(
-        GraphicsCommandList* commandList)
+        CommandList* commandList)
     {
-        auto mtlGraphicsCommandList = static_cast<MetalGraphicsCommandList*>(commandList);
+        MetalCommandList* mtlCommandList = nullptr;
+        switch(commandList->GetType())
+        {
+        case CommandListType::Graphics:
+            mtlCommandList = static_cast<MetalCommandList*>(static_cast<MetalGraphicsCommandList*>(commandList));
+            break;
+        case CommandListType::Copy:
+            mtlCommandList = static_cast<MetalCommandList*>(static_cast<MetalCopyCommandList*>(commandList));
+            break;
+        case CommandListType::Compute:
+            mtlCommandList = static_cast<MetalCommandList*>(static_cast<MetalComputeCommandList*>(commandList));
+            break;
+        default:
+            LUCH_ASSERT(false);
+        }
 
-        mtlGraphicsCommandList->commandBuffer.Commit();
-        mtlGraphicsCommandList->commandBuffer.WaitUntilCompleted();
-        // TODO
-        return GraphicsResult::Success;
-    }
+        mtlCommandList->commandBuffer.Commit();
+        mtlCommandList->commandBuffer.WaitUntilCompleted();
 
-    GraphicsResult MetalCommandQueue::Submit(
-        CopyCommandList* commandList)
-    {
-        auto mtlCopyCommandList = static_cast<MetalCopyCommandList*>(commandList);
-
-        mtlCopyCommandList->commandBuffer.Commit();
-        mtlCopyCommandList->commandBuffer.WaitUntilCompleted();
-        // TODO
         return GraphicsResult::Success;
     }
 

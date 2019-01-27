@@ -12,6 +12,7 @@
 #include <Luch/Render/RenderContext.h>
 #include <Luch/Render/CameraResources.h>
 #include <Luch/Render/MaterialManager.h>
+#include <Luch/Render/SceneRendererConfig.h>
 #include <Luch/Render/Graph/RenderGraphForwards.h>
 #include <Luch/Render/Graph/RenderGraphResources.h>
 
@@ -27,9 +28,11 @@ namespace Luch::Render
         UniquePtr<Graph::RenderGraphBuilder> builder;
         UniquePtr<Deferred::GBufferRenderPass> gbufferPass;
         UniquePtr<Deferred::ResolveRenderPass> resolvePass;
+        UniquePtr<Deferred::ResolveComputeRenderPass> resolveComputePass;
         UniquePtr<Deferred::TonemapRenderPass> tonemapPass;
         UniquePtr<Deferred::GBufferTransientContext> gbufferTransientContext;
         UniquePtr<Deferred::ResolveTransientContext> resolveTransientContext;
+        UniquePtr<Deferred::ResolveComputeTransientContext> resolveComputeTransientContext;
         UniquePtr<Deferred::TonemapTransientContext> tonemapTransientContext;
         RefPtr<SwapchainTexture> swapchainTexture;
 
@@ -46,7 +49,7 @@ namespace Luch::Render
         SceneRenderer(RefPtr<SceneV1::Scene> scene);
         ~SceneRenderer();
 
-        bool Initialize(SharedPtr<RenderContext> context);
+        bool Initialize(SharedPtr<RenderContext> context, SceneRendererConfig config);
         bool Deinitialize();
 
         bool BeginRender();
@@ -61,11 +64,14 @@ namespace Luch::Render
         bool UploadSceneTextures();
         bool UploadSceneBuffers();
 
+        SceneRendererConfig config;
+
         UniquePtr<MaterialManager> materialManager;
         UniquePtr<Graph::RenderGraphResourcePool> resourcePool;
 
         UniquePtr<Deferred::GBufferPersistentContext> gbufferPersistentContext;
         UniquePtr<Deferred::ResolvePersistentContext> resolvePersistentContext;
+        UniquePtr<Deferred::ResolveComputePersistentContext> resolveComputePersistentContext;
         UniquePtr<Deferred::TonemapPersistentContext> tonemapPersistentContext;
 
         Graph::RenderMutableResource outputHandle;

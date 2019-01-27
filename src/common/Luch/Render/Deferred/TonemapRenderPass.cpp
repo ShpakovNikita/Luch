@@ -13,7 +13,8 @@
 #include <Luch/Graphics/DescriptorPool.h>
 #include <Luch/Graphics/GraphicsCommandList.h>
 #include <Luch/Graphics/ShaderLibrary.h>
-#include <Luch/Graphics/PipelineState.h>
+#include <Luch/Graphics/GraphicsPipelineState.h>
+#include <Luch/Graphics/GraphicsPipelineStateCreateInfo.h>
 #include <Luch/Graphics/RenderPass.h>
 #include <Luch/Graphics/PrimitiveTopology.h>
 #include <Luch/Graphics/DescriptorSetBinding.h>
@@ -22,7 +23,6 @@
 #include <Luch/Graphics/DescriptorSetLayoutCreateInfo.h>
 #include <Luch/Graphics/PipelineLayoutCreateInfo.h>
 #include <Luch/Graphics/IndexType.h>
-#include <Luch/Graphics/PipelineStateCreateInfo.h>
 
 namespace Luch::Render::Deferred
 {
@@ -46,7 +46,7 @@ namespace Luch::Render::Deferred
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
-        auto node = builder->AddRenderPass(RenderPassName, persistentContext->renderPass, this);
+        auto node = builder->AddGraphicsRenderPass(RenderPassName, persistentContext->renderPass, this);
 
         input = node->ReadsTexture(transientContext->inputHandle);
         output = node->WritesToColorAttachment(0, transientContext->outputHandle);
@@ -62,7 +62,7 @@ namespace Luch::Render::Deferred
     {
     }
 
-    void TonemapRenderPass::ExecuteRenderPass(
+    void TonemapRenderPass::ExecuteGraphicsRenderPass(
         RenderGraphResourceManager* manager,
         FrameBuffer* frameBuffer,
         GraphicsCommandList* cmdList)
@@ -76,15 +76,15 @@ namespace Luch::Render::Deferred
         transientContext->textureDescriptorSet->Update();
 
         Viewport viewport;
-        viewport.width = transientContext->attachmentSize.width;
-        viewport.height = transientContext->attachmentSize.height;
+        viewport.width = transientContext->outputSize.width;
+        viewport.height = transientContext->outputSize.height;
 
         Rect2i scissorRect;
-        scissorRect.size = transientContext->attachmentSize;
+        scissorRect.size = transientContext->outputSize;
 
         cmdList->Begin();
         cmdList->BeginRenderPass(frameBuffer);
-        cmdList->BindPipelineState(persistentContext->pipelineState);
+        cmdList->BindGraphicsPipelineState(persistentContext->pipelineState);
         cmdList->SetViewports({ viewport });
         cmdList->SetScissorRects({ scissorRect });
 
@@ -99,10 +99,10 @@ namespace Luch::Render::Deferred
         cmdList->End();
     }
 
-    RefPtr<PipelineState> TonemapRenderPass::CreateTonemapPipelineState(
+    RefPtr<GraphicsPipelineState> TonemapRenderPass::CreateTonemapPipelineState(
         TonemapPersistentContext* persistentContext)
     {
-        PipelineStateCreateInfo ci;
+        GraphicsPipelineStateCreateInfo ci;
 
         ci.name = "Tonemap";
 
@@ -138,7 +138,7 @@ namespace Luch::Render::Deferred
         ci.vertexProgram = persistentContext->vertexShader;
         ci.fragmentProgram = persistentContext->fragmentShader;
 
-        auto[createPipelineResult, createdPipeline] = persistentContext->device->CreatePipelineState(ci);
+        auto[createPipelineResult, createdPipeline] = persistentContext->device->CreateGraphicsPipelineState(ci);
         if (createPipelineResult != GraphicsResult::Success)
         {
             LUCH_ASSERT(false);

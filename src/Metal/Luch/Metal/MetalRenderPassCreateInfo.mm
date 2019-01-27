@@ -43,7 +43,7 @@ namespace Luch::Metal
         mtlpp::RenderPassDescriptor d;
         const auto& renderPassCreateInfo = frameBufferCreateInfo.renderPass->GetCreateInfo();
         LUCH_ASSERT(renderPassCreateInfo.colorAttachments.size() == frameBufferCreateInfo.colorTextures.size());
-        for(int32 i = 0; i < renderPassCreateInfo.colorAttachments.size(); i++)
+        for(size_t i = 0; i < renderPassCreateInfo.colorAttachments.size(); i++)
         {
             const auto& colorAttachment = renderPassCreateInfo.colorAttachments[i];
             if(colorAttachment.has_value())

@@ -234,36 +234,21 @@ half3 UncompressNormal(half2 normalXY)
     return half3(normalXY.xy, -normalZ);
 }
 
-struct VertexOut
-{
-    float4 position [[position]];
-    float2 texCoord;
-};
-
-struct FragmentOut
-{
-    half4 color [[color(0)]];
-};
-
-fragment FragmentOut fp_main(
-    VertexOut in [[stage_in]],
+kernel void kernel_main(
+    ushort2 gid [[thread_position_in_grid]],
     constant CameraUniform& camera [[buffer(0)]],
     constant LightingParamsUniform& lightingParams [[buffer(1)]],
     constant Light* lights [[buffer(2)]],
-    texture2d<half> gbuffer0 [[texture(0)]],
-    texture2d<half> gbuffer1 [[texture(1)]],
-    texture2d<half> gbuffer2 [[texture(2)]],
-    depth2d<float> depthBuffer [[texture(3)]])
+    texture2d<half, access::read> gbuffer0 [[texture(0)]],
+    texture2d<half, access::read> gbuffer1 [[texture(1)]],
+    texture2d<half, access::read> gbuffer2 [[texture(2)]],
+    depth2d<float, access::read> depthBuffer [[texture(3)]],
+    texture2d<half, access::write> luminance [[texture(4)]])
 {
-    constexpr sampler gbufferSampler(coord::normalized, filter::nearest);
-    constexpr sampler depthBufferSampler(coord::normalized, filter::nearest);
-
-    float2 texCoord = in.texCoord;
-
-    half4 gbuffer0Sample = gbuffer0.sample(gbufferSampler, texCoord);
-    half4 gbuffer1Sample = gbuffer1.sample(gbufferSampler, texCoord);
-    half4 gbuffer2Sample = gbuffer2.sample(gbufferSampler, texCoord);
-    half depth = depthBuffer.sample(depthBufferSampler, texCoord);
+    half4 gbuffer0Sample = gbuffer0.read(gid);
+    half4 gbuffer1Sample = gbuffer1.read(gid);
+    half4 gbuffer2Sample = gbuffer2.read(gid);
+    half depth = depthBuffer.read(gid);
 
     half3 baseColor = gbuffer0Sample.rgb;
     half occlusion = gbuffer0Sample.a;
@@ -281,7 +266,7 @@ fragment FragmentOut fp_main(
 
     // Reconstruct view-space position
     half2 attachmentSize = half2(depthBuffer.get_width(), depthBuffer.get_height());
-    half2 positionSS = half2(in.position.xy);
+    half2 positionSS = half2(gid);
     half2 xyNDC = FragCoordToNDC(positionSS, attachmentSize);
     float4 intermediatePosition = camera.inverseProjection * float4(xyNDC.x, xyNDC.y, depth, 1.0);
     half3 P = half3(intermediatePosition.xyz / intermediatePosition.w);
@@ -315,10 +300,9 @@ fragment FragmentOut fp_main(
         lightingResult.specular += intermediateResult.specular;
     }
 
-    FragmentOut result;
+    half4 resultColor;
+    resultColor.rgb = emitted + baseColor * lightingResult.diffuse + lightingResult.specular;
+    resultColor.a = 1.0;
 
-    result.color.rgb = emitted + baseColor * lightingResult.diffuse + lightingResult.specular;
-    result.color.a = 1.0;
-
-    return result;
+    luminance.write(resultColor, gid);
 }

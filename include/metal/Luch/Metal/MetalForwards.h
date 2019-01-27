@@ -11,8 +11,7 @@ namespace Luch::Metal
     class MetalDescriptorSet;
     class MetalGraphicsCommandList;
     class MetalFrameBuffer;
-    class MetalPipelineState;
-    class MetalPipelineStateCreateInfo;
+    class MetalGraphicsPipelineState;
     class MetalPipelineLayout;
     class MetalBuffer;
     class MetalTexture;

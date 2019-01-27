@@ -24,6 +24,8 @@
 #include <Luch/SceneV1/IndexBuffer.h>
 #include <Luch/SceneV1/AttributeSemantic.h>
 
+#include <Luch/Graphics/DescriptorSetBinding.h>
+#include <Luch/Graphics/Attachment.h>
 #include <Luch/Graphics/BufferCreateInfo.h>
 #include <Luch/Graphics/TextureCreateInfo.h>
 #include <Luch/Graphics/Buffer.h>
@@ -36,7 +38,8 @@
 #include <Luch/Graphics/GraphicsCommandList.h>
 #include <Luch/Graphics/Swapchain.h>
 #include <Luch/Graphics/SwapchainInfo.h>
-#include <Luch/Graphics/PipelineState.h>
+#include <Luch/Graphics/GraphicsPipelineState.h>
+#include <Luch/Graphics/GraphicsPipelineStateCreateInfo.h>
 #include <Luch/Graphics/PrimitiveTopology.h>
 #include <Luch/Graphics/DescriptorSetBinding.h>
 #include <Luch/Graphics/RenderPassCreateInfo.h>
@@ -45,7 +48,6 @@
 #include <Luch/Graphics/DescriptorSetLayoutCreateInfo.h>
 #include <Luch/Graphics/PipelineLayoutCreateInfo.h>
 #include <Luch/Graphics/IndexType.h>
-#include <Luch/Graphics/PipelineStateCreateInfo.h>
 
 namespace Luch::Render::Deferred
 {
@@ -93,14 +95,14 @@ namespace Luch::Render::Deferred
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
-        auto node = builder->AddRenderPass(RenderPassName, persistentContext->renderPass, this);
+        auto node = builder->AddGraphicsRenderPass(RenderPassName, persistentContext->renderPass, this);
 
         for(int32 i = 0; i < DeferredConstants::GBufferColorAttachmentCount; i++)
         {
-            gbuffer.color[i] = node->CreateColorAttachment(i, transientContext->attachmentSize);
+            gbuffer.color[i] = node->CreateColorAttachment(i, transientContext->outputSize);
         }
 
-        gbuffer.depthStencil = node->CreateDepthStencilAttachment(transientContext->attachmentSize);
+        gbuffer.depthStencil = node->CreateDepthStencilAttachment(transientContext->outputSize);
     }
 
     GBufferRenderPass::~GBufferRenderPass() = default;
@@ -130,17 +132,17 @@ namespace Luch::Render::Deferred
         }
     }
 
-    void GBufferRenderPass::ExecuteRenderPass(
+    void GBufferRenderPass::ExecuteGraphicsRenderPass(
         RenderGraphResourceManager* manager,
         FrameBuffer* frameBuffer, 
         GraphicsCommandList* commandList)
     {
         Viewport viewport;
-        viewport.width = static_cast<float32>(transientContext->attachmentSize.width);
-        viewport.height = static_cast<float32>(transientContext->attachmentSize.height);
+        viewport.width = static_cast<float32>(transientContext->outputSize.width);
+        viewport.height = static_cast<float32>(transientContext->outputSize.height);
 
         Rect2i scissorRect;
-        scissorRect.size = transientContext->attachmentSize;
+        scissorRect.size = transientContext->outputSize;
 
         commandList->Begin();
         commandList->BeginRenderPass(frameBuffer);
@@ -200,11 +202,11 @@ namespace Luch::Render::Deferred
 
     void GBufferRenderPass::PreparePrimitive(SceneV1::Primitive* primitive)
     {
-        RefPtr<PipelineState> pipelineState = primitive->GetPipelineState(RenderPassName);
+        RefPtr<GraphicsPipelineState> pipelineState = primitive->GetGraphicsPipelineState(RenderPassName);
         if (pipelineState == nullptr)
         {
             pipelineState = CreateGBufferPipelineState(primitive);
-            primitive->SetPipelineState(RenderPassName, pipelineState);
+            primitive->SetGraphicsPipelineState(RenderPassName, pipelineState);
         }
     }
 
@@ -311,7 +313,7 @@ namespace Luch::Render::Deferred
 
     void GBufferRenderPass::DrawPrimitive(SceneV1::Primitive* primitive, GraphicsCommandList* commandList)
     {
-        auto& pipelineState = primitive->GetPipelineState(RenderPassName);
+        auto& pipelineState = primitive->GetGraphicsPipelineState(RenderPassName);
 
         const auto& vertexBuffers = primitive->GetVertexBuffers();
 
@@ -329,7 +331,7 @@ namespace Luch::Render::Deferred
         LUCH_ASSERT(primitive->GetIndexBuffer().has_value());
         const auto& indexBuffer = *primitive->GetIndexBuffer();
 
-        commandList->BindPipelineState(pipelineState);
+        commandList->BindGraphicsPipelineState(pipelineState);
         commandList->BindVertexBuffers(graphicsVertexBuffers, offsets);
 
         commandList->BindIndexBuffer(
@@ -340,9 +342,9 @@ namespace Luch::Render::Deferred
         commandList->DrawIndexedInstanced(indexBuffer.count, 0, 1, 0);
     }
 
-    RefPtr<PipelineState> GBufferRenderPass::CreateGBufferPipelineState(SceneV1::Primitive* primitive)
+    RefPtr<GraphicsPipelineState> GBufferRenderPass::CreateGBufferPipelineState(SceneV1::Primitive* primitive)
     {
-        PipelineStateCreateInfo ci;
+        GraphicsPipelineStateCreateInfo ci;
 
         ci.name = "GBuffer";
 
@@ -473,7 +475,7 @@ namespace Luch::Render::Deferred
         ci.vertexProgram = vertexShader;
         ci.fragmentProgram = fragmentShader;
 
-        auto[createPipelineResult, createdPipeline] = persistentContext->device->CreatePipelineState(ci);
+        auto[createPipelineResult, createdPipeline] = persistentContext->device->CreateGraphicsPipelineState(ci);
         if (createPipelineResult != GraphicsResult::Success)
         {
             LUCH_ASSERT(false);

@@ -12,13 +12,9 @@ namespace Luch::Graphics
         virtual ~CommandQueue() = 0;
 
         virtual GraphicsResultRefPtr<CommandPool> CreateCommandPool() = 0;
-        //virtual GraphicsResultRefPtr<GraphicsCommandList> AllocateGraphicsCommandList() = 0;
 
         virtual GraphicsResult Submit(
-            GraphicsCommandList* commandList) = 0;
-
-        virtual GraphicsResult Submit(
-            CopyCommandList* commandList) = 0;
+            CommandList* commandList) = 0;
 
         virtual GraphicsResult Present(
             SwapchainTexture* swapchainTexture,

@@ -16,7 +16,7 @@ namespace Luch::Render::Deferred
     {
         GraphicsDevice* device = nullptr;
 
-        RefPtr<PipelineState> pipelineState;
+        RefPtr<GraphicsPipelineState> pipelineState;
         RefPtr<PipelineLayout> pipelineLayout;
 
         RefPtr<RenderPass> renderPass;
@@ -38,7 +38,6 @@ namespace Luch::Render::Deferred
         RefPtr<DescriptorSet> textureDescriptorSet;
         RenderResource inputHandle;
         RenderMutableResource outputHandle;
-        Size2i attachmentSize;
+        Size2i outputSize;
     };
 }
-

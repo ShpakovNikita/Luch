@@ -45,12 +45,12 @@ namespace Luch::Render::Deferred
         void PrepareScene();
         void UpdateScene();
 
-        void ExecuteRenderPass(
+        void ExecuteGraphicsRenderPass(
             RenderGraphResourceManager* manager,
             FrameBuffer* frameBuffer,
             GraphicsCommandList* commandList) override;
     private:
-        static RefPtr<PipelineState> CreateTonemapPipelineState(TonemapPersistentContext* persistentContext);
+        static RefPtr<GraphicsPipelineState> CreateTonemapPipelineState(TonemapPersistentContext* persistentContext);
 
         TonemapPersistentContext* persistentContext = nullptr;
         TonemapTransientContext* transientContext = nullptr;

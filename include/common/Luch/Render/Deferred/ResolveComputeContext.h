@@ -16,34 +16,31 @@ namespace Luch::Render::Deferred
 {
     using namespace Graphics;
 
-    struct ResolvePersistentContext
+    struct ResolveComputePersistentContext
     {
         GraphicsDevice* device = nullptr;
 
         CameraResources* cameraResources = nullptr;
 
-        RefPtr<GraphicsPipelineState> pipelineState;
+        RefPtr<ComputePipelineState> pipelineState;
         RefPtr<PipelineLayout> pipelineLayout;
-
-        RefPtr<Buffer> fullscreenQuadBuffer;
 
         Array<DescriptorSetBinding, DeferredConstants::GBufferColorAttachmentCount> colorTextureBindings;
         DescriptorSetBinding depthStencilTextureBinding;
+        DescriptorSetBinding luminanceTextureBinding;
 
         RefPtr<DescriptorSetLayout> gbufferTextureDescriptorSetLayout;
+        RefPtr<DescriptorSetLayout> luminanceTextureDescriptorSetLayout;
 
         DescriptorSetBinding lightingParamsBinding;
         DescriptorSetBinding lightsBufferBinding;
 
         RefPtr<DescriptorSetLayout> lightsBufferDescriptorSetLayout;
 
-        RefPtr<ShaderProgram> vertexShader;
-        RefPtr<ShaderProgram> fragmentShader;
-
-        RefPtr<RenderPass> renderPass;
+        RefPtr<ShaderProgram> kernelShader;
     };
 
-    struct ResolveTransientContext
+    struct ResolveComputeTransientContext
     {
         SceneV1::Scene* scene = nullptr;
         RefPtr<DescriptorPool> descriptorPool;
@@ -51,6 +48,7 @@ namespace Luch::Render::Deferred
         GBufferReadOnly gbuffer;
         Size2i outputSize;
         RefPtr<DescriptorSet> cameraBufferDescriptorSet;
+        RefPtr<DescriptorSet> luminanceTextureDescriptorSet;
         RefPtr<DescriptorSet> gbufferTextureDescriptorSet;
         RefPtr<DescriptorSet> lightsBufferDescriptorSet;
     };
