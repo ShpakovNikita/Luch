@@ -58,8 +58,6 @@ namespace Luch::Render
         void DrawScene(SceneV1::Node* cameraNode);
         void EndRender();
     private:
-        bool CreateGBufferPass();
-
         int32 GetCurrentFrameResourceIndex() const;
         static ResultValue<bool, UniquePtr<CameraResources>> PrepareCameraResources(GraphicsDevice* device);
 
