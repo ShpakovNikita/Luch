@@ -9,6 +9,7 @@
 #include <Luch/SceneV1/SceneV1Forwards.h>
 #include <Luch/Render/Common.h>
 #include <Luch/Render/Deferred/DeferredForwards.h>
+#include <Luch/Render/RenderForwards.h>
 #include <Luch/Render/RenderContext.h>
 #include <Luch/Render/CameraResources.h>
 #include <Luch/Render/MaterialManager.h>
@@ -26,14 +27,19 @@ namespace Luch::Render
         RefPtr<DescriptorSet> cameraDescriptorSet;
 
         UniquePtr<Graph::RenderGraphBuilder> builder;
+        UniquePtr<DepthOnlyRenderPass> depthOnlyPass;
         UniquePtr<Deferred::GBufferRenderPass> gbufferPass;
         UniquePtr<Deferred::ResolveRenderPass> resolvePass;
         UniquePtr<Deferred::ResolveComputeRenderPass> resolveComputePass;
         UniquePtr<Deferred::TonemapRenderPass> tonemapPass;
+
+        UniquePtr<DepthOnlyTransientContext> depthOnlyTransientContext;
         UniquePtr<Deferred::GBufferTransientContext> gbufferTransientContext;
         UniquePtr<Deferred::ResolveTransientContext> resolveTransientContext;
         UniquePtr<Deferred::ResolveComputeTransientContext> resolveComputeTransientContext;
         UniquePtr<Deferred::TonemapTransientContext> tonemapTransientContext;
+
+        Graph::RenderMutableResource outputHandle;
         RefPtr<SwapchainTexture> swapchainTexture;
 
         void Reset();
@@ -69,12 +75,11 @@ namespace Luch::Render
         UniquePtr<MaterialManager> materialManager;
         UniquePtr<Graph::RenderGraphResourcePool> resourcePool;
 
+        UniquePtr<DepthOnlyPersistentContext> depthOnlyPersistentContext;
         UniquePtr<Deferred::GBufferPersistentContext> gbufferPersistentContext;
         UniquePtr<Deferred::ResolvePersistentContext> resolvePersistentContext;
         UniquePtr<Deferred::ResolveComputePersistentContext> resolveComputePersistentContext;
         UniquePtr<Deferred::TonemapPersistentContext> tonemapPersistentContext;
-
-        Graph::RenderMutableResource outputHandle;
 
         Array<FrameResources, MaxSwapchainTextures> frameResources;
         UniquePtr<CameraResources> cameraResources;

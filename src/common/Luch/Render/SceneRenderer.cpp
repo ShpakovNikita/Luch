@@ -1,6 +1,5 @@
 #include <Luch/Render/SceneRenderer.h>
 #include <Luch/Render/TextureUploader.h>
-#include <Luch/Render/ShaderDefines.h>
 
 #include <Luch/SceneV1/Scene.h>
 #include <Luch/SceneV1/Node.h>
@@ -29,6 +28,8 @@
 #include <Luch/Graphics/DescriptorPoolCreateInfo.h>
 
 #include <Luch/Render/RenderUtils.h>
+#include <Luch/Render/DepthOnlyRenderPass.h>
+#include <Luch/Render/DepthOnlyContext.h>
 #include <Luch/Render/Deferred/GBufferRenderPass.h>
 #include <Luch/Render/Deferred/GBufferContext.h>
 #include <Luch/Render/Deferred/ResolveRenderPass.h>
@@ -107,6 +108,20 @@ namespace Luch::Render
 
         semaphore = std::move(createdSemaphore);
 
+        // Depth-only Persistent Context
+        auto [createDepthOnlyPersistentContextResult, createdDepthOnlyPersistentContext] = DepthOnlyRenderPass::PrepareDepthOnlyPersistentContext(
+            context->device,
+            cameraResources.get(),
+            materialManager->GetResources());
+
+        if(!createDepthOnlyPersistentContextResult)
+        {
+            return false;
+        }
+
+        depthOnlyPersistentContext = std::move(createdDepthOnlyPersistentContext);
+
+        // GBuffer Persistent Context
         auto [createGBufferPersistentContextResult, createdGBufferPersistentContext] = GBufferRenderPass::PrepareGBufferPersistentContext(
             context->device,
             cameraResources.get(),
@@ -119,33 +134,31 @@ namespace Luch::Render
 
         gbufferPersistentContext = std::move(createdGBufferPersistentContext);
 
-        if(config.useComputeResolve)
+        // Resolve (Compute) Persistent Context
+        auto [createResolveComputePersistentContextResult, createdResolveComputePersistentContext] = ResolveComputeRenderPass::PrepareResolvePersistentContext(
+            context->device,
+            cameraResources.get());
+
+        if(!createResolveComputePersistentContextResult)
         {
-            auto [createResolvePersistentContextResult, createdResolvePersistentContext] = ResolveComputeRenderPass::PrepareResolvePersistentContext(
-                context->device,
-                cameraResources.get());
-
-            if(!createResolvePersistentContextResult)
-            {
-                return false;
-            }
-
-            resolveComputePersistentContext = std::move(createdResolvePersistentContext);
-        }
-        else
-        {
-            auto [createResolvePersistentContextResult, createdResolvePersistentContext] = ResolveRenderPass::PrepareResolvePersistentContext(
-                context->device,
-                cameraResources.get());
-
-            if(!createResolvePersistentContextResult)
-            {
-                return false;
-            }
-
-            resolvePersistentContext = std::move(createdResolvePersistentContext);
+            return false;
         }
 
+        resolveComputePersistentContext = std::move(createdResolveComputePersistentContext);
+
+        // Resolve (Graphics) Persistent Context
+        auto [createResolvePersistentContextResult, createdResolvePersistentContext] = ResolveRenderPass::PrepareResolvePersistentContext(
+            context->device,
+            cameraResources.get());
+
+        if(!createResolvePersistentContextResult)
+        {
+            return false;
+        }
+
+        resolvePersistentContext = std::move(createdResolvePersistentContext);
+
+        // Tonemap Persistent Context
         auto [createTonemapPersistentContextResult, createdTonemapPersistentContext] = TonemapRenderPass::PrepareTonemapPersistentContext(
             context->device,
             context->swapchain->GetInfo().format);
@@ -242,7 +255,32 @@ namespace Luch::Render
         auto swapchainInfo = context->swapchain->GetInfo();
         Size2i outputSize = { swapchainInfo.width, swapchainInfo.height };
 
-        outputHandle = frame.builder->GetResourceManager()->ImportTextureDeferred();
+        frame.outputHandle = frame.builder->GetResourceManager()->ImportTextureDeferred();
+
+        if(config.useDepthPrepass)
+        {
+            auto [prepareDepthOnlyTransientContextResult, preparedDepthOnlyTransientContext] = DepthOnlyRenderPass::PrepareDepthOnlyTransientContext(
+            depthOnlyPersistentContext.get(),
+            descriptorPool);
+
+            if(!prepareDepthOnlyTransientContextResult)
+            {
+                return false;
+            }
+
+            frame.depthOnlyTransientContext = std::move(preparedDepthOnlyTransientContext);
+
+            frame.depthOnlyTransientContext->descriptorPool = descriptorPool;
+            frame.depthOnlyTransientContext->outputSize = outputSize;
+            frame.depthOnlyTransientContext->scene = scene;
+            frame.depthOnlyTransientContext->sharedBuffer = frame.sharedBuffer;
+            frame.depthOnlyTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
+
+            frame.depthOnlyPass = MakeUnique<DepthOnlyRenderPass>(
+                depthOnlyPersistentContext.get(),
+                frame.depthOnlyTransientContext.get(),
+                frame.builder.get());
+        }
 
         auto [prepareGBufferTransientContextResult, preparedGBufferTransientContext] = GBufferRenderPass::PrepareGBufferTransientContext(
             gbufferPersistentContext.get(),
@@ -260,6 +298,12 @@ namespace Luch::Render
         frame.gbufferTransientContext->scene = scene;
         frame.gbufferTransientContext->sharedBuffer = frame.sharedBuffer;
         frame.gbufferTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
+
+        if(config.useDepthPrepass)
+        {
+            frame.gbufferTransientContext->useDepthPrepass = true;
+            frame.gbufferTransientContext->depthStencilTextureHandle = frame.depthOnlyPass->GetDepthTextureHandle();
+        }
 
         frame.gbufferPass = MakeUnique<GBufferRenderPass>(
             gbufferPersistentContext.get(),
@@ -334,7 +378,7 @@ namespace Luch::Render
         frame.tonemapTransientContext = std::move(preparedTonemapTransientContext);
 
         frame.tonemapTransientContext->inputHandle = luminanceTextureHandle;
-        frame.tonemapTransientContext->outputHandle = outputHandle;
+        frame.tonemapTransientContext->outputHandle = frame.outputHandle;
         frame.tonemapTransientContext->outputSize = outputSize;
         frame.tonemapTransientContext->scene = scene;
 
@@ -373,8 +417,21 @@ namespace Luch::Render
             }
         }
 
+        if(config.useDepthPrepass)
+        {
+            frame.depthOnlyPass->PrepareScene();
+        }
+
         frame.gbufferPass->PrepareScene();
-        frame.resolvePass->PrepareScene();
+
+        if(config.useComputeResolve)
+        {
+            frame.resolveComputePass->PrepareScene();
+        }
+        else
+        {
+            frame.resolvePass->PrepareScene();
+        }
         frame.tonemapPass->PrepareScene();
 
         return true;
@@ -391,7 +448,13 @@ namespace Luch::Render
             materialManager->UpdateMaterial(material, frame.sharedBuffer.get());
         }
 
+        if(config.useDepthPrepass)
+        {
+            frame.depthOnlyPass->UpdateScene();
+        }
+
         frame.gbufferPass->UpdateScene();
+
         if(config.useComputeResolve)
         {
             frame.resolveComputePass->UpdateScene();
@@ -400,6 +463,7 @@ namespace Luch::Render
         {
             frame.resolvePass->UpdateScene();
         }
+
         frame.tonemapPass->UpdateScene();
     }
 
@@ -427,7 +491,7 @@ namespace Luch::Render
 
         frame.swapchainTexture = swapchainTexture;
 
-        frame.builder->GetResourceManager()->ProvideDeferredTexture(outputHandle, swapchainTexture->GetTexture());
+        frame.builder->GetResourceManager()->ProvideDeferredTexture(frame.outputHandle, swapchainTexture->GetTexture());
 
         auto [buildResult, renderGraph] = frame.builder->Build();
         auto commandLists = renderGraph->Execute();

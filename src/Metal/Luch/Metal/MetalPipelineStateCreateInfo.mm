@@ -130,9 +130,10 @@ namespace Luch::Metal
 
         const auto& ci = createInfo.depthStencil;
 
+        d.SetDepthCompareFunction(ToMetalCompareFunction(ci.depthCompareFunction));
+
         if(ci.depthWriteEnable)
         {
-            d.SetDepthCompareFunction(ToMetalCompareFunction(ci.depthCompareFunction));
             d.SetDepthWriteEnabled(ci.depthWriteEnable);
         }
 

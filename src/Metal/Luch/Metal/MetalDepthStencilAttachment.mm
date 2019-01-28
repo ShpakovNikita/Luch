@@ -40,7 +40,7 @@ namespace Luch::Metal
         case CompareFunction::Less:
             return mtlpp::CompareFunction::Less;
         case CompareFunction::Equal:
-            return mtlpp::CompareFunction::LessEqual;
+            return mtlpp::CompareFunction::Equal;
         case CompareFunction::LessEqual:
             return mtlpp::CompareFunction::LessEqual;
         case CompareFunction::Greater:

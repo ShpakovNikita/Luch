@@ -20,6 +20,9 @@ namespace Luch::Render::Graph
         RenderMutableResource ImportColorAttachment(int32 index, RefPtr<Texture> texture);
         RenderMutableResource ImportDepthStencilAttachment(RefPtr<Texture> texture);
 
+        RenderMutableResource UseColorAttachment(int32 index, RenderMutableResource colorAttachmentHandle);
+        RenderMutableResource UseDepthStencilAttachment(RenderMutableResource depthStencilAttachmentHandle);
+
         RenderMutableResource CreateColorAttachment(int32 index, Size2i size);
         RenderMutableResource CreateDepthStencilAttachment(Size2i size);
 

@@ -172,7 +172,8 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     renderer = MakeUnique<Render::SceneRenderer>(scene);
 
     Render::SceneRendererConfig rendererConfig;
-    rendererConfig.useComputeResolve = false;
+    rendererConfig.useComputeResolve = true;
+    rendererConfig.useDepthPrepass = true;
 
     auto rendererInitialized = renderer->Initialize(context, rendererConfig);
     if(!rendererInitialized)
@@ -214,12 +215,14 @@ void SampleApplication::Process()
     bool beginSucceeded = renderer->BeginRender();
     if(!beginSucceeded)
     {
+        LUCH_ASSERT(false);
         return;
     }
 
     bool prepareSucceeded = renderer->PrepareScene();
     if(!prepareSucceeded)
     {
+        LUCH_ASSERT(false);
         return;
     }
 
