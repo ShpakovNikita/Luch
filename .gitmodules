@@ -13,3 +13,6 @@
 [submodule "lib/stb"]
 	path = lib/stb
 	url = https://github.com/nothings/stb.git
+[submodule "lib/SDL_iOS"]
+	path = lib/SDL_iOS
+	url = git@github.com:Spo1ler/SDL_iOS.git
