@@ -6,10 +6,14 @@
 #include <Luch/UniquePtr.h>
 #include <Luch/Graphics/Format.h>
 #include <Luch/SceneV1/SceneV1Forwards.h>
+#include <Luch/SceneV1/AttributeSemantic.h>
 
 namespace Luch::Render
 {
     using namespace Luch::Graphics;
+
+    extern const UnorderedMap<SceneV1::AttributeSemantic, int32> SemanticToLocation;
+    extern const UnorderedMap<SceneV1::AttributeSemantic, String> SemanticToFlag;
 
 #pragma pack(push, 1)
     struct QuadVertex

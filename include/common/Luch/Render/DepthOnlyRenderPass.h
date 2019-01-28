@@ -12,40 +12,37 @@
 #include <Luch/Render/Common.h>
 #include <Luch/Render/SharedBuffer.h>
 #include <Luch/Render/RenderForwards.h>
-#include <Luch/Render/Deferred/DeferredForwards.h>
-#include <Luch/Render/Deferred/GBuffer.h>
-#include <Luch/Render/Deferred/DeferredConstants.h>
 #include <Luch/Render/Graph/RenderGraphForwards.h>
+#include <Luch/Render/Graph/RenderGraphResources.h>
 #include <Luch/Render/Graph/RenderGraphPass.h>
 
-namespace Luch::Render::Deferred
+namespace Luch::Render
 {
     using namespace Graphics;
     using namespace Graph;
 
-    class GBufferRenderPass : public RenderGraphPass
+    class DepthOnlyRenderPass : public RenderGraphPass
     {
         static constexpr int32 MaxDescriptorSetCount = 4096;
         static constexpr int32 MaxDescriptorCount = 4096;
     public:
         static const String RenderPassName;
-        static const String RenderPassWithDepthOnlyName;
 
-        static ResultValue<bool, UniquePtr<GBufferPersistentContext>> PrepareGBufferPersistentContext(
+        static ResultValue<bool, UniquePtr<DepthOnlyPersistentContext>> PrepareDepthOnlyPersistentContext(
             GraphicsDevice* device,
             CameraResources* cameraResources,
             MaterialResources* materialResources);
 
-        static ResultValue<bool, UniquePtr<GBufferTransientContext>> PrepareGBufferTransientContext(
-            GBufferPersistentContext* persistentContext,
+        static ResultValue<bool, UniquePtr<DepthOnlyTransientContext>> PrepareDepthOnlyTransientContext(
+            DepthOnlyPersistentContext* persistentContext,
             RefPtr<DescriptorPool> descriptorPool);
 
-        GBufferRenderPass(
-            GBufferPersistentContext* persistentContext,
-            GBufferTransientContext* transientContext,
+        DepthOnlyRenderPass(
+            DepthOnlyPersistentContext* persistentContext,
+            DepthOnlyTransientContext* transientContext,
             RenderGraphBuilder* builder);
 
-        ~GBufferRenderPass();
+        ~DepthOnlyRenderPass();
 
         void PrepareScene();
         void UpdateScene();
@@ -53,7 +50,7 @@ namespace Luch::Render::Deferred
         SceneV1::Node* GetCameraNode() { return cameraNode; }
         void SetCameraNode(SceneV1::Node* node){ cameraNode = node; }
 
-        GBufferReadOnly GetGBuffer() { return gbuffer; }
+        RenderMutableResource GetDepthTextureHandle() { return depthTextureHandle; }
 
         void ExecuteGraphicsRenderPass(
             RenderGraphResourceManager* manager,
@@ -74,15 +71,11 @@ namespace Luch::Render::Deferred
         void DrawMesh(SceneV1::Mesh* mesh, GraphicsCommandList* commandList);
         void DrawPrimitive(SceneV1::Primitive* primitive, GraphicsCommandList* commandList);
 
-        static const String& GetRenderPassName(bool useDepthPrepass);
+        RefPtr<GraphicsPipelineState> CreateDepthOnlyPipelineState(SceneV1::Primitive* primitive);
 
-        RefPtr<GraphicsPipelineState> CreateGBufferPipelineState(
-            SceneV1::Primitive* primitive,
-            bool useDepthPrepass);
-
-        GBufferPersistentContext* persistentContext = nullptr;
-        GBufferTransientContext* transientContext = nullptr;
-        GBuffer gbuffer;
+        DepthOnlyPersistentContext* persistentContext = nullptr;
+        DepthOnlyTransientContext* transientContext = nullptr;
+        RenderMutableResource depthTextureHandle;
 
         UnorderedMap<SceneV1::Mesh*, RefPtr<DescriptorSet>> meshDescriptorSets;
         UnorderedMap<SceneV1::Camera*, RefPtr<DescriptorSet>> cameraDescriptorSets;

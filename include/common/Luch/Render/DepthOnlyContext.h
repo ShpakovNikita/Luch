@@ -7,14 +7,13 @@
 #include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/Graphics/DescriptorSetBinding.h>
 #include <Luch/Render/RenderForwards.h>
-#include <Luch/Render/Deferred/DeferredForwards.h>
 #include <Luch/SceneV1/SceneV1Forwards.h>
 
-namespace Luch::Render::Deferred
+namespace Luch::Render
 {
     using namespace Graphics;
 
-    struct GBufferPersistentContext
+    struct DepthOnlyPersistentContext
     {
         GraphicsDevice* device = nullptr;
 
@@ -29,17 +28,14 @@ namespace Luch::Render::Deferred
         RefPtr<DescriptorSetLayout> meshBufferDescriptorSetLayout;
 
         RefPtr<RenderPass> renderPass;
-        RefPtr<RenderPass> renderPassWithDepthOnly;
     };
 
-    struct GBufferTransientContext
+    struct DepthOnlyTransientContext
     {
         SceneV1::Scene* scene = nullptr;
         Size2i outputSize;
         SharedPtr<SharedBuffer> sharedBuffer;
         RefPtr<DescriptorPool> descriptorPool;
         RefPtr<DescriptorSet> cameraBufferDescriptorSet;
-        bool useDepthPrepass = false;
-        RenderMutableResource depthStencilTextureHandle;
     };
 }

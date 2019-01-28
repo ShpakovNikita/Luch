@@ -10,7 +10,6 @@
 #include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/SceneV1/SceneV1Forwards.h>
 #include <Luch/Render/Common.h>
-#include <Luch/Render/ShaderDefines.h>
 #include <Luch/Render/RenderForwards.h>
 #include <Luch/Render/Deferred/DeferredForwards.h>
 #include <Luch/Render/Deferred/GBuffer.h>

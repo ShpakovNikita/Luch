@@ -9,7 +9,6 @@
 #include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/SceneV1/SceneV1Forwards.h>
 #include <Luch/Render/Common.h>
-#include <Luch/Render/ShaderDefines.h>
 #include <Luch/Render/RenderForwards.h>
 #include <Luch/Render/Deferred/DeferredForwards.h>
 #include <Luch/Render/Deferred/GBuffer.h>
@@ -24,9 +23,6 @@ namespace Luch::Render::Deferred
 
     class ResolveRenderPass : public RenderGraphPass
     {
-        static constexpr int32 SharedUniformBufferSize = 1024 * 1024;
-        static constexpr int32 MaxDescriptorSetCount = 4096;
-        static constexpr int32 MaxDescriptorCount = 4096;
         static constexpr Format ColorFormat = Format::RGBA16Sfloat;
     public:
         static const String RenderPassName;

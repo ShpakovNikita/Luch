@@ -52,6 +52,38 @@ namespace Luch::Render::Graph
         return resource;
     }
 
+    RenderMutableResource RenderGraphNodeBuilder::UseColorAttachment(int32 index, RenderMutableResource colorAttachmentHandle)
+    {
+        auto node = GetNode();
+        const auto& attachment = node->renderPass->GetCreateInfo().colorAttachments[index];
+
+        LUCH_ASSERT(attachment.has_value());
+
+        RenderMutableResource resource = resourceManager->ModifyResource(colorAttachmentHandle);
+        node->colorAttachmentResources[index] = resource;
+
+        node->readResources.push_back(colorAttachmentHandle);
+        node->writtenResources.push_back(resource);
+
+        return resource;
+    }
+
+    RenderMutableResource RenderGraphNodeBuilder::UseDepthStencilAttachment(RenderMutableResource depthStencilAttachmentHandle)
+    {
+        auto node = GetNode();
+        const auto& attachment = node->renderPass->GetCreateInfo().depthStencilAttachment;
+
+        LUCH_ASSERT(attachment.has_value());
+
+        RenderMutableResource resource = resourceManager->ModifyResource(depthStencilAttachmentHandle);
+        node->depthStencilAttachmentResource = resource;
+
+        node->readResources.push_back(depthStencilAttachmentHandle);
+        node->writtenResources.push_back(resource);
+
+        return resource;
+    }
+
     RenderMutableResource RenderGraphNodeBuilder::CreateColorAttachment(int32 index, Size2i size)
     {
         auto node = GetNode();
