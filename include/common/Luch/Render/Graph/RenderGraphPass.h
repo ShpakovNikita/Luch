@@ -14,7 +14,6 @@ namespace Luch::Render::Graph
 
         virtual void ExecuteGraphicsRenderPass(
             [[maybe_unused]] RenderGraphResourceManager* manager,
-            [[maybe_unused]] FrameBuffer* frameBuffer,
             [[maybe_unused]] GraphicsCommandList* commandList) {};
 
         virtual void ExecuteComputeRenderPass(

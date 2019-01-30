@@ -52,7 +52,6 @@ namespace Luch::Render::Deferred
 
         void ExecuteGraphicsRenderPass(
             RenderGraphResourceManager* manager,
-            FrameBuffer* frameBuffer,
             GraphicsCommandList* commandList) override;
     private:
         void UpdateLights(const RefPtrVector<SceneV1::Node>& lightNodes);

@@ -109,7 +109,6 @@ namespace Luch::Render::Deferred
 
     void GBufferRenderPass::ExecuteGraphicsRenderPass(
         RenderGraphResourceManager* manager,
-        FrameBuffer* frameBuffer, 
         GraphicsCommandList* commandList)
     {
         Viewport viewport;
@@ -119,8 +118,6 @@ namespace Luch::Render::Deferred
         Rect2i scissorRect;
         scissorRect.size = transientContext->outputSize;
 
-        commandList->Begin();
-        commandList->BeginRenderPass(frameBuffer);
         commandList->SetViewports({ viewport });
         commandList->SetScissorRects({ scissorRect });
         commandList->BindBufferDescriptorSet(
@@ -132,9 +129,6 @@ namespace Luch::Render::Deferred
         {
             DrawNode(node, commandList);
         }
-
-        commandList->EndRenderPass();
-        commandList->End();
     }
 
     void GBufferRenderPass::PrepareNode(SceneV1::Node* node)

@@ -57,7 +57,6 @@ namespace Luch::Render::Deferred
 
         void ExecuteGraphicsRenderPass(
             RenderGraphResourceManager* manager,
-            FrameBuffer* frameBuffer,
             GraphicsCommandList* commandList) override;
     private:
         void PrepareNode(SceneV1::Node* node);

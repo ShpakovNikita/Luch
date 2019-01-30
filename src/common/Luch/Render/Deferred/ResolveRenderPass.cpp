@@ -82,7 +82,6 @@ namespace Luch::Render::Deferred
 
     void ResolveRenderPass::ExecuteGraphicsRenderPass(
         RenderGraphResourceManager* manager,
-        FrameBuffer* frameBuffer, 
         GraphicsCommandList* cmdList)
     {
         for(int32 i = 0; i < gbuffer.color.size(); i++)
@@ -109,8 +108,6 @@ namespace Luch::Render::Deferred
         Rect2i scissorRect;
         scissorRect.size = transientContext->outputSize;
 
-        cmdList->Begin();
-        cmdList->BeginRenderPass(frameBuffer);
         cmdList->BindGraphicsPipelineState(persistentContext->pipelineState);
         cmdList->SetViewports({ viewport });
         cmdList->SetScissorRects({ scissorRect });
@@ -132,8 +129,6 @@ namespace Luch::Render::Deferred
 
         cmdList->BindVertexBuffers({ persistentContext->fullscreenQuadBuffer }, {0});
         cmdList->Draw(0, fullscreenQuadVertices.size());
-        cmdList->EndRenderPass();
-        cmdList->End();
     }
 
     void ResolveRenderPass::UpdateLights(const RefPtrVector<SceneV1::Node>& lightNodes)

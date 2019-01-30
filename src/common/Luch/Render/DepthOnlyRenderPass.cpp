@@ -93,7 +93,6 @@ namespace Luch::Render
 
     void DepthOnlyRenderPass::ExecuteGraphicsRenderPass(
         RenderGraphResourceManager* manager,
-        FrameBuffer* frameBuffer,
         GraphicsCommandList* commandList)
     {
         Viewport viewport;
@@ -103,8 +102,6 @@ namespace Luch::Render
         Rect2i scissorRect;
         scissorRect.size = transientContext->outputSize;
 
-        commandList->Begin();
-        commandList->BeginRenderPass(frameBuffer);
         commandList->SetViewports({ viewport });
         commandList->SetScissorRects({ scissorRect });
         commandList->BindBufferDescriptorSet(
@@ -116,9 +113,6 @@ namespace Luch::Render
         {
             DrawNode(node, commandList);
         }
-
-        commandList->EndRenderPass();
-        commandList->End();
     }
 
     void DepthOnlyRenderPass::PrepareNode(SceneV1::Node* node)
