@@ -35,6 +35,7 @@
 #include <Luch/Graphics/DescriptorPool.h>
 #include <Luch/Graphics/GraphicsCommandList.h>
 #include <Luch/Graphics/PhysicalDevice.h>
+#include <Luch/Graphics/PhysicalDeviceCapabilities.h>
 #include <Luch/Graphics/GraphicsPipelineState.h>
 #include <Luch/Graphics/GraphicsPipelineStateCreateInfo.h>
 #include <Luch/Graphics/PrimitiveTopology.h>
@@ -483,16 +484,9 @@ namespace Luch::Render::Deferred
         context->cameraResources = cameraResources;
         context->materialResources = materialResources;
 
-        Vector<Format> depthFormats =
-        {
-            Format::D32SfloatS8Uint,
-            Format::D24UnormS8Uint,
-            Format::D16UnormS8Uint,
-        };
-
-        auto supportedDepthFormats = context->device->GetPhysicalDevice()->GetSupportedDepthStencilFormats(depthFormats);
-        LUCH_ASSERT_MSG(!depthFormats.empty(), "No supported depth formats");
-        Format depthStencilFormat = depthFormats.front();
+        const auto& supportedDepthFormats = context->device->GetPhysicalDevice()->GetCapabilities().supportedDepthFormats;
+        LUCH_ASSERT_MSG(!supportedDepthFormats.empty(), "No supported depth formats");
+        Format depthStencilFormat = supportedDepthFormats.front();
 
         // Render pass for gbuffer
         ColorAttachment gbufferColorAttachmentTemplate;

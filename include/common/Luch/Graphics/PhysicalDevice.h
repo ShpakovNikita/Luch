@@ -12,10 +12,8 @@ namespace Luch::Graphics
     public:
         virtual ~PhysicalDevice() = 0;
 
-        //virtual Vector<Format> GetSupportedColorFormats(const Vector<Format>& formats) = 0;
-        virtual Vector<Format> GetSupportedDepthStencilFormats(const Vector<Format>& formats) const = 0;
-
         virtual GraphicsResultRefPtr<GraphicsDevice> CreateGraphicsDevice() = 0;
+        virtual const PhysicalDeviceCapabilities& GetCapabilities() = 0;
     };
 
     inline PhysicalDevice::~PhysicalDevice() {}

@@ -1,6 +1,7 @@
 #include <Luch/Metal/MetalPipelineStateCreateInfo.h>
 #include <Luch/Graphics/GraphicsPipelineStateCreateInfo.h>
 #include <Luch/Graphics/ComputePipelineStateCreateInfo.h>
+#include <Luch/Graphics/TiledPipelineStateCreateInfo.h>
 #include <Luch/Metal/MetalFormat.h>
 #include <Luch/Metal/MetalShaderProgram.h>
 #include <Luch/Metal/MetalPrimitiveTopology.h>
@@ -154,6 +155,23 @@ namespace Luch::Metal
 
         d.SetComputeFunction(mtlKernelProgram->GetMetalFunction());
         d.SetLabel(ns::String{ ci.name.c_str() });
+
+        return d;
+    }
+
+    mtlpp::TileRenderPipelineDescriptor ToMetalTiledPipelineStateCreateInfo(const TiledPipelineStateCreateInfo& ci)
+    {
+        mtlpp::TileRenderPipelineDescriptor d;
+
+        auto mtlTileProgram = static_cast<MetalShaderProgram*>(ci.tiledProgram.Get());
+
+        d.SetTileFunction(mtlTileProgram->GetMetalFunction());
+        d.SetLabel(ns::String { ci.name.c_str() });
+
+        for(int32 i = 0; i < ci.colorAttachments.attachments.size(); i++)
+        {
+            d.GetColorAttachments()[i].SetPixelFormat(ToMetalPixelFormat(ci.colorAttachments.attachments[i].format));
+        }
 
         return d;
     }

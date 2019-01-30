@@ -15,6 +15,7 @@ namespace Luch::Graphics
 
         virtual void WriteTexture(const DescriptorSetBinding& binding, Texture* texture) = 0;
         virtual void WriteUniformBuffer(const DescriptorSetBinding& binding, Buffer* buffer, int32 offset) = 0;
+        virtual void WriteThreadgroupMemory(const DescriptorSetBinding& binding, int32 length, int32 offset) = 0;
         virtual void WriteSampler(const DescriptorSetBinding& binding, Sampler* sampler) = 0;
         virtual void Update() = 0;
     };

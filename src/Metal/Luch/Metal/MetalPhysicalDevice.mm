@@ -3,9 +3,28 @@
 
 namespace Luch::Metal
 {
+    constexpr Array<Format, 3> DepthFormats = 
+    {
+        Format::D32SfloatS8Uint,
+        Format::D24UnormS8Uint,
+        Format::D16UnormS8Uint,
+    };
+
     MetalPhysicalDevice::MetalPhysicalDevice(mtlpp::Device aDevice)
         : device(aDevice)
     {
+        for(Format format : DepthFormats)
+        {
+            if(format != Format::D24UnormS8Uint || device.IsDepth24Stencil8PixelFormatSupported())
+            {
+                capabilities.supportedDepthFormats.push_back(format);
+            }
+        }
+
+        if(@available(iOS 11.0, *))
+        {
+            capabilities.hasTileBasedArchitecture = true;
+        }
     }
 
     GraphicsResultValue<RefPtrVector<MetalPhysicalDevice>> MetalPhysicalDevice::EnumeratePhysicalDevices()
@@ -27,20 +46,6 @@ namespace Luch::Metal
         }
 
         return { GraphicsResult::Success, mtlDevices };
-    }
-
-    Vector<Format> MetalPhysicalDevice::GetSupportedDepthStencilFormats(const Vector<Format>& formats) const
-    {
-        Vector<Format> supportedFormats;
-        for(Format format : formats)
-        {
-            if(format != Format::D24UnormS8Uint || device.IsDepth24Stencil8PixelFormatSupported())
-            {
-                supportedFormats.push_back(format);
-            }
-        }
-
-        return formats;
     }
 
     GraphicsResultRefPtr<GraphicsDevice> MetalPhysicalDevice::CreateGraphicsDevice()

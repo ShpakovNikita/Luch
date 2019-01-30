@@ -257,19 +257,16 @@ endif()
 # Add Metal implementation if it's used
 if(USE_METAL)
     add_compile_definitions(GLM_FORCE_LEFT_HANDED)
+
+    file(GLOB_RECURSE MTLPP_OBJCPP_FILES ${LIB_DIR}/mtlpp/src/*.mm)
+    file(GLOB_RECURSE MTLPP_HEADER_FILES ${LIB_DIR}/mtlpp/src/*.hpp)
     # Add mtlpp library and includes
     include_directories(AFTER
-        ${LIB_DIR}/mtlpp/)
+        ${LIB_DIR}/mtlpp/src)
 
     add_library(mtlpp
-        ${LIB_DIR}/mtlpp/mtlpp.hpp
-        ${LIB_DIR}/mtlpp/mtlpp.mm)
-
-    # target_link_libraries(mtlpp "-framework Foundation")
-    # target_link_libraries(mtlpp "-framework CoreVideo")
-    # target_link_libraries(mtlpp "-framework QuartzCore")
-    # target_link_libraries(mtlpp "-framework Cocoa")
-    # target_link_libraries(mtlpp "-framework Metal")
+        ${MTLPP_OBJCPP_FILES}
+        ${MTLPP_HEADER_FILES})
 
     target_link_libraries(LuchEngine mtlpp)
 
