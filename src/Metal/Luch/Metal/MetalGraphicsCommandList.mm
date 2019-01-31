@@ -174,6 +174,9 @@ namespace Luch::Metal
         case ShaderStage::Fragment:
             commandEncoder.SetFragmentTextures(textures, range);
             break;
+        case ShaderStage::Tile:
+            commandEncoder.SetTileTextures(textures, range);
+            break;
         default:
             LUCH_ASSERT(false);
         }
@@ -184,15 +187,8 @@ namespace Luch::Metal
         PipelineLayout* pipelineLayout,
         DescriptorSet* descriptorSet)
     {
-        switch(stage)
-        {
-        case ShaderStage::Tile:
-            BindThreadgroupDescriptorSet(pipelineLayout, descriptorSet);
-            break;
-        default:
-            BindBufferDescriptorSetImpl(stage, pipelineLayout, descriptorSet);
-            break;
-        }
+        // TODO threadgroup memory
+        BindBufferDescriptorSetImpl(stage, pipelineLayout, descriptorSet);
     }
 
     void MetalGraphicsCommandList::BindSamplerDescriptorSet(
@@ -228,6 +224,9 @@ namespace Luch::Metal
             break;
         case ShaderStage::Fragment:
             commandEncoder.SetFragmentSamplerStates(samplers, range);
+            break;
+        case ShaderStage::Tile:
+            commandEncoder.SetTileSamplerStates(samplers, range);
             break;
         default:
             LUCH_ASSERT(false);
@@ -375,6 +374,9 @@ namespace Luch::Metal
             break;
         case ShaderStage::Fragment:
             commandEncoder.SetFragmentBuffers(buffers, bufferOffsets, range);
+            break;
+        case ShaderStage::Tile:
+            commandEncoder.SetTileBuffers(buffers, bufferOffsets, range);
             break;
         default:
             LUCH_ASSERT(false);

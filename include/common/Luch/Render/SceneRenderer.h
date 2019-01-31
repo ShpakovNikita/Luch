@@ -9,6 +9,7 @@
 #include <Luch/SceneV1/SceneV1Forwards.h>
 #include <Luch/Render/Common.h>
 #include <Luch/Render/Deferred/DeferredForwards.h>
+#include <Luch/Render/TiledDeferred/TiledDeferredForwards.h>
 #include <Luch/Render/RenderForwards.h>
 #include <Luch/Render/RenderContext.h>
 #include <Luch/Render/CameraResources.h>
@@ -23,17 +24,20 @@ namespace Luch::Render
 
     struct FrameResources
     {
+        Size2i outputSize;
         SharedPtr<SharedBuffer> sharedBuffer;
         RefPtr<DescriptorSet> cameraDescriptorSet;
 
         UniquePtr<Graph::RenderGraphBuilder> builder;
         UniquePtr<DepthOnlyRenderPass> depthOnlyPass;
+        UniquePtr<TiledDeferred::TiledDeferredRenderPass> tiledDeferredPass;
         UniquePtr<Deferred::GBufferRenderPass> gbufferPass;
         UniquePtr<Deferred::ResolveRenderPass> resolvePass;
         UniquePtr<Deferred::ResolveComputeRenderPass> resolveComputePass;
         UniquePtr<Deferred::TonemapRenderPass> tonemapPass;
 
         UniquePtr<DepthOnlyTransientContext> depthOnlyTransientContext;
+        UniquePtr<TiledDeferred::TiledDeferredTransientContext> tiledDeferredTransientContext;
         UniquePtr<Deferred::GBufferTransientContext> gbufferTransientContext;
         UniquePtr<Deferred::ResolveTransientContext> resolveTransientContext;
         UniquePtr<Deferred::ResolveComputeTransientContext> resolveComputeTransientContext;
@@ -64,11 +68,16 @@ namespace Luch::Render
         void DrawScene(SceneV1::Node* cameraNode);
         void EndRender();
     private:
+        bool PrepareDeferred(FrameResources& frame);
+        bool PrepareTiledDeferred(FrameResources& frame);
+
         int32 GetCurrentFrameResourceIndex() const;
         static ResultValue<bool, UniquePtr<CameraResources>> PrepareCameraResources(GraphicsDevice* device);
 
         bool UploadSceneTextures();
         bool UploadSceneBuffers();
+
+        bool canUseTiledDeferredRender = false;
 
         SceneRendererConfig config;
 
@@ -76,6 +85,7 @@ namespace Luch::Render
         UniquePtr<Graph::RenderGraphResourcePool> resourcePool;
 
         UniquePtr<DepthOnlyPersistentContext> depthOnlyPersistentContext;
+        UniquePtr<TiledDeferred::TiledDeferredPersistentContext> tiledDeferredPersistentContext;
         UniquePtr<Deferred::GBufferPersistentContext> gbufferPersistentContext;
         UniquePtr<Deferred::ResolvePersistentContext> resolvePersistentContext;
         UniquePtr<Deferred::ResolveComputePersistentContext> resolveComputePersistentContext;

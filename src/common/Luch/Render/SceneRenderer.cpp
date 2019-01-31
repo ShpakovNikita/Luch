@@ -16,6 +16,8 @@
 #include <Luch/SceneV1/AttributeSemantic.h>
 
 #include <Luch/Graphics/GraphicsDevice.h>
+#include <Luch/Graphics/PhysicalDevice.h>
+#include <Luch/Graphics/PhysicalDeviceCapabilities.h>
 #include <Luch/Graphics/CommandQueue.h>
 #include <Luch/Graphics/Swapchain.h>
 #include <Luch/Graphics/Semaphore.h>
@@ -28,8 +30,10 @@
 #include <Luch/Graphics/DescriptorPoolCreateInfo.h>
 
 #include <Luch/Render/RenderUtils.h>
+
 #include <Luch/Render/DepthOnlyRenderPass.h>
 #include <Luch/Render/DepthOnlyContext.h>
+
 #include <Luch/Render/Deferred/GBufferRenderPass.h>
 #include <Luch/Render/Deferred/GBufferContext.h>
 #include <Luch/Render/Deferred/ResolveRenderPass.h>
@@ -38,6 +42,10 @@
 #include <Luch/Render/Deferred/ResolveComputeContext.h>
 #include <Luch/Render/Deferred/TonemapRenderPass.h>
 #include <Luch/Render/Deferred/TonemapContext.h>
+
+#include <Luch/Render/TiledDeferred/TiledDeferredContext.h>
+#include <Luch/Render/TiledDeferred/TiledDeferredRenderPass.h>
+
 #include <Luch/Render/Graph/RenderGraph.h>
 #include <Luch/Render/Graph/RenderGraphBuilder.h>
 #include <Luch/Render/Graph/RenderGraphResourceManager.h>
@@ -47,15 +55,20 @@ namespace Luch::Render
 {
     using namespace Graphics;
     using namespace Deferred;
+    using namespace TiledDeferred;
     using namespace Graph;
 
     void FrameResources::Reset()
     {
         builder.reset();
+        depthOnlyPass.reset();
+        tiledDeferredPass.reset();
         gbufferPass.reset();
         resolvePass.reset();
         resolveComputePass.reset();
         tonemapPass.reset();
+        depthOnlyTransientContext.reset();
+        tiledDeferredTransientContext.reset();
         gbufferTransientContext.reset();
         resolveTransientContext.reset();
         tonemapTransientContext.reset();
@@ -74,6 +87,8 @@ namespace Luch::Render
     {
         context = aContext;
         config = aConfig;
+
+        canUseTiledDeferredRender = context->device->GetPhysicalDevice()->GetCapabilities().hasTileBasedArchitecture;
 
         auto [createCameraResourcesResult, createdCameraResources] = PrepareCameraResources(context->device);
         if(!createCameraResourcesResult)
@@ -109,17 +124,35 @@ namespace Luch::Render
         semaphore = std::move(createdSemaphore);
 
         // Depth-only Persistent Context
-        auto [createDepthOnlyPersistentContextResult, createdDepthOnlyPersistentContext] = DepthOnlyRenderPass::PrepareDepthOnlyPersistentContext(
-            context->device,
-            cameraResources.get(),
-            materialManager->GetResources());
-
-        if(!createDepthOnlyPersistentContextResult)
         {
-            return false;
+            auto [createDepthOnlyPersistentContextResult, createdDepthOnlyPersistentContext] = DepthOnlyRenderPass::PrepareDepthOnlyPersistentContext(
+                context->device,
+                cameraResources.get(),
+                materialManager->GetResources());
+
+            if(!createDepthOnlyPersistentContextResult)
+            {
+                return false;
+            }
+
+            depthOnlyPersistentContext = std::move(createdDepthOnlyPersistentContext);
         }
 
-        depthOnlyPersistentContext = std::move(createdDepthOnlyPersistentContext);
+        // Tiled Deferred Persistent Context
+        if(canUseTiledDeferredRender)
+        {
+            auto [createTiledDeferredPersistentContextResult, createdTiledDeferredPersistentContext] = TiledDeferredRenderPass::PrepareTiledDeferredPersistentContext(
+                context->device,
+                cameraResources.get(),
+                materialManager->GetResources());
+
+            if(!createTiledDeferredPersistentContextResult)
+            {
+                return false;
+            }
+
+            tiledDeferredPersistentContext = std::move(createdTiledDeferredPersistentContext);
+        }
 
         // GBuffer Persistent Context
         auto [createGBufferPersistentContextResult, createdGBufferPersistentContext] = GBufferRenderPass::PrepareGBufferPersistentContext(
@@ -219,6 +252,8 @@ namespace Luch::Render
     bool SceneRenderer::Deinitialize()
     {
         commandPool.Release();
+        depthOnlyPersistentContext.reset();
+        tiledDeferredPersistentContext.reset();
         tonemapPersistentContext.reset();
         resolvePersistentContext.reset();
         gbufferPersistentContext.reset();
@@ -253,118 +288,40 @@ namespace Luch::Render
         }
 
         auto swapchainInfo = context->swapchain->GetInfo();
-        Size2i outputSize = { swapchainInfo.width, swapchainInfo.height };
+        frame.outputSize = { swapchainInfo.width, swapchainInfo.height };
 
         frame.outputHandle = frame.builder->GetResourceManager()->ImportTextureDeferred();
 
-        if(config.useDepthPrepass)
-        {
-            auto [prepareDepthOnlyTransientContextResult, preparedDepthOnlyTransientContext] = DepthOnlyRenderPass::PrepareDepthOnlyTransientContext(
-            depthOnlyPersistentContext.get(),
-            descriptorPool);
-
-            if(!prepareDepthOnlyTransientContextResult)
-            {
-                return false;
-            }
-
-            frame.depthOnlyTransientContext = std::move(preparedDepthOnlyTransientContext);
-
-            frame.depthOnlyTransientContext->descriptorPool = descriptorPool;
-            frame.depthOnlyTransientContext->outputSize = outputSize;
-            frame.depthOnlyTransientContext->scene = scene;
-            frame.depthOnlyTransientContext->sharedBuffer = frame.sharedBuffer;
-            frame.depthOnlyTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
-
-            frame.depthOnlyPass = MakeUnique<DepthOnlyRenderPass>(
-                depthOnlyPersistentContext.get(),
-                frame.depthOnlyTransientContext.get(),
-                frame.builder.get());
-        }
-
-        auto [prepareGBufferTransientContextResult, preparedGBufferTransientContext] = GBufferRenderPass::PrepareGBufferTransientContext(
-            gbufferPersistentContext.get(),
-            descriptorPool);
-
-        if(!prepareGBufferTransientContextResult)
-        {
-            return false;
-        }
-
-        frame.gbufferTransientContext = std::move(preparedGBufferTransientContext);
-
-        frame.gbufferTransientContext->descriptorPool = descriptorPool;
-        frame.gbufferTransientContext->outputSize = outputSize;
-        frame.gbufferTransientContext->scene = scene;
-        frame.gbufferTransientContext->sharedBuffer = frame.sharedBuffer;
-        frame.gbufferTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
-
-        if(config.useDepthPrepass)
-        {
-            frame.gbufferTransientContext->useDepthPrepass = true;
-            frame.gbufferTransientContext->depthStencilTextureHandle = frame.depthOnlyPass->GetDepthTextureHandle();
-        }
-
-        frame.gbufferPass = MakeUnique<GBufferRenderPass>(
-            gbufferPersistentContext.get(),
-            frame.gbufferTransientContext.get(),
-            frame.builder.get());
-
         RenderMutableResource luminanceTextureHandle;
-        if(config.useComputeResolve)
+        if(config.useTiledDeferredPass && context->device->GetPhysicalDevice()->GetCapabilities().hasTileBasedArchitecture)
         {
-            auto [prepareResolveTransientContextResult, preparedResolveTransientContext] = ResolveComputeRenderPass::PrepareResolveTransientContext(
-                resolveComputePersistentContext.get(),
-                descriptorPool);
-
-            if(!prepareResolveTransientContextResult)
+            bool tileDeferredPrepared = PrepareTiledDeferred(frame);
+            LUCH_ASSERT(tileDeferredPrepared);
+            if(!tileDeferredPrepared)
             {
                 return false;
             }
 
-            frame.resolveComputeTransientContext = std::move(preparedResolveTransientContext);
-
-            frame.resolveComputeTransientContext->gbuffer = frame.gbufferPass->GetGBuffer();
-            frame.resolveComputeTransientContext->outputSize = outputSize;
-            frame.resolveComputeTransientContext->scene = scene;
-            frame.resolveComputeTransientContext->sharedBuffer = frame.sharedBuffer;
-            frame.resolveComputeTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
-
-            frame.resolveComputePass = MakeUnique<ResolveComputeRenderPass>(
-                resolveComputePersistentContext.get(),
-                frame.resolveComputeTransientContext.get(),
-                frame.builder.get());
-
-            luminanceTextureHandle = frame.resolveComputePass->GetResolveTextureHandle();;
+            luminanceTextureHandle = frame.tiledDeferredPass->GetResolveTextureHandle();
         }
         else
         {
-            auto [prepareResolveTransientContextResult, preparedResolveTransientContext] = ResolveRenderPass::PrepareResolveTransientContext(
-                resolvePersistentContext.get(),
-                descriptorPool);
-
-            if(!prepareResolveTransientContextResult)
+            bool deferredPrepared = PrepareDeferred(frame);
+            LUCH_ASSERT(deferredPrepared);
+            if(!deferredPrepared)
             {
                 return false;
             }
 
-            frame.resolveTransientContext = std::move(preparedResolveTransientContext);
-
-            frame.resolveTransientContext->gbuffer = frame.gbufferPass->GetGBuffer();
-            frame.resolveTransientContext->outputSize = outputSize;
-            frame.resolveTransientContext->scene = scene;
-            frame.resolveTransientContext->sharedBuffer = frame.sharedBuffer;
-            frame.resolveTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
-
-            frame.resolvePass = MakeUnique<ResolveRenderPass>(
-                resolvePersistentContext.get(),
-                frame.resolveTransientContext.get(),
-                frame.builder.get());
-
-            luminanceTextureHandle = frame.resolvePass->GetResolveTextureHandle();
+            if(config.useComputeResolve)
+            {
+                luminanceTextureHandle = frame.resolveComputePass->GetResolveTextureHandle();
+            }
+            else
+            {
+                luminanceTextureHandle = frame.resolvePass->GetResolveTextureHandle();
+            }
         }
-
-        LUCH_ASSERT_MSG(!config.useComputeTonemap, "Not implemented");
 
         auto [prepareTonemapTransientContextResult, preparedTonemapTransientContext] = TonemapRenderPass::PrepareTonemapTransientContext(
             tonemapPersistentContext.get(),
@@ -379,7 +336,7 @@ namespace Luch::Render
 
         frame.tonemapTransientContext->inputHandle = luminanceTextureHandle;
         frame.tonemapTransientContext->outputHandle = frame.outputHandle;
-        frame.tonemapTransientContext->outputSize = outputSize;
+        frame.tonemapTransientContext->outputSize = frame.outputSize;
         frame.tonemapTransientContext->scene = scene;
 
         frame.tonemapPass = MakeUnique<TonemapRenderPass>(
@@ -422,16 +379,24 @@ namespace Luch::Render
             frame.depthOnlyPass->PrepareScene();
         }
 
-        frame.gbufferPass->PrepareScene();
-
-        if(config.useComputeResolve)
+        if(config.useTiledDeferredPass)
         {
-            frame.resolveComputePass->PrepareScene();
+            frame.tiledDeferredPass->PrepareScene();
         }
         else
         {
-            frame.resolvePass->PrepareScene();
+            frame.gbufferPass->PrepareScene();
+
+            if(config.useComputeResolve)
+            {
+                frame.resolveComputePass->PrepareScene();
+            }
+            else
+            {
+                frame.resolvePass->PrepareScene();
+            }
         }
+
         frame.tonemapPass->PrepareScene();
 
         return true;
@@ -453,15 +418,22 @@ namespace Luch::Render
             frame.depthOnlyPass->UpdateScene();
         }
 
-        frame.gbufferPass->UpdateScene();
-
-        if(config.useComputeResolve)
+        if(config.useTiledDeferredPass)
         {
-            frame.resolveComputePass->UpdateScene();
+            frame.tiledDeferredPass->UpdateScene();
         }
         else
         {
-            frame.resolvePass->UpdateScene();
+            frame.gbufferPass->UpdateScene();
+
+            if(config.useComputeResolve)
+            {
+                frame.resolveComputePass->UpdateScene();
+            }
+            else
+            {
+                frame.resolvePass->UpdateScene();
+            }
         }
 
         frame.tonemapPass->UpdateScene();
@@ -516,6 +488,142 @@ namespace Luch::Render
 
         frameIndex++;
     }
+
+    bool SceneRenderer::PrepareDeferred(FrameResources& frame)
+    {
+        if(config.useDepthPrepass)
+        {
+            auto [prepareDepthOnlyTransientContextResult, preparedDepthOnlyTransientContext] = DepthOnlyRenderPass::PrepareDepthOnlyTransientContext(
+                depthOnlyPersistentContext.get(),
+                descriptorPool);
+
+            if(!prepareDepthOnlyTransientContextResult)
+            {
+                return false;
+            }
+
+            frame.depthOnlyTransientContext = std::move(preparedDepthOnlyTransientContext);
+
+            frame.depthOnlyTransientContext->descriptorPool = descriptorPool;
+            frame.depthOnlyTransientContext->outputSize = frame.outputSize;
+            frame.depthOnlyTransientContext->scene = scene;
+            frame.depthOnlyTransientContext->sharedBuffer = frame.sharedBuffer;
+            frame.depthOnlyTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
+
+            frame.depthOnlyPass = MakeUnique<DepthOnlyRenderPass>(
+                depthOnlyPersistentContext.get(),
+                frame.depthOnlyTransientContext.get(),
+                frame.builder.get());
+        }
+
+        auto [prepareGBufferTransientContextResult, preparedGBufferTransientContext] = GBufferRenderPass::PrepareGBufferTransientContext(
+            gbufferPersistentContext.get(),
+            descriptorPool);
+
+        if(!prepareGBufferTransientContextResult)
+        {
+            return false;
+        }
+
+        frame.gbufferTransientContext = std::move(preparedGBufferTransientContext);
+
+        frame.gbufferTransientContext->descriptorPool = descriptorPool;
+        frame.gbufferTransientContext->outputSize = frame.outputSize;
+        frame.gbufferTransientContext->scene = scene;
+        frame.gbufferTransientContext->sharedBuffer = frame.sharedBuffer;
+        frame.gbufferTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
+
+        if(config.useDepthPrepass)
+        {
+            frame.gbufferTransientContext->useDepthPrepass = true;
+            frame.gbufferTransientContext->depthStencilTextureHandle = frame.depthOnlyPass->GetDepthTextureHandle();
+        }
+
+        frame.gbufferPass = MakeUnique<GBufferRenderPass>(
+            gbufferPersistentContext.get(),
+            frame.gbufferTransientContext.get(),
+            frame.builder.get());
+
+        if(config.useComputeResolve)
+        {
+            auto [prepareResolveTransientContextResult, preparedResolveTransientContext] = ResolveComputeRenderPass::PrepareResolveTransientContext(
+                resolveComputePersistentContext.get(),
+                descriptorPool);
+
+            if(!prepareResolveTransientContextResult)
+            {
+                return false;
+            }
+
+            frame.resolveComputeTransientContext = std::move(preparedResolveTransientContext);
+
+            frame.resolveComputeTransientContext->gbuffer = frame.gbufferPass->GetGBuffer();
+            frame.resolveComputeTransientContext->outputSize = frame.outputSize;
+            frame.resolveComputeTransientContext->scene = scene;
+            frame.resolveComputeTransientContext->sharedBuffer = frame.sharedBuffer;
+            frame.resolveComputeTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
+
+            frame.resolveComputePass = MakeUnique<ResolveComputeRenderPass>(
+                resolveComputePersistentContext.get(),
+                frame.resolveComputeTransientContext.get(),
+                frame.builder.get());
+        }
+        else
+        {
+            auto [prepareResolveTransientContextResult, preparedResolveTransientContext] = ResolveRenderPass::PrepareResolveTransientContext(
+                resolvePersistentContext.get(),
+                descriptorPool);
+
+            if(!prepareResolveTransientContextResult)
+            {
+                return false;
+            }
+
+            frame.resolveTransientContext = std::move(preparedResolveTransientContext);
+
+            frame.resolveTransientContext->gbuffer = frame.gbufferPass->GetGBuffer();
+            frame.resolveTransientContext->outputSize = frame.outputSize;
+            frame.resolveTransientContext->scene = scene;
+            frame.resolveTransientContext->sharedBuffer = frame.sharedBuffer;
+            frame.resolveTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
+
+            frame.resolvePass = MakeUnique<ResolveRenderPass>(
+                resolvePersistentContext.get(),
+                frame.resolveTransientContext.get(),
+                frame.builder.get());
+        }
+
+        return true;
+    }
+
+    bool SceneRenderer::PrepareTiledDeferred(FrameResources& frame)
+    {
+        auto [prepareTiledDeferredTransientContextResult, preparedTiledDeferredTransientContext] = TiledDeferredRenderPass::PrepareTiledDeferredTransientContext(
+            tiledDeferredPersistentContext.get(),
+            descriptorPool);
+
+        if(!prepareTiledDeferredTransientContextResult)
+        {
+            LUCH_ASSERT(false);
+            return false;
+        }
+
+        frame.tiledDeferredTransientContext = std::move(preparedTiledDeferredTransientContext);
+
+        frame.tiledDeferredTransientContext->descriptorPool = descriptorPool;
+        frame.tiledDeferredTransientContext->outputSize = frame.outputSize;
+        frame.tiledDeferredTransientContext->scene = scene;
+        frame.tiledDeferredTransientContext->sharedBuffer = frame.sharedBuffer;
+        frame.tiledDeferredTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
+
+        frame.tiledDeferredPass = MakeUnique<TiledDeferredRenderPass>(
+            tiledDeferredPersistentContext.get(),
+            frame.tiledDeferredTransientContext.get(),
+            frame.builder.get());
+
+        return true;
+    }
+
 
     int32 SceneRenderer::GetCurrentFrameResourceIndex() const
     {

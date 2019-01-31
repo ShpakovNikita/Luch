@@ -84,18 +84,20 @@ namespace Luch::Render::Graph
         return resource;
     }
 
-    RenderMutableResource RenderGraphNodeBuilder::CreateColorAttachment(int32 index, Size2i size)
+    RenderMutableResource RenderGraphNodeBuilder::CreateColorAttachment(int32 index, Size2i size, ResourceStorageMode storageMode)
     {
         auto node = GetNode();
         const auto& attachment = node->renderPass->GetCreateInfo().colorAttachments[index];
 
         LUCH_ASSERT(attachment.has_value());
+        LUCH_ASSERT(attachment->format != Format::Undefined);
 
         TextureCreateInfo textureCreateInfo;
         textureCreateInfo.format = attachment->format;
         textureCreateInfo.width = size.width;
         textureCreateInfo.height = size.height;
         textureCreateInfo.usage = TextureUsageFlags::ColorAttachment | TextureUsageFlags::ShaderRead | TextureUsageFlags::ShaderWrite;
+        textureCreateInfo.storageMode = storageMode;
 
         RenderMutableResource resource = resourceManager->CreateTexture(textureCreateInfo);
         node->colorAttachmentResources[index] = resource;
@@ -105,18 +107,20 @@ namespace Luch::Render::Graph
         return resource;
     }
 
-    RenderMutableResource RenderGraphNodeBuilder::CreateDepthStencilAttachment(Size2i size)
+    RenderMutableResource RenderGraphNodeBuilder::CreateDepthStencilAttachment(Size2i size, ResourceStorageMode storageMode)
     {
         auto node = GetNode();
         const auto& attachment = node->renderPass->GetCreateInfo().depthStencilAttachment;
 
         LUCH_ASSERT(attachment.has_value());
+        LUCH_ASSERT(attachment->format != Format::Undefined);
 
         TextureCreateInfo textureCreateInfo;
         textureCreateInfo.format = attachment->format;
         textureCreateInfo.width = size.width;
         textureCreateInfo.height = size.height;
         textureCreateInfo.usage = TextureUsageFlags::DepthStencilAttachment | TextureUsageFlags::ShaderRead | TextureUsageFlags::ShaderWrite;
+        textureCreateInfo.storageMode = storageMode;
 
         RenderMutableResource resource = resourceManager->CreateTexture(textureCreateInfo);
         node->depthStencilAttachmentResource = resource;
