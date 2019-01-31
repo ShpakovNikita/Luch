@@ -32,6 +32,7 @@
 #include <Luch/Graphics/DescriptorSet.h>
 #include <Luch/Graphics/GraphicsDevice.h>
 #include <Luch/Graphics/PhysicalDevice.h>
+#include <Luch/Graphics/PhysicalDeviceCapabilities.h>
 #include <Luch/Graphics/DescriptorPool.h>
 #include <Luch/Graphics/GraphicsCommandList.h>
 #include <Luch/Graphics/GraphicsPipelineState.h>
@@ -92,7 +93,6 @@ namespace Luch::Render
 
     void DepthOnlyRenderPass::ExecuteGraphicsRenderPass(
         RenderGraphResourceManager* manager,
-        FrameBuffer* frameBuffer,
         GraphicsCommandList* commandList)
     {
         Viewport viewport;
@@ -102,8 +102,6 @@ namespace Luch::Render
         Rect2i scissorRect;
         scissorRect.size = transientContext->outputSize;
 
-        commandList->Begin();
-        commandList->BeginRenderPass(frameBuffer);
         commandList->SetViewports({ viewport });
         commandList->SetScissorRects({ scissorRect });
         commandList->BindBufferDescriptorSet(
@@ -115,9 +113,6 @@ namespace Luch::Render
         {
             DrawNode(node, commandList);
         }
-
-        commandList->EndRenderPass();
-        commandList->End();
     }
 
     void DepthOnlyRenderPass::PrepareNode(SceneV1::Node* node)
@@ -430,16 +425,9 @@ namespace Luch::Render
         context->cameraResources = cameraResources;
         context->materialResources = materialResources;
 
-        Vector<Format> depthFormats =
-        {
-            Format::D32SfloatS8Uint,
-            Format::D24UnormS8Uint,
-            Format::D16UnormS8Uint,
-        };
-
-        auto supportedDepthFormats = context->device->GetPhysicalDevice()->GetSupportedDepthStencilFormats(depthFormats);
-        LUCH_ASSERT_MSG(!depthFormats.empty(), "No supported depth formats");
-        Format depthStencilFormat = depthFormats.front();
+        const auto& supportedDepthFormats = context->device->GetPhysicalDevice()->GetCapabilities().supportedDepthFormats;
+        LUCH_ASSERT_MSG(!supportedDepthFormats.empty(), "No supported depth formats");
+        Format depthStencilFormat = supportedDepthFormats.front();
 
         DepthStencilAttachment depthStencilAttachment;
         depthStencilAttachment.format = depthStencilFormat;

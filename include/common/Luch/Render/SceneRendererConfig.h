@@ -8,6 +8,6 @@ namespace Luch::Render
     {
         bool useDepthPrepass = false;
         bool useComputeResolve = false;
-        bool useComputeTonemap = false;
+        bool useTiledDeferredPass = true;
     };
 }

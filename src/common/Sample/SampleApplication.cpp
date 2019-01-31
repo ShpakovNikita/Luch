@@ -172,8 +172,9 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     renderer = MakeUnique<Render::SceneRenderer>(scene);
 
     Render::SceneRendererConfig rendererConfig;
-    rendererConfig.useComputeResolve = true;
-    rendererConfig.useDepthPrepass = true;
+    rendererConfig.useComputeResolve = false;
+    rendererConfig.useDepthPrepass = false;
+    rendererConfig.useTiledDeferredPass = true;
 
     auto rendererInitialized = renderer->Initialize(context, rendererConfig);
     if(!rendererInitialized)

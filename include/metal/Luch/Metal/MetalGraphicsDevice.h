@@ -44,6 +44,9 @@ namespace Luch::Metal
         GraphicsResultRefPtr<ComputePipelineState> CreateComputePipelineState(
             const ComputePipelineStateCreateInfo& createInfo) override;
 
+        GraphicsResultRefPtr<TiledPipelineState> CreateTiledPipelineState(
+            const TiledPipelineStateCreateInfo& createInfo) override;
+
         GraphicsResultRefPtr<Texture> CreateTexture(
             const TextureCreateInfo& createInfo) override;
 

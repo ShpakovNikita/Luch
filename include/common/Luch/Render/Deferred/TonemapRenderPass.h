@@ -47,7 +47,6 @@ namespace Luch::Render::Deferred
 
         void ExecuteGraphicsRenderPass(
             RenderGraphResourceManager* manager,
-            FrameBuffer* frameBuffer,
             GraphicsCommandList* commandList) override;
     private:
         static RefPtr<GraphicsPipelineState> CreateTonemapPipelineState(TonemapPersistentContext* persistentContext);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Luch/Graphics/PhysicalDevice.h>
+#include <Luch/Graphics/PhysicalDeviceCapabilities.h>
 #include <Luch/Graphics/GraphicsResultValue.h>
 #include <mtlpp.hpp>
 
@@ -15,10 +16,10 @@ namespace Luch::Metal
 
         MetalPhysicalDevice(mtlpp::Device device);
 
-        Vector<Format> GetSupportedDepthStencilFormats(const Vector<Format>& formats) const override;
+        const PhysicalDeviceCapabilities& GetCapabilities() override { return capabilities; }
         GraphicsResultRefPtr<GraphicsDevice> CreateGraphicsDevice() override;
     private:
         mtlpp::Device device;
+        PhysicalDeviceCapabilities capabilities;
     };
 }
-

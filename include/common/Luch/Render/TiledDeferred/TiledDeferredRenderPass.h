@@ -12,40 +12,38 @@
 #include <Luch/Render/Common.h>
 #include <Luch/Render/SharedBuffer.h>
 #include <Luch/Render/RenderForwards.h>
-#include <Luch/Render/Deferred/DeferredForwards.h>
-#include <Luch/Render/Deferred/GBuffer.h>
-#include <Luch/Render/Deferred/DeferredConstants.h>
+#include <Luch/Render/TiledDeferred/TiledDeferredForwards.h>
+#include <Luch/Render/Graph/RenderGraphResources.h>
 #include <Luch/Render/Graph/RenderGraphForwards.h>
 #include <Luch/Render/Graph/RenderGraphPass.h>
 
-namespace Luch::Render::Deferred
+namespace Luch::Render::TiledDeferred
 {
     using namespace Graphics;
     using namespace Graph;
 
-    class GBufferRenderPass : public RenderGraphPass
+    class TiledDeferredRenderPass : public RenderGraphPass
     {
         static constexpr int32 MaxDescriptorSetCount = 4096;
         static constexpr int32 MaxDescriptorCount = 4096;
     public:
         static const String RenderPassName;
-        static const String RenderPassWithDepthOnlyName;
 
-        static ResultValue<bool, UniquePtr<GBufferPersistentContext>> PrepareGBufferPersistentContext(
+        static ResultValue<bool, UniquePtr<TiledDeferredPersistentContext>> PrepareTiledDeferredPersistentContext(
             GraphicsDevice* device,
             CameraResources* cameraResources,
             MaterialResources* materialResources);
 
-        static ResultValue<bool, UniquePtr<GBufferTransientContext>> PrepareGBufferTransientContext(
-            GBufferPersistentContext* persistentContext,
+        static ResultValue<bool, UniquePtr<TiledDeferredTransientContext>> PrepareTiledDeferredTransientContext(
+            TiledDeferredPersistentContext* persistentContext,
             RefPtr<DescriptorPool> descriptorPool);
 
-        GBufferRenderPass(
-            GBufferPersistentContext* persistentContext,
-            GBufferTransientContext* transientContext,
+        TiledDeferredRenderPass(
+            TiledDeferredPersistentContext* persistentContext,
+            TiledDeferredTransientContext* transientContext,
             RenderGraphBuilder* builder);
 
-        ~GBufferRenderPass();
+        ~TiledDeferredRenderPass();
 
         void PrepareScene();
         void UpdateScene();
@@ -53,7 +51,7 @@ namespace Luch::Render::Deferred
         SceneV1::Node* GetCameraNode() { return cameraNode; }
         void SetCameraNode(SceneV1::Node* node){ cameraNode = node; }
 
-        GBufferReadOnly GetGBuffer() { return gbuffer; }
+        RenderMutableResource GetResolveTextureHandle() { return resolveTextureHandle; }
 
         void ExecuteGraphicsRenderPass(
             RenderGraphResourceManager* manager,
@@ -67,6 +65,10 @@ namespace Luch::Render::Deferred
 
         void UpdateNode(SceneV1::Node* node);
         void UpdateMesh(SceneV1::Mesh* mesh, const Mat4x4& transform);
+        void UpdateLights(const RefPtrVector<SceneV1::Node>& lightNodes);
+
+        void DrawGBuffer(GraphicsCommandList* commandList);
+        void Resolve(GraphicsCommandList* commandList);
 
         void BindMaterial(SceneV1::PbrMaterial* material, GraphicsCommandList* commandList);
         void DrawNode(SceneV1::Node* node, GraphicsCommandList* commandList);
@@ -75,13 +77,13 @@ namespace Luch::Render::Deferred
 
         static const String& GetRenderPassName(bool useDepthPrepass);
 
-        RefPtr<GraphicsPipelineState> CreateGBufferPipelineState(
-            SceneV1::Primitive* primitive,
-            bool useDepthPrepass);
+        static RefPtr<GraphicsPipelineState> CreateGBufferPipelineState(SceneV1::Primitive* primitive, TiledDeferredPersistentContext* context);
+        static RefPtr<TiledPipelineState> CreateResolvePipelineState(TiledDeferredPersistentContext* context);
 
-        GBufferPersistentContext* persistentContext = nullptr;
-        GBufferTransientContext* transientContext = nullptr;
-        GBuffer gbuffer;
+        TiledDeferredPersistentContext* persistentContext = nullptr;
+        TiledDeferredTransientContext* transientContext = nullptr;
+
+        RenderMutableResource resolveTextureHandle;
 
         UnorderedMap<SceneV1::Mesh*, RefPtr<DescriptorSet>> meshDescriptorSets;
         UnorderedMap<SceneV1::Camera*, RefPtr<DescriptorSet>> cameraDescriptorSets;

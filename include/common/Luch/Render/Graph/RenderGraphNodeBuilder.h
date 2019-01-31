@@ -4,6 +4,7 @@
 #include <Luch/Render/Graph/RenderGraphForwards.h>
 #include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/Graphics/RenderPassCreateInfo.h>
+#include <Luch/Graphics/ResourceStorageMode.h>
 
 namespace Luch::Render::Graph
 {
@@ -23,8 +24,8 @@ namespace Luch::Render::Graph
         RenderMutableResource UseColorAttachment(int32 index, RenderMutableResource colorAttachmentHandle);
         RenderMutableResource UseDepthStencilAttachment(RenderMutableResource depthStencilAttachmentHandle);
 
-        RenderMutableResource CreateColorAttachment(int32 index, Size2i size);
-        RenderMutableResource CreateDepthStencilAttachment(Size2i size);
+        RenderMutableResource CreateColorAttachment(int32 index, Size2i size, ResourceStorageMode storageMode = ResourceStorageMode::DeviceLocal);
+        RenderMutableResource CreateDepthStencilAttachment(Size2i size, ResourceStorageMode storageMode = ResourceStorageMode::DeviceLocal);
 
         RenderMutableResource WritesToColorAttachment(int32 index, RenderMutableResource resource);
         RenderMutableResource WritesToDepthStencilAttachment(RenderMutableResource resource);

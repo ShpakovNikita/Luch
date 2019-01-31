@@ -37,6 +37,9 @@ namespace Luch::Graphics
         virtual GraphicsResultRefPtr<ComputePipelineState> CreateComputePipelineState(
             const ComputePipelineStateCreateInfo& createInfo) = 0;
 
+        virtual GraphicsResultRefPtr<TiledPipelineState> CreateTiledPipelineState(
+            const TiledPipelineStateCreateInfo& createInfo) = 0;
+
         virtual GraphicsResultRefPtr<Texture> CreateTexture(
             const TextureCreateInfo& createInfo) = 0;
 

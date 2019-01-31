@@ -4,6 +4,7 @@
 #include <Luch/Metal/MetalDescriptorPool.h>
 #include <Luch/Metal/MetalGraphicsPipelineState.h>
 #include <Luch/Metal/MetalComputePipelineState.h>
+#include <Luch/Metal/MetalTiledPipelineState.h>
 #include <Luch/Metal/MetalDescriptorSetLayout.h>
 #include <Luch/Metal/MetalPipelineLayout.h>
 #include <Luch/Metal/MetalShaderLibrary.h>
@@ -137,6 +138,28 @@ namespace Luch::Metal
         }
     }
 
+    GraphicsResultRefPtr<TiledPipelineState> MetalGraphicsDevice::CreateTiledPipelineState(
+        const TiledPipelineStateCreateInfo& createInfo)
+    {
+        auto mtlTiledPipelineDescriptor = ToMetalTiledPipelineStateCreateInfo(createInfo);
+
+        ns::Error error;
+        mtlpp::PipelineOption options = mtlpp::PipelineOption::None;
+
+        auto mtlPipelineState = device.NewRenderPipelineState(mtlTiledPipelineDescriptor, options, nullptr, &error);
+
+        auto result = PipelineErrorToGraphicsResult(error);
+
+        if(result == GraphicsResult::Success)
+        {
+            return { result, MakeRef<MetalTiledPipelineState>(this, createInfo, mtlPipelineState) };
+        }
+        else
+        {
+            return { result };
+        }
+    }
+
     GraphicsResultRefPtr<Texture> MetalGraphicsDevice::CreateTexture(
         const TextureCreateInfo& createInfo)
     {
@@ -162,6 +185,9 @@ namespace Luch::Metal
             break;
         case ResourceStorageMode::Shared:
             optionBits |= (uint32)mtlpp::ResourceOptions::StorageModeShared;
+            break;
+        default:
+            LUCH_ASSERT(false);
             break;
         }
 
@@ -250,7 +276,7 @@ namespace Luch::Metal
         else
         {
             [[maybe_unused]] auto description = error.GetLocalizedDescription().GetCStr();
-            LUCH_ASSERT(false);
+                LUCH_ASSERT(false);
             return { result };
         }
     }

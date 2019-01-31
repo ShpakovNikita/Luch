@@ -64,7 +64,6 @@ namespace Luch::Render::Deferred
 
     void TonemapRenderPass::ExecuteGraphicsRenderPass(
         RenderGraphResourceManager* manager,
-        FrameBuffer* frameBuffer,
         GraphicsCommandList* cmdList)
     {
         auto hdrTexture = manager->GetTexture(input);
@@ -82,8 +81,6 @@ namespace Luch::Render::Deferred
         Rect2i scissorRect;
         scissorRect.size = transientContext->outputSize;
 
-        cmdList->Begin();
-        cmdList->BeginRenderPass(frameBuffer);
         cmdList->BindGraphicsPipelineState(persistentContext->pipelineState);
         cmdList->SetViewports({ viewport });
         cmdList->SetScissorRects({ scissorRect });
@@ -95,8 +92,6 @@ namespace Luch::Render::Deferred
 
         cmdList->BindVertexBuffers({ persistentContext->fullscreenQuadBuffer }, {0});
         cmdList->Draw(0, fullscreenQuadVertices.size());
-        cmdList->EndRenderPass();
-        cmdList->End();
     }
 
     RefPtr<GraphicsPipelineState> TonemapRenderPass::CreateTonemapPipelineState(

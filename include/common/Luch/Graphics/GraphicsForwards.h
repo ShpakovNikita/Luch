@@ -33,6 +33,7 @@ namespace Luch::Graphics
     class SwapchainTexture;
     class Semaphore;
     class Texture;
+    class TiledPipelineState;
 
     struct Attachment;
     struct BufferCreateInfo;
@@ -43,8 +44,10 @@ namespace Luch::Graphics
     struct FrameBufferCreateInfo;
     struct GraphicsPipelineStateCreateInfo;
     struct PipelineLayoutCreateInfo;
+    struct PhysicalDeviceCapabilities;
     struct RenderPassCreateInfo;
     struct SamplerCreateInfo;
     struct SwapchainInfo;
     struct TextureCreateInfo;
+    struct TiledPipelineStateCreateInfo;
 }

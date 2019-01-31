@@ -25,6 +25,7 @@ namespace Luch::Graphics
         virtual void EndRenderPass() = 0;
 
         virtual void BindGraphicsPipelineState(GraphicsPipelineState* pipelineState) = 0;
+        virtual void BindTiledPipelineState(TiledPipelineState* pipelineState) = 0;
 
         virtual void BindTextureDescriptorSet(
             ShaderStage stage,
@@ -68,5 +69,10 @@ namespace Luch::Graphics
             int32 baseVertex,
             int32 instanceCount,
             int32 baseInstance) = 0;
+
+        virtual Size2i GetTileSize() const = 0;
+
+        virtual void DispatchThreadsPerTile(
+            Size2i threadsPerTile) = 0;
     };
 }

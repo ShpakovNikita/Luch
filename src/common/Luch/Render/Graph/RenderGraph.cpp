@@ -46,10 +46,13 @@ namespace Luch::Render::Graph
                 auto [allocateResult, allocatedList] = commandPool->AllocateGraphicsCommandList();
                 LUCH_ASSERT(allocateResult == GraphicsResult::Success);
 
+                allocatedList->Begin();
+                allocatedList->BeginRenderPass(node.frameBuffer);
                 node.pass->ExecuteGraphicsRenderPass(
                     resourceManager.get(),
-                    node.frameBuffer,
                     allocatedList);
+                allocatedList->EndRenderPass();
+                allocatedList->End();
 
                 commandList = std::move(allocatedList);
                 break;

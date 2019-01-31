@@ -27,6 +27,7 @@ namespace Luch::Metal
         void EndRenderPass() override;
 
         void BindGraphicsPipelineState(GraphicsPipelineState* pipelineState) override;
+        void BindTiledPipelineState(TiledPipelineState* pipelineState) override;
 
         void BindTextureDescriptorSet(
             ShaderStage stage,
@@ -70,7 +71,21 @@ namespace Luch::Metal
             int32 baseVertex,
             int32 instanceCount,
             int32 baseInstance) override;
+
+        Size2i GetTileSize() const override;
+
+        void DispatchThreadsPerTile(
+            Size2i threadsPerTile) override;
     private:
+        void BindBufferDescriptorSetImpl(
+            ShaderStage stage,
+            PipelineLayout* pipelineLayout,
+            DescriptorSet* descriptorSet);
+
+        void BindThreadgroupDescriptorSet(
+            PipelineLayout* pipelineLayout,
+            DescriptorSet* descriptorSet);
+
         GraphicsPipelineState* pipelineState = nullptr;
         mtlpp::RenderCommandEncoder commandEncoder;
         mtlpp::Buffer indexBuffer;
