@@ -4,6 +4,8 @@
 #include <Luch/Vulkan.h>
 #include <Luch/Vulkan/VulkanForwards.h>
 
+using namespace Luch::Graphics;
+
 namespace Luch::Vulkan
 {
     enum class FenceWaitResult
@@ -27,8 +29,8 @@ namespace Luch::Vulkan
 
         inline vk::Fence GetFence() { return fence; }
 
-        VulkanResultValue<FenceWaitResult> Wait(Optional<Timeout> timeout = {});
-        VulkanResultValue<FenceStatus> GetStatus();
+        GraphicsResultValue<FenceWaitResult> Wait(Optional<Timeout> timeout = {});
+        GraphicsResultValue<FenceStatus> GetStatus();
         vk::Result Reset();
     private:
         void Destroy();

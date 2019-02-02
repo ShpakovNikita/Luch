@@ -1,4 +1,8 @@
 #pragma once
+#if LUCH_USE_VULKAN
+#include <Luch/Graphics/GraphicsResult.h>
+#include <Luch/Vulkan.h>
+#endif
 
 namespace Luch
 {
@@ -30,9 +34,33 @@ namespace Luch
         {
         }
 
+        #if LUCH_USE_VULKAN
+        ResultValue(vk::Result result)
+            : ResultValue(ToGraphicsResult(result)) {}
+        ResultValue(vk::Result result, Value val)
+            : ResultValue(ToGraphicsResult(result), std::forward(val)) {}
+        #endif
+
+
         ~ResultValue() = default;
 
         Result result;
         Value value;
+
+    private:
+    #if LUCH_USE_VULKAN
+        Graphics::GraphicsResult ToGraphicsResult(vk::Result vkResult)
+        {
+            using namespace Graphics;
+            // todo: support other result codes
+            switch (vkResult)
+            {
+            case vk::Result::eSuccess:
+                return GraphicsResult::Success;
+            default:
+                return GraphicsResult::UnknownError;
+            }
+        }
+    #endif
     };
 }

@@ -10,11 +10,9 @@
 #include <Luch/Assert.h>
 #include <Luch/Types.h>
 #include <Luch/RefPtr.h>
-#include <Luch/ResultValue.h>
 
 namespace Luch::Vulkan
 {
-
 using Timeout = std::chrono::duration<int64, std::nano>;
 
 inline uint64 ToVulkanTimeout(Optional<Timeout> timeout)
@@ -38,12 +36,6 @@ inline uint32 ToVulkanSize(size_t size)
 
     return static_cast<uint32>(size);
 }
-
-template<typename Value>
-using VulkanResultValue = ResultValue<vk::Result, Value>;
-
-template<typename Value>
-using VulkanRefResultValue = ResultValue<vk::Result, RefPtr<Value>>;
 
 class VulkanDebugDelegate
 {

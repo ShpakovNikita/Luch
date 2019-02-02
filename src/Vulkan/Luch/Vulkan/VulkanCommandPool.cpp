@@ -16,7 +16,7 @@ namespace Luch::Vulkan
         Destroy();
     }
 
-    VulkanResultValue<RefPtrVector<VulkanCommandBuffer>> VulkanCommandPool::AllocateCommandBuffers(
+    GraphicsResultValue<RefPtrVector<VulkanCommandBuffer>> VulkanCommandPool::AllocateCommandBuffers(
         int32 count,
         CommandBufferLevel level)
     {
@@ -51,7 +51,7 @@ namespace Luch::Vulkan
         return { allocateResult, std::move(buffers) };
     }
 
-    VulkanRefResultValue<VulkanCommandBuffer> VulkanCommandPool::AllocateCommandBuffer(CommandBufferLevel level)
+    GraphicsResultRefPtr<VulkanCommandBuffer> VulkanCommandPool::AllocateCommandBuffer(CommandBufferLevel level)
     {
         vk::CommandBufferAllocateInfo allocateInfo;
         allocateInfo.setCommandBufferCount(1);

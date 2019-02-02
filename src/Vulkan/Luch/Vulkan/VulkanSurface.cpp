@@ -33,7 +33,7 @@ namespace Luch::Vulkan
     }
 
 #ifdef _WIN32
-    VulkanRefResultValue<VulkanSurface> VulkanSurface::CreateWin32Surface(
+    GraphicsResultRefPtr<VulkanSurface> VulkanSurface::CreateWin32Surface(
         vk::Instance instance,
         HINSTANCE hInstance,
         HWND hWnd,
@@ -65,7 +65,7 @@ namespace Luch::Vulkan
 #endif
 
 #if __APPLE__
-    VulkanRefResultValue<VulkanSurface> VulkanSurface::CreateMacOSSurface(
+    GraphicsResultRefPtr<VulkanSurface> VulkanSurface::CreateMacOSSurface(
         vk::Instance instance,
         void* view)
     {

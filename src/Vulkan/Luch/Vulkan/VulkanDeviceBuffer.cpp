@@ -21,7 +21,7 @@ namespace Luch::Vulkan
         Destroy();
     }
 
-    VulkanResultValue<void*> VulkanDeviceBuffer::MapMemory(
+    GraphicsResultValue<void*> VulkanDeviceBuffer::MapMemory(
         int64 size,
         int64 offset)
     {

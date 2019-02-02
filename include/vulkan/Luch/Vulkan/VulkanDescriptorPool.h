@@ -18,10 +18,10 @@ namespace Luch::Vulkan
 
         inline vk::DescriptorPool GetDescriptorPool() { return descriptorPool; }
 
-        VulkanResultValue<RefPtrVector<VulkanDescriptorSet>> AllocateDescriptorSets(
+        GraphicsResultValue<RefPtrVector<VulkanDescriptorSet>> AllocateDescriptorSets(
             const Vector<VulkanDescriptorSetLayout*>& layouts);
 
-        VulkanRefResultValue<VulkanDescriptorSet> AllocateDescriptorSet(VulkanDescriptorSetLayout* layout);
+        GraphicsResultRefPtr<VulkanDescriptorSet> AllocateDescriptorSet(VulkanDescriptorSetLayout* layout);
 
         vk::Result Reset();
     private:

@@ -1,10 +1,9 @@
 #pragma once
 
-#include <vulkan/vulkan.hpp>
+#include <Luch/Vulkan.h>
 #include <Luch/BaseObject.h>
 #include <Luch/RefPtr.h>
 #include <Luch/Graphics/Format.h>
-#include <Luch/Vulkan.h>
 #include <Luch/Vulkan/VulkanQueueInfo.h>
 #include <Luch/Vulkan/VulkanForwards.h>
 #include <Luch/Graphics/PhysicalDevice.h>
@@ -26,7 +25,7 @@ namespace Luch::Vulkan
         inline const vk::Optional<const vk::AllocationCallbacks>& GetAllocationCallbacks() const { return allocationCallbacks; }
         inline const vk::PhysicalDeviceMemoryProperties& GetPhysicalDeviceMemoryProperties() const { return physicalDeviceMemoryProperties; }
 
-        VulkanResultValue<QueueIndices> ChooseDeviceQueues(VulkanSurface* surface);
+        GraphicsResultValue<QueueIndices> ChooseDeviceQueues(vk::SurfaceKHR surface);
 
         GraphicsResultRefPtr<GraphicsDevice> CreateGraphicsDevice() override;
         Vector<Graphics::Format> GetSupportedDepthStencilFormats(const Vector<Graphics::Format>& formats) const override;

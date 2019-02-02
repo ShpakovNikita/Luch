@@ -1,9 +1,10 @@
 #pragma once
 
-#include <vulkan/vulkan.hpp>
 #include <Luch/BaseObject.h>
 #include <Luch/Vulkan.h>
 #include <Luch/Vulkan/VulkanForwards.h>
+
+using namespace Luch::Graphics;
 
 namespace Luch::Vulkan
 {
@@ -19,7 +20,7 @@ namespace Luch::Vulkan
 
         ~VulkanDeviceBuffer() override;
 
-        VulkanResultValue<void*> MapMemory(int64 size, int64 offset);
+        GraphicsResultValue<void*> MapMemory(int64 size, int64 offset);
         void* GetMappedMemory() const { return mappedMemory; }
         void UnmapMemory();
 

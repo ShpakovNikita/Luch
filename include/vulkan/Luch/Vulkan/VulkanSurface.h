@@ -2,10 +2,11 @@
 
 #include <Luch/Vulkan.h>
 #include <Luch/BaseObject.h>
+#include <Luch/Graphics/Surface.h>
 
 namespace Luch::Vulkan
 {
-    class VulkanSurface : public BaseObject
+    class VulkanSurface : public Luch::Graphics::Surface
     {
     public:
         VulkanSurface(
@@ -15,7 +16,7 @@ namespace Luch::Vulkan
 
         ~VulkanSurface();
 #ifdef _WIN32
-        static VulkanRefResultValue<VulkanSurface> CreateWin32Surface(
+        static GraphicsResultRefPtr<VulkanSurface> CreateWin32Surface(
             vk::Instance instance,
             HINSTANCE hInstance,
             HWND hWnd,
@@ -23,7 +24,7 @@ namespace Luch::Vulkan
 #endif
 
 #if __APPLE__
-        static VulkanRefResultValue<VulkanSurface> CreateMacOSSurface(
+        static GraphicsResultRefPtr<VulkanSurface> CreateMacOSSurface(
             vk::Instance instance,
             void* view);
 #endif

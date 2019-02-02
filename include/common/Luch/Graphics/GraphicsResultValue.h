@@ -9,6 +9,6 @@ namespace Luch::Graphics
     template<typename Value>
     using GraphicsResultValue = ResultValue<GraphicsResult, Value>;
 
-    template<typename T>
-    using GraphicsResultRefPtr = GraphicsResultValue<RefPtr<T>>;
+    template<typename Value>
+    using GraphicsResultRefPtr = GraphicsResultValue<RefPtr<Value>>;
 }

@@ -7,6 +7,9 @@
 #include <Luch/Vulkan/VulkanForwards.h>
 #include <Luch/Vulkan/VulkanImage.h>
 #include <Luch/Vulkan/VulkanImageView.h>
+#include <Luch/Graphics/SwapchainInfo.h>
+
+using namespace Luch::Graphics;
 
 namespace Luch::Vulkan
 {
@@ -16,13 +19,18 @@ namespace Luch::Vulkan
         RefPtr<VulkanImageView> imageView;
     };
 
-    struct VulkanSwapchainCreateInfo
+    struct VulkanSwapchainCreateInfo : public SwapchainInfo
     {
-        int32 imageCount = 0;
-        int32 width = 0;
-        int32 height = 0;
+        VulkanSwapchainCreateInfo() = default;
+        VulkanSwapchainCreateInfo(const SwapchainInfo& si)
+        {
+            imageCount = si.imageCount;
+            format = si.format;
+            width = si.width;
+            height = si.height;
+        }
+
         int32 arrayLayers = 1;
-        Format format = Format::Undefined;
         vk::ColorSpaceKHR colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
         vk::PresentModeKHR presentMode = vk::PresentModeKHR::eFifo;
     };
@@ -40,14 +48,14 @@ namespace Luch::Vulkan
 
         ~VulkanSwapchain() override;
 
-        static VulkanResultValue<VulkanSwapchainCreateInfo> ChooseSwapchainCreateInfo(
+        static GraphicsResultValue<VulkanSwapchainCreateInfo> ChooseSwapchainCreateInfo(
             int32 width,
             int32 height,
             vk::PhysicalDevice vulkanPhysicalDevice,
             vk::SurfaceKHR vulkanSurface);
 
         // TODO semaphores and fences
-        VulkanResultValue<int32> AcquireNextImage(VulkanFence* fence, VulkanSemaphore* semaphore, Optional<Timeout> timeout = {});
+        GraphicsResultValue<int32> AcquireNextImage(VulkanFence* fence, VulkanSemaphore* semaphore, Optional<Timeout> timeout = {});
 
         inline VulkanSwapchainCreateInfo GetSwapchainCreateInfo() const { return createInfo; }
         inline Format GetFormat() const { return createInfo.format; }

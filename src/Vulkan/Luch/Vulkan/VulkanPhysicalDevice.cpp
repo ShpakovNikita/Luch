@@ -59,7 +59,8 @@ namespace Luch::Vulkan
         return indices;
     }
 
-    const std::vector<const char*> requiredDeviceExtensions = {
+    // todo: param for device creation
+    const std::vector<const char*> requiredDeviceExtensionNames = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };
 
@@ -70,7 +71,7 @@ namespace Luch::Vulkan
         std::vector<VkExtensionProperties> availableExtensions(extensionCount);
         vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
 
-        std::set<std::string> requiredExtensions(requiredDeviceExtensions.begin(), requiredDeviceExtensions.end());
+        std::set<std::string> requiredExtensions(requiredDeviceExtensionNames.begin(), requiredDeviceExtensionNames.end());
 
         for (const auto& extension : availableExtensions) {
             requiredExtensions.erase(extension.extensionName);
@@ -93,9 +94,9 @@ namespace Luch::Vulkan
 
         int width = 640;
         int height = 480;
-        VulkanResultValue<VulkanSwapchainCreateInfo> swapchainCreateInfo =
+        GraphicsResultValue<VulkanSwapchainCreateInfo> swapchainCreateInfo =
                 VulkanSwapchain::ChooseSwapchainCreateInfo(width, height, device, surface);
-        return swapchainCreateInfo.result == vk::Result::eSuccess;
+        return swapchainCreateInfo.result == GraphicsResult::Success;
     }
 
     bool VulkanPhysicalDevice::Init()
@@ -127,7 +128,7 @@ namespace Luch::Vulkan
         return true;
     }
 
-    VulkanResultValue<QueueIndices> VulkanPhysicalDevice::ChooseDeviceQueues(VulkanSurface* surface)
+    GraphicsResultValue<QueueIndices> VulkanPhysicalDevice::ChooseDeviceQueues(vk::SurfaceKHR surface)
     {
         auto queueProperties = physicalDevice.getQueueFamilyProperties();
         Vector<VkBool32> supportsPresent;
@@ -135,7 +136,7 @@ namespace Luch::Vulkan
 
         for (uint32 i = 0; i < queueProperties.size(); i++)
         {
-            auto[result, supports] = physicalDevice.getSurfaceSupportKHR(i, surface->GetSurface());
+            auto [result, supports] = physicalDevice.getSurfaceSupportKHR(i, surface);
             if (result != vk::Result::eSuccess)
             {
                 return { result, QueueIndices{} };
@@ -207,9 +208,8 @@ namespace Luch::Vulkan
 
     GraphicsResultRefPtr<GraphicsDevice> VulkanPhysicalDevice::CreateGraphicsDevice()
     {
-        // QueueIndices&& queueIndices,
-        // const Luch::Vector<const char8*>& requiredDeviceExtensionNames
-        /*
+        QueueIndices queueIndices; // todo: should it be empty there?
+
         static float32 queuePriorities[] = { 1.0 };
 
         vk::DeviceQueueCreateInfo graphicsCi;
@@ -270,13 +270,13 @@ namespace Luch::Vulkan
         {
             auto queueInfo = ObtainQueueInfo(vulkanDevice, std::move(queueIndices));
             auto device = MakeRef<VulkanGraphicsDevice>(this, vulkanDevice, std::move(queueInfo), callbacks);
-            return { result, std::move(device) };
+            return {GraphicsResult::Success, device};
         }
         else
         {
             vulkanDevice.destroy(allocationCallbacks);
-            return { result };
-        }*/
+            return { GraphicsResult::UnknownError, nullptr };
+        }
     }
 
     VulkanQueueInfo VulkanPhysicalDevice::ObtainQueueInfo(vk::Device& device, QueueIndices&& indices)

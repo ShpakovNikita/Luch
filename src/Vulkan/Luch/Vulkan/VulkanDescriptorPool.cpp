@@ -18,7 +18,7 @@ namespace Luch::Vulkan
         Destroy();
     }
 
-    VulkanResultValue<RefPtrVector<VulkanDescriptorSet>> VulkanDescriptorPool::AllocateDescriptorSets(
+    GraphicsResultValue<RefPtrVector<VulkanDescriptorSet>> VulkanDescriptorPool::AllocateDescriptorSets(
         const Vector<VulkanDescriptorSetLayout*>& layouts)
     {
         auto count = layouts.size();
@@ -53,7 +53,7 @@ namespace Luch::Vulkan
         return { allocateResult, std::move(sets) };
     }
 
-    VulkanRefResultValue<VulkanDescriptorSet> VulkanDescriptorPool::AllocateDescriptorSet(
+    GraphicsResultRefPtr<VulkanDescriptorSet> VulkanDescriptorPool::AllocateDescriptorSet(
         VulkanDescriptorSetLayout* layout)
     {
         vk::DescriptorSetLayout vulkanLayout = layout->GetDescriptorSetLayout();

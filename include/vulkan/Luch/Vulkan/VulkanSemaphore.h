@@ -3,10 +3,11 @@
 #include <Luch/BaseObject.h>
 #include <Luch/Vulkan.h>
 #include <Luch/Vulkan/VulkanForwards.h>
+#include <Luch/Graphics/Semaphore.h>
 
 namespace Luch::Vulkan
 {
-    class VulkanSemaphore : public BaseObject
+    class VulkanSemaphore : public Luch::Graphics::Semaphore
     {
         friend class VulkanGraphicsDevice;
     public:

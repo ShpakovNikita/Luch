@@ -6,13 +6,19 @@
 #include <Luch/Vulkan.h>
 #include <Luch/Vulkan/VulkanQueueInfo.h>
 #include <Luch/Vulkan/VulkanForwards.h>
+#include <Luch/Vulkan/VulkanPhysicalDevice.h>
+#include <Luch/Graphics/GraphicsDevice.h>
+#include <Luch/Graphics/GraphicsResultValue.h>
+#include <Luch/Graphics/GraphicsForwards.h>
+
+using namespace Luch::Graphics;
 
 namespace Luch::Vulkan
 {
     struct GraphicsPipelineCreateInfo;
     class FramebufferCreateInfo;
 
-    class VulkanGraphicsDevice : public BaseObject
+    class VulkanGraphicsDevice : public Luch::Graphics::GraphicsDevice
     {
         friend class VulkanCommandBuffer;
         friend class VulkanCommandPool;
@@ -43,10 +49,35 @@ namespace Luch::Vulkan
 
         ~VulkanGraphicsDevice() override;
 
-        inline vk::Device GetDevice() { return device; }
-        inline const vk::Optional<const vk::AllocationCallbacks>& GetAllocationCallbacks() const { return allocationCallbacks; }
+        inline PhysicalDevice* GetPhysicalDevice() override
+        {
+            return static_cast<PhysicalDevice*>(physicalDevice);
+        }
 
-        inline VulkanPhysicalDevice* GetPhysicalDevice() const { return physicalDevice; }
+        GraphicsResultRefPtr<Swapchain> CreateSwapchain(
+            const SwapchainInfo& swapchainCreateInfo,
+            Surface* surface) override;
+
+        GraphicsResultRefPtr<Semaphore> CreateSemaphore() override;
+
+        GraphicsResultRefPtr<Sampler> CreateSampler(const SamplerCreateInfo& createInfo) override;
+
+        // unimplemented
+        GraphicsResultRefPtr<CommandQueue> CreateCommandQueue() override;
+        GraphicsResultRefPtr<PipelineState> CreatePipelineState(
+                    const PipelineStateCreateInfo& createInfo) override;
+        GraphicsResultRefPtr<Texture> CreateTexture(
+                    const TextureCreateInfo& createInfo) override;
+        GraphicsResultRefPtr<ShaderLibrary> CreateShaderLibraryFromSource(
+                    const Vector<Byte>& source,
+                    const UnorderedMap<String, Variant<int32, String>>& defines) override;
+
+        // end unimplemented
+
+        inline vk::Device GetDevice() { return device; }
+        inline const vk::Optional<const vk::AllocationCallbacks>& GetAllocationCallbacks() const
+        { return allocationCallbacks; }
+
         inline const QueueIndices* GetQueueIndices() { return &queueInfo.indices; }
         inline VulkanQueue* GetGraphicsQueue() { return queueInfo.graphicsQueue; }
         inline VulkanPresentQueue* GetPresentQueue() { return queueInfo.presentQueue; }
@@ -57,68 +88,61 @@ namespace Luch::Vulkan
         int32 ChooseMemoryType(Luch::uint32 memoryTypeBits, vk::MemoryPropertyFlags memoryProperties);
         vk::ImageViewCreateInfo GetDefaultImageViewCreateInfo(VulkanImage* image);
 
-        VulkanRefResultValue<VulkanSwapchain> CreateSwapchain(
-            const VulkanSwapchainCreateInfo& swapchainCreateInfo,
-            VulkanSurface* surface);
 
-        VulkanRefResultValue<VulkanCommandPool> CreateCommandPool(
+        GraphicsResultRefPtr<VulkanCommandPool> CreateCommandPool(
             QueueIndex queueIndex,
             bool transient = false,
             bool canReset = false);
 
-        VulkanRefResultValue<VulkanDeviceBuffer> CreateBuffer(
+        GraphicsResultRefPtr<VulkanDeviceBuffer> CreateBuffer(
             int64 size,
             QueueIndex queueIndex,
             vk::BufferUsageFlags usage,
             bool mappable);
 
-        VulkanRefResultValue<VulkanDeviceBufferView> CreateBufferView(
+        GraphicsResultRefPtr<VulkanDeviceBufferView> CreateBufferView(
             VulkanDeviceBuffer* buffer,
             Graphics::Format format,
             int64 offset,
             int64 size);
 
-        VulkanRefResultValue<VulkanImage> CreateImage(const vk::ImageCreateInfo& imageCreateInfo);
+        GraphicsResultRefPtr<VulkanImage> CreateImage(const vk::ImageCreateInfo& imageCreateInfo);
 
-        VulkanRefResultValue<VulkanImageView> CreateImageView(
+        GraphicsResultRefPtr<VulkanImageView> CreateImageView(
             VulkanImage* image,
             vk::ImageViewCreateInfo& imageViewCreateInfo);
 
-        VulkanRefResultValue<VulkanImageView> CreateImageView(VulkanImage* image);
+        GraphicsResultRefPtr<VulkanImageView> CreateImageView(VulkanImage* image);
 
-        VulkanRefResultValue<VulkanShaderModule> CreateShaderModule(
+        GraphicsResultRefPtr<VulkanShaderModule> CreateShaderModule(
             uint32* bytecode,
             int64 bytecodeSizeInBytes);
 
-        VulkanRefResultValue<VulkanPipelineCache> CreatePipelineCache();
+        GraphicsResultRefPtr<VulkanPipelineCache> CreatePipelineCache();
 
-        VulkanRefResultValue<VulkanPipeline> CreateGraphicsPipeline(
+        GraphicsResultRefPtr<VulkanPipeline> CreateGraphicsPipeline(
             const GraphicsPipelineCreateInfo& graphicsPipelineCreateInfo,
             VulkanPipelineCache* pipelineCache = nullptr);
 
-        VulkanRefResultValue<VulkanRenderPass> CreateRenderPass(const VulkanRenderPassCreateInfo& createInfo);
+        GraphicsResultRefPtr<VulkanRenderPass> CreateRenderPass(const VulkanRenderPassCreateInfo& createInfo);
 
-        VulkanRefResultValue<VulkanDescriptorSetLayout> CreateDescriptorSetLayout(
+        GraphicsResultRefPtr<VulkanDescriptorSetLayout> CreateDescriptorSetLayout(
             const DescriptorSetLayoutCreateInfo& createInfo);
 
-        VulkanRefResultValue<VulkanDescriptorPool> CreateDescriptorPool(
+        GraphicsResultRefPtr<VulkanDescriptorPool> CreateDescriptorPool(
             int32 maxSets,
             const UnorderedMap<vk::DescriptorType, int32>& poolSizes,
             bool canFreeDescriptors = false);
 
-        VulkanRefResultValue<VulkanPipelineLayout> CreatePipelineLayout(
+        GraphicsResultRefPtr<VulkanPipelineLayout> CreatePipelineLayout(
             const PipelineLayoutCreateInfo& createInfo);
 
-        VulkanRefResultValue<VulkanFramebuffer> CreateFramebuffer(
+        GraphicsResultRefPtr<VulkanFramebuffer> CreateFramebuffer(
             const FramebufferCreateInfo& createInfo);
 
-        VulkanRefResultValue<VulkanFence> CreateFence(bool signaled = false);
-
-        VulkanRefResultValue<VulkanSemaphore> CreateSemaphore();
-
-        VulkanRefResultValue<VulkanSampler> CreateSampler(const vk::SamplerCreateInfo& createInfo);
+        GraphicsResultRefPtr<VulkanFence> CreateFence(bool signaled = false);
     private:
-        VulkanResultValue<vk::DeviceMemory> AllocateMemory(
+        GraphicsResultValue<vk::DeviceMemory> AllocateMemory(
             vk::MemoryRequirements memoryRequirements,
             vk::MemoryPropertyFlags memoryPropertyFlags);
 

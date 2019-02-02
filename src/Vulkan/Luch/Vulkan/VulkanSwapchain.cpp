@@ -36,7 +36,7 @@ namespace Luch::Vulkan
         }
     }
 
-    VulkanResultValue<int32> VulkanSwapchain::AcquireNextImage(
+    GraphicsResultValue<int32> VulkanSwapchain::AcquireNextImage(
         VulkanFence* fence,
         VulkanSemaphore* semaphore,
         Optional<Timeout> timeout)
@@ -64,7 +64,7 @@ namespace Luch::Vulkan
 
     // TODO use static vector
 
-    VulkanResultValue<VulkanSwapchainCreateInfo> VulkanSwapchain::ChooseSwapchainCreateInfo(
+    GraphicsResultValue<VulkanSwapchainCreateInfo> VulkanSwapchain::ChooseSwapchainCreateInfo(
         int32 width,
         int32 height,
         vk::PhysicalDevice vulkanPhysicalDevice,

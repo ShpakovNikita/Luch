@@ -16,7 +16,7 @@ namespace Luch::Vulkan
         Destroy();
     }
 
-    VulkanResultValue<FenceWaitResult> VulkanFence::Wait(Optional<Timeout> timeout)
+    GraphicsResultValue<FenceWaitResult> VulkanFence::Wait(Optional<Timeout> timeout)
     {
         auto waitResult = device->device.waitForFences({ fence }, VK_TRUE, ToVulkanTimeout(timeout));
         switch (waitResult)
@@ -30,7 +30,7 @@ namespace Luch::Vulkan
         }
     }
 
-    VulkanResultValue<FenceStatus> VulkanFence::GetStatus()
+    GraphicsResultValue<FenceStatus> VulkanFence::GetStatus()
     {
         auto result = device->device.getFenceStatus(fence);
         switch (result)

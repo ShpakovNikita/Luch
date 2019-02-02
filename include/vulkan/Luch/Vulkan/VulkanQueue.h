@@ -31,7 +31,7 @@ namespace Luch::Vulkan
     {
         friend class VulkanGraphicsDevice;
         friend class VulkanPhysicalDevice;
-        friend class VulkanQueueInfo;
+        friend struct VulkanQueueInfo;
     public:
         explicit VulkanQueue(vk::Queue queue);
         ~VulkanQueue() = default; // Queues are owned by device, so we don't destroy them in destructor

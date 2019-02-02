@@ -24,11 +24,11 @@ namespace Luch::Vulkan
 
         inline vk::CommandPool GetCommandPool() { return commandPool; }
 
-        VulkanResultValue<RefPtrVector<VulkanCommandBuffer>> AllocateCommandBuffers(
+        GraphicsResultValue<RefPtrVector<VulkanCommandBuffer>> AllocateCommandBuffers(
             int32 count,
             CommandBufferLevel level);
 
-        VulkanRefResultValue<VulkanCommandBuffer> AllocateCommandBuffer(CommandBufferLevel level);
+        GraphicsResultRefPtr<VulkanCommandBuffer> AllocateCommandBuffer(CommandBufferLevel level);
 
         vk::Result Reset(bool releaseResources = false);
     private:
