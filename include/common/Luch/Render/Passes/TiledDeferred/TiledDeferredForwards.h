@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Luch::Render::TiledDeferred
+namespace Luch::Render::Passes::TiledDeferred
 {
     class TiledDeferredRenderPass;
 

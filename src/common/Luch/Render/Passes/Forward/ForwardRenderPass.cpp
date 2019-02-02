@@ -1,6 +1,5 @@
-#include <Luch/Render/Passes/TiledDeferred/TiledDeferredRenderPass.h>
-#include <Luch/Render/Passes/TiledDeferred/TiledDeferredContext.h>
-#include <Luch/Render/Passes/TiledDeferred/TiledDeferredConstants.h>
+#include <Luch/Render/Passes/Forward/ForwardRenderPass.h>
+#include <Luch/Render/Passes/Forward/ForwardContext.h>
 #include <Luch/Render/TextureUploader.h>
 #include <Luch/Render/ShaderDefines.h>
 #include <Luch/Render/CameraResources.h>
@@ -49,35 +48,37 @@
 #include <Luch/Graphics/PipelineLayoutCreateInfo.h>
 #include <Luch/Graphics/IndexType.h>
 
-namespace Luch::Render::Passes::TiledDeferred
+namespace Luch::Render::Passes::Forward
 {
     using namespace Graphics;
     using namespace Graph;
 
-    const String TiledDeferredRenderPass::RenderPassName{ "TiledDeferred" };
+    const String ForwardRenderPass::RenderPassName{ "Forward" };
+    const String ForwardRenderPass::RenderPassNameWithDepthOnly{ "ForwardDepthOnly" };
 
-    TiledDeferredRenderPass::TiledDeferredRenderPass(
-        TiledDeferredPersistentContext* aPersistentContext,
-        TiledDeferredTransientContext* aTransientContext,
+    ForwardRenderPass::ForwardRenderPass(
+        ForwardPersistentContext* aPersistentContext,
+        ForwardTransientContext* aTransientContext,
         RenderGraphBuilder* builder)
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
         auto node = builder->AddGraphicsRenderPass(RenderPassName, persistentContext->renderPass, this);
 
-        for(int32 i = TiledDeferredConstants::GBufferColorAttachmentBegin; i < TiledDeferredConstants::GBufferColorAttachmentEnd; i++)
+        luminanceTextureHandle = node->CreateColorAttachment(0, transientContext->outputSize);
+        if(transientContext->useDepthPrepass)
         {
-            node->CreateColorAttachment(i, transientContext->outputSize, ResourceStorageMode::Memoryless);
+            depthStencilTextureHandle = node->UseDepthStencilAttachment(transientContext->depthStencilTextureHandle);
         }
-
-        node->CreateDepthStencilAttachment(transientContext->outputSize, ResourceStorageMode::Memoryless);
-
-        luminanceTextureHandle = node->CreateColorAttachment(TiledDeferredConstants::LuminanceAttachmentIndex, transientContext->outputSize);
+        else
+        {
+            depthStencilTextureHandle = node->CreateDepthStencilAttachment(transientContext->outputSize);
+        }
     }
 
-    TiledDeferredRenderPass::~TiledDeferredRenderPass() = default;
+    ForwardRenderPass::~ForwardRenderPass() = default;
 
-    void TiledDeferredRenderPass::PrepareScene()
+    void ForwardRenderPass::PrepareScene()
     {
         const auto& nodes = transientContext->scene->GetNodes();
 
@@ -94,7 +95,7 @@ namespace Luch::Render::Passes::TiledDeferred
         }
     }
 
-    void TiledDeferredRenderPass::UpdateScene()
+    void ForwardRenderPass::UpdateScene()
     {
         for (const auto& node : transientContext->scene->GetNodes())
         {
@@ -108,7 +109,7 @@ namespace Luch::Render::Passes::TiledDeferred
         UpdateLights(lightNodes);
     }
 
-    void TiledDeferredRenderPass::ExecuteGraphicsRenderPass(
+    void ForwardRenderPass::ExecuteGraphicsRenderPass(
         RenderGraphResourceManager* manager,
         GraphicsCommandList* commandList)
     {
@@ -122,11 +123,10 @@ namespace Luch::Render::Passes::TiledDeferred
         commandList->SetViewports({ viewport });
         commandList->SetScissorRects({ scissorRect });
 
-        DrawGBuffer(commandList);
-        Resolve(commandList);
+        DrawScene(transientContext->scene, commandList);
     }
 
-    void TiledDeferredRenderPass::PrepareNode(SceneV1::Node* node)
+    void ForwardRenderPass::PrepareNode(SceneV1::Node* node)
     {
         if (node->GetMesh() != nullptr)
         {
@@ -144,7 +144,7 @@ namespace Luch::Render::Passes::TiledDeferred
         }
     }
 
-    void TiledDeferredRenderPass::PrepareMeshNode(SceneV1::Node* node)
+    void ForwardRenderPass::PrepareMeshNode(SceneV1::Node* node)
     {
         const auto& mesh = node->GetMesh();
 
@@ -154,7 +154,7 @@ namespace Luch::Render::Passes::TiledDeferred
         }
     }
 
-    void TiledDeferredRenderPass::PrepareCameraNode(SceneV1::Node* node)
+    void ForwardRenderPass::PrepareCameraNode(SceneV1::Node* node)
     {
         const auto& mesh = node->GetMesh();
 
@@ -164,17 +164,17 @@ namespace Luch::Render::Passes::TiledDeferred
         }
     }
 
-    void TiledDeferredRenderPass::PreparePrimitive(SceneV1::Primitive* primitive)
+    void ForwardRenderPass::PreparePrimitive(SceneV1::Primitive* primitive)
     {
-        RefPtr<GraphicsPipelineState> pipelineState = primitive->GetGraphicsPipelineState(RenderPassName);
+        RefPtr<GraphicsPipelineState> pipelineState = primitive->GetGraphicsPipelineState(GetRenderPassName(transientContext->useDepthPrepass));
         if (pipelineState == nullptr)
         {
-            pipelineState = CreateGBufferPipelineState(primitive, persistentContext);
+            pipelineState = CreatePipelineState(primitive, transientContext->useDepthPrepass, persistentContext);
             primitive->SetGraphicsPipelineState(RenderPassName, pipelineState);
         }
     }
 
-    void TiledDeferredRenderPass::PrepareMesh(SceneV1::Mesh* mesh)
+    void ForwardRenderPass::PrepareMesh(SceneV1::Mesh* mesh)
     {
         for (const auto& primitive : mesh->GetPrimitives())
         {
@@ -189,7 +189,7 @@ namespace Luch::Render::Passes::TiledDeferred
         meshDescriptorSets[mesh] = allocatedDescriptorSet;
     }
 
-    void TiledDeferredRenderPass::UpdateNode(SceneV1::Node* node)
+    void ForwardRenderPass::UpdateNode(SceneV1::Node* node)
     {
         const auto& mesh = node->GetMesh();
 
@@ -204,7 +204,7 @@ namespace Luch::Render::Passes::TiledDeferred
         }
     }
 
-    void TiledDeferredRenderPass::UpdateMesh(SceneV1::Mesh* mesh, const Mat4x4& transform)
+    void ForwardRenderPass::UpdateMesh(SceneV1::Mesh* mesh, const Mat4x4& transform)
     {
         MeshUniform meshUniform;
         meshUniform.transform = transform;
@@ -225,7 +225,7 @@ namespace Luch::Render::Passes::TiledDeferred
         descriptorSet->Update();
     }
 
-    void TiledDeferredRenderPass::UpdateLights(const RefPtrVector<SceneV1::Node>& lightNodes)
+    void ForwardRenderPass::UpdateLights(const RefPtrVector<SceneV1::Node>& lightNodes)
     {
         Vector<LightUniform> lightUniforms;
 
@@ -265,7 +265,25 @@ namespace Luch::Render::Passes::TiledDeferred
         transientContext->lightsBufferDescriptorSet->Update();
     }
 
-    void TiledDeferredRenderPass::DrawNode(SceneV1::Node* node, GraphicsCommandList* commandList)
+    void ForwardRenderPass::DrawScene(SceneV1::Scene* scene, GraphicsCommandList* commandList)
+    {
+        commandList->BindBufferDescriptorSet(
+            ShaderStage::Vertex,
+            persistentContext->pipelineLayout,
+            transientContext->cameraBufferDescriptorSet);
+
+        commandList->BindBufferDescriptorSet(
+            ShaderStage::Tile,
+            persistentContext->pipelineLayout,
+            transientContext->lightsBufferDescriptorSet);
+
+        for (const auto& node : scene->GetNodes())
+        {
+            DrawNode(node, commandList);
+        }
+    }
+
+    void ForwardRenderPass::DrawNode(SceneV1::Node* node, GraphicsCommandList* commandList)
     {
         const auto& mesh = node->GetMesh();
         if (mesh != nullptr)
@@ -279,11 +297,11 @@ namespace Luch::Render::Passes::TiledDeferred
         }
     }
 
-    void TiledDeferredRenderPass::DrawMesh(SceneV1::Mesh* mesh, GraphicsCommandList* commandList)
+    void ForwardRenderPass::DrawMesh(SceneV1::Mesh* mesh, GraphicsCommandList* commandList)
     {
         commandList->BindBufferDescriptorSet(
             ShaderStage::Vertex,
-            persistentContext->gbufferPipelineLayout,
+            persistentContext->pipelineLayout,
             meshDescriptorSets[mesh]);
 
         for (const auto& primitive : mesh->GetPrimitives())
@@ -297,55 +315,25 @@ namespace Luch::Render::Passes::TiledDeferred
         }
     }
 
-    void TiledDeferredRenderPass::DrawGBuffer(GraphicsCommandList* commandList)
-    {
-        commandList->BindBufferDescriptorSet(
-            ShaderStage::Vertex,
-            persistentContext->gbufferPipelineLayout,
-            transientContext->cameraBufferDescriptorSet);
-
-        for (const auto& node : transientContext->scene->GetNodes())
-        {
-            DrawNode(node, commandList);
-        }
-    }
-
-    void TiledDeferredRenderPass::Resolve(GraphicsCommandList* commandList)
-    {
-        commandList->BindTiledPipelineState(persistentContext->resolvePipelineState);
-
-        commandList->BindBufferDescriptorSet(
-            ShaderStage::Tile,
-            persistentContext->resolvePipelineLayout,
-            transientContext->cameraBufferDescriptorSet);
-
-        commandList->BindBufferDescriptorSet(
-            ShaderStage::Tile,
-            persistentContext->resolvePipelineLayout,
-            transientContext->lightsBufferDescriptorSet);
-
-        commandList->DispatchThreadsPerTile(commandList->GetTileSize());
-    }
-
-    void TiledDeferredRenderPass::BindMaterial(SceneV1::PbrMaterial* material, GraphicsCommandList* commandList)
+    void ForwardRenderPass::BindMaterial(SceneV1::PbrMaterial* material, GraphicsCommandList* commandList)
     {
         commandList->BindTextureDescriptorSet(
             ShaderStage::Fragment,
-            persistentContext->gbufferPipelineLayout,
+            persistentContext->pipelineLayout,
             material->GetTextureDescriptorSet());
 
         commandList->BindBufferDescriptorSet(
             ShaderStage::Fragment,
-            persistentContext->gbufferPipelineLayout,
+            persistentContext->pipelineLayout,
             material->GetBufferDescriptorSet());
 
         commandList->BindSamplerDescriptorSet(
             ShaderStage::Fragment,
-            persistentContext->gbufferPipelineLayout,
+            persistentContext->pipelineLayout,
             material->GetSamplerDescriptorSet());
     }
 
-    void TiledDeferredRenderPass::DrawPrimitive(SceneV1::Primitive* primitive, GraphicsCommandList* commandList)
+    void ForwardRenderPass::DrawPrimitive(SceneV1::Primitive* primitive, GraphicsCommandList* commandList)
     {
         auto& pipelineState = primitive->GetGraphicsPipelineState(RenderPassName);
 
@@ -376,13 +364,19 @@ namespace Luch::Render::Passes::TiledDeferred
         commandList->DrawIndexedInstanced(indexBuffer.count, 0, 1, 0);
     }
 
-    RefPtr<GraphicsPipelineState> TiledDeferredRenderPass::CreateGBufferPipelineState(
+    const String& ForwardRenderPass::GetRenderPassName(bool useDepthPrepass)
+    {
+        return useDepthPrepass ? RenderPassNameWithDepthOnly : RenderPassName;
+    }
+
+    RefPtr<GraphicsPipelineState> ForwardRenderPass::CreatePipelineState(
         SceneV1::Primitive* primitive,
-        TiledDeferredPersistentContext* context)
+        bool useDepthPrepass,
+        ForwardPersistentContext* context)
     {
         GraphicsPipelineStateCreateInfo ci;
 
-        ci.name = "GBuffer (Tiled)";
+        ci.name = GetRenderPassName(useDepthPrepass);
 
         ShaderDefines shaderDefines;
 
@@ -425,17 +419,22 @@ namespace Luch::Render::Passes::TiledDeferred
         }
 
         ci.depthStencil.depthTestEnable = true;
-        ci.depthStencil.depthWriteEnable = true;
-        ci.depthStencil.depthCompareFunction = CompareFunction::Less;
-
-        ci.colorAttachments.attachments.resize(TiledDeferredConstants::ColorAttachmentCount);
-        for(int32 i = 0; i < ci.colorAttachments.attachments.size(); i++)
+        if(useDepthPrepass)
         {
-            ci.colorAttachments.attachments[i].format = TiledDeferredConstants::ColorAttachmentFormats[i];
+            ci.depthStencil.depthWriteEnable = false;
+            ci.depthStencil.depthCompareFunction = CompareFunction::Equal;
+        }
+        else
+        {
+            ci.depthStencil.depthWriteEnable = true;
+            ci.depthStencil.depthCompareFunction = CompareFunction::Less;
         }
 
+        ci.colorAttachments.attachments.resize(1);
+        ci.colorAttachments.attachments[0].format = LuminanceFormat;
+
         ci.renderPass = context->renderPass;
-        ci.pipelineLayout = context->gbufferPipelineLayout;
+        ci.pipelineLayout = context->pipelineLayout;
 
         if (material->HasBaseColorTexture())
         {
@@ -472,8 +471,8 @@ namespace Luch::Render::Passes::TiledDeferred
 
         auto[vertexShaderLibraryCreated, vertexShaderLibrary] = RenderUtils::CreateShaderLibrary(
             context->device,
-            "Data/Shaders/TiledDeferred/",
-            "tiled_gbuffer_vp",
+            "Data/Shaders/Forward/",
+            "forward_vp",
             shaderDefines.defines);
 
         if (!vertexShaderLibraryCreated)
@@ -490,8 +489,8 @@ namespace Luch::Render::Passes::TiledDeferred
 
         auto[fragmentShaderLibraryCreated, fragmentShaderLibrary] = RenderUtils::CreateShaderLibrary(
             context->device,
-            "Data/Shaders/TiledDeferred/",
-            "tiled_gbuffer_fp",
+            "Data/Shaders/Forward/",
+            "forward_fp",
             shaderDefines.defines);
 
         if (!fragmentShaderLibraryCreated)
@@ -518,56 +517,12 @@ namespace Luch::Render::Passes::TiledDeferred
         return createdPipeline;
     }
 
-    RefPtr<TiledPipelineState> TiledDeferredRenderPass::CreateResolvePipelineState(TiledDeferredPersistentContext* context)
-    {
-        TiledPipelineStateCreateInfo ci;
-
-        ci.name = "Resolve (Tiled)";
-
-        auto [tiledShaderLibraryCreated, createdTiledShaderLibrary] = RenderUtils::CreateShaderLibrary(
-            context->device,
-            "Data/Shaders/TiledDeferred/",
-            "tiled_resolve",
-            {});
-
-        if (!tiledShaderLibraryCreated)
-        {
-            LUCH_ASSERT(false);
-            return nullptr;
-        }
-
-        auto [tileShaderProgramCreateResult, tileShaderProgram] = createdTiledShaderLibrary->CreateShaderProgram(ShaderStage::Tile, "tile_main");
-        if(tileShaderProgramCreateResult != GraphicsResult::Success)
-        {
-            LUCH_ASSERT(false);
-            return nullptr;
-        }
-
-        for(int32 i = 0; i < TiledDeferredConstants::ColorAttachmentCount; i++)
-        {
-            auto& attachment = ci.colorAttachments.attachments.emplace_back();
-            attachment.format = TiledDeferredConstants::ColorAttachmentFormats[i];
-        }
-
-        ci.tiledProgram = tileShaderProgram;
-        ci.renderPass = context->renderPass;
-        ci.pipelineLayout = context->resolvePipelineLayout;
-
-        auto[createPipelineResult, createdPipeline] = context->device->CreateTiledPipelineState(ci);
-        if (createPipelineResult != GraphicsResult::Success)
-        {
-            LUCH_ASSERT(false);
-        }
-
-        return createdPipeline;
-    }
-
-    ResultValue<bool, UniquePtr<TiledDeferredPersistentContext>> TiledDeferredRenderPass::PrepareTiledDeferredPersistentContext(
+    ResultValue<bool, UniquePtr<ForwardPersistentContext>> ForwardRenderPass::PrepareForwardPersistentContext(
         GraphicsDevice* device,
         CameraResources* cameraResources,
         MaterialResources* materialResources)
     {
-        auto context = MakeUnique<TiledDeferredPersistentContext>();
+        auto context = MakeUnique<ForwardPersistentContext>();
         context->device = device;
         context->cameraResources = cameraResources;
         context->materialResources = materialResources;
@@ -577,44 +532,58 @@ namespace Luch::Render::Passes::TiledDeferred
         Format depthStencilFormat = supportedDepthFormats.front();
 
         {
-            ColorAttachment gbufferColorAttachmentTemplate;
-            gbufferColorAttachmentTemplate.colorLoadOperation = AttachmentLoadOperation::Clear;
-            gbufferColorAttachmentTemplate.colorStoreOperation = AttachmentStoreOperation::DontCare;
-            gbufferColorAttachmentTemplate.clearValue = { 0.0f, 0.0f, 0.0f, 0.0f };
-
             ColorAttachment luminanceColorAttachment;
-            luminanceColorAttachment.format = TiledDeferredConstants::ColorAttachmentFormats[TiledDeferredConstants::LuminanceAttachmentIndex];
+            luminanceColorAttachment.format = LuminanceFormat;
             luminanceColorAttachment.colorLoadOperation = AttachmentLoadOperation::Clear;
             luminanceColorAttachment.colorStoreOperation = AttachmentStoreOperation::Store;
             luminanceColorAttachment.clearValue = { 0.0f, 0.0f, 0.0f, 1.0f };
 
-            DepthStencilAttachment depthStencilAttachment;
-            depthStencilAttachment.format = depthStencilFormat;
-            depthStencilAttachment.depthLoadOperation = AttachmentLoadOperation::Clear;
-            depthStencilAttachment.depthStoreOperation = AttachmentStoreOperation::DontCare;
-            depthStencilAttachment.stencilLoadOperation = AttachmentLoadOperation::Clear;
-            depthStencilAttachment.stencilStoreOperation = AttachmentStoreOperation::DontCare;
-            depthStencilAttachment.depthClearValue = 1.0;
-            depthStencilAttachment.stencilClearValue = 0x00000000;
+            DepthStencilAttachment depthStencilAttachmentTemplate;
+            depthStencilAttachmentTemplate.format = depthStencilFormat;
+            depthStencilAttachmentTemplate.depthLoadOperation = AttachmentLoadOperation::Clear;
+            depthStencilAttachmentTemplate.depthStoreOperation = AttachmentStoreOperation::DontCare;
+            depthStencilAttachmentTemplate.stencilLoadOperation = AttachmentLoadOperation::Clear;
+            depthStencilAttachmentTemplate.stencilStoreOperation = AttachmentStoreOperation::DontCare;
 
-            RenderPassCreateInfo renderPassCreateInfo;
-            for(int32 i = TiledDeferredConstants::GBufferColorAttachmentBegin; i < TiledDeferredConstants::GBufferColorAttachmentEnd; i++)
+            // Render Pass without Depth Prepass
             {
-                ColorAttachment attachment = gbufferColorAttachmentTemplate;
-                attachment.format = TiledDeferredConstants::ColorAttachmentFormats[i];
-                renderPassCreateInfo.colorAttachments[i] = attachment;
+                RenderPassCreateInfo renderPassCreateInfo;
+                renderPassCreateInfo.colorAttachments[0] = luminanceColorAttachment;
+                renderPassCreateInfo.depthStencilAttachment = depthStencilAttachmentTemplate;
+                renderPassCreateInfo.depthStencilAttachment->depthLoadOperation = AttachmentLoadOperation::Clear;
+                renderPassCreateInfo.depthStencilAttachment->depthStoreOperation = AttachmentStoreOperation::Store;
+                renderPassCreateInfo.depthStencilAttachment->stencilLoadOperation = AttachmentLoadOperation::Clear;
+                renderPassCreateInfo.depthStencilAttachment->stencilStoreOperation = AttachmentStoreOperation::Store;
+                renderPassCreateInfo.depthStencilAttachment->depthClearValue = 1.0;
+                renderPassCreateInfo.depthStencilAttachment->stencilClearValue = 0x00000000;
+
+                auto [createRenderPassResult, createdRenderPass] = device->CreateRenderPass(renderPassCreateInfo);
+                if(createRenderPassResult != GraphicsResult::Success)
+                {
+                    return { false };
+                }
+
+                context->renderPass = std::move(createdRenderPass);
             }
 
-            renderPassCreateInfo.colorAttachments[TiledDeferredConstants::LuminanceAttachmentIndex] = luminanceColorAttachment;
-            renderPassCreateInfo.depthStencilAttachment = depthStencilAttachment;
-
-            auto [createRenderPassResult, createdRenderPass] = device->CreateRenderPass(renderPassCreateInfo);
-            if(createRenderPassResult != GraphicsResult::Success)
+            // Render Pass with Depth Prepass
             {
-                return { false };
-            }
+                RenderPassCreateInfo renderPassCreateInfo;
+                renderPassCreateInfo.colorAttachments[0] = luminanceColorAttachment;
+                renderPassCreateInfo.depthStencilAttachment = depthStencilAttachmentTemplate;
+                renderPassCreateInfo.depthStencilAttachment->depthLoadOperation = AttachmentLoadOperation::Load;
+                renderPassCreateInfo.depthStencilAttachment->depthStoreOperation = AttachmentStoreOperation::Store;
+                renderPassCreateInfo.depthStencilAttachment->stencilLoadOperation = AttachmentLoadOperation::Load;
+                renderPassCreateInfo.depthStencilAttachment->stencilStoreOperation = AttachmentStoreOperation::Store;
 
-            context->renderPass = std::move(createdRenderPass);
+                auto [createRenderPassResult, createdRenderPass] = device->CreateRenderPass(renderPassCreateInfo);
+                if(createRenderPassResult != GraphicsResult::Success)
+                {
+                    return { false };
+                }
+
+                context->renderPassWithDepthOnly = std::move(createdRenderPass);
+            }
         }
 
         {
@@ -659,27 +628,6 @@ namespace Luch::Render::Passes::TiledDeferred
             context->meshBufferDescriptorSetLayout = std::move(createdMeshDescriptorSetLayout);
         }
 
-        {
-            PipelineLayoutCreateInfo gbufferPipelineLayoutCreateInfo;
-            gbufferPipelineLayoutCreateInfo
-                .AddSetLayout(ShaderStage::Vertex, cameraResources->cameraBufferDescriptorSetLayout)
-                .AddSetLayout(ShaderStage::Vertex, context->meshBufferDescriptorSetLayout)
-                .AddSetLayout(ShaderStage::Fragment, materialResources->materialTextureDescriptorSetLayout)
-                .AddSetLayout(ShaderStage::Fragment, materialResources->materialBufferDescriptorSetLayout)
-                .AddSetLayout(ShaderStage::Fragment, materialResources->materialSamplerDescriptorSetLayout);
-
-            auto[createGBufferPipelineLayoutResult, createdGBufferPipelineLayout] = device->CreatePipelineLayout(
-                gbufferPipelineLayoutCreateInfo);
-
-            if (createGBufferPipelineLayoutResult != GraphicsResult::Success)
-            {
-                LUCH_ASSERT(false);
-                return { false };
-            }
-
-            context->gbufferPipelineLayout = std::move(createdGBufferPipelineLayout);
-        }
-
         context->lightingParamsBinding.OfType(ResourceType::UniformBuffer);
         context->lightsBufferBinding.OfType(ResourceType::UniformBuffer);
 
@@ -702,33 +650,35 @@ namespace Luch::Render::Passes::TiledDeferred
         }
 
         {
-            PipelineLayoutCreateInfo resolvePipelineLayoutCreateInfo;
-            resolvePipelineLayoutCreateInfo
-                .AddSetLayout(ShaderStage::Tile, context->cameraResources->cameraBufferDescriptorSetLayout)
-                .AddSetLayout(ShaderStage::Tile, context->lightsBufferDescriptorSetLayout);
+            PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
+            pipelineLayoutCreateInfo
+                .AddSetLayout(ShaderStage::Vertex, cameraResources->cameraBufferDescriptorSetLayout)
+                .AddSetLayout(ShaderStage::Vertex, context->meshBufferDescriptorSetLayout)
+                .AddSetLayout(ShaderStage::Fragment, materialResources->materialTextureDescriptorSetLayout)
+                .AddSetLayout(ShaderStage::Fragment, materialResources->materialBufferDescriptorSetLayout)
+                .AddSetLayout(ShaderStage::Fragment, materialResources->materialSamplerDescriptorSetLayout)
+                .AddSetLayout(ShaderStage::Fragment, context->lightsBufferDescriptorSetLayout);
 
-            auto[createResolvePipelineLayoutResult, createdResolvePipelineLayout] = device->CreatePipelineLayout(
-                resolvePipelineLayoutCreateInfo);
+            auto[createPipelineLayoutResult, createdPipelineLayout] = device->CreatePipelineLayout(
+                pipelineLayoutCreateInfo);
 
-            if (createResolvePipelineLayoutResult != GraphicsResult::Success)
+            if (createPipelineLayoutResult != GraphicsResult::Success)
             {
                 LUCH_ASSERT(false);
                 return { false };
             }
 
-            context->resolvePipelineLayout = std::move(createdResolvePipelineLayout);
+            context->pipelineLayout = std::move(createdPipelineLayout);
         }
-
-        context->resolvePipelineState = CreateResolvePipelineState(context.get());
 
         return { true, std::move(context) };
     }
 
-    ResultValue<bool, UniquePtr<TiledDeferredTransientContext>> TiledDeferredRenderPass::PrepareTiledDeferredTransientContext(
-        TiledDeferredPersistentContext* persistentContext,
+    ResultValue<bool, UniquePtr<ForwardTransientContext>> ForwardRenderPass::PrepareForwardTransientContext(
+        ForwardPersistentContext* persistentContext,
         RefPtr<DescriptorPool> descriptorPool)
     {
-        auto context = MakeUnique<TiledDeferredTransientContext>();
+        auto context = MakeUnique<ForwardTransientContext>();
         context->descriptorPool = descriptorPool;
 
         auto [allocateLightsDescriptorSetResult, allocatedLightsBufferSet] = context->descriptorPool->AllocateDescriptorSet(

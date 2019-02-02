@@ -65,9 +65,7 @@ float3x3 TangentFrame(float3 dp1, float3 dp2, float3 N, float2 uv)
 }
 
 // Figure out coordinate system
-#if !ALPHA_MASK
 [[early_fragment_tests]]
-#endif
 fragment FragmentOut fp_main(
     VertexOut in [[stage_in]],
     constant MaterialUniform& material [[buffer(0)]]

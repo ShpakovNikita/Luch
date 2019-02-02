@@ -27,6 +27,11 @@ namespace Luch::Render::Passes::Forward
 
         DescriptorSetBinding meshUniformBufferBinding;
 
+        DescriptorSetBinding lightingParamsBinding;
+        DescriptorSetBinding lightsBufferBinding;
+
+        RefPtr<DescriptorSetLayout> lightsBufferDescriptorSetLayout;
+
         RefPtr<DescriptorSetLayout> meshBufferDescriptorSetLayout;
 
         RefPtr<RenderPass> renderPass;
@@ -42,5 +47,6 @@ namespace Luch::Render::Passes::Forward
         RefPtr<DescriptorSet> cameraBufferDescriptorSet;
         bool useDepthPrepass = false;
         RenderMutableResource depthStencilTextureHandle;
+        RefPtr<DescriptorSet> lightsBufferDescriptorSet;
     };
 }

@@ -56,7 +56,7 @@ namespace Luch::Render::Passes::Deferred
         textureCreateInfo.width = transientContext->outputSize.width;
         textureCreateInfo.height = transientContext->outputSize.height;
         textureCreateInfo.usage = TextureUsageFlags::ShaderRead | TextureUsageFlags::ShaderWrite;
-        resolveTextureHandle = node->CreateTexture(textureCreateInfo);
+        luminanceTextureHandle = node->CreateTexture(textureCreateInfo);
     }
 
     ResolveComputeRenderPass::~ResolveComputeRenderPass() = default;
@@ -93,7 +93,7 @@ namespace Luch::Render::Passes::Deferred
             persistentContext->depthStencilTextureBinding,
             depthStencilTexture);
 
-        auto luminanceTexture = manager->GetTexture(resolveTextureHandle);
+        auto luminanceTexture = manager->GetTexture(luminanceTextureHandle);
 
         transientContext->luminanceTextureDescriptorSet->WriteTexture(
             persistentContext->luminanceTextureBinding,

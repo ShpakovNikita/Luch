@@ -9,6 +9,7 @@
 #include <Luch/SceneV1/SceneV1Forwards.h>
 #include <Luch/Render/Common.h>
 #include <Luch/Render/Passes/PassesForwards.h>
+#include <Luch/Render/Passes/Forward/ForwardForwards.h>
 #include <Luch/Render/Passes/Deferred/DeferredForwards.h>
 #include <Luch/Render/Passes/TiledDeferred/TiledDeferredForwards.h>
 #include <Luch/Render/RenderForwards.h>
@@ -32,6 +33,7 @@ namespace Luch::Render
 
         UniquePtr<Graph::RenderGraphBuilder> builder;
         UniquePtr<DepthOnlyRenderPass> depthOnlyPass;
+        UniquePtr<Forward::ForwardRenderPass> forwardPass;
         UniquePtr<TiledDeferred::TiledDeferredRenderPass> tiledDeferredPass;
         UniquePtr<Deferred::GBufferRenderPass> gbufferPass;
         UniquePtr<Deferred::ResolveRenderPass> resolvePass;
@@ -39,6 +41,7 @@ namespace Luch::Render
         UniquePtr<TonemapRenderPass> tonemapPass;
 
         UniquePtr<DepthOnlyTransientContext> depthOnlyTransientContext;
+        UniquePtr<Forward::ForwardTransientContext> forwardTransientContext;
         UniquePtr<TiledDeferred::TiledDeferredTransientContext> tiledDeferredTransientContext;
         UniquePtr<Deferred::GBufferTransientContext> gbufferTransientContext;
         UniquePtr<Deferred::ResolveTransientContext> resolveTransientContext;
@@ -70,6 +73,7 @@ namespace Luch::Render
         void DrawScene(SceneV1::Node* cameraNode);
         void EndRender();
     private:
+        bool PrepareForward(FrameResources& frame);
         bool PrepareDeferred(FrameResources& frame);
         bool PrepareTiledDeferred(FrameResources& frame);
 
@@ -87,6 +91,7 @@ namespace Luch::Render
         UniquePtr<Graph::RenderGraphResourcePool> resourcePool;
 
         UniquePtr<DepthOnlyPersistentContext> depthOnlyPersistentContext;
+        UniquePtr<Forward::ForwardPersistentContext> forwardPersistentContext;
         UniquePtr<TiledDeferred::TiledDeferredPersistentContext> tiledDeferredPersistentContext;
         UniquePtr<Deferred::GBufferPersistentContext> gbufferPersistentContext;
         UniquePtr<Deferred::ResolvePersistentContext> resolvePersistentContext;

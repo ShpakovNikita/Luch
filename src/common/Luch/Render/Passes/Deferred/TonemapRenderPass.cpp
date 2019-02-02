@@ -169,7 +169,7 @@ namespace Luch::Render::Passes
 
         auto [vertexShaderLibraryCreated, createdVertexShaderLibrary] = RenderUtils::CreateShaderLibrary(
             device,
-            "Data/Shaders/Deferred/",
+            "Data/Shaders/",
             "tonemap_vp",
             {});
 
@@ -191,7 +191,7 @@ namespace Luch::Render::Passes
 
         auto[fragmentShaderLibraryCreated, createdFragmentShaderLibrary] = RenderUtils::CreateShaderLibrary(
             device,
-            "Data/Shaders/Deferred/",
+            "Data/Shaders/",
             "tonemap_fp",
             {});
 

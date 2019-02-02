@@ -62,7 +62,7 @@ namespace Luch::Render::Passes::Deferred
 
         gbuffer.depthStencil = node->ReadsTexture(transientContext->gbuffer.depthStencil);
 
-        resolveTextureHandle = node->CreateColorAttachment(0, transientContext->outputSize);
+        luminanceTextureHandle = node->CreateColorAttachment(0, transientContext->outputSize);
     }
 
     ResolveRenderPass::~ResolveRenderPass() = default;

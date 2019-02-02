@@ -9,7 +9,7 @@
 #include <Luch/Render/RenderForwards.h>
 #include <Luch/SceneV1/SceneV1Forwards.h>
 
-namespace Luch::Render::TiledDeferred
+namespace Luch::Render::Passes::TiledDeferred
 {
     using namespace Graphics;
 

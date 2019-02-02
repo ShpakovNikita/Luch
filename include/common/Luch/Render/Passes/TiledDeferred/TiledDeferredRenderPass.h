@@ -17,7 +17,7 @@
 #include <Luch/Render/Graph/RenderGraphPass.h>
 #include <Luch/Render/Passes/TiledDeferred/TiledDeferredForwards.h>
 
-namespace Luch::Render::TiledDeferred
+namespace Luch::Render::Passes::TiledDeferred
 {
     using namespace Graphics;
     using namespace Graph;
@@ -51,7 +51,7 @@ namespace Luch::Render::TiledDeferred
         SceneV1::Node* GetCameraNode() { return cameraNode; }
         void SetCameraNode(SceneV1::Node* node){ cameraNode = node; }
 
-        RenderMutableResource GetResolveTextureHandle() { return resolveTextureHandle; }
+        RenderMutableResource GetLuminanceTextureHandle() { return luminanceTextureHandle; }
 
         void ExecuteGraphicsRenderPass(
             RenderGraphResourceManager* manager,
@@ -75,15 +75,13 @@ namespace Luch::Render::TiledDeferred
         void DrawMesh(SceneV1::Mesh* mesh, GraphicsCommandList* commandList);
         void DrawPrimitive(SceneV1::Primitive* primitive, GraphicsCommandList* commandList);
 
-        static const String& GetRenderPassName(bool useDepthPrepass);
-
         static RefPtr<GraphicsPipelineState> CreateGBufferPipelineState(SceneV1::Primitive* primitive, TiledDeferredPersistentContext* context);
         static RefPtr<TiledPipelineState> CreateResolvePipelineState(TiledDeferredPersistentContext* context);
 
         TiledDeferredPersistentContext* persistentContext = nullptr;
         TiledDeferredTransientContext* transientContext = nullptr;
 
-        RenderMutableResource resolveTextureHandle;
+        RenderMutableResource luminanceTextureHandle;
 
         UnorderedMap<SceneV1::Mesh*, RefPtr<DescriptorSet>> meshDescriptorSets;
         UnorderedMap<SceneV1::Camera*, RefPtr<DescriptorSet>> cameraDescriptorSets;

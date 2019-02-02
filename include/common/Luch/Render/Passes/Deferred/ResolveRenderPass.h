@@ -45,7 +45,7 @@ namespace Luch::Render::Passes::Deferred
         void PrepareScene();
         void UpdateScene();
 
-        RenderMutableResource GetResolveTextureHandle() { return resolveTextureHandle; }
+        RenderMutableResource GetLuminanceTextureHandle() { return luminanceTextureHandle; }
 
         SceneV1::Camera* GetCamera() { return camera; }
         void SetCamera(SceneV1::Camera* aCamera) { camera = aCamera; }
@@ -63,6 +63,6 @@ namespace Luch::Render::Passes::Deferred
         ResolveTransientContext* transientContext = nullptr;
         GBufferReadOnly gbuffer;
 
-        RenderMutableResource resolveTextureHandle;
+        RenderMutableResource luminanceTextureHandle;
     };
 }

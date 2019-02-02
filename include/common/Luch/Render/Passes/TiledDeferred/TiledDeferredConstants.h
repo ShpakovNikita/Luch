@@ -3,7 +3,7 @@
 #include <Luch/Types.h>
 #include <Luch/Graphics/Format.h>
 
-namespace Luch::Render::TiledDeferred::TiledDeferredConstants
+namespace Luch::Render::Passes::TiledDeferred::TiledDeferredConstants
 {
     using namespace Graphics;
 
