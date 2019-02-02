@@ -8,7 +8,8 @@ namespace Luch::Vulkan
     VulkanDescriptorPool::VulkanDescriptorPool(
         VulkanGraphicsDevice* aDevice,
         vk::DescriptorPool aDescriptorPool)
-        : device(aDevice)
+        : DescriptorPool (aDevice)
+        , device(aDevice)
         , descriptorPool(aDescriptorPool)
     {
     }
@@ -18,7 +19,7 @@ namespace Luch::Vulkan
         Destroy();
     }
 
-    GraphicsResultValue<RefPtrVector<VulkanDescriptorSet>> VulkanDescriptorPool::AllocateDescriptorSets(
+    GraphicsResultValue<RefPtrVector<DescriptorSet>> VulkanDescriptorPool::AllocateDescriptorSets(
         const Vector<VulkanDescriptorSetLayout*>& layouts)
     {
         auto count = layouts.size();
@@ -42,7 +43,7 @@ namespace Luch::Vulkan
             return { allocateResult };
         }
 
-        RefPtrVector<VulkanDescriptorSet> sets;
+        RefPtrVector<DescriptorSet> sets;
         sets.reserve(count);
 
         for (auto vulkanSet : allocatedSets)
@@ -53,10 +54,10 @@ namespace Luch::Vulkan
         return { allocateResult, std::move(sets) };
     }
 
-    GraphicsResultRefPtr<VulkanDescriptorSet> VulkanDescriptorPool::AllocateDescriptorSet(
-        VulkanDescriptorSetLayout* layout)
+    GraphicsResultRefPtr<DescriptorSet> VulkanDescriptorPool::AllocateDescriptorSet(
+        DescriptorSetLayout* layout)
     {
-        vk::DescriptorSetLayout vulkanLayout = layout->GetDescriptorSetLayout();
+        vk::DescriptorSetLayout vulkanLayout; // todo: fix = layout->GetDescriptorSetLayout();
 
         vk::DescriptorSetAllocateInfo allocateInfo;
         allocateInfo.setDescriptorPool(descriptorPool);

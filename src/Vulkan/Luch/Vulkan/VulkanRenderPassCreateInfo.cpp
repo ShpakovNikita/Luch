@@ -148,4 +148,11 @@ namespace Luch::Vulkan
 
         return result;
     }
+
+    VulkanRenderPassCreateInfo::VulkanRenderPassCreateInfoData VulkanRenderPassCreateInfo::ToVulkanCreateInfo(const RenderPassCreateInfo& createInfo)
+    {
+        VulkanRenderPassCreateInfo::VulkanRenderPassCreateInfoData result;
+        // todo: implement
+        return result;
+    }
 }

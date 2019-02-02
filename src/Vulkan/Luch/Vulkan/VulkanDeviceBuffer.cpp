@@ -9,7 +9,8 @@ namespace Luch::Vulkan
         vk::Buffer aBuffer,
         vk::DeviceMemory aMemory,
         vk::BufferCreateInfo aBufferCreateInfo)
-        : device(aDevice)
+        : Buffer(aDevice)
+        , device(aDevice)
         , buffer(aBuffer)
         , memory(aMemory)
         , bufferCreateInfo(aBufferCreateInfo)
@@ -22,18 +23,19 @@ namespace Luch::Vulkan
     }
 
     GraphicsResultValue<void*> VulkanDeviceBuffer::MapMemory(
-        int64 size,
-        int64 offset)
+        int32 size,
+        int32 offset)
     {
         auto [result, memoryPointer] = device->GetDevice().mapMemory(memory, offset, size);
         mappedMemory = memoryPointer;
         return { result, memoryPointer };
     }
 
-    void VulkanDeviceBuffer::UnmapMemory()
+    GraphicsResult VulkanDeviceBuffer::UnmapMemory()
     {
         mappedMemory = nullptr;
         device->GetDevice().unmapMemory(memory);
+        return GraphicsResult::Success;
     }
 
     vk::Result VulkanDeviceBuffer::FlushMemory()

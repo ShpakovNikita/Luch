@@ -6,7 +6,8 @@ namespace Luch::Vulkan
     VulkanSemaphore::VulkanSemaphore(
         VulkanGraphicsDevice* aDevice,
         vk::Semaphore aSemaphore)
-        : device(aDevice)
+        : Semaphore(aDevice)
+        , device(aDevice)
         , semaphore(aSemaphore)
     {
     }

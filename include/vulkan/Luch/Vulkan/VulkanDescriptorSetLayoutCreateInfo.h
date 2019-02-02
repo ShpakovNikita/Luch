@@ -2,6 +2,7 @@
 
 #include <Luch/Vulkan.h>
 #include <Luch/Graphics/ShaderStage.h>
+#include <Luch/Graphics/DescriptorSetLayoutCreateInfo.h>
 #include <Luch/Vulkan/VulkanDescriptorSetBinding.h>
 
 namespace Luch::Vulkan
@@ -25,6 +26,7 @@ namespace Luch::Vulkan
         };
 
         static VulkanDescriptorSetLayoutCreateInfo ToVulkanCreateInfo(const DescriptorSetLayoutCreateInfo& ci);
+        static VulkanDescriptorSetLayoutCreateInfo ToVulkanCreateInfo(const Luch::Graphics::DescriptorSetLayoutCreateInfo& ci);
 
         // descriptor set binding must be in a valid state
         // changing the binding after calling this function can lead to undefined behavior

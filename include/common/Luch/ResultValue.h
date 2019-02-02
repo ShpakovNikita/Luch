@@ -38,7 +38,7 @@ namespace Luch
         ResultValue(vk::Result result)
             : ResultValue(ToGraphicsResult(result)) {}
         ResultValue(vk::Result result, Value val)
-            : ResultValue(ToGraphicsResult(result), std::forward(val)) {}
+            : ResultValue(ToGraphicsResult(result), std::forward<Value>(val)) {}
         #endif
 
 

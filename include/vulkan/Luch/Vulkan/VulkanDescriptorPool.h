@@ -4,10 +4,15 @@
 #include <Luch/ArrayProxy.h>
 #include <Luch/Vulkan.h>
 #include <Luch/Vulkan/VulkanForwards.h>
+#include <Luch/Graphics/GraphicsResultValue.h>
+#include <Luch/Graphics/DescriptorPool.h>
+#include <Luch/Graphics/DescriptorSetLayout.h>
+#include <Luch/Graphics/DescriptorSet.h>
 
+using namespace Luch::Graphics;
 namespace Luch::Vulkan
 {
-    class VulkanDescriptorPool : public BaseObject
+    class VulkanDescriptorPool : public DescriptorPool
     {
         friend class VulkanGraphicsDevice;
     public:
@@ -18,10 +23,10 @@ namespace Luch::Vulkan
 
         inline vk::DescriptorPool GetDescriptorPool() { return descriptorPool; }
 
-        GraphicsResultValue<RefPtrVector<VulkanDescriptorSet>> AllocateDescriptorSets(
+        GraphicsResultValue<RefPtrVector<DescriptorSet>> AllocateDescriptorSets(
             const Vector<VulkanDescriptorSetLayout*>& layouts);
 
-        GraphicsResultRefPtr<VulkanDescriptorSet> AllocateDescriptorSet(VulkanDescriptorSetLayout* layout);
+        GraphicsResultRefPtr<DescriptorSet> AllocateDescriptorSet(DescriptorSetLayout* layout) override;
 
         vk::Result Reset();
     private:

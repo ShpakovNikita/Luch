@@ -6,7 +6,8 @@ namespace Luch::Vulkan
     VulkanSampler::VulkanSampler(
         VulkanGraphicsDevice* aDevice,
         vk::Sampler aSampler)
-        : device(aDevice)
+        : Sampler(static_cast<GraphicsDevice*>(aDevice))
+        , device(aDevice)
         , sampler(aSampler)
     {
     }

@@ -29,6 +29,10 @@
 #include <Luch/Graphics/Semaphore.h>
 #include <Luch/Graphics/Swapchain.h>
 #include <Luch/Graphics/SwapchainInfo.h>
+#include <Luch/Graphics/FrameBuffer.h>
+#include <Luch/Graphics/FrameBufferCreateInfo.h>
+#include <Luch/Graphics/BufferCreateInfo.h>
+#include <Luch/Graphics/Buffer.h>
 
 using namespace Luch::Graphics;
 
@@ -283,18 +287,16 @@ namespace Luch::Vulkan
         }
     }
 
-    GraphicsResultRefPtr<VulkanDeviceBuffer> VulkanGraphicsDevice::CreateBuffer(
-        int64 size,
-        QueueIndex queueIndex,
-        vk::BufferUsageFlags usage,
-        bool mappable)
+    GraphicsResultRefPtr<Buffer> VulkanGraphicsDevice::CreateBuffer(
+            const BufferCreateInfo& createInfo,
+            const void* initialData)
     {
         vk::BufferCreateInfo ci;
-        ci.setPQueueFamilyIndices(&queueIndex);
+        // ci.setPQueueFamilyIndices(&queueIndex); todo: uncomment and fix
         ci.setQueueFamilyIndexCount(1);
         ci.setSharingMode(vk::SharingMode::eExclusive);
-        ci.setSize(size);
-        ci.setUsage(usage);
+        ci.setSize(createInfo.length);
+        ci.setUsage(vk::BufferUsageFlagBits::eVertexBuffer); // todo: mewmew convert type createInfo.usage
 
         auto [createBufferResult, vulkanBuffer] = device.createBuffer(ci, allocationCallbacks);
         if (createBufferResult != vk::Result::eSuccess)
@@ -305,6 +307,7 @@ namespace Luch::Vulkan
         
         auto memoryRequirements = device.getBufferMemoryRequirements(vulkanBuffer);
 
+        bool mappable = false; // todo: this should be param
         vk::MemoryPropertyFlags memoryProperties = mappable ? vk::MemoryPropertyFlagBits::eHostVisible : vk::MemoryPropertyFlagBits::eDeviceLocal;
 
         auto [allocateMemoryResult, vulkanMemory] = AllocateMemory(memoryRequirements, memoryProperties);
@@ -458,7 +461,7 @@ namespace Luch::Vulkan
         }
     }
 
-    GraphicsResultRefPtr<VulkanRenderPass> VulkanGraphicsDevice::CreateRenderPass(const VulkanRenderPassCreateInfo& ci)
+    GraphicsResultRefPtr<RenderPass> VulkanGraphicsDevice::CreateRenderPass(const RenderPassCreateInfo& ci)
     {
         auto vkci = VulkanRenderPassCreateInfo::ToVulkanCreateInfo(ci);
         auto [createResult, vulkanRenderPass] = device.createRenderPass(vkci.createInfo, allocationCallbacks);
@@ -473,8 +476,8 @@ namespace Luch::Vulkan
         }
     }
 
-    GraphicsResultRefPtr<VulkanDescriptorSetLayout> VulkanGraphicsDevice::CreateDescriptorSetLayout(
-        const DescriptorSetLayoutCreateInfo& ci)
+    GraphicsResultRefPtr<DescriptorSetLayout> VulkanGraphicsDevice::CreateDescriptorSetLayout(
+        const Graphics::DescriptorSetLayoutCreateInfo& ci)
     {
         auto vkci = DescriptorSetLayoutCreateInfo::ToVulkanCreateInfo(ci);
         auto [createResult, vulkanDescriptorSetLayout] = device.createDescriptorSetLayout(vkci.createInfo, allocationCallbacks);
@@ -489,20 +492,25 @@ namespace Luch::Vulkan
         }
     }
 
-    GraphicsResultRefPtr<VulkanDescriptorPool> VulkanGraphicsDevice::CreateDescriptorPool(
-        int32 maxSets,
-        const UnorderedMap<vk::DescriptorType, int32>& poolSizes,
-        bool canFreeDescriptors)
+    GraphicsResultRefPtr<DescriptorPool> VulkanGraphicsDevice::CreateDescriptorPool(
+        const DescriptorPoolCreateInfo&)
     {
-        auto count = (int32)poolSizes.size();
+        // todo: figure out params
+        bool canFreeDescriptors = false;
+        uint32_t maxSets = 8;
+        int32_t count = 0;
+
         Vector<vk::DescriptorPoolSize> vulkanPoolSizes;
+        /*
+        auto count = (int32)poolSizes.size();
+
         vulkanPoolSizes.reserve(count);
 
         for (auto& poolSize : poolSizes)
         {
             vulkanPoolSizes.emplace_back(poolSize.first, poolSize.second);
-        }
-
+        }*/
+        // endof todo
 
         vk::DescriptorPoolCreateFlags flags;
         if (canFreeDescriptors)
@@ -528,8 +536,8 @@ namespace Luch::Vulkan
         }
     }
 
-    GraphicsResultRefPtr<VulkanPipelineLayout> VulkanGraphicsDevice::CreatePipelineLayout(
-        const PipelineLayoutCreateInfo& createInfo)
+    GraphicsResultRefPtr<PipelineLayout> VulkanGraphicsDevice::CreatePipelineLayout(
+        const Graphics::PipelineLayoutCreateInfo& createInfo)
     {
         auto vkci = PipelineLayoutCreateInfo::ToVulkanCreateInfo(createInfo);
         auto [createResult, vulkanPipelineLayout] = device.createPipelineLayout(vkci.createInfo, allocationCallbacks);
@@ -544,10 +552,11 @@ namespace Luch::Vulkan
         }
     }
 
-    GraphicsResultRefPtr<VulkanFramebuffer> VulkanGraphicsDevice::CreateFramebuffer(
-        const FramebufferCreateInfo & createInfo)
+    GraphicsResultRefPtr<FrameBuffer> VulkanGraphicsDevice::CreateFrameBuffer(
+        const FrameBufferCreateInfo& createInfo)
     {
-        auto vkci = FramebufferCreateInfo::ToVulkanCreateInfo(createInfo);
+        vk::FramebufferCreateInfo vkci;
+        // auto vkci = FramebufferCreateInfo::ToVulkanCreateInfo(createInfo); todo: fix
         auto [createResult, vulkanFramebuffer] = device.createFramebuffer(vkci, allocationCallbacks);
         if (createResult != vk::Result::eSuccess)
         {
@@ -611,6 +620,33 @@ namespace Luch::Vulkan
         {
             return { createResult, MakeRef<VulkanSampler>(this, vulkanSampler) };
         }
+    }
+
+    GraphicsResultRefPtr<CommandQueue> VulkanGraphicsDevice::CreateCommandQueue()
+    {
+        // todo: implement
+        return {GraphicsResult::Unsupported};
+    }
+
+    GraphicsResultRefPtr<PipelineState> VulkanGraphicsDevice::CreatePipelineState(const PipelineStateCreateInfo& createInfo)
+    {
+        // todo: implement
+        return {GraphicsResult::Unsupported};
+    }
+
+    GraphicsResultRefPtr<Texture> VulkanGraphicsDevice::CreateTexture(const TextureCreateInfo &createInfo)
+    {
+        // todo: implement
+        return {GraphicsResult::Unsupported};
+    }
+
+    GraphicsResultRefPtr<ShaderLibrary> VulkanGraphicsDevice::CreateShaderLibraryFromSource(
+            const Vector<Byte> &source,
+            const UnorderedMap<String,
+            Variant<int32, String> > &defines)
+    {
+        // todo: implement
+        return {GraphicsResult::Unsupported};
     }
 
     GraphicsResultValue<vk::DeviceMemory> VulkanGraphicsDevice::AllocateMemory(
@@ -689,7 +725,7 @@ namespace Luch::Vulkan
 
     void VulkanGraphicsDevice::DestroyPipelineLayout(VulkanPipelineLayout* pipelineLayout)
     {
-        device.destroyPipelineLayout(pipelineLayout->pipelineLayout, allocationCallbacks);
+        device.destroyPipelineLayout(pipelineLayout->vkPipelineLayout, allocationCallbacks);
     }
 
     void VulkanGraphicsDevice::DestroyPipelineCache(VulkanPipelineCache* pipelineCache)

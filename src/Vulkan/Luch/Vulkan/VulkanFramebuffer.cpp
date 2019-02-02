@@ -6,7 +6,8 @@ namespace Luch::Vulkan
     VulkanFramebuffer::VulkanFramebuffer(
         VulkanGraphicsDevice* aDevice,
         vk::Framebuffer aFramebuffer)
-        : device(aDevice)
+        : FrameBuffer (aDevice)
+        , device(aDevice)
         , framebuffer(aFramebuffer)
     {
     }

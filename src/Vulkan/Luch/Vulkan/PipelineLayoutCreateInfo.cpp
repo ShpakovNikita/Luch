@@ -32,4 +32,11 @@ namespace Luch::Vulkan
 
         return createInfo;
     }
+
+    PipelineLayoutCreateInfo::VulkanPipelineLayoutCreateInfo PipelineLayoutCreateInfo::ToVulkanCreateInfo(const Luch::Graphics::PipelineLayoutCreateInfo& ci)
+    {
+        VulkanPipelineLayoutCreateInfo createInfo;
+        // todo: implement
+        return createInfo;
+    }
 }

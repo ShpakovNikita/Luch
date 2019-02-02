@@ -5,9 +5,10 @@ namespace Luch::Vulkan
 {
     VulkanPipelineLayout::VulkanPipelineLayout(
         VulkanGraphicsDevice* aDevice,
-        vk::PipelineLayout aPipelineLayout)
-        : device(aDevice)
-        , pipelineLayout(aPipelineLayout)
+        vk::PipelineLayout avkPipelineLayout)
+        : PipelineLayout (aDevice)
+        , device(aDevice)
+        , vkPipelineLayout(avkPipelineLayout)
     {
     }
 

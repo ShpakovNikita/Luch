@@ -7,7 +7,8 @@ namespace Luch::Vulkan
     VulkanDescriptorSetLayout::VulkanDescriptorSetLayout(
         VulkanGraphicsDevice* aDevice,
         vk::DescriptorSetLayout aDescriptorSetLayout)
-        : device(aDevice)
+        : DescriptorSetLayout (aDevice)
+        , device(aDevice)
         , descriptorSetLayout(aDescriptorSetLayout)
     {
     }

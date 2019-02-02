@@ -9,7 +9,8 @@ namespace Luch::Vulkan
         VulkanGraphicsDevice* aDevice,
         vk::RenderPass aRenderPass,
         int32 aAttachmentCount)
-        : device(aDevice)
+        : RenderPass(aDevice)
+        , device(aDevice)
         , renderPass(aRenderPass)
         , attachmentCount(aAttachmentCount)
     {
@@ -18,6 +19,11 @@ namespace Luch::Vulkan
     VulkanRenderPass::~VulkanRenderPass()
     {
         Destroy();
+    }
+
+    const RenderPassCreateInfo& VulkanRenderPass::GetCreateInfo() const
+    {
+        return createInfoUnused;
     }
 
     void VulkanRenderPass::Destroy()

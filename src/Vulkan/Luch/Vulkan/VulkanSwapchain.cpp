@@ -15,7 +15,8 @@ namespace Luch::Vulkan
         VulkanSwapchainCreateInfo aCreateInfo,
         int32 aSwapchainImageCount,
         Vector<VulkanSwapchainImage>&& aSwapchainImages)
-        : device(aDevice)
+        : Swapchain(aDevice)
+        , device(aDevice)
         , swapchain(aSwapchain)
         , createInfo(aCreateInfo)
         , swapchainImageCount(aSwapchainImageCount)
@@ -34,6 +35,12 @@ namespace Luch::Vulkan
         {
             device->DestroySwapchain(this);
         }
+    }
+
+    GraphicsResultValue<AcquiredTexture> VulkanSwapchain::GetNextAvailableTexture(Semaphore* semaphore)
+    {
+        // todo: implement
+        return {GraphicsResult::Unsupported};
     }
 
     GraphicsResultValue<int32> VulkanSwapchain::AcquireNextImage(

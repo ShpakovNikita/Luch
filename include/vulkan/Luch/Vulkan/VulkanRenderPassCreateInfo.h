@@ -5,6 +5,9 @@
 #include <Luch/Vulkan/VulkanAttachment.h>
 #include <Luch/Vulkan/VulkanSubpassDescription.h>
 #include <Luch/Vulkan/VulkanSubpassDependency.h>
+#include <Luch/Graphics/RenderPassCreateInfo.h>
+
+using namespace Luch::Graphics;
 
 namespace Luch::Vulkan
 {
@@ -47,7 +50,9 @@ namespace Luch::Vulkan
             Vector<vk::SubpassDependency> subpassDependencies;
         };
 
+        // todo: remove
         static VulkanRenderPassCreateInfoData ToVulkanCreateInfo(const VulkanRenderPassCreateInfo& createInfo);
+        static VulkanRenderPassCreateInfoData ToVulkanCreateInfo(const RenderPassCreateInfo& createInfo);
 
         // attachment must be in a valid state
         // changing the attachment after calling this function can lead to undefined behavior

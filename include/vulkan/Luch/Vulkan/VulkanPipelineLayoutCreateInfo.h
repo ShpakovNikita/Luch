@@ -3,6 +3,7 @@
 #include <Luch/Vulkan.h>
 #include <Luch/Vulkan/VulkanDescriptorSetLayout.h>
 #include <Luch/Vulkan/VulkanPushConstantRange.h>
+#include <Luch/Graphics/PipelineLayoutCreateInfo.h>
 
 namespace Luch::Vulkan
 {
@@ -25,6 +26,7 @@ namespace Luch::Vulkan
         };
 
         static VulkanPipelineLayoutCreateInfo ToVulkanCreateInfo(const PipelineLayoutCreateInfo& ci);
+        static VulkanPipelineLayoutCreateInfo ToVulkanCreateInfo(const Luch::Graphics::PipelineLayoutCreateInfo& ci);
 
         inline PipelineLayoutCreateInfo& WithNSetLayouts(int32 count)
         {

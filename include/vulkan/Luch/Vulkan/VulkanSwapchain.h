@@ -8,6 +8,7 @@
 #include <Luch/Vulkan/VulkanImage.h>
 #include <Luch/Vulkan/VulkanImageView.h>
 #include <Luch/Graphics/SwapchainInfo.h>
+#include <Luch/Graphics/Swapchain.h>
 
 using namespace Luch::Graphics;
 
@@ -35,7 +36,7 @@ namespace Luch::Vulkan
         vk::PresentModeKHR presentMode = vk::PresentModeKHR::eFifo;
     };
 
-    class VulkanSwapchain : public BaseObject
+    class VulkanSwapchain : public Swapchain
     {
         friend class VulkanGraphicsDevice;
     public:
@@ -54,10 +55,18 @@ namespace Luch::Vulkan
             vk::PhysicalDevice vulkanPhysicalDevice,
             vk::SurfaceKHR vulkanSurface);
 
+        const SwapchainInfo& GetInfo() const override
+        {
+            return createInfo;
+        }
+
+        // todo: remove if not needed, duplicates GetInfo()
+        inline VulkanSwapchainCreateInfo GetSwapchainCreateInfo() const { return createInfo; }
+
+        GraphicsResultValue<AcquiredTexture> GetNextAvailableTexture(Semaphore* semaphore) override;
         // TODO semaphores and fences
         GraphicsResultValue<int32> AcquireNextImage(VulkanFence* fence, VulkanSemaphore* semaphore, Optional<Timeout> timeout = {});
 
-        inline VulkanSwapchainCreateInfo GetSwapchainCreateInfo() const { return createInfo; }
         inline Format GetFormat() const { return createInfo.format; }
         inline VulkanImageView* GetImageView(int index) { return swapchainImages[index].imageView; }
         inline vk::SwapchainKHR GetSwapchain() { return swapchain; }

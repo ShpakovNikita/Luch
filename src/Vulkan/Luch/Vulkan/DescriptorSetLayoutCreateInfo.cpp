@@ -39,4 +39,12 @@ namespace Luch::Vulkan
 
         return description;
     }
+
+    DescriptorSetLayoutCreateInfo::VulkanDescriptorSetLayoutCreateInfo
+    DescriptorSetLayoutCreateInfo::ToVulkanCreateInfo(const Luch::Graphics::DescriptorSetLayoutCreateInfo& ci)
+    {
+        VulkanDescriptorSetLayoutCreateInfo description;
+        // todo: implement
+        return description;
+    }
 }

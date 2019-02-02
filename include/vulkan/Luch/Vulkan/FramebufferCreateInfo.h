@@ -3,6 +3,7 @@
 #include <Luch/Vulkan.h>
 #include <Luch/Vulkan/VulkanAttachment.h>
 #include <Luch/Vulkan/VulkanImageView.h>
+#include <Luch/Graphics/FrameBufferCreateInfo.h>
 
 namespace Luch::Vulkan
 {
@@ -10,6 +11,7 @@ namespace Luch::Vulkan
     {
     public:
         static vk::FramebufferCreateInfo ToVulkanCreateInfo(const FramebufferCreateInfo& createInfo);
+        static vk::FramebufferCreateInfo ToVulkanCreateInfo(const Luch::Graphics::FrameBufferCreateInfo& createInfo);
 
         FramebufferCreateInfo(VulkanRenderPass* aRenderPass, int32 aWidth, int32 aHeight, int32 aLayers);
 

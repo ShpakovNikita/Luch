@@ -27,4 +27,11 @@ namespace Luch::Vulkan
         vkci.setLayers(createInfo.layers);
         return vkci;
     }
+
+    vk::FramebufferCreateInfo ToVulkanCreateInfo(const Luch::Graphics::FrameBufferCreateInfo& createInfo)
+    {
+        vk::FramebufferCreateInfo vkci;
+        // todo: implement
+        return vkci;
+    }
 }

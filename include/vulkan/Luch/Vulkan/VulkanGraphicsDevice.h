@@ -62,17 +62,13 @@ namespace Luch::Vulkan
 
         GraphicsResultRefPtr<Sampler> CreateSampler(const SamplerCreateInfo& createInfo) override;
 
-        // unimplemented
         GraphicsResultRefPtr<CommandQueue> CreateCommandQueue() override;
-        GraphicsResultRefPtr<PipelineState> CreatePipelineState(
-                    const PipelineStateCreateInfo& createInfo) override;
+        GraphicsResultRefPtr<PipelineState> CreatePipelineState(const PipelineStateCreateInfo&) override;
         GraphicsResultRefPtr<Texture> CreateTexture(
                     const TextureCreateInfo& createInfo) override;
         GraphicsResultRefPtr<ShaderLibrary> CreateShaderLibraryFromSource(
                     const Vector<Byte>& source,
                     const UnorderedMap<String, Variant<int32, String>>& defines) override;
-
-        // end unimplemented
 
         inline vk::Device GetDevice() { return device; }
         inline const vk::Optional<const vk::AllocationCallbacks>& GetAllocationCallbacks() const
@@ -94,11 +90,9 @@ namespace Luch::Vulkan
             bool transient = false,
             bool canReset = false);
 
-        GraphicsResultRefPtr<VulkanDeviceBuffer> CreateBuffer(
-            int64 size,
-            QueueIndex queueIndex,
-            vk::BufferUsageFlags usage,
-            bool mappable);
+        GraphicsResultRefPtr<Buffer> CreateBuffer(
+                const BufferCreateInfo& createInfo,
+                const void* initialData = nullptr) override;
 
         GraphicsResultRefPtr<VulkanDeviceBufferView> CreateBufferView(
             VulkanDeviceBuffer* buffer,
@@ -124,21 +118,19 @@ namespace Luch::Vulkan
             const GraphicsPipelineCreateInfo& graphicsPipelineCreateInfo,
             VulkanPipelineCache* pipelineCache = nullptr);
 
-        GraphicsResultRefPtr<VulkanRenderPass> CreateRenderPass(const VulkanRenderPassCreateInfo& createInfo);
+        GraphicsResultRefPtr<RenderPass> CreateRenderPass(const RenderPassCreateInfo& createInfo) override;
 
-        GraphicsResultRefPtr<VulkanDescriptorSetLayout> CreateDescriptorSetLayout(
-            const DescriptorSetLayoutCreateInfo& createInfo);
+        GraphicsResultRefPtr<DescriptorSetLayout> CreateDescriptorSetLayout(
+            const Graphics::DescriptorSetLayoutCreateInfo& createInfo) override;
 
-        GraphicsResultRefPtr<VulkanDescriptorPool> CreateDescriptorPool(
-            int32 maxSets,
-            const UnorderedMap<vk::DescriptorType, int32>& poolSizes,
-            bool canFreeDescriptors = false);
+        GraphicsResultRefPtr<DescriptorPool> CreateDescriptorPool(
+            const DescriptorPoolCreateInfo&) override;
 
-        GraphicsResultRefPtr<VulkanPipelineLayout> CreatePipelineLayout(
-            const PipelineLayoutCreateInfo& createInfo);
+        GraphicsResultRefPtr<PipelineLayout> CreatePipelineLayout(
+            const Graphics::PipelineLayoutCreateInfo& createInfo) override;
 
-        GraphicsResultRefPtr<VulkanFramebuffer> CreateFramebuffer(
-            const FramebufferCreateInfo& createInfo);
+        GraphicsResultRefPtr<FrameBuffer> CreateFrameBuffer(
+            const FrameBufferCreateInfo& createInfo) override;
 
         GraphicsResultRefPtr<VulkanFence> CreateFence(bool signaled = false);
     private:
