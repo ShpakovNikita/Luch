@@ -4,7 +4,6 @@
 
 using namespace metal;
 
-
 enum class LightType : ushort
 {
     LIGHT_POINT = 0,
@@ -18,7 +17,7 @@ enum class LightState : ushort
     LIGHT_ENABLED = 1,
 };
 
-constexpr int32 MaxLights = 4;
+constant constexpr int MaxLights = 4;
 
 struct Light
 {
@@ -36,7 +35,7 @@ struct Light
     float padding3;
 };
 
-struct LightUniform
+struct LightsUniform
 {
     Light lights[MaxLights];
 };
@@ -50,6 +49,15 @@ struct CameraUniform
     float4x4 viewProjection;
     float4x4 inverseViewProjection;
     float4 positionWS;
+};
+
+struct LightingParamsUniform
+{
+    ushort lightCount;
+    ushort padding0;
+    int padding1;
+    int padding2;
+    int padding3;
 };
 
 struct LightingResult
@@ -278,12 +286,15 @@ struct FragmentOut
 };
 
 // Figure out coordinate system
+#if !ALPHA_MASK
 [[early_fragment_tests]]
+#endif
 fragment FragmentOut fp_main(
     VertexOut in [[stage_in]],
-    constant MaterialUniform& material [[buffer(0)]],
-    constant LightingParamsUniform& lightingParams [[buffer(1)]],
-    constant LightsUniform& lights [[buffer(2)]],
+    constant CameraUniform& camera [[buffer(0)]],
+    constant MaterialUniform& material [[buffer(1)]],
+    constant LightingParamsUniform& lightingParams [[buffer(2)]],
+    constant LightsUniform& lights [[buffer(3)]]
 
 #if HAS_BASE_COLOR_TEXTURE
     , texture2d<half> baseColorMap [[texture(0)]]         // RGB - color, A - opacity
@@ -313,10 +324,11 @@ fragment FragmentOut fp_main(
         float2 texCoord = in.texCoord;
     #endif
 
+    half4 baseColor = half4(material.baseColorFactor);
+
     #if HAS_BASE_COLOR_TEXTURE && HAS_TEXCOORD_0
-        half4 baseColor = baseColorMap.sample(baseColorSampler, texCoord);
-    #else
-        half4 baseColor = half4(1.0h);
+        half4 baseColorSample = baseColorMap.sample(baseColorSampler, texCoord);
+        baseColor *= baseColorSample;
     #endif
 
     #if ALPHA_MASK
@@ -349,9 +361,9 @@ fragment FragmentOut fp_main(
 
     #if HAS_NORMAL_TEXTURE && HAS_TEXCOORD_0
         float3 normalSample = normalMap.sample(normalMapSampler, texCoord).xyz;
-        float3 N = normalize(ExtractNormal(normalSample, material.normalScale, TBN));
+        half3 N = half3(normalize(ExtractNormal(normalSample, material.normalScale, TBN)));
     #else
-        float3 N = normalize(normalVS);
+        half3 N = half3(normalize(normalVS));
     #endif
 
     half metallic = half(material.metallicFactor);
@@ -363,11 +375,11 @@ fragment FragmentOut fp_main(
         roughness *= clamp(metallicRoughnessSample.g, 0.04h, 1.0h);
     #endif
 
-    half3 emissive = half3(material.emissiveFactor);
+    half3 emitted = half3(material.emissiveFactor);
 
     #if HAS_EMISSIVE_TEXTURE && HAS_TEXCOORD_0
         half4 emissiveSample = emissiveMap.sample(emissiveSampler, texCoord);
-        emissive *= emissiveSample.rgb;
+        emitted *= emissiveSample.rgb;
     #endif
 
     #if HAS_OCCLUSION_TEXTURE && HAS_TEXCOORD_0
@@ -381,11 +393,16 @@ fragment FragmentOut fp_main(
     constexpr half3 eyePosVS = half3(0); // in view space eye is at origin
     half3 V = normalize(eyePosVS - P);
 
+    half3 F0 = half3(0.04h);
+    // If material is dielectrict, it's reflection coefficient can be approximated by 0.04
+    // Otherwise (for metals), take base color to "tint" reflections
+    F0 = mix(F0, baseColor.rgb, metallic);
+
     LightingResult lightingResult;
 
     for(ushort i = 0; i < lightingParams.lightCount; i++)
     {
-        Light light = lights[i];
+        Light light = lights.lights[i];
 
         LightingResult intermediateResult;
 
@@ -410,11 +427,9 @@ fragment FragmentOut fp_main(
 
     FragmentOut result;
 
-    result.color.rgb = emitted + baseColor * lightingResult.diffuse + lightingResult.specular;
-    result.color.a = 1.0;
+    result.luminance.rgb = emitted + baseColor.rgb * lightingResult.diffuse + lightingResult.specular;
+    result.luminance.a = baseColor.a;
 
     return result;
-
-    return out;
 }
 

@@ -157,6 +157,8 @@ namespace Luch::Render
             {
                 return false;
             }
+
+            forwardPersistentContext = std::move(createdForwardPersistentContext);
         }
 
         // Tiled Deferred Persistent Context

@@ -20,12 +20,10 @@ struct MaterialUniform
 struct VertexOut
 {
     float4 positionCS [[position]];
-    float3 positionVS;
     float2 texCoord;
 };
 
 // Figure out coordinate system
-[[early_fragment_tests]]
 fragment void fp_main(
     VertexOut in [[stage_in]],
     constant MaterialUniform& material [[buffer(0)]],

@@ -37,7 +37,6 @@ struct VertexIn
 struct VertexOut
 {
     float4 positionCS [[ position ]];
-    float3 positionVS;
 
     #if ALPHA_MASK
         float2 texCoord;
@@ -54,8 +53,6 @@ vertex VertexOut vp_main(
     float4x4 viewModel = camera.view * mesh.model;
 
     float4 positionVS = viewModel * float4(in.positionLS.xyz, 1.0);
-
-    out.positionVS = positionVS.xyz;
 
     #if ALPHA_MASK
         out.texCoord = in.texCoord;

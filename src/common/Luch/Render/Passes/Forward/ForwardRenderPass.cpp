@@ -63,15 +63,16 @@ namespace Luch::Render::Passes::Forward
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
-        auto node = builder->AddGraphicsRenderPass(RenderPassName, persistentContext->renderPass, this);
-
-        luminanceTextureHandle = node->CreateColorAttachment(0, transientContext->outputSize);
         if(transientContext->useDepthPrepass)
         {
+            auto node = builder->AddGraphicsRenderPass(RenderPassNameWithDepthOnly, persistentContext->renderPassWithDepthOnly, this);
+            luminanceTextureHandle = node->CreateColorAttachment(0, transientContext->outputSize);
             depthStencilTextureHandle = node->UseDepthStencilAttachment(transientContext->depthStencilTextureHandle);
         }
         else
         {
+            auto node = builder->AddGraphicsRenderPass(RenderPassName, persistentContext->renderPass, this);
+            luminanceTextureHandle = node->CreateColorAttachment(0, transientContext->outputSize);
             depthStencilTextureHandle = node->CreateDepthStencilAttachment(transientContext->outputSize);
         }
     }
@@ -166,11 +167,12 @@ namespace Luch::Render::Passes::Forward
 
     void ForwardRenderPass::PreparePrimitive(SceneV1::Primitive* primitive)
     {
-        RefPtr<GraphicsPipelineState> pipelineState = primitive->GetGraphicsPipelineState(GetRenderPassName(transientContext->useDepthPrepass));
+        const auto& renderPassName = GetRenderPassName(transientContext->useDepthPrepass);
+        RefPtr<GraphicsPipelineState> pipelineState = primitive->GetGraphicsPipelineState(renderPassName);
         if (pipelineState == nullptr)
         {
             pipelineState = CreatePipelineState(primitive, transientContext->useDepthPrepass, persistentContext);
-            primitive->SetGraphicsPipelineState(RenderPassName, pipelineState);
+            primitive->SetGraphicsPipelineState(renderPassName, pipelineState);
         }
     }
 
@@ -273,7 +275,12 @@ namespace Luch::Render::Passes::Forward
             transientContext->cameraBufferDescriptorSet);
 
         commandList->BindBufferDescriptorSet(
-            ShaderStage::Tile,
+            ShaderStage::Fragment,
+            persistentContext->pipelineLayout,
+            transientContext->cameraBufferDescriptorSet);
+
+        commandList->BindBufferDescriptorSet(
+            ShaderStage::Fragment,
             persistentContext->pipelineLayout,
             transientContext->lightsBufferDescriptorSet);
 
@@ -335,7 +342,7 @@ namespace Luch::Render::Passes::Forward
 
     void ForwardRenderPass::DrawPrimitive(SceneV1::Primitive* primitive, GraphicsCommandList* commandList)
     {
-        auto& pipelineState = primitive->GetGraphicsPipelineState(RenderPassName);
+        auto& pipelineState = primitive->GetGraphicsPipelineState(GetRenderPassName(transientContext->useDepthPrepass));
 
         const auto& vertexBuffers = primitive->GetVertexBuffers();
 
@@ -654,6 +661,7 @@ namespace Luch::Render::Passes::Forward
             pipelineLayoutCreateInfo
                 .AddSetLayout(ShaderStage::Vertex, cameraResources->cameraBufferDescriptorSetLayout)
                 .AddSetLayout(ShaderStage::Vertex, context->meshBufferDescriptorSetLayout)
+                .AddSetLayout(ShaderStage::Fragment, cameraResources->cameraBufferDescriptorSetLayout)
                 .AddSetLayout(ShaderStage::Fragment, materialResources->materialTextureDescriptorSetLayout)
                 .AddSetLayout(ShaderStage::Fragment, materialResources->materialBufferDescriptorSetLayout)
                 .AddSetLayout(ShaderStage::Fragment, materialResources->materialSamplerDescriptorSetLayout)
