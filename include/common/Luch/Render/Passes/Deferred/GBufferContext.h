@@ -7,11 +7,13 @@
 #include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/Graphics/DescriptorSetBinding.h>
 #include <Luch/Render/RenderForwards.h>
+#include <Luch/Render/Graph/RenderGraphResources.h>
 #include <Luch/Render/Passes/Deferred/DeferredForwards.h>
 #include <Luch/SceneV1/SceneV1Forwards.h>
 
 namespace Luch::Render::Passes::Deferred
 {
+    using namespace Graph;
     using namespace Graphics;
 
     struct GBufferPersistentContext

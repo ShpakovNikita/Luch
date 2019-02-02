@@ -6,14 +6,10 @@ namespace Luch::Render
     class TextureUploader;
     class SceneRenderer;
     class MaterialManager;
-    class DepthOnlyRenderPass;
 
     struct CameraResources;
     struct MaterialResources;
     struct RenderContext;
     struct SharedBufferSuballocation;
-
-    struct DepthOnlyPersistentContext;
-    struct DepthOnlyTransientContext;
 }
 

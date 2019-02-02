@@ -1,15 +1,15 @@
 #pragma once
 
 #include <Luch/Graphics/Size2.h>
-#include <Luch/Render/Passes/Deferred/DeferredForwards.h>
 #include <Luch/Render/SharedBuffer.h>
 #include <Luch/Render/Graph/RenderGraphResources.h>
 #include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/Graphics/DescriptorSetBinding.h>
 #include <Luch/RefPtr.h>
 
-namespace Luch::Render::Passes::Deferred
+namespace Luch::Render::Passes
 {
+    using namespace Graph;
     using namespace Graphics;
 
     struct TonemapPersistentContext

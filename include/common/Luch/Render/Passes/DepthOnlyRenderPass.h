@@ -12,11 +12,12 @@
 #include <Luch/Render/Common.h>
 #include <Luch/Render/SharedBuffer.h>
 #include <Luch/Render/RenderForwards.h>
+#include <Luch/Render/Passes/PassesForwards.h>
 #include <Luch/Render/Graph/RenderGraphForwards.h>
 #include <Luch/Render/Graph/RenderGraphResources.h>
 #include <Luch/Render/Graph/RenderGraphPass.h>
 
-namespace Luch::Render
+namespace Luch::Render::Passes
 {
     using namespace Graphics;
     using namespace Graph;

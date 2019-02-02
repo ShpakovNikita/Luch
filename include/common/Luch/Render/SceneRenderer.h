@@ -8,6 +8,7 @@
 #include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/SceneV1/SceneV1Forwards.h>
 #include <Luch/Render/Common.h>
+#include <Luch/Render/Passes/PassesForwards.h>
 #include <Luch/Render/Passes/Deferred/DeferredForwards.h>
 #include <Luch/Render/Passes/TiledDeferred/TiledDeferredForwards.h>
 #include <Luch/Render/RenderForwards.h>
@@ -35,14 +36,14 @@ namespace Luch::Render
         UniquePtr<Deferred::GBufferRenderPass> gbufferPass;
         UniquePtr<Deferred::ResolveRenderPass> resolvePass;
         UniquePtr<Deferred::ResolveComputeRenderPass> resolveComputePass;
-        UniquePtr<Deferred::TonemapRenderPass> tonemapPass;
+        UniquePtr<TonemapRenderPass> tonemapPass;
 
         UniquePtr<DepthOnlyTransientContext> depthOnlyTransientContext;
         UniquePtr<TiledDeferred::TiledDeferredTransientContext> tiledDeferredTransientContext;
         UniquePtr<Deferred::GBufferTransientContext> gbufferTransientContext;
         UniquePtr<Deferred::ResolveTransientContext> resolveTransientContext;
         UniquePtr<Deferred::ResolveComputeTransientContext> resolveComputeTransientContext;
-        UniquePtr<Deferred::TonemapTransientContext> tonemapTransientContext;
+        UniquePtr<TonemapTransientContext> tonemapTransientContext;
 
         Graph::RenderMutableResource outputHandle;
         RefPtr<SwapchainTexture> swapchainTexture;
@@ -90,7 +91,7 @@ namespace Luch::Render
         UniquePtr<Deferred::GBufferPersistentContext> gbufferPersistentContext;
         UniquePtr<Deferred::ResolvePersistentContext> resolvePersistentContext;
         UniquePtr<Deferred::ResolveComputePersistentContext> resolveComputePersistentContext;
-        UniquePtr<Deferred::TonemapPersistentContext> tonemapPersistentContext;
+        UniquePtr<TonemapPersistentContext> tonemapPersistentContext;
 
         Array<FrameResources, MaxSwapchainTextures> frameResources;
         UniquePtr<CameraResources> cameraResources;

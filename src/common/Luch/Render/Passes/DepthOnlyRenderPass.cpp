@@ -45,7 +45,7 @@
 #include <Luch/Graphics/PipelineLayoutCreateInfo.h>
 #include <Luch/Graphics/IndexType.h>
 
-namespace Luch::Render
+namespace Luch::Render::Passes
 {
     using namespace Graphics;
     using namespace Graph;

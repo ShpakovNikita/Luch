@@ -34,14 +34,17 @@
 #include <Luch/Render/Passes/DepthOnlyRenderPass.h>
 #include <Luch/Render/Passes/DepthOnlyContext.h>
 
+#include <Luch/Render/Passes/TonemapRenderPass.h>
+#include <Luch/Render/Passes/TonemapContext.h>
+
 #include <Luch/Render/Passes/Deferred/GBufferRenderPass.h>
 #include <Luch/Render/Passes/Deferred/GBufferContext.h>
+
 #include <Luch/Render/Passes/Deferred/ResolveRenderPass.h>
 #include <Luch/Render/Passes/Deferred/ResolveContext.h>
+
 #include <Luch/Render/Passes/Deferred/ResolveComputeRenderPass.h>
 #include <Luch/Render/Passes/Deferred/ResolveComputeContext.h>
-#include <Luch/Render/Passes/Deferred/TonemapRenderPass.h>
-#include <Luch/Render/Passes/Deferred/TonemapContext.h>
 
 #include <Luch/Render/Passes/TiledDeferred/TiledDeferredContext.h>
 #include <Luch/Render/Passes/TiledDeferred/TiledDeferredRenderPass.h>
