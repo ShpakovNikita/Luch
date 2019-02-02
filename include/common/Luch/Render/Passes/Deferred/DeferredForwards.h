@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Luch::Render::Deferred
+namespace Luch::Render::Passes::Deferred
 {
     class GBufferRenderPass;
     class ResolveRenderPass;

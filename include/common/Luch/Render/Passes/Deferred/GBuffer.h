@@ -1,9 +1,9 @@
 #pragma once
 
-#include <Luch/Render/Deferred/DeferredConstants.h>
+#include <Luch/Render/Passes/Deferred/DeferredConstants.h>
 #include <Luch/Render/Graph/RenderGraphResources.h>
 
-namespace Luch::Render::Deferred
+namespace Luch::Render::Passes::Deferred
 {
     using namespace Graph;
 

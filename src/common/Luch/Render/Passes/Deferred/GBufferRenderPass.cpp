@@ -1,12 +1,12 @@
-#include <Luch/Render/DepthOnlyRenderPass.h>
+#include <Luch/Render/Passes/Deferred/GBufferRenderPass.h>
 #include <Luch/Render/TextureUploader.h>
 #include <Luch/Render/ShaderDefines.h>
 #include <Luch/Render/CameraResources.h>
 #include <Luch/Render/MaterialResources.h>
-#include <Luch/Render/ShaderDefines.h>
+#include <Luch/Render/Passes/Deferred/GBufferContext.h>
 #include <Luch/Render/RenderUtils.h>
+#include <Luch/Render/Common.h>
 #include <Luch/Render/SharedBuffer.h>
-#include <Luch/Render/DepthOnlyContext.h>
 #include <Luch/Render/Graph/RenderGraphNode.h>
 #include <Luch/Render/Graph/RenderGraphBuilder.h>
 #include <Luch/Render/Graph/RenderGraphNodeBuilder.h>
@@ -19,6 +19,7 @@
 #include <Luch/SceneV1/AlphaMode.h>
 #include <Luch/SceneV1/PbrMaterial.h>
 #include <Luch/SceneV1/Texture.h>
+#include <Luch/SceneV1/Sampler.h>
 #include <Luch/SceneV1/VertexBuffer.h>
 #include <Luch/SceneV1/IndexBuffer.h>
 #include <Luch/SceneV1/AttributeSemantic.h>
@@ -31,10 +32,10 @@
 #include <Luch/Graphics/ShaderLibrary.h>
 #include <Luch/Graphics/DescriptorSet.h>
 #include <Luch/Graphics/GraphicsDevice.h>
-#include <Luch/Graphics/PhysicalDevice.h>
-#include <Luch/Graphics/PhysicalDeviceCapabilities.h>
 #include <Luch/Graphics/DescriptorPool.h>
 #include <Luch/Graphics/GraphicsCommandList.h>
+#include <Luch/Graphics/PhysicalDevice.h>
+#include <Luch/Graphics/PhysicalDeviceCapabilities.h>
 #include <Luch/Graphics/GraphicsPipelineState.h>
 #include <Luch/Graphics/GraphicsPipelineStateCreateInfo.h>
 #include <Luch/Graphics/PrimitiveTopology.h>
@@ -45,28 +46,43 @@
 #include <Luch/Graphics/PipelineLayoutCreateInfo.h>
 #include <Luch/Graphics/IndexType.h>
 
-namespace Luch::Render
+namespace Luch::Render::Passes::Deferred
 {
     using namespace Graphics;
     using namespace Graph;
 
-    const String DepthOnlyRenderPass::RenderPassName{"DepthOnly"};
+    const String GBufferRenderPass::RenderPassWithDepthOnlyName{ "GBufferWithDepthOnly" };
+    const String GBufferRenderPass::RenderPassName{ "GBuffer" };
 
-    DepthOnlyRenderPass::DepthOnlyRenderPass(
-        DepthOnlyPersistentContext* aPersistentContext,
-        DepthOnlyTransientContext* aTransientContext,
+    GBufferRenderPass::GBufferRenderPass(
+        GBufferPersistentContext* aPersistentContext,
+        GBufferTransientContext* aTransientContext,
         RenderGraphBuilder* builder)
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
-        auto node = builder->AddGraphicsRenderPass(RenderPassName, persistentContext->renderPass, this);
+        UniquePtr<RenderGraphNodeBuilder> node;
 
-        depthTextureHandle = node->CreateDepthStencilAttachment(transientContext->outputSize);
+        if(transientContext->useDepthPrepass)
+        {
+            node = builder->AddGraphicsRenderPass(RenderPassWithDepthOnlyName, persistentContext->renderPassWithDepthOnly, this);
+            gbuffer.depthStencil = node->UseDepthStencilAttachment(transientContext->depthStencilTextureHandle);
+        }
+        else
+        {
+            node = builder->AddGraphicsRenderPass(RenderPassName, persistentContext->renderPass, this);
+            gbuffer.depthStencil = node->CreateDepthStencilAttachment(transientContext->outputSize);
+        }
+
+        for(int32 i = 0; i < DeferredConstants::GBufferColorAttachmentCount; i++)
+        {
+            gbuffer.color[i] = node->CreateColorAttachment(i, transientContext->outputSize);
+        }
     }
 
-    DepthOnlyRenderPass::~DepthOnlyRenderPass() = default;
+    GBufferRenderPass::~GBufferRenderPass() = default;
 
-    void DepthOnlyRenderPass::PrepareScene()
+    void GBufferRenderPass::PrepareScene()
     {
         const auto& nodes = transientContext->scene->GetNodes();
 
@@ -83,7 +99,7 @@ namespace Luch::Render
         }
     }
 
-    void DepthOnlyRenderPass::UpdateScene()
+    void GBufferRenderPass::UpdateScene()
     {
         for (const auto& node : transientContext->scene->GetNodes())
         {
@@ -91,7 +107,7 @@ namespace Luch::Render
         }
     }
 
-    void DepthOnlyRenderPass::ExecuteGraphicsRenderPass(
+    void GBufferRenderPass::ExecuteGraphicsRenderPass(
         RenderGraphResourceManager* manager,
         GraphicsCommandList* commandList)
     {
@@ -115,7 +131,7 @@ namespace Luch::Render
         }
     }
 
-    void DepthOnlyRenderPass::PrepareNode(SceneV1::Node* node)
+    void GBufferRenderPass::PrepareNode(SceneV1::Node* node)
     {
         if (node->GetMesh() != nullptr)
         {
@@ -133,7 +149,7 @@ namespace Luch::Render
         }
     }
 
-    void DepthOnlyRenderPass::PrepareMeshNode(SceneV1::Node* node)
+    void GBufferRenderPass::PrepareMeshNode(SceneV1::Node* node)
     {
         const auto& mesh = node->GetMesh();
 
@@ -143,7 +159,7 @@ namespace Luch::Render
         }
     }
 
-    void DepthOnlyRenderPass::PrepareCameraNode(SceneV1::Node* node)
+    void GBufferRenderPass::PrepareCameraNode(SceneV1::Node* node)
     {
         const auto& mesh = node->GetMesh();
 
@@ -153,17 +169,18 @@ namespace Luch::Render
         }
     }
 
-    void DepthOnlyRenderPass::PreparePrimitive(SceneV1::Primitive* primitive)
+    void GBufferRenderPass::PreparePrimitive(SceneV1::Primitive* primitive)
     {
-        RefPtr<GraphicsPipelineState> pipelineState = primitive->GetGraphicsPipelineState(RenderPassName);
+        const auto& passName = GetRenderPassName(transientContext->useDepthPrepass);
+        RefPtr<GraphicsPipelineState> pipelineState = primitive->GetGraphicsPipelineState(passName);
         if (pipelineState == nullptr)
         {
-            pipelineState = CreateDepthOnlyPipelineState(primitive);
-            primitive->SetGraphicsPipelineState(RenderPassName, pipelineState);
+            pipelineState = CreateGBufferPipelineState(primitive, transientContext->useDepthPrepass);
+            primitive->SetGraphicsPipelineState(passName, pipelineState);
         }
     }
 
-    void DepthOnlyRenderPass::PrepareMesh(SceneV1::Mesh* mesh)
+    void GBufferRenderPass::PrepareMesh(SceneV1::Mesh* mesh)
     {
         for (const auto& primitive : mesh->GetPrimitives())
         {
@@ -178,7 +195,7 @@ namespace Luch::Render
         meshDescriptorSets[mesh] = allocatedDescriptorSet;
     }
 
-    void DepthOnlyRenderPass::UpdateNode(SceneV1::Node* node)
+    void GBufferRenderPass::UpdateNode(SceneV1::Node* node)
     {
         const auto& mesh = node->GetMesh();
 
@@ -193,7 +210,7 @@ namespace Luch::Render
         }
     }
 
-    void DepthOnlyRenderPass::UpdateMesh(SceneV1::Mesh* mesh, const Mat4x4& transform)
+    void GBufferRenderPass::UpdateMesh(SceneV1::Mesh* mesh, const Mat4x4& transform)
     {
         MeshUniform meshUniform;
         meshUniform.transform = transform;
@@ -214,7 +231,7 @@ namespace Luch::Render
         descriptorSet->Update();
     }
 
-    void DepthOnlyRenderPass::DrawNode(SceneV1::Node* node, GraphicsCommandList* commandList)
+    void GBufferRenderPass::DrawNode(SceneV1::Node* node, GraphicsCommandList* commandList)
     {
         const auto& mesh = node->GetMesh();
         if (mesh != nullptr)
@@ -228,7 +245,7 @@ namespace Luch::Render
         }
     }
 
-    void DepthOnlyRenderPass::DrawMesh(SceneV1::Mesh* mesh, GraphicsCommandList* commandList)
+    void GBufferRenderPass::DrawMesh(SceneV1::Mesh* mesh, GraphicsCommandList* commandList)
     {
         commandList->BindBufferDescriptorSet(
             ShaderStage::Vertex,
@@ -246,7 +263,7 @@ namespace Luch::Render
         }
     }
 
-    void DepthOnlyRenderPass::BindMaterial(SceneV1::PbrMaterial* material, GraphicsCommandList* commandList)
+    void GBufferRenderPass::BindMaterial(SceneV1::PbrMaterial* material, GraphicsCommandList* commandList)
     {
         commandList->BindTextureDescriptorSet(
             ShaderStage::Fragment,
@@ -264,9 +281,9 @@ namespace Luch::Render
             material->GetSamplerDescriptorSet());
     }
 
-    void DepthOnlyRenderPass::DrawPrimitive(SceneV1::Primitive* primitive, GraphicsCommandList* commandList)
+    void GBufferRenderPass::DrawPrimitive(SceneV1::Primitive* primitive, GraphicsCommandList* commandList)
     {
-        auto& pipelineState = primitive->GetGraphicsPipelineState(RenderPassName);
+        auto& pipelineState = primitive->GetGraphicsPipelineState(GetRenderPassName(transientContext->useDepthPrepass));
 
         const auto& vertexBuffers = primitive->GetVertexBuffers();
 
@@ -295,11 +312,18 @@ namespace Luch::Render
         commandList->DrawIndexedInstanced(indexBuffer.count, 0, 1, 0);
     }
 
-    RefPtr<GraphicsPipelineState> DepthOnlyRenderPass::CreateDepthOnlyPipelineState(SceneV1::Primitive* primitive)
+    const String& GBufferRenderPass::GetRenderPassName(bool useDepthPrepass)
+    {
+        return useDepthPrepass ? RenderPassWithDepthOnlyName : RenderPassName; 
+    }
+
+    RefPtr<GraphicsPipelineState> GBufferRenderPass::CreateGBufferPipelineState(
+        SceneV1::Primitive* primitive,
+        bool useDepthPrepass)
     {
         GraphicsPipelineStateCreateInfo ci;
 
-        ci.name = "DepthOnly";
+        ci.name = GetRenderPassName(useDepthPrepass);
 
         ShaderDefines shaderDefines;
 
@@ -315,7 +339,6 @@ namespace Luch::Render
             bindingDescription.inputRate = VertexInputRate::PerVertex;
         }
 
-        bool hasTexcoord = false;
         const auto& attributes = primitive->GetAttributes();
         ci.inputAssembler.attributes.resize(SemanticToLocation.size());
         for (const auto& attribute : attributes)
@@ -326,11 +349,6 @@ namespace Luch::Render
             attributeDescription.offset = attribute.offset;
 
             shaderDefines.AddFlag(SemanticToFlag.at(attribute.semantic));
-
-            if(attribute.semantic == SceneV1::AttributeSemantic::Texcoord_0)
-            {
-                hasTexcoord = true;
-            }
         }
 
         // TODO
@@ -347,26 +365,65 @@ namespace Luch::Render
             ci.rasterization.cullMode = CullMode::Back;
         }
 
-        ci.depthStencil.depthTestEnable = true;
-        ci.depthStencil.depthWriteEnable = true;
-        ci.depthStencil.depthCompareFunction = CompareFunction::Less;
+        if(useDepthPrepass)
+        {
+            ci.depthStencil.depthTestEnable = true;
+            ci.depthStencil.depthWriteEnable = false;
+            ci.depthStencil.depthCompareFunction = CompareFunction::Equal;
+        }
+        else
+        {
+            ci.depthStencil.depthTestEnable = true;
+            ci.depthStencil.depthWriteEnable = true;
+            ci.depthStencil.depthCompareFunction = CompareFunction::Less;
+        }
+
+        ci.colorAttachments.attachments.resize(DeferredConstants::GBufferColorAttachmentCount);
+        for(int32 i = 0; i < ci.colorAttachments.attachments.size(); i++)
+        {
+            ci.colorAttachments.attachments[i].format = DeferredConstants::GBufferColorAttachmentFormats[i];
+        }
 
         ci.renderPass = persistentContext->renderPass;
         ci.pipelineLayout = persistentContext->pipelineLayout;
 
-        if (material->GetProperties().alphaMode == SceneV1::AlphaMode::Mask)
+        if (material->HasBaseColorTexture())
         {
-            ci.name += " (Alphatest)";
-            LUCH_ASSERT_MSG(hasTexcoord, "Can't alpha-test without texcoords");
-            LUCH_ASSERT_MSG(material->HasBaseColorTexture(), "Can't alpha-test without base color");
-            shaderDefines.AddFlag(MaterialShaderDefines::AlphaMask);
             shaderDefines.AddFlag(MaterialShaderDefines::HasBaseColorTexture);
         }
 
+        if (material->HasMetallicRoughnessTexture())
+        {
+            shaderDefines.AddFlag(MaterialShaderDefines::HasMetallicRoughnessTexture);
+        }
+
+        if (material->HasNormalTexture())
+        {
+            shaderDefines.AddFlag(MaterialShaderDefines::HasNormalTexture);
+        }
+
+        if (material->HasOcclusionTexture())
+        {
+            shaderDefines.AddFlag(MaterialShaderDefines::HasOcclusionTexture);
+        }
+
+        if (material->HasEmissiveTexture())
+        {
+            shaderDefines.AddFlag(MaterialShaderDefines::HasEmissiveTexture);
+        }
+
+        if (material->GetProperties().alphaMode == SceneV1::AlphaMode::Mask)
+        {
+            ci.name += " (Alphatest)";
+            shaderDefines.AddFlag(MaterialShaderDefines::AlphaMask);
+        }
+
+        LUCH_ASSERT(material->GetProperties().alphaMode != SceneV1::AlphaMode::Blend);
+
         auto[vertexShaderLibraryCreated, vertexShaderLibrary] = RenderUtils::CreateShaderLibrary(
             persistentContext->device,
-            "Data/Shaders/",
-            "depth_only_vp",
+            "Data/Shaders/Deferred/",
+            "gbuffer_vp",
             shaderDefines.defines);
 
         if (!vertexShaderLibraryCreated)
@@ -381,30 +438,26 @@ namespace Luch::Render
 
         auto vertexShader = std::move(createdVertexShader);
 
-        ci.vertexProgram = vertexShader;
+        auto[fragmentShaderLibraryCreated, fragmentShaderLibrary] = RenderUtils::CreateShaderLibrary(
+            persistentContext->device,
+            "Data/Shaders/Deferred/",
+            "gbuffer_fp",
+            shaderDefines.defines);
 
-        if (material->GetProperties().alphaMode == SceneV1::AlphaMode::Mask)
+        if (!fragmentShaderLibraryCreated)
         {
-            auto[fragmentShaderLibraryCreated, fragmentShaderLibrary] = RenderUtils::CreateShaderLibrary(
-                persistentContext->device,
-                "Data/Shaders/",
-                "depth_only_fp",
-                shaderDefines.defines);
-
-            if (!fragmentShaderLibraryCreated)
-            {
-                LUCH_ASSERT(false);
-            }
-
-            auto[fragmentShaderCreateResult, createdFragmentShader] = fragmentShaderLibrary->CreateShaderProgram(
-                ShaderStage::Fragment,
-                "fp_main");
-            LUCH_ASSERT(fragmentShaderCreateResult == GraphicsResult::Success);
-
-            auto fragmentShader = std::move(createdFragmentShader);
-
-            ci.fragmentProgram = fragmentShader;
+            LUCH_ASSERT(false);
         }
+
+        auto[fragmentShaderCreateResult, createdFragmentShader] = fragmentShaderLibrary->CreateShaderProgram(
+            ShaderStage::Fragment,
+            "fp_main");
+        LUCH_ASSERT(fragmentShaderCreateResult == GraphicsResult::Success);
+
+        auto fragmentShader = std::move(createdFragmentShader);
+
+        ci.vertexProgram = vertexShader;
+        ci.fragmentProgram = fragmentShader;
 
         auto[createPipelineResult, createdPipeline] = persistentContext->device->CreateGraphicsPipelineState(ci);
         if (createPipelineResult != GraphicsResult::Success)
@@ -415,12 +468,12 @@ namespace Luch::Render
         return createdPipeline;
     }
 
-    ResultValue<bool, UniquePtr<DepthOnlyPersistentContext>> DepthOnlyRenderPass::PrepareDepthOnlyPersistentContext(
+    ResultValue<bool, UniquePtr<GBufferPersistentContext>> GBufferRenderPass::PrepareGBufferPersistentContext(
         GraphicsDevice* device,
         CameraResources* cameraResources,
         MaterialResources* materialResources)
     {
-        auto context = MakeUnique<DepthOnlyPersistentContext>();
+        UniquePtr<GBufferPersistentContext> context = MakeUnique<GBufferPersistentContext>();
         context->device = device;
         context->cameraResources = cameraResources;
         context->materialResources = materialResources;
@@ -428,6 +481,12 @@ namespace Luch::Render
         const auto& supportedDepthFormats = context->device->GetPhysicalDevice()->GetCapabilities().supportedDepthFormats;
         LUCH_ASSERT_MSG(!supportedDepthFormats.empty(), "No supported depth formats");
         Format depthStencilFormat = supportedDepthFormats.front();
+
+        // Render pass for gbuffer
+        ColorAttachment gbufferColorAttachmentTemplate;
+        gbufferColorAttachmentTemplate.colorLoadOperation = AttachmentLoadOperation::Clear;
+        gbufferColorAttachmentTemplate.colorStoreOperation = AttachmentStoreOperation::Store;
+        gbufferColorAttachmentTemplate.clearValue = { 0.0f, 0.0f, 0.0f, 0.0f };
 
         DepthStencilAttachment depthStencilAttachment;
         depthStencilAttachment.format = depthStencilFormat;
@@ -439,6 +498,12 @@ namespace Luch::Render
         depthStencilAttachment.stencilClearValue = 0x00000000;
 
         RenderPassCreateInfo renderPassCreateInfo;
+        for(int32 i = 0; i < DeferredConstants::GBufferColorAttachmentCount; i++)
+        {
+            ColorAttachment attachment = gbufferColorAttachmentTemplate;
+            attachment.format = DeferredConstants::GBufferColorAttachmentFormats[i];
+            renderPassCreateInfo.colorAttachments[i] = attachment;
+        }
         renderPassCreateInfo.depthStencilAttachment = depthStencilAttachment;
 
         auto [createRenderPassResult, createdRenderPass] = device->CreateRenderPass(renderPassCreateInfo);
@@ -448,6 +513,18 @@ namespace Luch::Render
         }
 
         context->renderPass = std::move(createdRenderPass);
+
+        // Render pass for gbuffer with depth only
+        renderPassCreateInfo.depthStencilAttachment->depthLoadOperation = AttachmentLoadOperation::Load;
+        renderPassCreateInfo.depthStencilAttachment->stencilLoadOperation = AttachmentLoadOperation::Load;
+
+        auto [createRenderPassWithDepthOnlyResult, createdRenderPassWithDepthOnly] = device->CreateRenderPass(renderPassCreateInfo);
+        if(createRenderPassWithDepthOnlyResult != GraphicsResult::Success)
+        {
+            return { false };
+        }
+
+        context->renderPassWithDepthOnly = std::move(createdRenderPassWithDepthOnly);
 
         DescriptorPoolCreateInfo descriptorPoolCreateInfo;
         descriptorPoolCreateInfo.maxDescriptorSets = MaxDescriptorSetCount;
@@ -509,11 +586,11 @@ namespace Luch::Render
         return { true, std::move(context) };
     }
 
-    ResultValue<bool, UniquePtr<DepthOnlyTransientContext>> DepthOnlyRenderPass::PrepareDepthOnlyTransientContext(
-        DepthOnlyPersistentContext* persistentContext,
+    ResultValue<bool, UniquePtr<GBufferTransientContext>> GBufferRenderPass::PrepareGBufferTransientContext(
+        GBufferPersistentContext* persistentContext,
         RefPtr<DescriptorPool> descriptorPool)
     {
-        auto context = MakeUnique<DepthOnlyTransientContext>();
+        auto context = MakeUnique<GBufferTransientContext>();
         context->descriptorPool = descriptorPool;
         return { true, std::move(context) };
     }

@@ -1,7 +1,7 @@
-#include <Luch/Render/Deferred/TonemapRenderPass.h>
+#include <Luch/Render/Passes/Deferred/TonemapRenderPass.h>
 #include <Luch/Render/RenderUtils.h>
 #include <Luch/Render/SharedBuffer.h>
-#include <Luch/Render/Deferred/TonemapContext.h>
+#include <Luch/Render/Passes/Deferred/TonemapContext.h>
 #include <Luch/Render/Graph/RenderGraphResourceManager.h>
 #include <Luch/Render/Graph/RenderGraphBuilder.h>
 #include <Luch/Render/Graph/RenderGraphNodeBuilder.h>
@@ -24,7 +24,7 @@
 #include <Luch/Graphics/PipelineLayoutCreateInfo.h>
 #include <Luch/Graphics/IndexType.h>
 
-namespace Luch::Render::Deferred
+namespace Luch::Render::Passes::Deferred
 {
     using namespace Graphics;
 

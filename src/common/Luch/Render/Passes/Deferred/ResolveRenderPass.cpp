@@ -1,9 +1,9 @@
-#include <Luch/Render/Deferred/ResolveComputeRenderPass.h>
+#include <Luch/Render/Passes/Deferred/ResolveRenderPass.h>
 #include <Luch/Render/RenderContext.h>
 #include <Luch/Render/RenderUtils.h>
 #include <Luch/Render/SharedBuffer.h>
 #include <Luch/Render/CameraResources.h>
-#include <Luch/Render/Deferred/ResolveComputeContext.h>
+#include <Luch/Render/Passes/Deferred/ResolveContext.h>
 #include <Luch/Render/Graph/RenderGraphResourceManager.h>
 #include <Luch/Render/Graph/RenderGraphNodeBuilder.h>
 #include <Luch/Render/Graph/RenderGraphBuilder.h>
@@ -14,35 +14,46 @@
 #include <Luch/SceneV1/Light.h>
 
 #include <Luch/Graphics/BufferCreateInfo.h>
-#include <Luch/Graphics/TextureCreateInfo.h>
 #include <Luch/Graphics/Buffer.h>
 #include <Luch/Graphics/ShaderLibrary.h>
 #include <Luch/Graphics/DescriptorSet.h>
 #include <Luch/Graphics/GraphicsDevice.h>
 #include <Luch/Graphics/DescriptorPool.h>
-#include <Luch/Graphics/ComputeCommandList.h>
+#include <Luch/Graphics/GraphicsCommandList.h>
+#include <Luch/Graphics/FrameBuffer.h>
 #include <Luch/Graphics/Texture.h>
-#include <Luch/Graphics/ComputePipelineState.h>
-#include <Luch/Graphics/ComputePipelineStateCreateInfo.h>
+#include <Luch/Graphics/GraphicsPipelineState.h>
+#include <Luch/Graphics/GraphicsPipelineStateCreateInfo.h>
+#include <Luch/Graphics/PrimitiveTopology.h>
 #include <Luch/Graphics/DescriptorSetBinding.h>
+#include <Luch/Graphics/RenderPassCreateInfo.h>
 #include <Luch/Graphics/DescriptorPoolCreateInfo.h>
 #include <Luch/Graphics/DescriptorSetLayoutCreateInfo.h>
 #include <Luch/Graphics/PipelineLayoutCreateInfo.h>
+#include <Luch/Graphics/IndexType.h>
 
-namespace Luch::Render::Deferred
+namespace Luch::Render::Passes::Deferred
 {
     using namespace Graphics;
 
-    const String ResolveComputeRenderPass::RenderPassName{"ResolveCompute"};
+    // One triangle that covers whole screen
+    constexpr Array<QuadVertex, 3> fullscreenQuadVertices =
+    {
+        QuadVertex { Vec3{-1.0f, -1.0f, 0.0f}, Vec2{0.0f, +1.0f} },
+        QuadVertex { Vec3{+3.0f, -1.0f, 0.0f}, Vec2{2.0f, +1.0f} },
+        QuadVertex { Vec3{-1.0f, +3.0f, 0.0f}, Vec2{0.0f, -1.0f} },
+    };
 
-    ResolveComputeRenderPass::ResolveComputeRenderPass(
-        ResolveComputePersistentContext* aPersistentContext,
-        ResolveComputeTransientContext* aTransientContext,
+    const String ResolveRenderPass::RenderPassName{"Resolve"};
+
+    ResolveRenderPass::ResolveRenderPass(
+        ResolvePersistentContext* aPersistentContext,
+        ResolveTransientContext* aTransientContext,
         RenderGraphBuilder* builder)
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
-        auto node = builder->AddComputeRenderPass(RenderPassName, this);
+        auto node = builder->AddGraphicsRenderPass(RenderPassName, persistentContext->renderPass, this);
 
         for(int32 i = 0; i < transientContext->gbuffer.color.size(); i++)
         {
@@ -51,21 +62,16 @@ namespace Luch::Render::Deferred
 
         gbuffer.depthStencil = node->ReadsTexture(transientContext->gbuffer.depthStencil);
 
-        TextureCreateInfo textureCreateInfo;
-        textureCreateInfo.format = ColorFormat;
-        textureCreateInfo.width = transientContext->outputSize.width;
-        textureCreateInfo.height = transientContext->outputSize.height;
-        textureCreateInfo.usage = TextureUsageFlags::ShaderRead | TextureUsageFlags::ShaderWrite;
-        resolveTextureHandle = node->CreateTexture(textureCreateInfo);
+        resolveTextureHandle = node->CreateColorAttachment(0, transientContext->outputSize);
     }
 
-    ResolveComputeRenderPass::~ResolveComputeRenderPass() = default;
+    ResolveRenderPass::~ResolveRenderPass() = default;
 
-    void ResolveComputeRenderPass::PrepareScene()
+    void ResolveRenderPass::PrepareScene()
     {
     }
 
-    void ResolveComputeRenderPass::UpdateScene()
+    void ResolveRenderPass::UpdateScene()
     {
         const auto& sceneProperties = transientContext->scene->GetSceneProperties();
 
@@ -74,9 +80,9 @@ namespace Luch::Render::Deferred
         UpdateLights(lightNodes);
     }
 
-    void ResolveComputeRenderPass::ExecuteComputeRenderPass(
+    void ResolveRenderPass::ExecuteGraphicsRenderPass(
         RenderGraphResourceManager* manager,
-        ComputeCommandList* cmdList)
+        GraphicsCommandList* cmdList)
     {
         for(int32 i = 0; i < gbuffer.color.size(); i++)
         {
@@ -93,40 +99,39 @@ namespace Luch::Render::Deferred
             persistentContext->depthStencilTextureBinding,
             depthStencilTexture);
 
-        auto luminanceTexture = manager->GetTexture(resolveTextureHandle);
-
-        transientContext->luminanceTextureDescriptorSet->WriteTexture(
-            persistentContext->luminanceTextureBinding,
-            luminanceTexture);
-
         transientContext->gbufferTextureDescriptorSet->Update();
 
-        cmdList->Begin();
-        cmdList->BindPipelineState(persistentContext->pipelineState);
+        Viewport viewport;
+        viewport.width = transientContext->outputSize.width;
+        viewport.height = transientContext->outputSize.height;
+
+        Rect2i scissorRect;
+        scissorRect.size = transientContext->outputSize;
+
+        cmdList->BindGraphicsPipelineState(persistentContext->pipelineState);
+        cmdList->SetViewports({ viewport });
+        cmdList->SetScissorRects({ scissorRect });
 
         cmdList->BindTextureDescriptorSet(
+            ShaderStage::Fragment,
             persistentContext->pipelineLayout,
             transientContext->gbufferTextureDescriptorSet);
 
-        cmdList->BindTextureDescriptorSet(
-            persistentContext->pipelineLayout,
-            transientContext->luminanceTextureDescriptorSet);
-
         cmdList->BindBufferDescriptorSet(
+            ShaderStage::Fragment,
             persistentContext->pipelineLayout,
             transientContext->cameraBufferDescriptorSet);
 
         cmdList->BindBufferDescriptorSet(
+            ShaderStage::Fragment,
             persistentContext->pipelineLayout,
             transientContext->lightsBufferDescriptorSet);
 
-        int32 threadgroupRows = (transientContext->outputSize.height + ThreadsPerThreadgroup.height - 1) / ThreadsPerThreadgroup.height;
-        int32 threadgroupColumns = (transientContext->outputSize.width + ThreadsPerThreadgroup.width - 1) / ThreadsPerThreadgroup.width;
-        cmdList->DispatchThreadgroups({threadgroupColumns, threadgroupRows, 1}, ThreadsPerThreadgroup);
-        cmdList->End();
+        cmdList->BindVertexBuffers({ persistentContext->fullscreenQuadBuffer }, {0});
+        cmdList->Draw(0, fullscreenQuadVertices.size());
     }
 
-    void ResolveComputeRenderPass::UpdateLights(const RefPtrVector<SceneV1::Node>& lightNodes)
+    void ResolveRenderPass::UpdateLights(const RefPtrVector<SceneV1::Node>& lightNodes)
     {
         Vector<LightUniform> lightUniforms;
 
@@ -166,16 +171,45 @@ namespace Luch::Render::Deferred
         transientContext->lightsBufferDescriptorSet->Update();
     }
 
-    RefPtr<ComputePipelineState> ResolveComputeRenderPass::CreateResolvePipelineState(ResolveComputePersistentContext* context)
+    RefPtr<GraphicsPipelineState> ResolveRenderPass::CreateResolvePipelineState(ResolvePersistentContext* context)
     {
-        ComputePipelineStateCreateInfo ci;
+        GraphicsPipelineStateCreateInfo ci;
 
-        ci.name = "Resolve Compute";
+        ci.name = "Resolve";
 
+        auto& bindingDescription = ci.inputAssembler.bindings.emplace_back();
+        bindingDescription.stride = sizeof(QuadVertex);
+        bindingDescription.inputRate = VertexInputRate::PerVertex;
+
+        auto& positionAttributeDescription = ci.inputAssembler.attributes.emplace_back();
+        positionAttributeDescription.binding = 0;
+        positionAttributeDescription.format = Format::RGB32Sfloat;
+        positionAttributeDescription.offset = offsetof(QuadVertex, position);
+
+        auto& texCoordAttributeDescription = ci.inputAssembler.attributes.emplace_back();
+        texCoordAttributeDescription.binding = 0;
+        texCoordAttributeDescription.format = Format::RG32Sfloat;
+        texCoordAttributeDescription.offset = offsetof(QuadVertex, texCoord);
+
+        ci.inputAssembler.primitiveTopology = PrimitiveTopology::TriangleList;
+        ci.rasterization.cullMode = CullMode::Back;
+        ci.rasterization.frontFace = FrontFace::CounterClockwise;
+
+        ci.depthStencil.depthTestEnable = false;
+        ci.depthStencil.depthWriteEnable = false;
+
+        auto& colorAttachment = ci.colorAttachments.attachments.emplace_back();
+        colorAttachment.format = ColorFormat;
+        colorAttachment.blendEnable = false;
+
+        ci.depthStencil.depthStencilFormat = Format::Undefined;
+
+        //pipelineState.renderPass = lighting.renderPass;
         ci.pipelineLayout = context->pipelineLayout;
-        ci.kernelProgram = context->kernelShader;
+        ci.vertexProgram = context->vertexShader;
+        ci.fragmentProgram = context->fragmentShader;
 
-        auto[createPipelineResult, createdPipeline] = context->device->CreateComputePipelineState(ci);
+        auto[createPipelineResult, createdPipeline] = context->device->CreateGraphicsPipelineState(ci);
         if (createPipelineResult != GraphicsResult::Success)
         {
             LUCH_ASSERT(false);
@@ -184,37 +218,76 @@ namespace Luch::Render::Deferred
         return createdPipeline;
     }
 
-    ResultValue<bool, UniquePtr<ResolveComputePersistentContext>> ResolveComputeRenderPass::PrepareResolvePersistentContext(
+    ResultValue<bool, UniquePtr<ResolvePersistentContext>> ResolveRenderPass::PrepareResolvePersistentContext(
         GraphicsDevice* device,
         CameraResources* cameraResources)
     {
-        auto context = MakeUnique<ResolveComputePersistentContext>();
+        UniquePtr<ResolvePersistentContext> context = MakeUnique<ResolvePersistentContext>();
         context->device = device;
         context->cameraResources = cameraResources;
 
-        auto[kernelShaderLibraryCreated, createdKernelShaderLibrary] = RenderUtils::CreateShaderLibrary(
-            device,
+        ColorAttachment colorAttachment;
+        colorAttachment.format = ColorFormat;
+        colorAttachment.colorLoadOperation = AttachmentLoadOperation::Clear;
+        colorAttachment.colorStoreOperation = AttachmentStoreOperation::Store;
+
+        RenderPassCreateInfo renderPassCreateInfo;
+        renderPassCreateInfo.name = RenderPassName;
+        renderPassCreateInfo.colorAttachments[0] = colorAttachment;
+
+        auto[createRenderPassResult, createdRenderPass] = device->CreateRenderPass(renderPassCreateInfo);
+        if(createRenderPassResult != GraphicsResult::Success)
+        {
+            LUCH_ASSERT(false);
+            return { false };
+        }
+
+        context->renderPass = std::move(createdRenderPass);
+
+        auto [vertexShaderLibraryCreated, createdVertexShaderLibrary] = RenderUtils::CreateShaderLibrary(
+            context->device,
             "Data/Shaders/Deferred/",
-            "resolve_compute",
+            "resolve_vp",
             {});
 
-        if (!kernelShaderLibraryCreated)
+        if (!vertexShaderLibraryCreated)
         {
             LUCH_ASSERT(false);
             return { false };
         }
 
-        auto [kernelShaderProgramCreateResult, kernelShaderProgram] = createdKernelShaderLibrary->CreateShaderProgram(
-            ShaderStage::Compute,
-            "kernel_main");
-
-        if(kernelShaderProgramCreateResult != GraphicsResult::Success)
+        auto [vertexShaderProgramCreateResult, vertexShaderProgram] = createdVertexShaderLibrary->CreateShaderProgram(ShaderStage::Vertex, "vp_main");
+        if(vertexShaderProgramCreateResult != GraphicsResult::Success)
         {
             LUCH_ASSERT(false);
             return { false };
         }
 
-        context->kernelShader = std::move(kernelShaderProgram);
+        context->vertexShader = std::move(vertexShaderProgram);
+
+        auto[fragmentShaderLibraryCreated, createdFragmentShaderLibrary] = RenderUtils::CreateShaderLibrary(
+            device,
+            "Data/Shaders/Deferred/",
+            "resolve_fp",
+            {});
+
+        if (!fragmentShaderLibraryCreated)
+        {
+            LUCH_ASSERT(false);
+            return { false };
+        }
+
+        auto [fragmentShaderProgramCreateResult, fragmentShaderProgram] = createdFragmentShaderLibrary->CreateShaderProgram(
+            ShaderStage::Fragment,
+            "fp_main");
+
+        if(fragmentShaderProgramCreateResult != GraphicsResult::Success)
+        {
+            LUCH_ASSERT(false);
+            return { false };
+        }
+
+        context->fragmentShader = std::move(fragmentShaderProgram);
 
         context->lightingParamsBinding.OfType(ResourceType::UniformBuffer);
         context->lightsBufferBinding.OfType(ResourceType::UniformBuffer);
@@ -246,7 +319,6 @@ namespace Luch::Render::Deferred
         gbufferTextureDescriptorSetLayoutCreateInfo
             .OfType(DescriptorSetType::Texture)
             .WithNBindings(DeferredConstants::GBufferColorAttachmentCount + 1);
-
         for(int32 i = 0; i < DeferredConstants::GBufferColorAttachmentCount; i++)
         {
             gbufferTextureDescriptorSetLayoutCreateInfo.AddBinding(&context->colorTextureBindings[i]);
@@ -263,28 +335,11 @@ namespace Luch::Render::Deferred
 
         context->gbufferTextureDescriptorSetLayout = std::move(createdGBufferTextureDescriptorSetLayout);
 
-        DescriptorSetLayoutCreateInfo luminanceTextureDescriptorSetLayoutCreateInfo;
-        luminanceTextureDescriptorSetLayoutCreateInfo
-            .OfType(DescriptorSetType::Texture)
-            .WithNBindings(1);
-
-        luminanceTextureDescriptorSetLayoutCreateInfo.AddBinding(&context->luminanceTextureBinding);
-
-        auto[createLuminanceTextureDescriptorSetLayoutResult, createdLuminanceTextureDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(luminanceTextureDescriptorSetLayoutCreateInfo);
-        if (createLuminanceTextureDescriptorSetLayoutResult != GraphicsResult::Success)
-        {
-            LUCH_ASSERT(false);
-            return { false };
-        }
-
-        context->luminanceTextureDescriptorSetLayout = std::move(createdLuminanceTextureDescriptorSetLayout);
-
         PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
         pipelineLayoutCreateInfo
-            .AddSetLayout(ShaderStage::Compute, context->cameraResources->cameraBufferDescriptorSetLayout)
-            .AddSetLayout(ShaderStage::Compute, context->lightsBufferDescriptorSetLayout)
-            .AddSetLayout(ShaderStage::Compute, context->gbufferTextureDescriptorSetLayout)
-            .AddSetLayout(ShaderStage::Compute, context->luminanceTextureDescriptorSetLayout);
+            .AddSetLayout(ShaderStage::Fragment, context->cameraResources->cameraBufferDescriptorSetLayout)
+            .AddSetLayout(ShaderStage::Fragment, context->lightsBufferDescriptorSetLayout)
+            .AddSetLayout(ShaderStage::Fragment, context->gbufferTextureDescriptorSetLayout);
 
         auto[createPipelineLayoutResult, createdPipelineLayout] = context->device->CreatePipelineLayout(pipelineLayoutCreateInfo);
         if (createPipelineLayoutResult != GraphicsResult::Success)
@@ -298,35 +353,42 @@ namespace Luch::Render::Deferred
         // TODO result
         context->pipelineState = CreateResolvePipelineState(context.get());
 
+        BufferCreateInfo quadBufferCreateInfo;
+        quadBufferCreateInfo.length = fullscreenQuadVertices.size() * sizeof(QuadVertex);
+        quadBufferCreateInfo.storageMode = ResourceStorageMode::Shared;
+        quadBufferCreateInfo.usage = BufferUsageFlags::VertexBuffer;
+
+        auto[createQuadBufferResult, createdQuadBuffer] = device->CreateBuffer(
+            quadBufferCreateInfo,
+            fullscreenQuadVertices.data());
+
+        if (createQuadBufferResult != GraphicsResult::Success)
+        {
+            LUCH_ASSERT(false);
+            return { false };
+        }
+
+        context->fullscreenQuadBuffer = std::move(createdQuadBuffer);
+
         return { true, std::move(context) };
     }
 
-    ResultValue<bool, UniquePtr<ResolveComputeTransientContext>> ResolveComputeRenderPass::PrepareResolveTransientContext(
-        ResolveComputePersistentContext* persistentContext,
+    ResultValue<bool, UniquePtr<ResolveTransientContext>> ResolveRenderPass::PrepareResolveTransientContext(
+        ResolvePersistentContext* persistentContext,
         RefPtr<DescriptorPool> descriptorPool)
     {
-        auto context = MakeUnique<ResolveComputeTransientContext>();
+        UniquePtr<ResolveTransientContext> context = MakeUnique<ResolveTransientContext>();
         context->descriptorPool = descriptorPool;
 
-        auto [allocateGBufferTextureSetResult, allocatedGBufferTextureSet] = context->descriptorPool->AllocateDescriptorSet(
+        auto [allocateTextureSetResult, allocatedTextureSet] = context->descriptorPool->AllocateDescriptorSet(
                 persistentContext->gbufferTextureDescriptorSetLayout);
 
-        if (allocateGBufferTextureSetResult != GraphicsResult::Success)
+        if (allocateTextureSetResult != GraphicsResult::Success)
         {
             return { false };
         }
 
-        context->gbufferTextureDescriptorSet = std::move(allocatedGBufferTextureSet);
-
-        auto [allocateLuminanceTextureSetResult, allocatedLuminanceTextureSet] = context->descriptorPool->AllocateDescriptorSet(
-                persistentContext->luminanceTextureDescriptorSetLayout);
-
-        if (allocateLuminanceTextureSetResult != GraphicsResult::Success)
-        {
-            return { false };
-        }
-
-        context->luminanceTextureDescriptorSet = std::move(allocatedLuminanceTextureSet);
+        context->gbufferTextureDescriptorSet = std::move(allocatedTextureSet);
 
         auto [allocateLightsDescriptorSetResult, allocatedLightsBufferSet] = context->descriptorPool->AllocateDescriptorSet(
             persistentContext->lightsBufferDescriptorSetLayout);

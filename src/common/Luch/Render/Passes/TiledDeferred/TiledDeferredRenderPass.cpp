@@ -1,6 +1,6 @@
-#include <Luch/Render/TiledDeferred/TiledDeferredRenderPass.h>
-#include <Luch/Render/TiledDeferred/TiledDeferredContext.h>
-#include <Luch/Render/TiledDeferred/TiledDeferredConstants.h>
+#include <Luch/Render/Passes/TiledDeferred/TiledDeferredRenderPass.h>
+#include <Luch/Render/Passes/TiledDeferred/TiledDeferredContext.h>
+#include <Luch/Render/Passes/TiledDeferred/TiledDeferredConstants.h>
 #include <Luch/Render/TextureUploader.h>
 #include <Luch/Render/ShaderDefines.h>
 #include <Luch/Render/CameraResources.h>

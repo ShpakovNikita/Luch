@@ -12,10 +12,10 @@
 #include <Luch/Render/Common.h>
 #include <Luch/Render/SharedBuffer.h>
 #include <Luch/Render/RenderForwards.h>
-#include <Luch/Render/TiledDeferred/TiledDeferredForwards.h>
 #include <Luch/Render/Graph/RenderGraphResources.h>
 #include <Luch/Render/Graph/RenderGraphForwards.h>
 #include <Luch/Render/Graph/RenderGraphPass.h>
+#include <Luch/Render/Passes/TiledDeferred/TiledDeferredForwards.h>
 
 namespace Luch::Render::TiledDeferred
 {

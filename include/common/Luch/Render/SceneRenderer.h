@@ -8,8 +8,8 @@
 #include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/SceneV1/SceneV1Forwards.h>
 #include <Luch/Render/Common.h>
-#include <Luch/Render/Deferred/DeferredForwards.h>
-#include <Luch/Render/TiledDeferred/TiledDeferredForwards.h>
+#include <Luch/Render/Passes/Deferred/DeferredForwards.h>
+#include <Luch/Render/Passes/TiledDeferred/TiledDeferredForwards.h>
 #include <Luch/Render/RenderForwards.h>
 #include <Luch/Render/RenderContext.h>
 #include <Luch/Render/CameraResources.h>
@@ -21,6 +21,7 @@
 namespace Luch::Render
 {
     using namespace Graphics;
+    using namespace Passes;
 
     struct FrameResources
     {

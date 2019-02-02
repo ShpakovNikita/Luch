@@ -31,20 +31,20 @@
 
 #include <Luch/Render/RenderUtils.h>
 
-#include <Luch/Render/DepthOnlyRenderPass.h>
-#include <Luch/Render/DepthOnlyContext.h>
+#include <Luch/Render/Passes/DepthOnlyRenderPass.h>
+#include <Luch/Render/Passes/DepthOnlyContext.h>
 
-#include <Luch/Render/Deferred/GBufferRenderPass.h>
-#include <Luch/Render/Deferred/GBufferContext.h>
-#include <Luch/Render/Deferred/ResolveRenderPass.h>
-#include <Luch/Render/Deferred/ResolveContext.h>
-#include <Luch/Render/Deferred/ResolveComputeRenderPass.h>
-#include <Luch/Render/Deferred/ResolveComputeContext.h>
-#include <Luch/Render/Deferred/TonemapRenderPass.h>
-#include <Luch/Render/Deferred/TonemapContext.h>
+#include <Luch/Render/Passes/Deferred/GBufferRenderPass.h>
+#include <Luch/Render/Passes/Deferred/GBufferContext.h>
+#include <Luch/Render/Passes/Deferred/ResolveRenderPass.h>
+#include <Luch/Render/Passes/Deferred/ResolveContext.h>
+#include <Luch/Render/Passes/Deferred/ResolveComputeRenderPass.h>
+#include <Luch/Render/Passes/Deferred/ResolveComputeContext.h>
+#include <Luch/Render/Passes/Deferred/TonemapRenderPass.h>
+#include <Luch/Render/Passes/Deferred/TonemapContext.h>
 
-#include <Luch/Render/TiledDeferred/TiledDeferredContext.h>
-#include <Luch/Render/TiledDeferred/TiledDeferredRenderPass.h>
+#include <Luch/Render/Passes/TiledDeferred/TiledDeferredContext.h>
+#include <Luch/Render/Passes/TiledDeferred/TiledDeferredRenderPass.h>
 
 #include <Luch/Render/Graph/RenderGraph.h>
 #include <Luch/Render/Graph/RenderGraphBuilder.h>
@@ -54,6 +54,7 @@
 namespace Luch::Render
 {
     using namespace Graphics;
+    using namespace Passes;
     using namespace Deferred;
     using namespace TiledDeferred;
     using namespace Graph;

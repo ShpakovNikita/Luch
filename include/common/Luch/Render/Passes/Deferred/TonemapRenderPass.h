@@ -12,12 +12,12 @@
 #include <Luch/Graphics/Attachment.h>
 #include <Luch/Render/Common.h>
 #include <Luch/Render/RenderForwards.h>
-#include <Luch/Render/Deferred/DeferredForwards.h>
+#include <Luch/Render/Passes/Deferred/DeferredForwards.h>
 #include <Luch/Render/Graph/RenderGraphForwards.h>
 #include <Luch/Render/Graph/RenderGraphPass.h>
 #include <Luch/Render/Graph/RenderGraphResources.h>
 
-namespace Luch::Render::Deferred
+namespace Luch::Render::Passes::Deferred
 {
     using namespace Graphics;
     using namespace Graph;

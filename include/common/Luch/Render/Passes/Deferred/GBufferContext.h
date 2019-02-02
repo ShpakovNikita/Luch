@@ -7,10 +7,10 @@
 #include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/Graphics/DescriptorSetBinding.h>
 #include <Luch/Render/RenderForwards.h>
-#include <Luch/Render/Deferred/DeferredForwards.h>
+#include <Luch/Render/Passes/Deferred/DeferredForwards.h>
 #include <Luch/SceneV1/SceneV1Forwards.h>
 
-namespace Luch::Render::Deferred
+namespace Luch::Render::Passes::Deferred
 {
     using namespace Graphics;
 

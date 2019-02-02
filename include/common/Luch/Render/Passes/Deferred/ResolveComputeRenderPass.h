@@ -11,13 +11,13 @@
 #include <Luch/SceneV1/SceneV1Forwards.h>
 #include <Luch/Render/Common.h>
 #include <Luch/Render/RenderForwards.h>
-#include <Luch/Render/Deferred/DeferredForwards.h>
-#include <Luch/Render/Deferred/GBuffer.h>
+#include <Luch/Render/Passes/Deferred/DeferredForwards.h>
+#include <Luch/Render/Passes/Deferred/GBuffer.h>
 #include <Luch/Render/Graph/RenderGraphResources.h>
 #include <Luch/Render/Graph/RenderGraphForwards.h>
 #include <Luch/Render/Graph/RenderGraphPass.h>
 
-namespace Luch::Render::Deferred
+namespace Luch::Render::Passes::Deferred
 {
     using namespace Graphics;
     using namespace Graph;
