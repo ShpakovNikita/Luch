@@ -293,7 +293,7 @@ namespace Luch::Render
         frame.outputHandle = frame.builder->GetResourceManager()->ImportTextureDeferred();
 
         RenderMutableResource luminanceTextureHandle;
-        if(config.useTiledDeferredPass && context->device->GetPhysicalDevice()->GetCapabilities().hasTileBasedArchitecture)
+        if(config.useTiledDeferredPass && canUseTiledDeferredRender)
         {
             bool tileDeferredPrepared = PrepareTiledDeferred(frame);
             LUCH_ASSERT(tileDeferredPrepared);

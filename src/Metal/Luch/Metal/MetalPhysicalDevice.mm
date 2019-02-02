@@ -21,10 +21,12 @@ namespace Luch::Metal
             }
         }
 
+#if LUCH_PLATFORM_IOS
         if(@available(iOS 11.0, *))
         {
             capabilities.hasTileBasedArchitecture = true;
         }
+#endif
     }
 
     GraphicsResultValue<RefPtrVector<MetalPhysicalDevice>> MetalPhysicalDevice::EnumeratePhysicalDevices()

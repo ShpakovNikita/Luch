@@ -276,7 +276,7 @@ namespace Luch::Metal
         else
         {
             [[maybe_unused]] auto description = error.GetLocalizedDescription().GetCStr();
-                LUCH_ASSERT(false);
+            LUCH_ASSERT(false);
             return { result };
         }
     }

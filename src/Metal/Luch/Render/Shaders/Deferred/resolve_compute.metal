@@ -142,7 +142,6 @@ LightingResult ApplyPointlLightImpl(
     half3 L,
     half dist,
     half3 V,
-    half3 P,
     half3 N,
     half3 F0,
     half metallic,
@@ -180,7 +179,7 @@ LightingResult ApplyPointlLight(
     half dist = length(L);
     L = L/dist;
 
-    return ApplyPointlLightImpl(light, L, dist, V, P, N, F0, metallic, roughness);
+    return ApplyPointlLightImpl(light, L, dist, V, N, F0, metallic, roughness);
 }
 
 half SpotCone(half innerConeAngle, half outerConeAngle, half3 directionVS, half3 L)
@@ -210,7 +209,7 @@ LightingResult ApplySpotLight(
     half dist = length(L);
     L = L/dist;
 
-    LightingResult pointLighting = ApplyPointlLightImpl(light, L, dist, V, P, N, F0, metallic, roughness);
+    LightingResult pointLighting = ApplyPointlLightImpl(light, L, dist, V, N, F0, metallic, roughness);
     half spotIntensity = SpotCone(light.innerConeAngle, light.outerConeAngle, directionVS, L);
 
     result.diffuse = pointLighting.diffuse * spotIntensity;
@@ -269,9 +268,9 @@ kernel void kernel_main(
     half2 positionSS = half2(gid);
     half2 xyNDC = FragCoordToNDC(positionSS, attachmentSize);
     float4 intermediatePosition = camera.inverseProjection * float4(xyNDC.x, xyNDC.y, depth, 1.0);
-    half3 P = half3(intermediatePosition.xyz / intermediatePosition.w);
-    constexpr half3 eyePosVS = half3(0); // in view space eye is at origin
-    half3 V = normalize(eyePosVS - P);
+    float3 P = intermediatePosition.xyz / intermediatePosition.w;
+    constexpr float3 eyePosVS = float3(0); // in view space eye is at origin
+    half3 V = half3(normalize(eyePosVS - P));
 
     LightingResult lightingResult;
 
@@ -287,10 +286,10 @@ kernel void kernel_main(
             intermediateResult = ApplyDirectionalLight(camera, light, V, N, F0, metallic, roughness);
             break;
         case LightType::LIGHT_POINT:
-            intermediateResult = ApplyPointlLight(camera, light, V, P, N, F0, metallic, roughness);
+            intermediateResult = ApplyPointlLight(camera, light, V, half3(P), N, F0, metallic, roughness);
             break;
         case LightType::LIGHT_SPOT:
-            intermediateResult = ApplySpotLight(camera, light, V, P, N, F0, metallic, roughness);
+            intermediateResult = ApplySpotLight(camera, light, V, half3(P), N, F0, metallic, roughness);
             break;
         default:
             intermediateResult = { NAN, NAN };
