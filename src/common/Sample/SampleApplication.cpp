@@ -171,17 +171,16 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     renderer = MakeUnique<Render::SceneRenderer>(scene);
 
-    Render::SceneRendererConfig rendererConfig;
-    rendererConfig.useForward = true;
-    rendererConfig.useDepthPrepass = true;
-    rendererConfig.useComputeResolve = false;
-    rendererConfig.useTiledDeferredPass = false;
-
-    auto rendererInitialized = renderer->Initialize(context, rendererConfig);
+    auto rendererInitialized = renderer->Initialize(context);
     if(!rendererInitialized)
     {
         return false;
     }
+
+    renderer->GetMutableConfig().useForward = true;
+    renderer->GetMutableConfig().useDepthPrepass = true;
+    renderer->GetMutableConfig().useComputeResolve = false;
+    renderer->GetMutableConfig().useTiledDeferredPass = false;
 
     for(int32 axis = WASDNodeController::XAxis; axis <= WASDNodeController::ZAxis; axis++)
     {
@@ -254,6 +253,46 @@ void SampleApplication::HandleEvent(const SDL_Event& event)
 
 void SampleApplication::HandleKeyboardEvent(const SDL_Event& event)
 {
+    switch(event.key.keysym.scancode)
+    {
+    case SDL_SCANCODE_W:
+    case SDL_SCANCODE_S:
+    case SDL_SCANCODE_A:
+    case SDL_SCANCODE_D:
+    case SDL_SCANCODE_Q:
+    case SDL_SCANCODE_E:
+        HandleKeyboardMovementEvent(event);
+        break;
+    case SDL_SCANCODE_ESCAPE:
+        shouldQuit = true;
+        break;
+    case SDL_SCANCODE_Z:
+        renderer->GetMutableConfig().useDepthPrepass = true;
+        break;
+    case SDL_SCANCODE_X:
+        renderer->GetMutableConfig().useDepthPrepass = false;
+        break;
+    case SDL_SCANCODE_1:
+        renderer->GetMutableConfig().useForward = true;
+        renderer->GetMutableConfig().useComputeResolve = false;
+        renderer->GetMutableConfig().useTiledDeferredPass = false;
+        break;
+    case SDL_SCANCODE_2:
+        renderer->GetMutableConfig().useForward = false;
+        renderer->GetMutableConfig().useComputeResolve = false;
+        renderer->GetMutableConfig().useTiledDeferredPass = false;
+        break;
+    case SDL_SCANCODE_3:
+        renderer->GetMutableConfig().useForward = false;
+        renderer->GetMutableConfig().useComputeResolve = true;
+        renderer->GetMutableConfig().useTiledDeferredPass = false;
+    default:
+        break;
+    }
+}
+
+void SampleApplication::HandleKeyboardMovementEvent(const SDL_Event& event)
+{
     Optional<bool> moving;
 
     if(event.type == SDL_KEYDOWN)
@@ -294,9 +333,6 @@ void SampleApplication::HandleKeyboardEvent(const SDL_Event& event)
     case SDL_SCANCODE_E:
         axis = WASDNodeController::ZAxis;
         direction = WASDNodeController::Negative;
-        break;
-    case SDL_SCANCODE_ESCAPE:
-        shouldQuit = true;
         break;
     default:
         break;

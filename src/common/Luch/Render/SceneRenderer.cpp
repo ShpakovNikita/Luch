@@ -91,10 +91,9 @@ namespace Luch::Render
 
     SceneRenderer::~SceneRenderer() = default;
 
-    bool SceneRenderer::Initialize(SharedPtr<RenderContext> aContext, SceneRendererConfig aConfig)
+    bool SceneRenderer::Initialize(SharedPtr<RenderContext> aContext)
     {
         context = aContext;
-        config = aConfig;
 
         canUseTiledDeferredRender = context->device->GetPhysicalDevice()->GetCapabilities().hasTileBasedArchitecture;
 

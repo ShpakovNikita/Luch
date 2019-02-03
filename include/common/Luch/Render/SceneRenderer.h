@@ -64,7 +64,7 @@ namespace Luch::Render
         SceneRenderer(RefPtr<SceneV1::Scene> scene);
         ~SceneRenderer();
 
-        bool Initialize(SharedPtr<RenderContext> context, SceneRendererConfig config);
+        bool Initialize(SharedPtr<RenderContext> context);
         bool Deinitialize();
 
         bool BeginRender();
@@ -72,6 +72,8 @@ namespace Luch::Render
         void UpdateScene();
         void DrawScene(SceneV1::Node* cameraNode);
         void EndRender();
+
+        inline SceneRendererConfig& GetMutableConfig() { return config; }
     private:
         bool PrepareForward(FrameResources& frame);
         bool PrepareDeferred(FrameResources& frame);
