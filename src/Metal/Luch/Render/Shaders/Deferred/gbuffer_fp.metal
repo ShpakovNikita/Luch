@@ -102,10 +102,11 @@ fragment FragmentOut fp_main(
         float2 texCoord = in.texCoord;
     #endif
 
+    half4 baseColor = half4(material.baseColorFactor);
+
     #if HAS_BASE_COLOR_TEXTURE && HAS_TEXCOORD_0
-        half4 baseColor = baseColorMap.sample(baseColorSampler, texCoord);
-    #else
-        half4 baseColor = half4(1.0h);
+        half4 baseColorSample = baseColorMap.sample(baseColorSampler, texCoord);
+        baseColor *= baseColorSample;
     #endif
 
     #if ALPHA_MASK
