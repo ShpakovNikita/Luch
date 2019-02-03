@@ -345,6 +345,7 @@ fragment FragmentOut fp_main(
         float3 normalVS = normalize(in.normalVS);
     #else
         float3 normalVS = normalize(cross(dp1, dp2));
+        discard_fragment();
     #endif
 
     #if HAS_NORMAL && HAS_TANGENT
@@ -353,6 +354,7 @@ fragment FragmentOut fp_main(
         float3x3 TBN = float3x3(tangentVS, bitangentVS, normalVS);
     #elif HAS_TEXCOORD_0
         float3x3 TBN = TangentFrame(dp1, dp2, normalVS, texCoord);
+        discard_fragment();
     #endif
 
     #if !HAS_TANGENT && HAS_TEXCOORD_0
@@ -364,6 +366,7 @@ fragment FragmentOut fp_main(
         half3 N = half3(normalize(ExtractNormal(normalSample, material.normalScale, TBN)));
     #else
         half3 N = half3(normalize(normalVS));
+        discard_fragment();
     #endif
 
     half metallic = half(material.metallicFactor);

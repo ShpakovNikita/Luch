@@ -224,15 +224,6 @@ half2 FragCoordToNDC(half2 fragCoord, half2 size)
     return half2(pd.x, -pd.y);
 }
 
-half3 UncompressNormal(half2 normalXY)
-{
-    // This function uncompresses a _view space_ normal
-    // Normal is packed by using just its xy view space coordinates
-    // z always looks towards camera (-Z) since we are in view space
-    half normalZ = sqrt(saturate(1 - length_squared(normalXY)));
-    return half3(normalXY.xy, -normalZ);
-}
-
 kernel void kernel_main(
     ushort2 gid [[thread_position_in_grid]],
     constant CameraUniform& camera [[buffer(0)]],
@@ -252,9 +243,9 @@ kernel void kernel_main(
     half3 baseColor = gbuffer0Sample.rgb;
     half occlusion = gbuffer0Sample.a;
 
-    half3 N = UncompressNormal(gbuffer1Sample.rg);
-    half metallic = half(gbuffer1Sample.b);
-    half roughness = half(gbuffer1Sample.a);
+    half3 N = gbuffer1Sample.rgb;
+    half metallic = half(gbuffer1Sample.a);
+    half roughness = half(gbuffer2Sample.a);
 
     half3 emitted = gbuffer2Sample.rgb;
 

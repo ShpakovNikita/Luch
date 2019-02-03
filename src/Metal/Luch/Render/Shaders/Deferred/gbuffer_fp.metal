@@ -168,10 +168,11 @@ fragment FragmentOut fp_main(
     out.gbuffer0.rgb = baseColor.rgb;
     out.gbuffer0.a = mix(1, occlusion, half(material.occlusionStrength));
 
-    out.gbuffer1.rg = half2(N.xy);
-    out.gbuffer1.ba = half2(metallic, roughness);
+    out.gbuffer1.rgb = half3(N);
+    out.gbuffer1.a = metallic;
 
     out.gbuffer2.rgb = emissive.rgb;
+    out.gbuffer2.a = roughness;
 
     return out;
 }
