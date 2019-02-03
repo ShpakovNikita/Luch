@@ -46,6 +46,7 @@ public:
 #endif
 private:
     void HandleKeyboardEvent(const SDL_Event& event);
+    void HandleKeyboardMovementEvent(const SDL_Event& event);
     void HandleMouseMotionEvent(const SDL_Event& event);
 
 #if _WIN32

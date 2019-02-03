@@ -225,15 +225,6 @@ half2 FragCoordToNDC(half2 fragCoord, half2 size)
     return half2(pd.x, -pd.y);
 }
 
-half3 UncompressNormal(half2 normalXY)
-{
-    // This function uncompresses a _view space_ normal
-    // Normal is packed by using just its xy view space coordinates
-    // z always looks towards camera (-Z) since we are in view space
-    half normalZ = sqrt(saturate(1 - length_squared(normalXY)));
-    return half3(normalXY.xy, -normalZ);
-}
-
 struct ImageBlock
 {
     half4 gbuffer0 [[color(0)]];
@@ -257,9 +248,9 @@ kernel void tile_main(
     half3 baseColor = img.gbuffer0.rgb;
     half occlusion = img.gbuffer0.a;
 
-    half3 N = UncompressNormal(img.gbuffer1.rg);
-    half metallic = half(img.gbuffer1.b);
-    half roughness = half(img.gbuffer1.a);
+    half3 N = img.gbuffer1.rgb;
+    half metallic = half(img.gbuffer1.a);
+    half roughness = half(img.gbuffer2.a);
 
     half3 emitted = img.gbuffer2.rgb;
 

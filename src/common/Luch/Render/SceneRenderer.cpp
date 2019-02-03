@@ -31,20 +31,26 @@
 
 #include <Luch/Render/RenderUtils.h>
 
-#include <Luch/Render/DepthOnlyRenderPass.h>
-#include <Luch/Render/DepthOnlyContext.h>
+#include <Luch/Render/Passes/DepthOnlyRenderPass.h>
+#include <Luch/Render/Passes/DepthOnlyContext.h>
 
-#include <Luch/Render/Deferred/GBufferRenderPass.h>
-#include <Luch/Render/Deferred/GBufferContext.h>
-#include <Luch/Render/Deferred/ResolveRenderPass.h>
-#include <Luch/Render/Deferred/ResolveContext.h>
-#include <Luch/Render/Deferred/ResolveComputeRenderPass.h>
-#include <Luch/Render/Deferred/ResolveComputeContext.h>
-#include <Luch/Render/Deferred/TonemapRenderPass.h>
-#include <Luch/Render/Deferred/TonemapContext.h>
+#include <Luch/Render/Passes/Forward/ForwardRenderPass.h>
+#include <Luch/Render/Passes/Forward/ForwardContext.h>
 
-#include <Luch/Render/TiledDeferred/TiledDeferredContext.h>
-#include <Luch/Render/TiledDeferred/TiledDeferredRenderPass.h>
+#include <Luch/Render/Passes/TonemapRenderPass.h>
+#include <Luch/Render/Passes/TonemapContext.h>
+
+#include <Luch/Render/Passes/Deferred/GBufferRenderPass.h>
+#include <Luch/Render/Passes/Deferred/GBufferContext.h>
+
+#include <Luch/Render/Passes/Deferred/ResolveRenderPass.h>
+#include <Luch/Render/Passes/Deferred/ResolveContext.h>
+
+#include <Luch/Render/Passes/Deferred/ResolveComputeRenderPass.h>
+#include <Luch/Render/Passes/Deferred/ResolveComputeContext.h>
+
+#include <Luch/Render/Passes/TiledDeferred/TiledDeferredContext.h>
+#include <Luch/Render/Passes/TiledDeferred/TiledDeferredRenderPass.h>
 
 #include <Luch/Render/Graph/RenderGraph.h>
 #include <Luch/Render/Graph/RenderGraphBuilder.h>
@@ -54,7 +60,9 @@
 namespace Luch::Render
 {
     using namespace Graphics;
+    using namespace Passes;
     using namespace Deferred;
+    using namespace Forward;
     using namespace TiledDeferred;
     using namespace Graph;
 
@@ -83,10 +91,9 @@ namespace Luch::Render
 
     SceneRenderer::~SceneRenderer() = default;
 
-    bool SceneRenderer::Initialize(SharedPtr<RenderContext> aContext, SceneRendererConfig aConfig)
+    bool SceneRenderer::Initialize(SharedPtr<RenderContext> aContext)
     {
         context = aContext;
-        config = aConfig;
 
         canUseTiledDeferredRender = context->device->GetPhysicalDevice()->GetCapabilities().hasTileBasedArchitecture;
 
@@ -136,6 +143,21 @@ namespace Luch::Render
             }
 
             depthOnlyPersistentContext = std::move(createdDepthOnlyPersistentContext);
+        }
+
+        // Forward Persistent Context
+        {
+            auto [createForwardPersistentContextResult, createdForwardPersistentContext] = ForwardRenderPass::PrepareForwardPersistentContext(
+                context->device,
+                cameraResources.get(),
+                materialManager->GetResources());
+            
+            if(!createForwardPersistentContextResult)
+            {
+                return false;
+            }
+
+            forwardPersistentContext = std::move(createdForwardPersistentContext);
         }
 
         // Tiled Deferred Persistent Context
@@ -293,7 +315,47 @@ namespace Luch::Render
         frame.outputHandle = frame.builder->GetResourceManager()->ImportTextureDeferred();
 
         RenderMutableResource luminanceTextureHandle;
-        if(config.useTiledDeferredPass && canUseTiledDeferredRender)
+        LUCH_ASSERT(!(config.useDepthPrepass && config.useTiledDeferredPass));
+        LUCH_ASSERT(!(config.useComputeResolve && config.useTiledDeferredPass));
+        LUCH_ASSERT(!(config.useForward && config.useTiledDeferredPass));
+
+        if(config.useDepthPrepass)
+        {
+            auto [prepareDepthOnlyTransientContextResult, preparedDepthOnlyTransientContext] = DepthOnlyRenderPass::PrepareDepthOnlyTransientContext(
+                depthOnlyPersistentContext.get(),
+                descriptorPool);
+
+            if(!prepareDepthOnlyTransientContextResult)
+            {
+                return false;
+            }
+
+            frame.depthOnlyTransientContext = std::move(preparedDepthOnlyTransientContext);
+
+            frame.depthOnlyTransientContext->descriptorPool = descriptorPool;
+            frame.depthOnlyTransientContext->outputSize = frame.outputSize;
+            frame.depthOnlyTransientContext->scene = scene;
+            frame.depthOnlyTransientContext->sharedBuffer = frame.sharedBuffer;
+            frame.depthOnlyTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
+
+            frame.depthOnlyPass = MakeUnique<DepthOnlyRenderPass>(
+                depthOnlyPersistentContext.get(),
+                frame.depthOnlyTransientContext.get(),
+                frame.builder.get());
+        }
+
+        if(config.useForward)
+        {
+            bool forwardPrepared = PrepareForward(frame);
+            LUCH_ASSERT(forwardPrepared);
+            if(!forwardPrepared)
+            {
+                return false;
+            }
+
+            luminanceTextureHandle = frame.forwardPass->GetLuminanceTextureHandle();
+        }
+        else if(config.useTiledDeferredPass && canUseTiledDeferredRender)
         {
             bool tileDeferredPrepared = PrepareTiledDeferred(frame);
             LUCH_ASSERT(tileDeferredPrepared);
@@ -302,7 +364,7 @@ namespace Luch::Render
                 return false;
             }
 
-            luminanceTextureHandle = frame.tiledDeferredPass->GetResolveTextureHandle();
+            luminanceTextureHandle = frame.tiledDeferredPass->GetLuminanceTextureHandle();
         }
         else
         {
@@ -315,11 +377,11 @@ namespace Luch::Render
 
             if(config.useComputeResolve)
             {
-                luminanceTextureHandle = frame.resolveComputePass->GetResolveTextureHandle();
+                luminanceTextureHandle = frame.resolveComputePass->GetLuminanceTextureHandle();
             }
             else
             {
-                luminanceTextureHandle = frame.resolvePass->GetResolveTextureHandle();
+                luminanceTextureHandle = frame.resolvePass->GetLuminanceTextureHandle();
             }
         }
 
@@ -379,7 +441,11 @@ namespace Luch::Render
             frame.depthOnlyPass->PrepareScene();
         }
 
-        if(config.useTiledDeferredPass)
+        if(config.useForward)
+        {
+            frame.forwardPass->PrepareScene();
+        }
+        else if(config.useTiledDeferredPass)
         {
             frame.tiledDeferredPass->PrepareScene();
         }
@@ -418,7 +484,11 @@ namespace Luch::Render
             frame.depthOnlyPass->UpdateScene();
         }
 
-        if(config.useTiledDeferredPass)
+        if(config.useForward)
+        {
+            frame.forwardPass->UpdateScene();
+        }
+        else if(config.useTiledDeferredPass)
         {
             frame.tiledDeferredPass->UpdateScene();
         }
@@ -488,34 +558,42 @@ namespace Luch::Render
 
         frameIndex++;
     }
+    
+    bool SceneRenderer::PrepareForward(FrameResources& frame)
+    {
+        auto [prepareForwardTransientContextResult, preparedForwardTransientContext] = ForwardRenderPass::PrepareForwardTransientContext(
+            forwardPersistentContext.get(),
+            descriptorPool);
+
+        if(!prepareForwardTransientContextResult)
+        {
+            return false;
+        }
+
+        frame.forwardTransientContext = std::move(preparedForwardTransientContext);
+
+        frame.forwardTransientContext->descriptorPool = descriptorPool;
+        frame.forwardTransientContext->outputSize = frame.outputSize;
+        frame.forwardTransientContext->scene = scene;
+        frame.forwardTransientContext->sharedBuffer = frame.sharedBuffer;
+        frame.forwardTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
+
+        if(config.useDepthPrepass)
+        {
+            frame.forwardTransientContext->useDepthPrepass = true;
+            frame.forwardTransientContext->depthStencilTextureHandle = frame.depthOnlyPass->GetDepthTextureHandle();
+        }
+
+        frame.forwardPass = MakeUnique<ForwardRenderPass>(
+            forwardPersistentContext.get(),
+            frame.forwardTransientContext.get(),
+            frame.builder.get());
+
+        return true;
+    }
 
     bool SceneRenderer::PrepareDeferred(FrameResources& frame)
     {
-        if(config.useDepthPrepass)
-        {
-            auto [prepareDepthOnlyTransientContextResult, preparedDepthOnlyTransientContext] = DepthOnlyRenderPass::PrepareDepthOnlyTransientContext(
-                depthOnlyPersistentContext.get(),
-                descriptorPool);
-
-            if(!prepareDepthOnlyTransientContextResult)
-            {
-                return false;
-            }
-
-            frame.depthOnlyTransientContext = std::move(preparedDepthOnlyTransientContext);
-
-            frame.depthOnlyTransientContext->descriptorPool = descriptorPool;
-            frame.depthOnlyTransientContext->outputSize = frame.outputSize;
-            frame.depthOnlyTransientContext->scene = scene;
-            frame.depthOnlyTransientContext->sharedBuffer = frame.sharedBuffer;
-            frame.depthOnlyTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
-
-            frame.depthOnlyPass = MakeUnique<DepthOnlyRenderPass>(
-                depthOnlyPersistentContext.get(),
-                frame.depthOnlyTransientContext.get(),
-                frame.builder.get());
-        }
-
         auto [prepareGBufferTransientContextResult, preparedGBufferTransientContext] = GBufferRenderPass::PrepareGBufferTransientContext(
             gbufferPersistentContext.get(),
             descriptorPool);

@@ -103,10 +103,11 @@ fragment FragmentOut fp_main(
         float2 texCoord = in.texCoord;
     #endif
 
+    half4 baseColor = half4(material.baseColorFactor);
+
     #if HAS_BASE_COLOR_TEXTURE && HAS_TEXCOORD_0
-        half4 baseColor = baseColorMap.sample(baseColorSampler, texCoord);
-    #else
-        half4 baseColor = half4(1.0h);
+        half4 baseColorSample = baseColorMap.sample(baseColorSampler, texCoord);
+        baseColor *= baseColorSample;
     #endif
 
     #if ALPHA_MASK
@@ -169,10 +170,11 @@ fragment FragmentOut fp_main(
     out.gbuffer0.rgb = baseColor.rgb;
     out.gbuffer0.a = mix(1, occlusion, half(material.occlusionStrength));
 
-    out.gbuffer1.rg = half2(N.xy);
-    out.gbuffer1.ba = half2(metallic, roughness);
+    out.gbuffer1.rgb = half3(N);
+    out.gbuffer1.a = metallic;
 
     out.gbuffer2.rgb = emissive.rgb;
+    out.gbuffer2.a = roughness;
 
     out.gbufferDepth = in.positionCS.z;
 
