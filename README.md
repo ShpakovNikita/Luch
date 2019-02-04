@@ -10,6 +10,8 @@ Right now only has deferred pipeline.
 * Abstract Rendering API
 * Metal Backend
 * Deferred Pipeline
+* Tiled Deferred Pipeline (on iOS devices with A11+)
+* Forward Pipeline (no Forward+ yet)
 * Compute
 * Loading glTF 2.0 scenes
 * Punctual Lights
@@ -27,8 +29,9 @@ Supports punctual lights: directional, point and spot.
 
 ## Planned
 In no particular order:
+* Light probes (image-based lighting)
+* Forward+ (tiled forward, forward with light culling)
 * Area lights
 * Keyframe Animations
 * Skeletal Animations
 * Shader reloading
-* Light probes (image-based lighting)
