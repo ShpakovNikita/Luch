@@ -422,6 +422,7 @@ namespace Luch::Render::Passes::Deferred
 
         auto[vertexShaderLibraryCreated, vertexShaderLibrary] = RenderUtils::CreateShaderLibrary(
             persistentContext->device,
+            "Data/Shaders/",
             "Data/Shaders/Deferred/",
             "gbuffer_vp",
             shaderDefines.defines);
@@ -440,6 +441,7 @@ namespace Luch::Render::Passes::Deferred
 
         auto[fragmentShaderLibraryCreated, fragmentShaderLibrary] = RenderUtils::CreateShaderLibrary(
             persistentContext->device,
+            "Data/Shaders/",
             "Data/Shaders/Deferred/",
             "gbuffer_fp",
             shaderDefines.defines);

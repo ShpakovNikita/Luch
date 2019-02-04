@@ -472,6 +472,7 @@ namespace Luch::Render::Passes::TiledDeferred
 
         auto[vertexShaderLibraryCreated, vertexShaderLibrary] = RenderUtils::CreateShaderLibrary(
             context->device,
+            "Data/Shaders/",
             "Data/Shaders/TiledDeferred/",
             "tiled_gbuffer_vp",
             shaderDefines.defines);
@@ -490,6 +491,7 @@ namespace Luch::Render::Passes::TiledDeferred
 
         auto[fragmentShaderLibraryCreated, fragmentShaderLibrary] = RenderUtils::CreateShaderLibrary(
             context->device,
+            "Data/Shaders/",
             "Data/Shaders/TiledDeferred/",
             "tiled_gbuffer_fp",
             shaderDefines.defines);
@@ -526,6 +528,7 @@ namespace Luch::Render::Passes::TiledDeferred
 
         auto [tiledShaderLibraryCreated, createdTiledShaderLibrary] = RenderUtils::CreateShaderLibrary(
             context->device,
+            "Data/Shaders/",
             "Data/Shaders/TiledDeferred/",
             "tiled_resolve",
             {});

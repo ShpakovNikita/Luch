@@ -231,7 +231,7 @@ namespace Luch::Metal
     }
 
     GraphicsResultRefPtr<ShaderLibrary> MetalGraphicsDevice::CreateShaderLibraryFromSource(
-        const Vector<Byte>& source,
+        const String& source,
         const UnorderedMap<String, Variant<int32, String>>& defines)
     {
         mtlpp::CompileOptions options;
@@ -266,7 +266,7 @@ namespace Luch::Metal
 
         [dict release];
 
-        auto mtlLibrary = device.NewLibrary((const char*)source.data(), options, &error);
+        auto mtlLibrary = device.NewLibrary(source.data(), options, &error);
 
         GraphicsResult result = LibraryErrorToGraphicsResult(error);
         if(mtlLibrary)
