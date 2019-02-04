@@ -194,6 +194,7 @@ namespace Luch::Render::Passes::Deferred
 
         auto[kernelShaderLibraryCreated, createdKernelShaderLibrary] = RenderUtils::CreateShaderLibrary(
             device,
+            "Data/Shaders/",
             "Data/Shaders/Deferred/",
             "resolve_compute",
             {});

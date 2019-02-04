@@ -34,6 +34,7 @@
 #include <Luch/Graphics/CommandQueue.h>
 #include <Luch/Render/SceneRenderer.h>
 #include <Luch/Render/SceneRendererConfig.h>
+#include <Luch/Render/RenderUtils.h>
 
 using namespace Luch;
 using namespace Luch::Graphics;

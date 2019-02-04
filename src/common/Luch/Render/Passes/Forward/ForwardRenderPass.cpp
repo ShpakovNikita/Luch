@@ -478,6 +478,7 @@ namespace Luch::Render::Passes::Forward
 
         auto[vertexShaderLibraryCreated, vertexShaderLibrary] = RenderUtils::CreateShaderLibrary(
             context->device,
+            "Data/Shaders/",
             "Data/Shaders/Forward/",
             "forward_vp",
             shaderDefines.defines);
@@ -496,6 +497,7 @@ namespace Luch::Render::Passes::Forward
 
         auto[fragmentShaderLibraryCreated, fragmentShaderLibrary] = RenderUtils::CreateShaderLibrary(
             context->device,
+            "Data/Shaders/",
             "Data/Shaders/Forward/",
             "forward_fp",
             shaderDefines.defines);

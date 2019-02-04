@@ -366,6 +366,7 @@ namespace Luch::Render::Passes
         auto[vertexShaderLibraryCreated, vertexShaderLibrary] = RenderUtils::CreateShaderLibrary(
             persistentContext->device,
             "Data/Shaders/",
+            "Data/Shaders/",
             "depth_only_vp",
             shaderDefines.defines);
 
@@ -387,6 +388,7 @@ namespace Luch::Render::Passes
         {
             auto[fragmentShaderLibraryCreated, fragmentShaderLibrary] = RenderUtils::CreateShaderLibrary(
                 persistentContext->device,
+                "Data/Shaders/",
                 "Data/Shaders/",
                 "depth_only_fp",
                 shaderDefines.defines);

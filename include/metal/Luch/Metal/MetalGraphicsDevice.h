@@ -62,7 +62,7 @@ namespace Luch::Metal
             Surface* surface) override;
 
         GraphicsResultRefPtr<ShaderLibrary> CreateShaderLibraryFromSource(
-            const Vector<Byte>& source,
+            const String& source,
             const UnorderedMap<String, Variant<int32, String>>& defines) override;
 
         GraphicsResultRefPtr<Semaphore> CreateSemaphore(int32 value) override;
