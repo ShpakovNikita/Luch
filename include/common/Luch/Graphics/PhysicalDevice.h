@@ -12,7 +12,7 @@ namespace Luch::Graphics
     public:
         virtual ~PhysicalDevice() = 0;
 
-        bool Init() { return true; }
+        virtual bool Init() { return true; }
 
         //virtual Vector<Format> GetSupportedColorFormats(const Vector<Format>& formats) = 0;
         virtual Vector<Format> GetSupportedDepthStencilFormats(const Vector<Format>& formats) const = 0;

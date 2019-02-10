@@ -42,18 +42,12 @@ namespace Luch::Vulkan
         VulkanPhysicalDevice* aPhysicalDevice,
         vk::Device aDevice,
         VulkanQueueInfo&& aQueueInfo,
-        Luch::Optional<vk::AllocationCallbacks> aAllocationCallbacks)
+        vk::Optional<const vk::AllocationCallbacks> aAllocationCallbacks)
         : physicalDevice(aPhysicalDevice)
         , device(aDevice)
         , queueInfo(std::move(aQueueInfo))
-        , callbacks(aAllocationCallbacks)
-        , allocationCallbacks(nullptr)
-    {
-        if(callbacks.has_value())
-        {
-            allocationCallbacks = *callbacks;
-        }
-    }
+        , allocationCallbacks(aAllocationCallbacks)
+    {}
 
     VulkanGraphicsDevice::~VulkanGraphicsDevice()
     {

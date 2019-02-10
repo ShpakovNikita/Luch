@@ -45,7 +45,7 @@ namespace Luch::Vulkan
             VulkanPhysicalDevice* physicalDevice,
             vk::Device device,
             VulkanQueueInfo&& queueInfo,
-            Luch::Optional<vk::AllocationCallbacks> allocationCallbacks);
+            vk::Optional<const vk::AllocationCallbacks> allocationCallbacks);
 
         ~VulkanGraphicsDevice() override;
 
@@ -162,8 +162,6 @@ namespace Luch::Vulkan
         vk::Device device;
         VulkanQueueInfo queueInfo;
 
-        // Workaround for vk::Optional not holding to the value itself
-        Luch::Optional<vk::AllocationCallbacks> callbacks;
         vk::Optional<const vk::AllocationCallbacks> allocationCallbacks = nullptr;
     };
 }

@@ -81,7 +81,7 @@ bool SampleApplication::Initialize(const Vector<String>& /*args*/)
         return false;
     }
 
-    SetupScene();
+    // SetupScene(); // todo: uncomment. scene loading slows :(
 
     context = MakeShared<Render::RenderContext>();
 
@@ -90,12 +90,12 @@ bool SampleApplication::Initialize(const Vector<String>& /*args*/)
     {
         return false;
     }
-    // /////////////////////////////////////////////////
 
     context->device = std::move(createdDevice);
 
+    // /////////////////////////////////////////////////
     auto [createCommandQueueResult, createdCommandQueue] = context->device->CreateCommandQueue();
-    if(createCommandQueueResult != GraphicsResult::Success)
+    if (createCommandQueueResult != GraphicsResult::Success)
     {
         return false;
     }
@@ -199,6 +199,7 @@ bool SampleApplication::CreateWindow()
         return false;
     }
 
+    // if need allocation callbacks store it where you init it
     physicalDevice = MakeRef<Luch::Vulkan::VulkanPhysicalDevice>(vulkanInstance.GetInstance(), surface, nullptr);
     if (!physicalDevice->Init())
     {
