@@ -36,7 +36,7 @@ In no particular order:
 * Skeletal Animations
 * Shader reloading
 
-## Compiling
+## Compiling and Running
 
 Generate a project (with commands that are listed below) and then open it in Xcode and run
 
@@ -47,6 +47,24 @@ mkdir build
 cd build
 cmake -G Xcode -DUSE_METAL=true -DPLATFORM=macOS ..
 ```
+
+When the application is running, you can use WASD to control camera position.
+To control camera view direction, click and drag.
+
+You can switch between different rendering pipelines:
+
+| Key | Action |
+| --- | --- |
+| 1 | forward rendering |
+| 2 | deferred rendering |
+| 3 | deferred rendering with compute resolve |
+
+Also
+
+| Key | Action |
+| --- | --- |
+| Z | turn on depth prepass |
+| X | turn off depth prepass |
 
 ### iOS
 
