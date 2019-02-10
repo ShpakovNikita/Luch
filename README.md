@@ -37,7 +37,10 @@ In no particular order:
 * Shader reloading
 
 ## Compiling
-## #macOS
+
+Generate a project (with commands that are listed below) and then open it in Xcode and run
+
+### macOS
 
 ```
 mkdir build
