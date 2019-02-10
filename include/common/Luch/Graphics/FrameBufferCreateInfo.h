@@ -7,6 +7,14 @@
 
 namespace Luch::Graphics
 {
+    struct FrameBufferAttachment
+    {
+        Texture* texture = nullptr;
+        int32 mipmapLevel = 0;
+        int32 slice = 0;
+        int32 depthPlane = 0;
+    };
+
     struct FrameBufferCreateInfo
     {
         static constexpr int32 MaxColorAttachmentCount = RenderPassCreateInfo::MaxColorAttachmentCount;

@@ -132,12 +132,13 @@ namespace Luch::Render::Graph
 
             for(int32 i = 0; i < node.colorAttachmentResources.size(); i++)
             {
-                RenderMutableResource colorAttachmentResource = node.colorAttachmentResources[i];
+                RenderMutableResource colorAttachmentResource = node.colorAttachmentResources[i].resource;
                 if(colorAttachmentResource)
                 {
                     const auto& colorTexture = resourceManager->GetTexture(colorAttachmentResource);
                     LUCH_ASSERT(colorTexture != nullptr);
-                    frameBufferCreateInfo.colorTextures[i] = colorTexture;
+                    frameBufferCreateInfo.colorTextures[i].texture = colorTexture;
+                    frameBufferCreateInfo.colorTextures[i].
                 }
             }
 

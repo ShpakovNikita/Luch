@@ -12,14 +12,22 @@ namespace Luch::Render::Graph
 {
     using namespace Graphics;
 
+    struct RenderGraphAttachment
+    {
+        RenderMutableResource resource;
+        int32 mipmapLevel = 0;
+        int32 slice = 0;
+        int32 depthPlane = 0;
+    };
+
     struct RenderGraphNode
     {
         static constexpr int32 MaxColorAttachmentCount = RenderPassCreateInfo::MaxColorAttachmentCount;
 
         RenderGraphPass* pass = nullptr;
         String name;
-        Array<RenderMutableResource, MaxColorAttachmentCount> colorAttachmentResources;
-        RenderMutableResource depthStencilAttachmentResource;
+        Array<RenderGraphAttachment, MaxColorAttachmentCount> colorAttachments = {};
+        RenderGraphAttachment depthStencilAttachment;
         Vector<RenderMutableResource> importedResources;
         Vector<RenderMutableResource> createdResources;
         Vector<RenderMutableResource> writtenResources;

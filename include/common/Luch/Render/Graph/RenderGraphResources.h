@@ -1,11 +1,5 @@
 #pragma once
 
-namespace Luch::Render::Graph
-{
-
-}
-#pragma once
-
 #include <Luch/RefPtr.h>
 #include <Luch/Types.h>
 #include <Luch/Graphics/BufferUsageFlags.h>

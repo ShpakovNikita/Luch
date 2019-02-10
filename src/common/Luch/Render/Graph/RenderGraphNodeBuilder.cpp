@@ -30,7 +30,7 @@ namespace Luch::Render::Graph
         LUCH_ASSERT(attachment.has_value());
 
         RenderMutableResource resource = resourceManager->ImportTexture(texture);
-        node->colorAttachmentResources[index] = resource;
+        node->colorAttachmentResources[index].resource = resource;
 
         node->importedResources.push_back(resource);
 
@@ -45,7 +45,7 @@ namespace Luch::Render::Graph
         LUCH_ASSERT(attachment.has_value());
 
         RenderMutableResource resource = resourceManager->ImportTexture(texture);
-        node->depthStencilAttachmentResource = resource;
+        node->depthStencilAttachmentResource.resource = resource;
 
         node->importedResources.push_back(resource);
 
@@ -60,7 +60,7 @@ namespace Luch::Render::Graph
         LUCH_ASSERT(attachment.has_value());
 
         RenderMutableResource resource = resourceManager->ModifyResource(colorAttachmentHandle);
-        node->colorAttachmentResources[index] = resource;
+        node->colorAttachmentResources[index].resource = resource;
 
         node->readResources.push_back(colorAttachmentHandle);
         node->writtenResources.push_back(resource);
@@ -76,7 +76,7 @@ namespace Luch::Render::Graph
         LUCH_ASSERT(attachment.has_value());
 
         RenderMutableResource resource = resourceManager->ModifyResource(depthStencilAttachmentHandle);
-        node->depthStencilAttachmentResource = resource;
+        node->depthStencilAttachmentResource.resource = resource;
 
         node->readResources.push_back(depthStencilAttachmentHandle);
         node->writtenResources.push_back(resource);
@@ -84,7 +84,7 @@ namespace Luch::Render::Graph
         return resource;
     }
 
-    RenderMutableResource RenderGraphNodeBuilder::CreateColorAttachment(int32 index, Size2i size, ResourceStorageMode storageMode)
+    RenderMutableResource RenderGraphNodeBuilder::CreateColorAttachment(int32 index, const RenderGraphAttachmentCreateInfo& createInfo)
     {
         auto node = GetNode();
         const auto& attachment = node->renderPass->GetCreateInfo().colorAttachments[index];
@@ -94,20 +94,21 @@ namespace Luch::Render::Graph
 
         TextureCreateInfo textureCreateInfo;
         textureCreateInfo.format = attachment->format;
-        textureCreateInfo.width = size.width;
-        textureCreateInfo.height = size.height;
+        textureCreateInfo.textureType = createInfo.textureType;
+        textureCreateInfo.width = createInfo.size.width;
+        textureCreateInfo.height = createInfo.size.height;
+        textureCreateInfo.storageMode = createInfo.storageMode;
         textureCreateInfo.usage = TextureUsageFlags::ColorAttachment | TextureUsageFlags::ShaderRead | TextureUsageFlags::ShaderWrite;
-        textureCreateInfo.storageMode = storageMode;
 
         RenderMutableResource resource = resourceManager->CreateTexture(textureCreateInfo);
-        node->colorAttachmentResources[index] = resource;
+        node->colorAttachmentResources[index].resource = resource;
 
         node->createdResources.push_back(resource);
 
         return resource;
     }
 
-    RenderMutableResource RenderGraphNodeBuilder::CreateDepthStencilAttachment(Size2i size, ResourceStorageMode storageMode)
+    RenderMutableResource RenderGraphNodeBuilder::CreateDepthStencilAttachment(const RenderGraphAttachmentCreateInfo& createInfo)
     {
         auto node = GetNode();
         const auto& attachment = node->renderPass->GetCreateInfo().depthStencilAttachment;
@@ -117,13 +118,14 @@ namespace Luch::Render::Graph
 
         TextureCreateInfo textureCreateInfo;
         textureCreateInfo.format = attachment->format;
-        textureCreateInfo.width = size.width;
-        textureCreateInfo.height = size.height;
+        textureCreateInfo.textureType = createInfo.textureType;
+        textureCreateInfo.width = createInfo.size.width;
+        textureCreateInfo.height = createInfo.size.height;
+        textureCreateInfo.storageMode = createInfo.storageMode;
         textureCreateInfo.usage = TextureUsageFlags::DepthStencilAttachment | TextureUsageFlags::ShaderRead | TextureUsageFlags::ShaderWrite;
-        textureCreateInfo.storageMode = storageMode;
 
         RenderMutableResource resource = resourceManager->CreateTexture(textureCreateInfo);
-        node->depthStencilAttachmentResource = resource;
+        node->depthStencilAttachmentResource.resource = resource;
 
         node->createdResources.push_back(resource);
 
@@ -138,7 +140,7 @@ namespace Luch::Render::Graph
         LUCH_ASSERT(attachment.has_value());
 
         RenderMutableResource modifiedResource = resourceManager->ModifyResource(resource);
-        node->colorAttachmentResources[index] = resource;
+        node->colorAttachmentResources[index].resource = resource;
 
         node->writtenResources.push_back(modifiedResource);
 
@@ -153,7 +155,7 @@ namespace Luch::Render::Graph
         LUCH_ASSERT(attachment.has_value());
 
         RenderMutableResource modifiedResource = resourceManager->ModifyResource(resource);
-        node->depthStencilAttachmentResource = resource;
+        node->depthStencilAttachmentResource.resource = resource;
 
         node->writtenResources.push_back(modifiedResource);
 

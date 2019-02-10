@@ -2,6 +2,7 @@
 
 #include <Luch/RefPtr.h>
 #include <Luch/Render/Graph/RenderGraphForwards.h>
+#include <Luch/Render/Graph/RenderGraphAttachmentCreateInfo.h>
 #include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/Graphics/RenderPassCreateInfo.h>
 #include <Luch/Graphics/ResourceStorageMode.h>
@@ -24,8 +25,8 @@ namespace Luch::Render::Graph
         RenderMutableResource UseColorAttachment(int32 index, RenderMutableResource colorAttachmentHandle);
         RenderMutableResource UseDepthStencilAttachment(RenderMutableResource depthStencilAttachmentHandle);
 
-        RenderMutableResource CreateColorAttachment(int32 index, Size2i size, ResourceStorageMode storageMode = ResourceStorageMode::DeviceLocal);
-        RenderMutableResource CreateDepthStencilAttachment(Size2i size, ResourceStorageMode storageMode = ResourceStorageMode::DeviceLocal);
+        RenderMutableResource CreateColorAttachment(int32 index, const RenderGraphAttachmentCreateInfo& createInfo);
+        RenderMutableResource CreateDepthStencilAttachment(const RenderGraphAttachmentCreateInfo& createInfo);
 
         RenderMutableResource WritesToColorAttachment(int32 index, RenderMutableResource resource);
         RenderMutableResource WritesToDepthStencilAttachment(RenderMutableResource resource);
