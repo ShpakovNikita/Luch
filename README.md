@@ -35,3 +35,20 @@ In no particular order:
 * Keyframe Animations
 * Skeletal Animations
 * Shader reloading
+
+##Compiling
+###macOS
+
+```
+mkdir build
+cd build
+cmake -G Xcode -DUSE_METAL=true -DPLATFORM=macOS ..
+```
+
+###iOS
+
+```
+mkdir build
+cd build
+cmake -G Xcode -DUSE_METAL=true -DPLATFORM=iOS -DIOS_PLATFORM=OS64 -DENABLE_ARC=0 -DENABLE_BITCODE=0 -DIOS_DEPLOYMENT_TARGET=12.0 -DIOS_ARCH=arm64 -DCMAKE_TOOLCHAIN_FILE=../ios.toolchain.cmake
+```
