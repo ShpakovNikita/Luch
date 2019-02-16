@@ -23,13 +23,12 @@ Supports loading glTF 2.0 static scenes (no keyframe animations, skeletal animat
 Supports punctual lights: directional, point and spot.
 
 ## Work in Progress
-* Tile-Based Deferred Rendering
+* Light probes (image-based lighting)
 * Vulkan Backend (thanks to @mlknz)
 * Shadow mapping
 
 ## Planned
 In no particular order:
-* Light probes (image-based lighting)
 * Forward+ (tiled forward, forward with light culling)
 * Area lights
 * Keyframe Animations
