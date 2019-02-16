@@ -71,12 +71,12 @@ namespace Luch::Render::Passes::Deferred
         else
         {
             node = builder->AddGraphicsRenderPass(RenderPassName, persistentContext->renderPass, this);
-            gbuffer.depthStencil = node->CreateDepthStencilAttachment(transientContext->outputSize);
+            gbuffer.depthStencil = node->CreateDepthStencilAttachment({ transientContext->outputSize });
         }
 
         for(int32 i = 0; i < DeferredConstants::GBufferColorAttachmentCount; i++)
         {
-            gbuffer.color[i] = node->CreateColorAttachment(i, transientContext->outputSize);
+            gbuffer.color[i] = node->CreateColorAttachment(i, { transientContext->outputSize });
         }
     }
 

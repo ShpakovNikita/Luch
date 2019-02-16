@@ -67,12 +67,12 @@ namespace Luch::Render::Passes::TiledDeferred
 
         for(int32 i = TiledDeferredConstants::GBufferColorAttachmentBegin; i < TiledDeferredConstants::GBufferColorAttachmentEnd; i++)
         {
-            node->CreateColorAttachment(i, transientContext->outputSize, ResourceStorageMode::Memoryless);
+            node->CreateColorAttachment(i, { transientContext->outputSize, ResourceStorageMode::Memoryless });
         }
 
-        node->CreateDepthStencilAttachment(transientContext->outputSize, ResourceStorageMode::Memoryless);
+        node->CreateDepthStencilAttachment({ transientContext->outputSize, ResourceStorageMode::Memoryless });
 
-        luminanceTextureHandle = node->CreateColorAttachment(TiledDeferredConstants::LuminanceAttachmentIndex, transientContext->outputSize);
+        luminanceTextureHandle = node->CreateColorAttachment(TiledDeferredConstants::LuminanceAttachmentIndex, { transientContext->outputSize });
     }
 
     TiledDeferredRenderPass::~TiledDeferredRenderPass() = default;

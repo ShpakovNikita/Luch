@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Luch/RefPtr.h>
+#include <Luch/Render/Graph/RenderGraphAttachment.h>
 #include <Luch/Render/Graph/RenderGraphForwards.h>
 #include <Luch/Render/Graph/RenderGraphResources.h>
 #include <Luch/Render/Graph/RenderGraphPassType.h>
@@ -11,14 +12,6 @@
 namespace Luch::Render::Graph
 {
     using namespace Graphics;
-
-    struct RenderGraphAttachment
-    {
-        RenderMutableResource resource;
-        int32 mipmapLevel = 0;
-        int32 slice = 0;
-        int32 depthPlane = 0;
-    };
 
     struct RenderGraphNode
     {

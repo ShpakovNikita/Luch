@@ -66,14 +66,14 @@ namespace Luch::Render::Passes::Forward
         if(transientContext->useDepthPrepass)
         {
             auto node = builder->AddGraphicsRenderPass(RenderPassNameWithDepthOnly, persistentContext->renderPassWithDepthOnly, this);
-            luminanceTextureHandle = node->CreateColorAttachment(0, transientContext->outputSize);
+            luminanceTextureHandle = node->CreateColorAttachment(0, { transientContext->outputSize });
             depthStencilTextureHandle = node->UseDepthStencilAttachment(transientContext->depthStencilTextureHandle);
         }
         else
         {
             auto node = builder->AddGraphicsRenderPass(RenderPassName, persistentContext->renderPass, this);
-            luminanceTextureHandle = node->CreateColorAttachment(0, transientContext->outputSize);
-            depthStencilTextureHandle = node->CreateDepthStencilAttachment(transientContext->outputSize);
+            luminanceTextureHandle = node->CreateColorAttachment(0, { transientContext->outputSize });
+            depthStencilTextureHandle = node->CreateDepthStencilAttachment({ transientContext->outputSize });
         }
     }
 

@@ -130,24 +130,29 @@ namespace Luch::Render::Graph
             FrameBufferCreateInfo frameBufferCreateInfo;
             frameBufferCreateInfo.renderPass = node.renderPass;
 
-            for(int32 i = 0; i < node.colorAttachmentResources.size(); i++)
+            for(int32 i = 0; i < node.colorAttachments.size(); i++)
             {
-                RenderMutableResource colorAttachmentResource = node.colorAttachmentResources[i].resource;
-                if(colorAttachmentResource)
+                const auto& colorAttachment = node.colorAttachments[i];
+                if(colorAttachment.resource)
                 {
-                    const auto& colorTexture = resourceManager->GetTexture(colorAttachmentResource);
+                    const auto& colorTexture = resourceManager->GetTexture(colorAttachment.resource);
                     LUCH_ASSERT(colorTexture != nullptr);
-                    frameBufferCreateInfo.colorTextures[i].texture = colorTexture;
-                    frameBufferCreateInfo.colorTextures[i].
+                    frameBufferCreateInfo.colorAttachments[i].texture = colorTexture;
+                    frameBufferCreateInfo.colorAttachments[i].slice = colorAttachment.descriptor.slice;
+                    frameBufferCreateInfo.colorAttachments[i].depthPlane = colorAttachment.descriptor.depthPlane;
+                    frameBufferCreateInfo.colorAttachments[i].mipmapLevel = colorAttachment.descriptor.mipmapLevel;
                 }
             }
 
-            RenderMutableResource depthStencilAttachmentResource = node.depthStencilAttachmentResource;
-            if(depthStencilAttachmentResource)
+            const auto& depthStencilAttachment = node.depthStencilAttachment;
+            if(depthStencilAttachment.resource)
             {
-                const auto& depthStencilTexture = resourceManager->GetTexture(depthStencilAttachmentResource);
+                const auto& depthStencilTexture = resourceManager->GetTexture(depthStencilAttachment.resource);
                 LUCH_ASSERT(depthStencilTexture != nullptr);
-                frameBufferCreateInfo.depthStencilTexture = depthStencilTexture;
+                frameBufferCreateInfo.depthStencilAttachment.texture = depthStencilTexture;
+                frameBufferCreateInfo.depthStencilAttachment.slice = depthStencilAttachment.descriptor.slice;
+                frameBufferCreateInfo.depthStencilAttachment.depthPlane = depthStencilAttachment.descriptor.depthPlane;
+                frameBufferCreateInfo.depthStencilAttachment.mipmapLevel = depthStencilAttachment.descriptor.mipmapLevel;
             }
 
             auto [createFrameBufferResult, createdFrameBuffer] = device->CreateFrameBuffer(frameBufferCreateInfo);

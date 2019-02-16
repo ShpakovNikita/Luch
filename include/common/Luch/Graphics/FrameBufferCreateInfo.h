@@ -19,8 +19,8 @@ namespace Luch::Graphics
     {
         static constexpr int32 MaxColorAttachmentCount = RenderPassCreateInfo::MaxColorAttachmentCount;
 
-        RefPtr<RenderPass> renderPass = nullptr;
-        Array<Texture*, MaxColorAttachmentCount> colorTextures;
-        Texture* depthStencilTexture;
+        RefPtr<RenderPass> renderPass;
+        Array<FrameBufferAttachment, MaxColorAttachmentCount> colorAttachments;
+        FrameBufferAttachment depthStencilAttachment;
     };
 }

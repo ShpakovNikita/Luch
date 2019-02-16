@@ -25,7 +25,7 @@ namespace Luch::Render::Graph
         RenderMutableResource(const RenderMutableResource& other) = default;
         RenderMutableResource& operator=(const RenderMutableResource& other) = default;
 
-        operator bool()
+        operator bool() const
         {
             return handle != 0;
         }
@@ -69,7 +69,7 @@ namespace Luch::Render::Graph
         {
         }
 
-        operator bool()
+        operator bool() const
         {
             return handle != 0;
         }

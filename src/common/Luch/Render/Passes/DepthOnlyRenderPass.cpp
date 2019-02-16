@@ -61,7 +61,7 @@ namespace Luch::Render::Passes
     {
         auto node = builder->AddGraphicsRenderPass(RenderPassName, persistentContext->renderPass, this);
 
-        depthTextureHandle = node->CreateDepthStencilAttachment(transientContext->outputSize);
+        depthTextureHandle = node->CreateDepthStencilAttachment({ transientContext->outputSize });
     }
 
     DepthOnlyRenderPass::~DepthOnlyRenderPass() = default;

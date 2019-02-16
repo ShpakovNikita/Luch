@@ -20,16 +20,8 @@ namespace Luch::Graphics
         Store,
     };
 
-    struct AttachmentTextureInfo
-    {
-        int32 mipmapLevel = 0;
-        int32 slice = 0;
-        int32 depthPlane = 0;
-    };
-
     struct Attachment
     {
-        AttachmentTextureInfo output;
         Format format = Format::Undefined;
     };
 
