@@ -41,7 +41,11 @@ namespace Luch::Metal
     mtlpp::RenderPassDescriptor ToMetalRenderPassDescriptor(const FrameBufferCreateInfo& frameBufferCreateInfo)
     {
         mtlpp::RenderPassDescriptor d;
+
         const auto& renderPassCreateInfo = frameBufferCreateInfo.renderPass->GetCreateInfo();
+
+        d.SetRenderTargetArrayLength(renderPassCreateInfo.attachmentArrayLength);
+
         LUCH_ASSERT(renderPassCreateInfo.colorAttachments.size() == frameBufferCreateInfo.colorAttachments.size());
         for(size_t i = 0; i < renderPassCreateInfo.colorAttachments.size(); i++)
         {

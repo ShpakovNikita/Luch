@@ -92,10 +92,6 @@ namespace Luch::Render::Passes::Deferred
             {
                 PrepareMeshNode(node);
             }
-            if(node->GetCamera() != nullptr)
-            {
-                PrepareCameraNode(node);
-            }
         }
     }
 
@@ -138,11 +134,6 @@ namespace Luch::Render::Passes::Deferred
             PrepareMeshNode(node);
         }
 
-        if(node->GetCamera() != nullptr)
-        {
-            PrepareCameraNode(node);
-        }
-
         for (const auto& child : node->GetChildren())
         {
             PrepareNode(child);
@@ -150,16 +141,6 @@ namespace Luch::Render::Passes::Deferred
     }
 
     void GBufferRenderPass::PrepareMeshNode(SceneV1::Node* node)
-    {
-        const auto& mesh = node->GetMesh();
-
-        if (mesh != nullptr)
-        {
-            PrepareMesh(mesh);
-        }
-    }
-
-    void GBufferRenderPass::PrepareCameraNode(SceneV1::Node* node)
     {
         const auto& mesh = node->GetMesh();
 

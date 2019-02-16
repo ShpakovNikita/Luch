@@ -72,14 +72,7 @@ namespace Luch::Render::Passes
 
         for (const auto& node : nodes)
         {
-            if(node->GetMesh() != nullptr)
-            {
-                PrepareMeshNode(node);
-            }
-            if(node->GetCamera() != nullptr)
-            {
-                PrepareCameraNode(node);
-            }
+            PrepareNode(node);
         }
     }
 
@@ -122,11 +115,6 @@ namespace Luch::Render::Passes
             PrepareMeshNode(node);
         }
 
-        if(node->GetCamera() != nullptr)
-        {
-            PrepareCameraNode(node);
-        }
-
         for (const auto& child : node->GetChildren())
         {
             PrepareNode(child);
@@ -134,16 +122,6 @@ namespace Luch::Render::Passes
     }
 
     void DepthOnlyRenderPass::PrepareMeshNode(SceneV1::Node* node)
-    {
-        const auto& mesh = node->GetMesh();
-
-        if (mesh != nullptr)
-        {
-            PrepareMesh(mesh);
-        }
-    }
-
-    void DepthOnlyRenderPass::PrepareCameraNode(SceneV1::Node* node)
     {
         const auto& mesh = node->GetMesh();
 

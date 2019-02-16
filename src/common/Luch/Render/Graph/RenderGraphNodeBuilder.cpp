@@ -109,6 +109,7 @@ namespace Luch::Render::Graph
         TextureCreateInfo textureCreateInfo;
         textureCreateInfo.format = attachment->format;
         textureCreateInfo.textureType = createInfo.textureType;
+        textureCreateInfo.mipmapLevelCount = createInfo.mipmapLevelCount;
         textureCreateInfo.width = createInfo.size.width;
         textureCreateInfo.height = createInfo.size.height;
         textureCreateInfo.storageMode = createInfo.storageMode;
@@ -135,6 +136,7 @@ namespace Luch::Render::Graph
         TextureCreateInfo textureCreateInfo;
         textureCreateInfo.format = attachment->format;
         textureCreateInfo.textureType = createInfo.textureType;
+        textureCreateInfo.mipmapLevelCount = createInfo.mipmapLevelCount;
         textureCreateInfo.width = createInfo.size.width;
         textureCreateInfo.height = createInfo.size.height;
         textureCreateInfo.storageMode = createInfo.storageMode;

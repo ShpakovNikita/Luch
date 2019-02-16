@@ -1,5 +1,7 @@
-#include <Luch/Render/Passes/Forward/ForwardRenderPass.h>
-#include <Luch/Render/Passes/Forward/ForwardContext.h>
+#include <Luch/Render/Passes/IBL/EnvironmentCubemapRenderPass.h>
+#include <Luch/Render/Passes/IBL/EnvironmentCubemapContext.h>
+#include <Luch/Render/Passes/IBL/IBLCommon.h>
+#include <Luch/Render/CubemapCommon.h>
 #include <Luch/Render/TextureUploader.h>
 #include <Luch/Render/ShaderDefines.h>
 #include <Luch/Render/CameraResources.h>
@@ -48,38 +50,33 @@
 #include <Luch/Graphics/PipelineLayoutCreateInfo.h>
 #include <Luch/Graphics/IndexType.h>
 
-namespace Luch::Render::Passes::Forward
+namespace Luch::Render::Passes::IBL
 {
     using namespace Graphics;
     using namespace Graph;
 
-    const String ForwardRenderPass::RenderPassName{ "Forward" };
-    const String ForwardRenderPass::RenderPassNameWithDepthOnly{ "ForwardDepthOnly" };
+    const String EnvironmentCubemapRenderPass::RenderPassName{ "EnvironmentCubemap" };
 
-    ForwardRenderPass::ForwardRenderPass(
-        ForwardPersistentContext* aPersistentContext,
-        ForwardTransientContext* aTransientContext,
+    EnvironmentCubemapRenderPass::EnvironmentCubemapRenderPass(
+        EnvironmentCubemapPersistentContext* aPersistentContext,
+        EnvironmentCubemapTransientContext* aTransientContext,
         RenderGraphBuilder* builder)
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
-        if(transientContext->useDepthPrepass)
-        {
-            auto node = builder->AddGraphicsRenderPass(RenderPassNameWithDepthOnly, persistentContext->renderPassWithDepthOnly, this);
-            luminanceTextureHandle = node->CreateColorAttachment(0, { transientContext->outputSize });
-            depthStencilTextureHandle = node->UseDepthStencilAttachment(transientContext->depthStencilTextureHandle);
-        }
-        else
-        {
-            auto node = builder->AddGraphicsRenderPass(RenderPassName, persistentContext->renderPass, this);
-            luminanceTextureHandle = node->CreateColorAttachment(0, { transientContext->outputSize });
-            depthStencilTextureHandle = node->CreateDepthStencilAttachment({ transientContext->outputSize });
-        }
+        auto node = builder->AddGraphicsRenderPass(RenderPassName, persistentContext->renderPass, this);
+
+        RenderGraphAttachmentCreateInfo cubemapAttachmentCreateInfo;
+        cubemapAttachmentCreateInfo.size = transientContext->outputSize;
+        cubemapAttachmentCreateInfo.textureType = TextureType::TextureCube;
+
+        luminanceCubemapHandle = node->CreateColorAttachment(0, cubemapAttachmentCreateInfo);
+        node->CreateDepthStencilAttachment(cubemapAttachmentCreateInfo);
     }
 
-    ForwardRenderPass::~ForwardRenderPass() = default;
+    EnvironmentCubemapRenderPass::~EnvironmentCubemapRenderPass() = default;
 
-    void ForwardRenderPass::PrepareScene()
+    void EnvironmentCubemapRenderPass::PrepareScene()
     {
         const auto& nodes = transientContext->scene->GetNodes();
 
@@ -89,7 +86,7 @@ namespace Luch::Render::Passes::Forward
         }
     }
 
-    void ForwardRenderPass::UpdateScene()
+    void EnvironmentCubemapRenderPass::UpdateScene()
     {
         for (const auto& node : transientContext->scene->GetNodes())
         {
@@ -103,7 +100,7 @@ namespace Luch::Render::Passes::Forward
         UpdateLights(lightNodes);
     }
 
-    void ForwardRenderPass::ExecuteGraphicsRenderPass(
+    void EnvironmentCubemapRenderPass::ExecuteGraphicsRenderPass(
         RenderGraphResourceManager* manager,
         GraphicsCommandList* commandList)
     {
@@ -117,10 +114,13 @@ namespace Luch::Render::Passes::Forward
         commandList->SetViewports({ viewport });
         commandList->SetScissorRects({ scissorRect });
 
-        DrawScene(transientContext->scene, commandList);
+        for(int16 face = 0; face < 6; face++)
+        {
+            DrawScene(transientContext->scene, face, commandList);
+        }
     }
 
-    void ForwardRenderPass::PrepareNode(SceneV1::Node* node)
+    void EnvironmentCubemapRenderPass::PrepareNode(SceneV1::Node* node)
     {
         if (node->GetMesh() != nullptr)
         {
@@ -133,7 +133,7 @@ namespace Luch::Render::Passes::Forward
         }
     }
 
-    void ForwardRenderPass::PrepareMeshNode(SceneV1::Node* node)
+    void EnvironmentCubemapRenderPass::PrepareMeshNode(SceneV1::Node* node)
     {
         const auto& mesh = node->GetMesh();
 
@@ -143,18 +143,18 @@ namespace Luch::Render::Passes::Forward
         }
     }
 
-    void ForwardRenderPass::PreparePrimitive(SceneV1::Primitive* primitive)
+    void EnvironmentCubemapRenderPass::PreparePrimitive(SceneV1::Primitive* primitive)
     {
-        const auto& renderPassName = GetRenderPassName(transientContext->useDepthPrepass);
+        const auto& renderPassName = RenderPassName;
         RefPtr<GraphicsPipelineState> pipelineState = primitive->GetGraphicsPipelineState(renderPassName);
         if (pipelineState == nullptr)
         {
-            pipelineState = CreatePipelineState(primitive, transientContext->useDepthPrepass, persistentContext);
+            pipelineState = CreatePipelineState(primitive, persistentContext);
             primitive->SetGraphicsPipelineState(renderPassName, pipelineState);
         }
     }
 
-    void ForwardRenderPass::PrepareMesh(SceneV1::Mesh* mesh)
+    void EnvironmentCubemapRenderPass::PrepareMesh(SceneV1::Mesh* mesh)
     {
         for (const auto& primitive : mesh->GetPrimitives())
         {
@@ -169,7 +169,7 @@ namespace Luch::Render::Passes::Forward
         meshDescriptorSets[mesh] = allocatedDescriptorSet;
     }
 
-    void ForwardRenderPass::UpdateNode(SceneV1::Node* node)
+    void EnvironmentCubemapRenderPass::UpdateNode(SceneV1::Node* node)
     {
         const auto& mesh = node->GetMesh();
 
@@ -184,7 +184,7 @@ namespace Luch::Render::Passes::Forward
         }
     }
 
-    void ForwardRenderPass::UpdateMesh(SceneV1::Mesh* mesh, const Mat4x4& transform)
+    void EnvironmentCubemapRenderPass::UpdateMesh(SceneV1::Mesh* mesh, const Mat4x4& transform)
     {
         MeshUniform meshUniform;
         meshUniform.transform = transform;
@@ -205,7 +205,7 @@ namespace Luch::Render::Passes::Forward
         descriptorSet->Update();
     }
 
-    void ForwardRenderPass::UpdateLights(const RefPtrVector<SceneV1::Node>& lightNodes)
+    void EnvironmentCubemapRenderPass::UpdateLights(const RefPtrVector<SceneV1::Node>& lightNodes)
     {
         Vector<LightUniform> lightUniforms;
 
@@ -245,12 +245,48 @@ namespace Luch::Render::Passes::Forward
         transientContext->lightsBufferDescriptorSet->Update();
     }
 
-    void ForwardRenderPass::DrawScene(SceneV1::Scene* scene, GraphicsCommandList* commandList)
+    void EnvironmentCubemapRenderPass::DrawScene(
+        SceneV1::Scene* scene,
+        int16 face,
+        GraphicsCommandList* commandList)
     {
+        Mat4x4 cameraTransform = glm::lookAt(
+            transientContext->position,
+            transientContext->position + CubemapCommon::CubemapNormal[face],
+            CubemapCommon::CubemapUp[face]);
+
+        CameraUniform cameraUniform;
+        cameraUniform = RenderUtils::GetCameraUniform(persistentContext->camera, cameraTransform);
+
+        auto cameraSuballocation = transientContext->sharedBuffer->Suballocate(sizeof(CameraUniform), 256);
+        memcpy(cameraSuballocation.offsetMemory, &cameraUniform, sizeof(CameraUniform));
+
+        transientContext->cameraBufferDescriptorSet->WriteUniformBuffer(
+            persistentContext->cameraResources->cameraUniformBufferBinding,
+            cameraSuballocation.buffer,
+            cameraSuballocation.offset);
+
+        EnvironmentCubemapUniform cubemapUniform;
+        cubemapUniform.face = face;
+
+        auto cubemapSuballocation = transientContext->sharedBuffer->Suballocate(sizeof(EnvironmentCubemapUniform), 256);
+
+        memcpy(cubemapSuballocation.offsetMemory, &cubemapUniform, sizeof(EnvironmentCubemapUniform));
+
+        transientContext->cubemapBufferDescriptorSet->WriteUniformBuffer(
+            persistentContext->cubemapBufferBinding,
+            cubemapSuballocation.buffer,
+            cubemapSuballocation.offset);
+
         commandList->BindBufferDescriptorSet(
             ShaderStage::Vertex,
             persistentContext->pipelineLayout,
             transientContext->cameraBufferDescriptorSet);
+
+        commandList->BindBufferDescriptorSet(
+            ShaderStage::Vertex,
+            persistentContext->pipelineLayout,
+            transientContext->cubemapBufferDescriptorSet);
 
         commandList->BindBufferDescriptorSet(
             ShaderStage::Fragment,
@@ -268,7 +304,7 @@ namespace Luch::Render::Passes::Forward
         }
     }
 
-    void ForwardRenderPass::DrawNode(SceneV1::Node* node, GraphicsCommandList* commandList)
+    void EnvironmentCubemapRenderPass::DrawNode(SceneV1::Node* node, GraphicsCommandList* commandList)
     {
         const auto& mesh = node->GetMesh();
         if (mesh != nullptr)
@@ -282,7 +318,7 @@ namespace Luch::Render::Passes::Forward
         }
     }
 
-    void ForwardRenderPass::DrawMesh(SceneV1::Mesh* mesh, GraphicsCommandList* commandList)
+    void EnvironmentCubemapRenderPass::DrawMesh(SceneV1::Mesh* mesh, GraphicsCommandList* commandList)
     {
         commandList->BindBufferDescriptorSet(
             ShaderStage::Vertex,
@@ -300,7 +336,7 @@ namespace Luch::Render::Passes::Forward
         }
     }
 
-    void ForwardRenderPass::BindMaterial(SceneV1::PbrMaterial* material, GraphicsCommandList* commandList)
+    void EnvironmentCubemapRenderPass::BindMaterial(SceneV1::PbrMaterial* material, GraphicsCommandList* commandList)
     {
         commandList->BindTextureDescriptorSet(
             ShaderStage::Fragment,
@@ -318,9 +354,9 @@ namespace Luch::Render::Passes::Forward
             material->GetSamplerDescriptorSet());
     }
 
-    void ForwardRenderPass::DrawPrimitive(SceneV1::Primitive* primitive, GraphicsCommandList* commandList)
+    void EnvironmentCubemapRenderPass::DrawPrimitive(SceneV1::Primitive* primitive, GraphicsCommandList* commandList)
     {
-        auto& pipelineState = primitive->GetGraphicsPipelineState(GetRenderPassName(transientContext->useDepthPrepass));
+        auto& pipelineState = primitive->GetGraphicsPipelineState(RenderPassName);
 
         const auto& vertexBuffers = primitive->GetVertexBuffers();
 
@@ -349,19 +385,13 @@ namespace Luch::Render::Passes::Forward
         commandList->DrawIndexedInstanced(indexBuffer.count, 0, 1, 0);
     }
 
-    const String& ForwardRenderPass::GetRenderPassName(bool useDepthPrepass)
-    {
-        return useDepthPrepass ? RenderPassNameWithDepthOnly : RenderPassName;
-    }
-
-    RefPtr<GraphicsPipelineState> ForwardRenderPass::CreatePipelineState(
+    RefPtr<GraphicsPipelineState> EnvironmentCubemapRenderPass::CreatePipelineState(
         SceneV1::Primitive* primitive,
-        bool useDepthPrepass,
-        ForwardPersistentContext* context)
+        EnvironmentCubemapPersistentContext* context)
     {
         GraphicsPipelineStateCreateInfo ci;
 
-        ci.name = GetRenderPassName(useDepthPrepass);
+        ci.name = RenderPassName;
 
         ShaderDefines shaderDefines;
 
@@ -404,16 +434,8 @@ namespace Luch::Render::Passes::Forward
         }
 
         ci.depthStencil.depthTestEnable = true;
-        if(useDepthPrepass)
-        {
-            ci.depthStencil.depthWriteEnable = false;
-            ci.depthStencil.depthCompareFunction = CompareFunction::Equal;
-        }
-        else
-        {
-            ci.depthStencil.depthWriteEnable = true;
-            ci.depthStencil.depthCompareFunction = CompareFunction::Less;
-        }
+        ci.depthStencil.depthWriteEnable = true;
+        ci.depthStencil.depthCompareFunction = CompareFunction::Less;
 
         ci.colorAttachments.attachments.resize(1);
         ci.colorAttachments.attachments[0].format = LuminanceFormat;
@@ -457,8 +479,8 @@ namespace Luch::Render::Passes::Forward
         auto[vertexShaderLibraryCreated, vertexShaderLibrary] = RenderUtils::CreateShaderLibrary(
             context->device,
             "Data/Shaders/",
-            "Data/Shaders/Forward/",
-            "forward_vp",
+            "Data/Shaders/IBL/",
+            "environment_vp",
             shaderDefines.defines);
 
         if (!vertexShaderLibraryCreated)
@@ -476,8 +498,8 @@ namespace Luch::Render::Passes::Forward
         auto[fragmentShaderLibraryCreated, fragmentShaderLibrary] = RenderUtils::CreateShaderLibrary(
             context->device,
             "Data/Shaders/",
-            "Data/Shaders/Forward/",
-            "forward_fp",
+            "Data/Shaders/IBL/",
+            "environment_fp",
             shaderDefines.defines);
 
         if (!fragmentShaderLibraryCreated)
@@ -504,12 +526,12 @@ namespace Luch::Render::Passes::Forward
         return createdPipeline;
     }
 
-    ResultValue<bool, UniquePtr<ForwardPersistentContext>> ForwardRenderPass::PrepareForwardPersistentContext(
+    ResultValue<bool, UniquePtr<EnvironmentCubemapPersistentContext>> EnvironmentCubemapRenderPass::PrepareEnvironmentCubemapPersistentContext(
         GraphicsDevice* device,
         CameraResources* cameraResources,
         MaterialResources* materialResources)
     {
-        auto context = MakeUnique<ForwardPersistentContext>();
+        auto context = MakeUnique<EnvironmentCubemapPersistentContext>();
         context->device = device;
         context->cameraResources = cameraResources;
         context->materialResources = materialResources;
@@ -519,30 +541,24 @@ namespace Luch::Render::Passes::Forward
         Format depthStencilFormat = supportedDepthFormats.front();
 
         {
-            ColorAttachment luminanceColorAttachment;
-            luminanceColorAttachment.format = LuminanceFormat;
-            luminanceColorAttachment.colorLoadOperation = AttachmentLoadOperation::Clear;
-            luminanceColorAttachment.colorStoreOperation = AttachmentStoreOperation::Store;
-            luminanceColorAttachment.clearValue = { 0.0f, 0.0f, 0.0f, 1.0f };
-
-            DepthStencilAttachment depthStencilAttachmentTemplate;
-            depthStencilAttachmentTemplate.format = depthStencilFormat;
-            depthStencilAttachmentTemplate.depthLoadOperation = AttachmentLoadOperation::Clear;
-            depthStencilAttachmentTemplate.depthStoreOperation = AttachmentStoreOperation::DontCare;
-            depthStencilAttachmentTemplate.stencilLoadOperation = AttachmentLoadOperation::Clear;
-            depthStencilAttachmentTemplate.stencilStoreOperation = AttachmentStoreOperation::DontCare;
-
-            // Render Pass without Depth Prepass
             {
+                ColorAttachment luminanceColorAttachment;
+                luminanceColorAttachment.format = LuminanceFormat;
+                luminanceColorAttachment.colorLoadOperation = AttachmentLoadOperation::Clear;
+                luminanceColorAttachment.colorStoreOperation = AttachmentStoreOperation::Store;
+                luminanceColorAttachment.clearValue = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+                DepthStencilAttachment depthStencilAttachment;
+                depthStencilAttachment.format = depthStencilFormat;
+                depthStencilAttachment.depthLoadOperation = AttachmentLoadOperation::Clear;
+                depthStencilAttachment.depthStoreOperation = AttachmentStoreOperation::DontCare;
+                depthStencilAttachment.stencilLoadOperation = AttachmentLoadOperation::Clear;
+                depthStencilAttachment.stencilStoreOperation = AttachmentStoreOperation::DontCare;
+                
                 RenderPassCreateInfo renderPassCreateInfo;
                 renderPassCreateInfo.colorAttachments[0] = luminanceColorAttachment;
-                renderPassCreateInfo.depthStencilAttachment = depthStencilAttachmentTemplate;
-                renderPassCreateInfo.depthStencilAttachment->depthLoadOperation = AttachmentLoadOperation::Clear;
-                renderPassCreateInfo.depthStencilAttachment->depthStoreOperation = AttachmentStoreOperation::Store;
-                renderPassCreateInfo.depthStencilAttachment->stencilLoadOperation = AttachmentLoadOperation::Clear;
-                renderPassCreateInfo.depthStencilAttachment->stencilStoreOperation = AttachmentStoreOperation::Store;
-                renderPassCreateInfo.depthStencilAttachment->depthClearValue = 1.0;
-                renderPassCreateInfo.depthStencilAttachment->stencilClearValue = 0x00000000;
+                renderPassCreateInfo.depthStencilAttachment = depthStencilAttachment;
+                renderPassCreateInfo.attachmentArrayLength = 6;
 
                 auto [createRenderPassResult, createdRenderPass] = device->CreateRenderPass(renderPassCreateInfo);
                 if(createRenderPassResult != GraphicsResult::Success)
@@ -551,25 +567,6 @@ namespace Luch::Render::Passes::Forward
                 }
 
                 context->renderPass = std::move(createdRenderPass);
-            }
-
-            // Render Pass with Depth Prepass
-            {
-                RenderPassCreateInfo renderPassCreateInfo;
-                renderPassCreateInfo.colorAttachments[0] = luminanceColorAttachment;
-                renderPassCreateInfo.depthStencilAttachment = depthStencilAttachmentTemplate;
-                renderPassCreateInfo.depthStencilAttachment->depthLoadOperation = AttachmentLoadOperation::Load;
-                renderPassCreateInfo.depthStencilAttachment->depthStoreOperation = AttachmentStoreOperation::Store;
-                renderPassCreateInfo.depthStencilAttachment->stencilLoadOperation = AttachmentLoadOperation::Load;
-                renderPassCreateInfo.depthStencilAttachment->stencilStoreOperation = AttachmentStoreOperation::Store;
-
-                auto [createRenderPassResult, createdRenderPass] = device->CreateRenderPass(renderPassCreateInfo);
-                if(createRenderPassResult != GraphicsResult::Success)
-                {
-                    return { false };
-                }
-
-                context->renderPassWithDepthOnly = std::move(createdRenderPass);
             }
         }
 
@@ -615,10 +612,10 @@ namespace Luch::Render::Passes::Forward
             context->meshBufferDescriptorSetLayout = std::move(createdMeshDescriptorSetLayout);
         }
 
-        context->lightingParamsBinding.OfType(ResourceType::UniformBuffer);
-        context->lightsBufferBinding.OfType(ResourceType::UniformBuffer);
-
         {
+            context->lightingParamsBinding.OfType(ResourceType::UniformBuffer);
+            context->lightsBufferBinding.OfType(ResourceType::UniformBuffer);
+
             DescriptorSetLayoutCreateInfo lightsDescriptorSetLayoutCreateInfo;
             lightsDescriptorSetLayoutCreateInfo
                 .OfType(DescriptorSetType::Buffer)
@@ -637,9 +634,29 @@ namespace Luch::Render::Passes::Forward
         }
 
         {
+            context->cubemapBufferBinding.OfType(ResourceType::UniformBuffer);
+
+            DescriptorSetLayoutCreateInfo cubemapDescriptorSetLayoutCreateInfo;
+            cubemapDescriptorSetLayoutCreateInfo
+                .OfType(DescriptorSetType::Buffer)
+                .WithNBindings(1)
+                .AddBinding(&context->cubemapBufferBinding);
+
+            auto[createCubemapDescriptorSetLayoutResult, createdCubemapDescriptorSetLayout] = device->CreateDescriptorSetLayout(cubemapDescriptorSetLayoutCreateInfo);
+            if (createCubemapDescriptorSetLayoutResult != GraphicsResult::Success)
+            {
+                LUCH_ASSERT(false);
+                return { false };
+            }
+
+            context->cubemapBufferDescriptorSetLayout = std::move(createdCubemapDescriptorSetLayout);
+        }
+
+        {
             PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
             pipelineLayoutCreateInfo
                 .AddSetLayout(ShaderStage::Vertex, cameraResources->cameraBufferDescriptorSetLayout)
+                .AddSetLayout(ShaderStage::Vertex, context->cubemapBufferDescriptorSetLayout)
                 .AddSetLayout(ShaderStage::Vertex, context->meshBufferDescriptorSetLayout)
                 .AddSetLayout(ShaderStage::Fragment, cameraResources->cameraBufferDescriptorSetLayout)
                 .AddSetLayout(ShaderStage::Fragment, materialResources->materialTextureDescriptorSetLayout)
@@ -659,25 +676,53 @@ namespace Luch::Render::Passes::Forward
             context->pipelineLayout = std::move(createdPipelineLayout);
         }
 
+        context->camera = MakeRef<SceneV1::PerspectiveCamera>(glm::pi<float32>()/2, 1, 100, 1);
+
         return { true, std::move(context) };
     }
 
-    ResultValue<bool, UniquePtr<ForwardTransientContext>> ForwardRenderPass::PrepareForwardTransientContext(
-        ForwardPersistentContext* persistentContext,
+    ResultValue<bool, UniquePtr<EnvironmentCubemapTransientContext>> EnvironmentCubemapRenderPass::PrepareEnvironmentCubemapTransientContext(
+        EnvironmentCubemapPersistentContext* persistentContext,
         RefPtr<DescriptorPool> descriptorPool)
     {
-        auto context = MakeUnique<ForwardTransientContext>();
+        auto context = MakeUnique<EnvironmentCubemapTransientContext>();
         context->descriptorPool = descriptorPool;
 
-        auto [allocateLightsDescriptorSetResult, allocatedLightsBufferSet] = context->descriptorPool->AllocateDescriptorSet(
-            persistentContext->lightsBufferDescriptorSetLayout);
-
-        if(allocateLightsDescriptorSetResult != GraphicsResult::Success)
         {
-            return { false };
+            auto [allocateLightsDescriptorSetResult, allocatedLightsBufferSet] = context->descriptorPool->AllocateDescriptorSet(
+                persistentContext->lightsBufferDescriptorSetLayout);
+
+            if(allocateLightsDescriptorSetResult != GraphicsResult::Success)
+            {
+                return { false };
+            }
+
+            context->lightsBufferDescriptorSet = allocatedLightsBufferSet;
         }
 
-        context->lightsBufferDescriptorSet = allocatedLightsBufferSet;
+        {
+            auto [allocateCubemapDescriptorSetResult, allocatedCubemapBufferSet] = context->descriptorPool->AllocateDescriptorSet(
+                persistentContext->cubemapBufferDescriptorSetLayout);
+
+            if(allocateCubemapDescriptorSetResult != GraphicsResult::Success)
+            {
+                return { false };
+            }
+
+            context->cubemapBufferDescriptorSet = allocatedCubemapBufferSet;
+        }
+
+        {
+            auto [allocateCameraDescriptorSetResult, allocatedCameraBufferSet] = context->descriptorPool->AllocateDescriptorSet(
+                persistentContext->cameraResources->cameraBufferDescriptorSetLayout);
+
+            if(allocateCameraDescriptorSetResult != GraphicsResult::Success)
+            {
+                return { false };
+            }
+
+            context->cameraBufferDescriptorSet = allocatedCameraBufferSet;
+        }
 
         return { true, std::move(context) };
     }

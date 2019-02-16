@@ -83,14 +83,7 @@ namespace Luch::Render::Passes::TiledDeferred
 
         for (const auto& node : nodes)
         {
-            if(node->GetMesh() != nullptr)
-            {
-                PrepareMeshNode(node);
-            }
-            if(node->GetCamera() != nullptr)
-            {
-                PrepareCameraNode(node);
-            }
+            PrepareNode(node);
         }
     }
 
@@ -133,11 +126,6 @@ namespace Luch::Render::Passes::TiledDeferred
             PrepareMeshNode(node);
         }
 
-        if(node->GetCamera() != nullptr)
-        {
-            PrepareCameraNode(node);
-        }
-
         for (const auto& child : node->GetChildren())
         {
             PrepareNode(child);
@@ -145,16 +133,6 @@ namespace Luch::Render::Passes::TiledDeferred
     }
 
     void TiledDeferredRenderPass::PrepareMeshNode(SceneV1::Node* node)
-    {
-        const auto& mesh = node->GetMesh();
-
-        if (mesh != nullptr)
-        {
-            PrepareMesh(mesh);
-        }
-    }
-
-    void TiledDeferredRenderPass::PrepareCameraNode(SceneV1::Node* node)
     {
         const auto& mesh = node->GetMesh();
 

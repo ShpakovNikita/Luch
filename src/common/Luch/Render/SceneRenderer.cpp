@@ -31,6 +31,9 @@
 
 #include <Luch/Render/RenderUtils.h>
 
+#include <Luch/Render/Passes/IBL/EnvironmentCubemapRenderPass.h>
+#include <Luch/Render/Passes/IBL/EnvironmentCubemapContext.h>
+
 #include <Luch/Render/Passes/DepthOnlyRenderPass.h>
 #include <Luch/Render/Passes/DepthOnlyContext.h>
 
@@ -64,6 +67,7 @@ namespace Luch::Render
     using namespace Deferred;
     using namespace Forward;
     using namespace TiledDeferred;
+    using namespace IBL;
     using namespace Graph;
 
     void FrameResources::Reset()
@@ -129,6 +133,21 @@ namespace Luch::Render
         }
 
         semaphore = std::move(createdSemaphore);
+
+        // Environment Cubemap Persistent Context
+        {
+            auto [createEnvironmentCubemapPersistentContextResult, createdEnvironmentCubemapPersistentContext] = EnvironmentCubemapRenderPass::PrepareEnvironmentCubemapPersistentContext(
+                context->device,
+                cameraResources.get(),
+                materialManager->GetResources());
+            
+            if(!createEnvironmentCubemapPersistentContextResult)
+            {
+                return false;
+            }
+
+            environmentCubemapPersistentContext = std::move(createdEnvironmentCubemapPersistentContext);
+        }
 
         // Depth-only Persistent Context
         {
@@ -315,9 +334,22 @@ namespace Luch::Render
         frame.outputHandle = frame.builder->GetResourceManager()->ImportTextureDeferred();
 
         RenderMutableResource luminanceTextureHandle;
+        RenderMutableResource environmentCubemapHandle;
+
         LUCH_ASSERT(!(config.useDepthPrepass && config.useTiledDeferredPass));
         LUCH_ASSERT(!(config.useComputeResolve && config.useTiledDeferredPass));
         LUCH_ASSERT(!(config.useForward && config.useTiledDeferredPass));
+
+        if(config.useEnvironmentMapGlobalIllumination)
+        {
+            bool environmentMappingPrepared = PrepareEnvironmentMapping(frame);
+            if(!environmentMappingPrepared)
+            {
+                return false;
+            }
+
+            environmentCubemapHandle = frame.environmentCubemapPass->GetEnvironmentLuminanceCubemap();
+        }
 
         if(config.useDepthPrepass)
         {
@@ -385,26 +417,28 @@ namespace Luch::Render
             }
         }
 
-        auto [prepareTonemapTransientContextResult, preparedTonemapTransientContext] = TonemapRenderPass::PrepareTonemapTransientContext(
-            tonemapPersistentContext.get(),
-            descriptorPool);
-
-        if(!prepareTonemapTransientContextResult)
         {
-            return false;
+            auto [prepareTonemapTransientContextResult, preparedTonemapTransientContext] = TonemapRenderPass::PrepareTonemapTransientContext(
+                tonemapPersistentContext.get(),
+                descriptorPool);
+
+            if(!prepareTonemapTransientContextResult)
+            {
+                return false;
+            }
+
+            frame.tonemapTransientContext = std::move(preparedTonemapTransientContext);
+
+            frame.tonemapTransientContext->inputHandle = luminanceTextureHandle;
+            frame.tonemapTransientContext->outputHandle = frame.outputHandle;
+            frame.tonemapTransientContext->outputSize = frame.outputSize;
+            frame.tonemapTransientContext->scene = scene;
+
+            frame.tonemapPass = MakeUnique<TonemapRenderPass>(
+                tonemapPersistentContext.get(),
+                frame.tonemapTransientContext.get(),
+                frame.builder.get());
         }
-
-        frame.tonemapTransientContext = std::move(preparedTonemapTransientContext);
-
-        frame.tonemapTransientContext->inputHandle = luminanceTextureHandle;
-        frame.tonemapTransientContext->outputHandle = frame.outputHandle;
-        frame.tonemapTransientContext->outputSize = frame.outputSize;
-        frame.tonemapTransientContext->scene = scene;
-
-        frame.tonemapPass = MakeUnique<TonemapRenderPass>(
-            tonemapPersistentContext.get(),
-            frame.tonemapTransientContext.get(),
-            frame.builder.get());
 
         return true;
     }
@@ -434,6 +468,11 @@ namespace Luch::Render
             {
                 return false;
             }
+        }
+
+        if(config.useEnvironmentMapGlobalIllumination)
+        {
+            frame.environmentCubemapPass->PrepareScene();
         }
 
         if(config.useDepthPrepass)
@@ -477,6 +516,11 @@ namespace Luch::Render
         for(auto& material : materials)
         {
             materialManager->UpdateMaterial(material, frame.sharedBuffer.get());
+        }
+
+        if(config.useEnvironmentMapGlobalIllumination)
+        {
+            frame.environmentCubemapPass->UpdateScene();
         }
 
         if(config.useDepthPrepass)
@@ -557,6 +601,32 @@ namespace Luch::Render
             });
 
         frameIndex++;
+    }
+
+    bool SceneRenderer::PrepareEnvironmentMapping(FrameResources& frame)
+    {
+        auto [prepareEnvironmentCubemapTransientContextResult, preparedEnvironmentCubemapTransientContext] = EnvironmentCubemapRenderPass::PrepareEnvironmentCubemapTransientContext(
+            environmentCubemapPersistentContext.get(),
+            descriptorPool);
+
+        if(!prepareEnvironmentCubemapTransientContextResult)
+        {
+            return false;
+        }
+
+        frame.environmentCubemapTransientContext = std::move(preparedEnvironmentCubemapTransientContext);
+
+        frame.environmentCubemapTransientContext->descriptorPool = descriptorPool;
+        frame.environmentCubemapTransientContext->outputSize = { 256, 256 };
+        frame.environmentCubemapTransientContext->scene = scene;
+        frame.environmentCubemapTransientContext->sharedBuffer = frame.sharedBuffer;
+        frame.environmentCubemapTransientContext->position = Vec3{ 0, -3, 0 };
+        frame.environmentCubemapPass = MakeUnique<EnvironmentCubemapRenderPass>(
+            environmentCubemapPersistentContext.get(),
+            frame.environmentCubemapTransientContext.get(),
+            frame.builder.get());
+
+        return true;
     }
     
     bool SceneRenderer::PrepareForward(FrameResources& frame)

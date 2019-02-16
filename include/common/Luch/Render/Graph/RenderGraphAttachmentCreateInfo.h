@@ -14,9 +14,10 @@ namespace Luch::Render::Graph
 
     struct RenderGraphAttachmentCreateInfo
     {
-        Size2i size;
+        Size2i size = {};
         ResourceStorageMode storageMode = ResourceStorageMode::DeviceLocal;
         TextureType textureType = TextureType::Texture2D;
-        RenderGraphAttachmentDescriptor descriptor;
+        int32 mipmapLevelCount = 1;
+        RenderGraphAttachmentDescriptor descriptor = {};
     };
 }

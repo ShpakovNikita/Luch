@@ -12,6 +12,7 @@
 #include <Luch/Render/Passes/Forward/ForwardForwards.h>
 #include <Luch/Render/Passes/Deferred/DeferredForwards.h>
 #include <Luch/Render/Passes/TiledDeferred/TiledDeferredForwards.h>
+#include <Luch/Render/Passes/IBL/IBLForwards.h>
 #include <Luch/Render/RenderForwards.h>
 #include <Luch/Render/RenderContext.h>
 #include <Luch/Render/CameraResources.h>
@@ -32,6 +33,8 @@ namespace Luch::Render
         RefPtr<DescriptorSet> cameraDescriptorSet;
 
         UniquePtr<Graph::RenderGraphBuilder> builder;
+
+        UniquePtr<IBL::EnvironmentCubemapRenderPass> environmentCubemapPass;
         UniquePtr<DepthOnlyRenderPass> depthOnlyPass;
         UniquePtr<Forward::ForwardRenderPass> forwardPass;
         UniquePtr<TiledDeferred::TiledDeferredRenderPass> tiledDeferredPass;
@@ -40,6 +43,7 @@ namespace Luch::Render
         UniquePtr<Deferred::ResolveComputeRenderPass> resolveComputePass;
         UniquePtr<TonemapRenderPass> tonemapPass;
 
+        UniquePtr<IBL::EnvironmentCubemapTransientContext> environmentCubemapTransientContext;
         UniquePtr<DepthOnlyTransientContext> depthOnlyTransientContext;
         UniquePtr<Forward::ForwardTransientContext> forwardTransientContext;
         UniquePtr<TiledDeferred::TiledDeferredTransientContext> tiledDeferredTransientContext;
@@ -75,6 +79,7 @@ namespace Luch::Render
 
         inline SceneRendererConfig& GetMutableConfig() { return config; }
     private:
+        bool PrepareEnvironmentMapping(FrameResources& frame);
         bool PrepareForward(FrameResources& frame);
         bool PrepareDeferred(FrameResources& frame);
         bool PrepareTiledDeferred(FrameResources& frame);
@@ -92,6 +97,7 @@ namespace Luch::Render
         UniquePtr<MaterialManager> materialManager;
         UniquePtr<Graph::RenderGraphResourcePool> resourcePool;
 
+        UniquePtr<IBL::EnvironmentCubemapPersistentContext> environmentCubemapPersistentContext;
         UniquePtr<DepthOnlyPersistentContext> depthOnlyPersistentContext;
         UniquePtr<Forward::ForwardPersistentContext> forwardPersistentContext;
         UniquePtr<TiledDeferred::TiledDeferredPersistentContext> tiledDeferredPersistentContext;
