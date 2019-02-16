@@ -1,10 +1,10 @@
 # Luch
 
-Luch means ray in Russian
+Luch is a 3D graphics engine.
 
-Luch is my ongoing 3D graphics engine playground project.
+This is an educational project. As such, Luch is more about implementing different approaches and rendering techniques, rather than being a production quality graphics engine for games and other applications. This may change in future, but for now this is a graphics "sandbox".
 
-Right now only has deferred pipeline.
+Luch means ray in Russian.
 
 ## Features
 * Abstract Rendering API
