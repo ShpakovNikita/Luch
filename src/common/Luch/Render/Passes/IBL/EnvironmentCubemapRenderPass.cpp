@@ -250,10 +250,9 @@ namespace Luch::Render::Passes::IBL
         int16 face,
         GraphicsCommandList* commandList)
     {
-        Mat4x4 cameraTransform = glm::lookAt(
-            transientContext->position,
-            transientContext->position + CubemapCommon::CubemapNormal[face],
-            CubemapCommon::CubemapUp[face]);
+        Mat4x4 cameraTransform
+            = glm::translate(transientContext->position)
+            * glm::toMat4(glm::quatLookAt(CubemapCommon::CubemapNormal[face], CubemapCommon::CubemapUp[face]));
 
         CameraUniform cameraUniform;
         cameraUniform = RenderUtils::GetCameraUniform(persistentContext->camera, cameraTransform);

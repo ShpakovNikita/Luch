@@ -178,6 +178,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
         return false;
     }
 
+    renderer->GetMutableConfig().useEnvironmentMapGlobalIllumination = true;
     renderer->GetMutableConfig().useForward = true;
     renderer->GetMutableConfig().useDepthPrepass = true;
     renderer->GetMutableConfig().useComputeResolve = false;

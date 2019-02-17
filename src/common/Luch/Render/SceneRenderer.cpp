@@ -620,7 +620,7 @@ namespace Luch::Render
         frame.environmentCubemapTransientContext->outputSize = { 256, 256 };
         frame.environmentCubemapTransientContext->scene = scene;
         frame.environmentCubemapTransientContext->sharedBuffer = frame.sharedBuffer;
-        frame.environmentCubemapTransientContext->position = Vec3{ 0, -3, 0 };
+        frame.environmentCubemapTransientContext->position = Vec3{ 0, 3, 0 };
         frame.environmentCubemapPass = MakeUnique<EnvironmentCubemapRenderPass>(
             environmentCubemapPersistentContext.get(),
             frame.environmentCubemapTransientContext.get(),
