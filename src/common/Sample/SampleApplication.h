@@ -69,6 +69,7 @@ private:
     Luch::UniquePtr<Luch::Render::SceneRenderer> renderer;
     Luch::RefPtr<Luch::SceneV1::Scene> scene;
     Luch::RefPtr<Luch::SceneV1::Node> cameraNode;
+    Luch::RefPtr<Luch::SceneV1::Node> directionalLightNode;
     Luch::WASDNodeController wasdController;
     Luch::MouseNodeController mouseController;
 };

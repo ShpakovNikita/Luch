@@ -221,7 +221,7 @@ namespace Luch::Render::Passes::Forward
             }
         }
 
-        int32 enabledLightsCount = lightNodes.size();
+        int32 enabledLightsCount = lightUniforms.size();
 
         LightingParamsUniform lightingParams;
         lightingParams.lightCount = enabledLightsCount;

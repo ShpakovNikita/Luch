@@ -265,6 +265,8 @@ namespace Luch::Render::Passes::IBL
             cameraSuballocation.buffer,
             cameraSuballocation.offset);
 
+        transientContext->cameraBufferDescriptorSet->Update();
+
         EnvironmentCubemapUniform cubemapUniform;
         cubemapUniform.face = face;
 
@@ -276,6 +278,8 @@ namespace Luch::Render::Passes::IBL
             persistentContext->cubemapBufferBinding,
             cubemapSuballocation.buffer,
             cubemapSuballocation.offset);
+
+        transientContext->cubemapBufferDescriptorSet->Update();
 
         commandList->BindBufferDescriptorSet(
             ShaderStage::Vertex,

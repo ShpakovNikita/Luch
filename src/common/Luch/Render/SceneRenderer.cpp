@@ -34,6 +34,9 @@
 #include <Luch/Render/Passes/IBL/EnvironmentCubemapRenderPass.h>
 #include <Luch/Render/Passes/IBL/EnvironmentCubemapContext.h>
 
+#include <Luch/Render/Passes/IBL/DiffuseIrradianceRenderPass.h>
+#include <Luch/Render/Passes/IBL/DiffuseIrradianceContext.h>
+
 #include <Luch/Render/Passes/DepthOnlyRenderPass.h>
 #include <Luch/Render/Passes/DepthOnlyContext.h>
 
@@ -73,6 +76,8 @@ namespace Luch::Render
     void FrameResources::Reset()
     {
         builder.reset();
+        environmentCubemapPass.reset();
+        diffuseIrradiancePass.reset();
         depthOnlyPass.reset();
         tiledDeferredPass.reset();
         gbufferPass.reset();
@@ -147,6 +152,18 @@ namespace Luch::Render
             }
 
             environmentCubemapPersistentContext = std::move(createdEnvironmentCubemapPersistentContext);
+        }
+
+        // Diffuse Irradiance Cubemap Persistent Context
+        {
+            auto [createDiffuseIrradiancePersistentContextResult, createdDiffuseIrradiancePersistentContext] = DiffuseIrradianceRenderPass::PrepareDiffuseIrradiancePersistentContext(context->device);
+            
+            if(!createDiffuseIrradiancePersistentContextResult)
+            {
+                return false;
+            }
+
+            diffuseIrradiancePersistentContext = std::move(createdDiffuseIrradiancePersistentContext);
         }
 
         // Depth-only Persistent Context
@@ -335,6 +352,7 @@ namespace Luch::Render
 
         RenderMutableResource luminanceTextureHandle;
         RenderMutableResource environmentCubemapHandle;
+        RenderMutableResource diffuseIrradianceCubemapHandle;
 
         LUCH_ASSERT(!(config.useDepthPrepass && config.useTiledDeferredPass));
         LUCH_ASSERT(!(config.useComputeResolve && config.useTiledDeferredPass));
@@ -349,6 +367,14 @@ namespace Luch::Render
             }
 
             environmentCubemapHandle = frame.environmentCubemapPass->GetEnvironmentLuminanceCubemap();
+
+            bool diffuseIrradiancePrepared = PrepareDiffuseIrradiance(frame);
+            if(!diffuseIrradiancePrepared)
+            {
+                return false;
+            }
+
+            diffuseIrradianceCubemapHandle = frame.diffuseIrradiancePass->GetIrradianceCubemapHandle();
         }
 
         if(config.useDepthPrepass)
@@ -628,7 +654,33 @@ namespace Luch::Render
 
         return true;
     }
-    
+
+    bool SceneRenderer::PrepareDiffuseIrradiance(FrameResources& frame)
+    {
+        auto [prepareDiffuseIrradianceTransientContextResult, preparedDiffuseIrradianceTransientContext] = DiffuseIrradianceRenderPass::PrepareDiffuseIrradianceTransientContext(
+            diffuseIrradiancePersistentContext.get(),
+            descriptorPool);
+
+        if(!prepareDiffuseIrradianceTransientContextResult)
+        {
+            return false;
+        }
+
+        frame.diffuseIrradianceTransientContext = std::move(preparedDiffuseIrradianceTransientContext);
+
+        frame.diffuseIrradianceTransientContext->descriptorPool = descriptorPool;
+        frame.diffuseIrradianceTransientContext->outputSize = { 64, 64 };
+        frame.diffuseIrradianceTransientContext->scene = scene;
+        frame.diffuseIrradianceTransientContext->sharedBuffer = frame.sharedBuffer;
+        frame.diffuseIrradianceTransientContext->luminanceCubemapHandle = frame.environmentCubemapPass->GetEnvironmentLuminanceCubemap();
+        frame.diffuseIrradiancePass = MakeUnique<DiffuseIrradianceRenderPass>(
+            diffuseIrradiancePersistentContext.get(),
+            frame.diffuseIrradianceTransientContext.get(),
+            frame.builder.get());
+
+        return true;
+    }
+
     bool SceneRenderer::PrepareForward(FrameResources& frame)
     {
         auto [prepareForwardTransientContextResult, preparedForwardTransientContext] = ForwardRenderPass::PrepareForwardTransientContext(

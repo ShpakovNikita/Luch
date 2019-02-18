@@ -6,7 +6,7 @@
 
 using namespace metal;
 
-constant constexpr int MaxLights = 4;
+constant constexpr int MaxLights = 5;
 
 struct LightsUniform
 {

@@ -116,9 +116,11 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     String rootDir{ "" };
 #else
     String rootDir{ "Data/gltf2/sponza/" };
+    //String rootDir{ "Data/gltf2/helmet/" };
 #endif
 
     String filename { "Sponza.gltf" };
+    //String filename { "DamagedHelmet.gltf" };
 
     FileStream fileStream{ rootDir + filename, FileOpenModes::Read };
 
@@ -132,8 +134,18 @@ bool SampleApplication::Initialize(const Vector<String>& args)
         scene->GetNodes().end(),
         [](const auto& node) { return node->GetCamera() != nullptr; });
 
+    auto directionalLightIt = std::find_if(
+        scene->GetNodes().begin(),
+        scene->GetNodes().end(),
+        [](const auto& node) { return node->GetLight() != nullptr && node->GetLight()->GetType() == SceneV1::LightType::Directional; });
+
     LUCH_ASSERT(cameraIt != scene->GetNodes().end());
     cameraNode = *cameraIt;
+
+    if(directionalLightIt != scene->GetNodes().end())
+    {
+        directionalLightNode = *directionalLightIt;
+    }
 
     wasdController.SetNode(cameraNode);
     mouseController.SetNode(cameraNode);
@@ -178,7 +190,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
         return false;
     }
 
-    renderer->GetMutableConfig().useEnvironmentMapGlobalIllumination = true;
+
     renderer->GetMutableConfig().useForward = true;
     renderer->GetMutableConfig().useDepthPrepass = true;
     renderer->GetMutableConfig().useComputeResolve = false;
@@ -265,31 +277,47 @@ void SampleApplication::HandleKeyboardEvent(const SDL_Event& event)
     case SDL_SCANCODE_E:
         HandleKeyboardMovementEvent(event);
         break;
-    case SDL_SCANCODE_ESCAPE:
-        shouldQuit = true;
-        break;
-    case SDL_SCANCODE_Z:
-        renderer->GetMutableConfig().useDepthPrepass = true;
-        break;
-    case SDL_SCANCODE_X:
-        renderer->GetMutableConfig().useDepthPrepass = false;
-        break;
-    case SDL_SCANCODE_1:
-        renderer->GetMutableConfig().useForward = true;
-        renderer->GetMutableConfig().useComputeResolve = false;
-        renderer->GetMutableConfig().useTiledDeferredPass = false;
-        break;
-    case SDL_SCANCODE_2:
-        renderer->GetMutableConfig().useForward = false;
-        renderer->GetMutableConfig().useComputeResolve = false;
-        renderer->GetMutableConfig().useTiledDeferredPass = false;
-        break;
-    case SDL_SCANCODE_3:
-        renderer->GetMutableConfig().useForward = false;
-        renderer->GetMutableConfig().useComputeResolve = true;
-        renderer->GetMutableConfig().useTiledDeferredPass = false;
     default:
         break;
+    }
+
+    if(event.type == SDL_KEYUP)
+    {
+        switch(event.key.keysym.scancode)
+        {
+        case SDL_SCANCODE_ESCAPE:
+            shouldQuit = true;
+            break;
+        case SDL_SCANCODE_Z:
+            renderer->GetMutableConfig().useDepthPrepass = true;
+            break;
+        case SDL_SCANCODE_X:
+            renderer->GetMutableConfig().useDepthPrepass = false;
+            break;
+        case SDL_SCANCODE_1:
+            renderer->GetMutableConfig().useForward = true;
+            renderer->GetMutableConfig().useComputeResolve = false;
+            renderer->GetMutableConfig().useTiledDeferredPass = false;
+            break;
+        case SDL_SCANCODE_2:
+            renderer->GetMutableConfig().useForward = false;
+            renderer->GetMutableConfig().useComputeResolve = false;
+            renderer->GetMutableConfig().useTiledDeferredPass = false;
+            break;
+        case SDL_SCANCODE_3:
+            renderer->GetMutableConfig().useForward = false;
+            renderer->GetMutableConfig().useComputeResolve = true;
+            renderer->GetMutableConfig().useTiledDeferredPass = false;
+            break;
+        case SDL_SCANCODE_C:
+            directionalLightNode->GetLight()->SetEnabled(!directionalLightNode->GetLight()->IsEnabled());
+            break;
+        case SDL_SCANCODE_V:
+            renderer->GetMutableConfig().useEnvironmentMapGlobalIllumination = !renderer->GetMutableConfig().useEnvironmentMapGlobalIllumination;
+            break;
+        default:
+            break;
+        }
     }
 }
 
