@@ -700,6 +700,11 @@ namespace Luch::Render
         frame.forwardTransientContext->sharedBuffer = frame.sharedBuffer;
         frame.forwardTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
 
+        if(config.useEnvironmentMapGlobalIllumination)
+        {
+            frame.forwardTransientContext->diffuseIrradianceCubemapHandle = frame.diffuseIrradiancePass->GetIrradianceCubemapHandle();
+        }
+
         if(config.useDepthPrepass)
         {
             frame.forwardTransientContext->useDepthPrepass = true;

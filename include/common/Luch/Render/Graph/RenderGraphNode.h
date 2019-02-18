@@ -21,10 +21,10 @@ namespace Luch::Render::Graph
         String name;
         Array<RenderGraphAttachment, MaxColorAttachmentCount> colorAttachments = {};
         RenderGraphAttachment depthStencilAttachment;
-        Vector<RenderMutableResource> importedResources;
-        Vector<RenderMutableResource> createdResources;
-        Vector<RenderMutableResource> writtenResources;
-        Vector<RenderResource> readResources;
+        Set<RenderMutableResource> importedResources;
+        Set<RenderMutableResource> createdResources;
+        Set<RenderMutableResource> writtenResources;
+        Set<RenderResource> readResources;
         RefPtr<RenderPass> renderPass;
         RefPtr<FrameBuffer> frameBuffer;
         RenderGraphPassType type = RenderGraphPassType::Graphics;

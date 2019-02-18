@@ -35,7 +35,7 @@ namespace Luch::Render::Graph
         colorAttachment.resource = resource;
         colorAttachment.descriptor = descriptor;
 
-        node->importedResources.push_back(resource);
+        node->importedResources.insert(resource);
 
         return resource;
     }
@@ -53,7 +53,7 @@ namespace Luch::Render::Graph
         node->depthStencilAttachment.resource = resource;
         node->depthStencilAttachment.descriptor = descriptor;
 
-        node->importedResources.push_back(resource);
+        node->importedResources.insert(resource);
 
         return resource;
     }
@@ -73,8 +73,8 @@ namespace Luch::Render::Graph
         colorAttachment.resource = resource;
         colorAttachment.descriptor = descriptor;
 
-        node->readResources.push_back(colorAttachmentHandle);
-        node->writtenResources.push_back(resource);
+        node->readResources.insert(colorAttachmentHandle);
+        node->writtenResources.insert(resource);
 
         return resource;
     }
@@ -92,8 +92,8 @@ namespace Luch::Render::Graph
         node->depthStencilAttachment.resource = resource;
         node->depthStencilAttachment.descriptor = descriptor;
 
-        node->readResources.push_back(depthStencilAttachmentHandle);
-        node->writtenResources.push_back(resource);
+        node->readResources.insert(depthStencilAttachmentHandle);
+        node->writtenResources.insert(resource);
 
         return resource;
     }
@@ -120,7 +120,7 @@ namespace Luch::Render::Graph
         colorAttachment.resource = resource;
         colorAttachment.descriptor = createInfo.descriptor;
 
-        node->createdResources.push_back(resource);
+        node->createdResources.insert(resource);
 
         return resource;
     }
@@ -146,7 +146,7 @@ namespace Luch::Render::Graph
         node->depthStencilAttachment.resource = resource;
         node->depthStencilAttachment.descriptor = createInfo.descriptor;
 
-        node->createdResources.push_back(resource);
+        node->createdResources.insert(resource);
 
         return resource;
     }
@@ -166,7 +166,7 @@ namespace Luch::Render::Graph
         colorAttachment.resource = resource;
         colorAttachment.descriptor = descriptor;
 
-        node->writtenResources.push_back(modifiedResource);
+        node->writtenResources.insert(modifiedResource);
 
         return modifiedResource;
     }
@@ -184,7 +184,7 @@ namespace Luch::Render::Graph
         node->depthStencilAttachment.resource = resource;
         node->depthStencilAttachment.descriptor = descriptor;
 
-        node->writtenResources.push_back(modifiedResource);
+        node->writtenResources.insert(modifiedResource);
 
         return modifiedResource;
     }
@@ -194,7 +194,7 @@ namespace Luch::Render::Graph
         auto node = GetNode();
         auto resource = resourceManager->ImportTexture(texture);
 
-        node->importedResources.push_back(resource);
+        node->importedResources.insert(resource);
 
         return resource;
     }
@@ -204,7 +204,7 @@ namespace Luch::Render::Graph
         auto node = GetNode();
         auto resource = resourceManager->CreateTexture(createInfo);
 
-        node->createdResources.push_back(resource);
+        node->createdResources.insert(resource);
 
         return resource;
     }
@@ -214,7 +214,7 @@ namespace Luch::Render::Graph
         auto node = GetNode();
         auto modifiedResource = resourceManager->ModifyResource(resource);
 
-        node->writtenResources.push_back(modifiedResource);
+        node->writtenResources.insert(modifiedResource);
 
         return modifiedResource;
     }
@@ -222,7 +222,7 @@ namespace Luch::Render::Graph
     RenderResource RenderGraphNodeBuilder::ReadsTexture(RenderResource resource)
     {
         auto node = GetNode();
-        node->readResources.push_back(resource);
+        node->readResources.insert(resource);
         return resource;
     }
 
@@ -231,7 +231,7 @@ namespace Luch::Render::Graph
         auto node = GetNode();
 
         RenderMutableResource resource = resourceManager->ImportBuffer(buffer);
-        node->importedResources.push_back(resource);
+        node->importedResources.insert(resource);
 
         return resource;
     }
@@ -241,7 +241,7 @@ namespace Luch::Render::Graph
         auto node = GetNode();
 
         RenderMutableResource resource = resourceManager->CreateBuffer(createInfo);
-        node->createdResources.push_back(resource);
+        node->createdResources.insert(resource);
 
         return resource;
     }
@@ -251,7 +251,7 @@ namespace Luch::Render::Graph
         auto node = GetNode();
 
         RenderMutableResource modifiedResource = resourceManager->ModifyResource(resource);
-        node->writtenResources.push_back(modifiedResource);
+        node->writtenResources.insert(modifiedResource);
 
         return resource;
     }
@@ -259,7 +259,7 @@ namespace Luch::Render::Graph
     RenderResource RenderGraphNodeBuilder::ReadsBuffer(RenderResource resource)
     {
         auto node = GetNode();
-        node->readResources.push_back(resource);
+        node->readResources.insert(resource);
         return resource;
     }
 

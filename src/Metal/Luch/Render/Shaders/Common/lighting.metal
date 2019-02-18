@@ -84,7 +84,7 @@ LightingResult ApplyDirectionalLight(
     half NdotV = saturate(half(dot(N, V)));
 
     half3 F = F_Schlick(NdotV, F0);
-    half3 kD = (1 - metallic)*(half3(1.0h) - F);
+    half3 kD = (1 - metallic);
 
     result.diffuse = kD * DiffuseLighting(color, L, N) * light.intensity;
     result.specular = SpecularLighting(color, V, L, N, F, roughness) * light.intensity;
@@ -111,7 +111,7 @@ LightingResult ApplyPointlLightImpl(
     half NdotV = saturate(half(dot(N, V)));
 
     half3 F = F_Schlick(NdotV, F0);
-    half3 kD = (1 - metallic)*(half3(1.0h) - F);
+    half3 kD = (1 - metallic);
     half intensity = half(light.intensity) * attenuation;
 
     result.diffuse = kD * DiffuseLighting(color, L, N) * intensity;

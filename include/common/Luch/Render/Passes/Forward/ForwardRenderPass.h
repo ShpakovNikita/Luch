@@ -66,7 +66,7 @@ namespace Luch::Render::Passes::Forward
         void UpdateLights(const RefPtrVector<SceneV1::Node>& lightNodes);
 
         void BindMaterial(SceneV1::PbrMaterial* material, GraphicsCommandList* commandList);
-        void DrawScene(SceneV1::Scene* scene, GraphicsCommandList* commandList);
+        void DrawScene(SceneV1::Scene* scene, RenderGraphResourceManager* manager, GraphicsCommandList* commandList);
         void DrawNode(SceneV1::Node* node, GraphicsCommandList* commandList);
         void DrawMesh(SceneV1::Mesh* mesh, GraphicsCommandList* commandList);
         void DrawPrimitive(SceneV1::Primitive* primitive, GraphicsCommandList* commandList);
@@ -83,6 +83,7 @@ namespace Luch::Render::Passes::Forward
 
         RenderMutableResource luminanceTextureHandle;
         RenderMutableResource depthStencilTextureHandle;
+        RenderResource diffuseIrradianceCubemapHandle;
 
         UnorderedMap<SceneV1::Mesh*, RefPtr<DescriptorSet>> meshDescriptorSets;
         UnorderedMap<SceneV1::Camera*, RefPtr<DescriptorSet>> cameraDescriptorSets;

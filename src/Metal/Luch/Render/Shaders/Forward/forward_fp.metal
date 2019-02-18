@@ -100,6 +100,7 @@ fragment FragmentOut fp_main(
     , texture2d<half> emissiveMap [[texture(4)]]          // RGB - light color, A unused
     , sampler emissiveSampler [[sampler(4)]]
 #endif
+    , texturecube<half> diffuseIrradianceMap [[texture(5)]]
     )
 {
     float3 positionVS = in.positionVS;
@@ -214,7 +215,25 @@ fragment FragmentOut fp_main(
 
     FragmentOut result;
 
-    result.luminance.rgb = emitted + baseColor.rgb * lightingResult.diffuse + lightingResult.specular;
+    half3 specularReflection = half3(0.0);
+    // TODO specular reflections
+
+    half3 diffuseIndirect = half3(0);
+    if(!is_null_texture(diffuseIrradianceMap))
+    {
+        constexpr sampler diffuseIrradianceSampler{ filter::linear, min_filter::linear, mag_filter::linear };
+        float3 viewWS = (camera.inverseView * float4(float3(V), 0.0)).xyz;
+        float3 normalWS = (camera.inverseView * float4(float3(N), 0.0)).xyz;
+
+        float3 reflecedtWS = reflect(-viewWS, normalWS);
+        half3 diffuseIrradiance = diffuseIrradianceMap.sample(diffuseIrradianceSampler, reflecedtWS).rgb;
+        diffuseIndirect = (1 - metallic) * baseColor.rgb * M_1_PI_H * diffuseIrradiance * occlusion;
+    }
+
+    half3 diffuseDirect = baseColor.rgb * lightingResult.diffuse;
+    half3 specularDirect = lightingResult.specular;
+
+    result.luminance.rgb = emitted + diffuseDirect + diffuseIndirect + specularDirect + specularReflection;
     result.luminance.a = baseColor.a;
 
     return result;
