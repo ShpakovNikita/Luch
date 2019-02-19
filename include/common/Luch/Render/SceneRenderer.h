@@ -33,9 +33,8 @@ namespace Luch::Render
         RefPtr<DescriptorSet> cameraDescriptorSet;
 
         UniquePtr<Graph::RenderGraphBuilder> builder;
+        UniquePtr<Graph::RenderGraph> renderGraph;
 
-        UniquePtr<IBL::EnvironmentCubemapRenderPass> environmentCubemapPass;
-        UniquePtr<IBL::DiffuseIrradianceRenderPass> diffuseIrradiancePass;
         UniquePtr<DepthOnlyRenderPass> depthOnlyPass;
         UniquePtr<Forward::ForwardRenderPass> forwardPass;
         UniquePtr<TiledDeferred::TiledDeferredRenderPass> tiledDeferredPass;
@@ -44,8 +43,6 @@ namespace Luch::Render
         UniquePtr<Deferred::ResolveComputeRenderPass> resolveComputePass;
         UniquePtr<TonemapRenderPass> tonemapPass;
 
-        UniquePtr<IBL::EnvironmentCubemapTransientContext> environmentCubemapTransientContext;
-        UniquePtr<IBL::DiffuseIrradianceTransientContext> diffuseIrradianceTransientContext;
         UniquePtr<DepthOnlyTransientContext> depthOnlyTransientContext;
         UniquePtr<Forward::ForwardTransientContext> forwardTransientContext;
         UniquePtr<TiledDeferred::TiledDeferredTransientContext> tiledDeferredTransientContext;
@@ -54,6 +51,7 @@ namespace Luch::Render
         UniquePtr<Deferred::ResolveComputeTransientContext> resolveComputeTransientContext;
         UniquePtr<TonemapTransientContext> tonemapTransientContext;
 
+        Graph::RenderResource diffuseIrradianceCubemapHandle;
         Graph::RenderMutableResource outputHandle;
         RefPtr<SwapchainTexture> swapchainTexture;
 
@@ -73,6 +71,7 @@ namespace Luch::Render
         bool Initialize(SharedPtr<RenderContext> context);
         bool Deinitialize();
 
+        bool ProbeIndirectLighting();
         bool BeginRender();
         bool PrepareScene();
         void UpdateScene();
@@ -81,8 +80,6 @@ namespace Luch::Render
 
         inline SceneRendererConfig& GetMutableConfig() { return config; }
     private:
-        bool PrepareEnvironmentMapping(FrameResources& frame);
-        bool PrepareDiffuseIrradiance(FrameResources& frame);
         bool PrepareForward(FrameResources& frame);
         bool PrepareDeferred(FrameResources& frame);
         bool PrepareTiledDeferred(FrameResources& frame);
@@ -97,11 +94,13 @@ namespace Luch::Render
 
         SceneRendererConfig config;
 
+        UniquePtr<IBLRenderer> iblRenderer;
+
+        RefPtr<Texture> diffuseIrradianceCubemap;
+
         UniquePtr<MaterialManager> materialManager;
         UniquePtr<Graph::RenderGraphResourcePool> resourcePool;
 
-        UniquePtr<IBL::EnvironmentCubemapPersistentContext> environmentCubemapPersistentContext;
-        UniquePtr<IBL::DiffuseIrradiancePersistentContext> diffuseIrradiancePersistentContext;
         UniquePtr<DepthOnlyPersistentContext> depthOnlyPersistentContext;
         UniquePtr<Forward::ForwardPersistentContext> forwardPersistentContext;
         UniquePtr<TiledDeferred::TiledDeferredPersistentContext> tiledDeferredPersistentContext;
@@ -111,7 +110,7 @@ namespace Luch::Render
         UniquePtr<TonemapPersistentContext> tonemapPersistentContext;
 
         Array<FrameResources, MaxSwapchainTextures> frameResources;
-        UniquePtr<CameraResources> cameraResources;
+        SharedPtr<CameraResources> cameraResources;
         SharedPtr<RenderContext> context;
         RefPtr<Semaphore> semaphore;
         RefPtr<CommandPool> commandPool;

@@ -31,11 +31,7 @@
 
 #include <Luch/Render/RenderUtils.h>
 
-#include <Luch/Render/Passes/IBL/EnvironmentCubemapRenderPass.h>
-#include <Luch/Render/Passes/IBL/EnvironmentCubemapContext.h>
-
-#include <Luch/Render/Passes/IBL/DiffuseIrradianceRenderPass.h>
-#include <Luch/Render/Passes/IBL/DiffuseIrradianceContext.h>
+#include <Luch/Render/IBLRenderer.h>
 
 #include <Luch/Render/Passes/DepthOnlyRenderPass.h>
 #include <Luch/Render/Passes/DepthOnlyContext.h>
@@ -76,8 +72,7 @@ namespace Luch::Render
     void FrameResources::Reset()
     {
         builder.reset();
-        environmentCubemapPass.reset();
-        diffuseIrradiancePass.reset();
+        renderGraph.reset();
         depthOnlyPass.reset();
         tiledDeferredPass.reset();
         gbufferPass.reset();
@@ -123,6 +118,14 @@ namespace Luch::Render
             return false;
         }
 
+        iblRenderer = MakeUnique<IBLRenderer>(scene);
+
+        bool iblRendererInitialized = iblRenderer->Initialize(context, cameraResources.get(), materialManager->GetResources());
+        if(!iblRendererInitialized)
+        {
+            return false;
+        }
+
         auto [createCommandPoolResult, createdCommandPool] = context->commandQueue->CreateCommandPool();
         if(createCommandPoolResult != GraphicsResult::Success)
         {
@@ -138,33 +141,6 @@ namespace Luch::Render
         }
 
         semaphore = std::move(createdSemaphore);
-
-        // Environment Cubemap Persistent Context
-        {
-            auto [createEnvironmentCubemapPersistentContextResult, createdEnvironmentCubemapPersistentContext] = EnvironmentCubemapRenderPass::PrepareEnvironmentCubemapPersistentContext(
-                context->device,
-                cameraResources.get(),
-                materialManager->GetResources());
-            
-            if(!createEnvironmentCubemapPersistentContextResult)
-            {
-                return false;
-            }
-
-            environmentCubemapPersistentContext = std::move(createdEnvironmentCubemapPersistentContext);
-        }
-
-        // Diffuse Irradiance Cubemap Persistent Context
-        {
-            auto [createDiffuseIrradiancePersistentContextResult, createdDiffuseIrradiancePersistentContext] = DiffuseIrradianceRenderPass::PrepareDiffuseIrradiancePersistentContext(context->device);
-            
-            if(!createDiffuseIrradiancePersistentContextResult)
-            {
-                return false;
-            }
-
-            diffuseIrradiancePersistentContext = std::move(createdDiffuseIrradiancePersistentContext);
-        }
 
         // Depth-only Persistent Context
         {
@@ -323,12 +299,47 @@ namespace Luch::Render
             return false;
         }
 
+        auto iblRendererDeinitialized = iblRenderer->Deinitialize();
+        if(!iblRendererDeinitialized)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    bool SceneRenderer::ProbeIndirectLighting()
+    {
+        bool began = iblRenderer->BeginRender();
+        if(!began)
+        {
+            return false;
+        }
+
+        bool prepared = iblRenderer->PrepareScene();
+        if(!prepared)
+        {
+            return false;
+        }
+
+        iblRenderer->UpdateScene();
+
+        iblRenderer->ProbeIndirectLighting(Vec3{0, 3, 0});
+
+        auto [result, probe] = iblRenderer->EndRender();
+        if(!result)
+        {
+            return false;
+        }
+
+        diffuseIrradianceCubemap = probe.diffuseIrradianceCubemap;
+
         return true;
     }
 
     bool SceneRenderer::BeginRender()
     {
-        bool timedOut = semaphore->Wait(1 * 1000 * 1000 * 1000);
+        bool timedOut = semaphore->Wait();
         if(timedOut)
         {
             return false;
@@ -351,8 +362,6 @@ namespace Luch::Render
         frame.outputHandle = frame.builder->GetResourceManager()->ImportTextureDeferred();
 
         RenderMutableResource luminanceTextureHandle;
-        RenderMutableResource environmentCubemapHandle;
-        RenderMutableResource diffuseIrradianceCubemapHandle;
 
         LUCH_ASSERT(!(config.useDepthPrepass && config.useTiledDeferredPass));
         LUCH_ASSERT(!(config.useComputeResolve && config.useTiledDeferredPass));
@@ -360,21 +369,7 @@ namespace Luch::Render
 
         if(config.useEnvironmentMapGlobalIllumination)
         {
-            bool environmentMappingPrepared = PrepareEnvironmentMapping(frame);
-            if(!environmentMappingPrepared)
-            {
-                return false;
-            }
-
-            environmentCubemapHandle = frame.environmentCubemapPass->GetEnvironmentLuminanceCubemap();
-
-            bool diffuseIrradiancePrepared = PrepareDiffuseIrradiance(frame);
-            if(!diffuseIrradiancePrepared)
-            {
-                return false;
-            }
-
-            diffuseIrradianceCubemapHandle = frame.diffuseIrradiancePass->GetIrradianceCubemapHandle();
+            frame.diffuseIrradianceCubemapHandle = frame.builder->GetResourceManager()->ImportTexture(diffuseIrradianceCubemap);
         }
 
         if(config.useDepthPrepass)
@@ -496,11 +491,6 @@ namespace Luch::Render
             }
         }
 
-        if(config.useEnvironmentMapGlobalIllumination)
-        {
-            frame.environmentCubemapPass->PrepareScene();
-        }
-
         if(config.useDepthPrepass)
         {
             frame.depthOnlyPass->PrepareScene();
@@ -542,11 +532,6 @@ namespace Luch::Render
         for(auto& material : materials)
         {
             materialManager->UpdateMaterial(material, frame.sharedBuffer.get());
-        }
-
-        if(config.useEnvironmentMapGlobalIllumination)
-        {
-            frame.environmentCubemapPass->UpdateScene();
         }
 
         if(config.useDepthPrepass)
@@ -605,11 +590,13 @@ namespace Luch::Render
 
         frame.builder->GetResourceManager()->ProvideDeferredTexture(frame.outputHandle, swapchainTexture->GetTexture());
 
-        auto [buildResult, renderGraph] = frame.builder->Build();
-        auto commandLists = renderGraph->Execute();
+        auto [buildResult, builtRenderGraph] = frame.builder->Build();
+        frame.renderGraph = std::move(builtRenderGraph);
+
+        auto commandLists = frame.renderGraph->Execute();
         for(auto& commandList : commandLists)
         {
-            context->commandQueue->Submit(commandList);
+            context->commandQueue->Submit(commandList, {});
         }
     }
 
@@ -627,58 +614,6 @@ namespace Luch::Render
             });
 
         frameIndex++;
-    }
-
-    bool SceneRenderer::PrepareEnvironmentMapping(FrameResources& frame)
-    {
-        auto [prepareEnvironmentCubemapTransientContextResult, preparedEnvironmentCubemapTransientContext] = EnvironmentCubemapRenderPass::PrepareEnvironmentCubemapTransientContext(
-            environmentCubemapPersistentContext.get(),
-            descriptorPool);
-
-        if(!prepareEnvironmentCubemapTransientContextResult)
-        {
-            return false;
-        }
-
-        frame.environmentCubemapTransientContext = std::move(preparedEnvironmentCubemapTransientContext);
-
-        frame.environmentCubemapTransientContext->descriptorPool = descriptorPool;
-        frame.environmentCubemapTransientContext->outputSize = { 256, 256 };
-        frame.environmentCubemapTransientContext->scene = scene;
-        frame.environmentCubemapTransientContext->sharedBuffer = frame.sharedBuffer;
-        frame.environmentCubemapTransientContext->position = Vec3{ 0, 3, 0 };
-        frame.environmentCubemapPass = MakeUnique<EnvironmentCubemapRenderPass>(
-            environmentCubemapPersistentContext.get(),
-            frame.environmentCubemapTransientContext.get(),
-            frame.builder.get());
-
-        return true;
-    }
-
-    bool SceneRenderer::PrepareDiffuseIrradiance(FrameResources& frame)
-    {
-        auto [prepareDiffuseIrradianceTransientContextResult, preparedDiffuseIrradianceTransientContext] = DiffuseIrradianceRenderPass::PrepareDiffuseIrradianceTransientContext(
-            diffuseIrradiancePersistentContext.get(),
-            descriptorPool);
-
-        if(!prepareDiffuseIrradianceTransientContextResult)
-        {
-            return false;
-        }
-
-        frame.diffuseIrradianceTransientContext = std::move(preparedDiffuseIrradianceTransientContext);
-
-        frame.diffuseIrradianceTransientContext->descriptorPool = descriptorPool;
-        frame.diffuseIrradianceTransientContext->outputSize = { 64, 64 };
-        frame.diffuseIrradianceTransientContext->scene = scene;
-        frame.diffuseIrradianceTransientContext->sharedBuffer = frame.sharedBuffer;
-        frame.diffuseIrradianceTransientContext->luminanceCubemapHandle = frame.environmentCubemapPass->GetEnvironmentLuminanceCubemap();
-        frame.diffuseIrradiancePass = MakeUnique<DiffuseIrradianceRenderPass>(
-            diffuseIrradiancePersistentContext.get(),
-            frame.diffuseIrradianceTransientContext.get(),
-            frame.builder.get());
-
-        return true;
     }
 
     bool SceneRenderer::PrepareForward(FrameResources& frame)
@@ -702,7 +637,7 @@ namespace Luch::Render
 
         if(config.useEnvironmentMapGlobalIllumination)
         {
-            frame.forwardTransientContext->diffuseIrradianceCubemapHandle = frame.diffuseIrradiancePass->GetIrradianceCubemapHandle();
+            frame.forwardTransientContext->diffuseIrradianceCubemapHandle = frame.diffuseIrradianceCubemapHandle;
         }
 
         if(config.useDepthPrepass)
@@ -910,7 +845,7 @@ namespace Luch::Render
 
         for (const auto& commandList : uploadTexturesResult.commandLists)
         {
-            context->commandQueue->Submit(commandList);
+            context->commandQueue->Submit(commandList, {});
         }
 
         return true;

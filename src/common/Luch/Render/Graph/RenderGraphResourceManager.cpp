@@ -144,6 +144,97 @@ namespace Luch::Render::Graph
          return nullptr;
     }
 
+    RefPtr<Buffer> RenderGraphResourceManager::GetBuffer(RenderResource handle)
+    {
+         {
+            auto it = modifiedResources.find(handle);
+            if(it != modifiedResources.end())
+            {
+                handle = it->second;
+            }
+         }
+
+         {
+            auto it = acquiredBuffers.find(handle);
+            if(it != acquiredBuffers.end())
+            {
+                return it->second;
+            }
+         }
+
+         {
+            auto it = importedBuffers.find(handle);
+            if(it != importedBuffers.end())
+            {
+                return it->second;
+            }
+         }
+
+         return nullptr;
+    }
+
+    RefPtr<Texture> RenderGraphResourceManager::ReleaseTexture(RenderResource handle)
+    {
+        {
+            auto it = modifiedResources.find(handle);
+            if(it != modifiedResources.end())
+            {
+                handle = it->second;
+            }
+        }
+
+        {
+            auto it = acquiredTextures.find(handle);
+            if(it != acquiredTextures.end())
+            {
+                auto texture = it->second;
+                acquiredTextures.erase(it);
+                return texture;
+            }
+        }
+
+        {
+            auto it = importedTextures.find(handle);
+            if(it != importedTextures.end())
+            {
+                return it->second;
+            }
+        }
+
+         return nullptr;
+    }
+
+    RefPtr<Buffer> RenderGraphResourceManager::ReleaseBuffer(RenderResource handle)
+    {
+        {
+            auto it = modifiedResources.find(handle);
+            if(it != modifiedResources.end())
+            {
+                handle = it->second;
+            }
+        }
+
+        {
+            auto it = acquiredBuffers.find(handle);
+            if(it != acquiredBuffers.end())
+            {
+                auto buffer = it->second;
+                acquiredBuffers.erase(it);
+                return buffer;
+            }
+        }
+
+        {
+           auto it = importedBuffers.find(handle);
+           if(it != importedBuffers.end())
+           {
+               return it->second;
+           }
+        }
+
+         return nullptr;
+    }
+
     RenderMutableResource RenderGraphResourceManager::GetNextHandle()
     {
         auto newHandle = RenderMutableResource { nextHandleValue };

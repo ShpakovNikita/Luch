@@ -14,7 +14,8 @@ namespace Luch::Graphics
         virtual GraphicsResultRefPtr<CommandPool> CreateCommandPool() = 0;
 
         virtual GraphicsResult Submit(
-            CommandList* commandList) = 0;
+            CommandList* commandList,
+            std::function<void()> completedHandler) = 0;
 
         virtual GraphicsResult Present(
             SwapchainTexture* swapchainTexture,

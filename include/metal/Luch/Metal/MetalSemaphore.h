@@ -15,7 +15,7 @@ namespace Luch::Metal
     public:
         MetalSemaphore(MetalGraphicsDevice* device, int32 value);
         ~MetalSemaphore();
-        bool Wait(int64 timeoutNS) override;
+        bool Wait(Optional<int64> timeoutNS = {}) override;
         void Signal() override;
     private:
         dispatch_semaphore_t semaphore;

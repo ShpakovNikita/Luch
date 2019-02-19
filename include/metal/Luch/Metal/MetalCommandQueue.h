@@ -18,7 +18,8 @@ namespace Luch::Metal
         GraphicsResultRefPtr<CommandPool> CreateCommandPool() override;
 
         GraphicsResult Submit(
-            CommandList* commandList) override;
+            CommandList* commandList,
+            std::function<void()> completedHandler) override;
 
         GraphicsResult Present(
             SwapchainTexture* swapchainTexture,

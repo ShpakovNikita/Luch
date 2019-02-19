@@ -230,7 +230,6 @@ void SampleApplication::Process()
     bool beginSucceeded = renderer->BeginRender();
     if(!beginSucceeded)
     {
-        LUCH_ASSERT(false);
         return;
     }
 
@@ -242,6 +241,13 @@ void SampleApplication::Process()
     }
 
     renderer->UpdateScene();
+
+    if(!indirectProbed)
+    {
+        indirectProbed = renderer->ProbeIndirectLighting();
+        LUCH_ASSERT(indirectProbed);
+    }
+
     renderer->DrawScene(cameraNode);
     renderer->EndRender();
 }
@@ -314,6 +320,9 @@ void SampleApplication::HandleKeyboardEvent(const SDL_Event& event)
             break;
         case SDL_SCANCODE_V:
             renderer->GetMutableConfig().useEnvironmentMapGlobalIllumination = !renderer->GetMutableConfig().useEnvironmentMapGlobalIllumination;
+            break;
+        case SDL_SCANCODE_I:
+            indirectProbed = false;
             break;
         default:
             break;

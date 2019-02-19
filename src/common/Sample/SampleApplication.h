@@ -72,4 +72,6 @@ private:
     Luch::RefPtr<Luch::SceneV1::Node> directionalLightNode;
     Luch::WASDNodeController wasdController;
     Luch::MouseNodeController mouseController;
+
+    bool indirectProbed = false;
 };

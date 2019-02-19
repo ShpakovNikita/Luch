@@ -49,7 +49,7 @@ namespace Luch::Render::Passes::IBL
         void PrepareScene();
         void UpdateScene();
 
-        inline RenderMutableResource GetEnvironmentLuminanceCubemap() { return luminanceCubemapHandle; }
+        inline RenderMutableResource GetEnvironmentLuminanceCubemapHandle() { return luminanceCubemapHandle; }
 
         void ExecuteGraphicsRenderPass(
             RenderGraphResourceManager* manager,
