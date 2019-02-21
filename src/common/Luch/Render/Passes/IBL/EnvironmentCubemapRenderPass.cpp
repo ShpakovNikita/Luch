@@ -64,14 +64,16 @@ namespace Luch::Render::Passes::IBL
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
+        // Layer selection is funky on macOS and on iOS it's only supported on A12, so
+        // just render to separate faces in separate passes
+
         auto node = builder->AddGraphicsPass(RenderPassName, persistentContext->renderPass, this);
 
-        RenderGraphAttachmentCreateInfo cubemapAttachmentCreateInfo;
-        cubemapAttachmentCreateInfo.size = transientContext->outputSize;
-        cubemapAttachmentCreateInfo.textureType = TextureType::TextureCube;
+        RenderGraphAttachmentDescriptor attachmentDescriptor;
+        attachmentDescriptor.slice = transientContext->faceIndex; 
 
-        luminanceCubemapHandle = node->CreateColorAttachment(0, cubemapAttachmentCreateInfo);
-        node->CreateDepthStencilAttachment(cubemapAttachmentCreateInfo);
+        luminanceCubemapHandle = node->UseColorAttachment(0, transientContext->environmentLuminanceCubemap, attachmentDescriptor);
+        luminanceDepthHandle = node->UseDepthStencilAttachment(transientContext->environmentDepthCubemap, attachmentDescriptor);
     }
 
     EnvironmentCubemapRenderPass::~EnvironmentCubemapRenderPass() = default;
@@ -114,10 +116,7 @@ namespace Luch::Render::Passes::IBL
         commandList->SetViewports({ viewport });
         commandList->SetScissorRects({ scissorRect });
 
-        for(int16 face = 0; face < 6; face++)
-        {
-            DrawScene(transientContext->scene, face, commandList);
-        }
+        DrawScene(transientContext->scene, transientContext->faceIndex, commandList);
     }
 
     void EnvironmentCubemapRenderPass::PrepareNode(SceneV1::Node* node)
@@ -267,29 +266,10 @@ namespace Luch::Render::Passes::IBL
 
         transientContext->cameraBufferDescriptorSet->Update();
 
-        EnvironmentCubemapUniform cubemapUniform;
-        cubemapUniform.face = face;
-
-        auto cubemapSuballocation = transientContext->sharedBuffer->Suballocate(sizeof(EnvironmentCubemapUniform), 256);
-
-        memcpy(cubemapSuballocation.offsetMemory, &cubemapUniform, sizeof(EnvironmentCubemapUniform));
-
-        transientContext->cubemapBufferDescriptorSet->WriteUniformBuffer(
-            persistentContext->cubemapBufferBinding,
-            cubemapSuballocation.buffer,
-            cubemapSuballocation.offset);
-
-        transientContext->cubemapBufferDescriptorSet->Update();
-
         commandList->BindBufferDescriptorSet(
             ShaderStage::Vertex,
             persistentContext->pipelineLayout,
             transientContext->cameraBufferDescriptorSet);
-
-        commandList->BindBufferDescriptorSet(
-            ShaderStage::Vertex,
-            persistentContext->pipelineLayout,
-            transientContext->cubemapBufferDescriptorSet);
 
         commandList->BindBufferDescriptorSet(
             ShaderStage::Fragment,
@@ -561,7 +541,6 @@ namespace Luch::Render::Passes::IBL
                 RenderPassCreateInfo renderPassCreateInfo;
                 renderPassCreateInfo.colorAttachments[0] = luminanceColorAttachment;
                 renderPassCreateInfo.depthStencilAttachment = depthStencilAttachment;
-                renderPassCreateInfo.attachmentArrayLength = 6;
 
                 auto [createRenderPassResult, createdRenderPass] = device->CreateRenderPass(renderPassCreateInfo);
                 if(createRenderPassResult != GraphicsResult::Success)
@@ -637,29 +616,9 @@ namespace Luch::Render::Passes::IBL
         }
 
         {
-            context->cubemapBufferBinding.OfType(ResourceType::UniformBuffer);
-
-            DescriptorSetLayoutCreateInfo cubemapDescriptorSetLayoutCreateInfo;
-            cubemapDescriptorSetLayoutCreateInfo
-                .OfType(DescriptorSetType::Buffer)
-                .WithNBindings(1)
-                .AddBinding(&context->cubemapBufferBinding);
-
-            auto[createCubemapDescriptorSetLayoutResult, createdCubemapDescriptorSetLayout] = device->CreateDescriptorSetLayout(cubemapDescriptorSetLayoutCreateInfo);
-            if (createCubemapDescriptorSetLayoutResult != GraphicsResult::Success)
-            {
-                LUCH_ASSERT(false);
-                return { false };
-            }
-
-            context->cubemapBufferDescriptorSetLayout = std::move(createdCubemapDescriptorSetLayout);
-        }
-
-        {
             PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
             pipelineLayoutCreateInfo
                 .AddSetLayout(ShaderStage::Vertex, cameraResources->cameraBufferDescriptorSetLayout)
-                .AddSetLayout(ShaderStage::Vertex, context->cubemapBufferDescriptorSetLayout)
                 .AddSetLayout(ShaderStage::Vertex, context->meshBufferDescriptorSetLayout)
                 .AddSetLayout(ShaderStage::Fragment, cameraResources->cameraBufferDescriptorSetLayout)
                 .AddSetLayout(ShaderStage::Fragment, materialResources->materialTextureDescriptorSetLayout)
@@ -701,18 +660,6 @@ namespace Luch::Render::Passes::IBL
             }
 
             context->lightsBufferDescriptorSet = allocatedLightsBufferSet;
-        }
-
-        {
-            auto [allocateCubemapDescriptorSetResult, allocatedCubemapBufferSet] = context->descriptorPool->AllocateDescriptorSet(
-                persistentContext->cubemapBufferDescriptorSetLayout);
-
-            if(allocateCubemapDescriptorSetResult != GraphicsResult::Success)
-            {
-                return { false };
-            }
-
-            context->cubemapBufferDescriptorSet = allocatedCubemapBufferSet;
         }
 
         {

@@ -25,7 +25,6 @@ struct LightingParamsUniform
 struct VertexOut
 {
     float4 positionCS [[ position ]];
-    ushort faceIndex [[ render_target_array_index ]];
 
     float3 positionVS;
 

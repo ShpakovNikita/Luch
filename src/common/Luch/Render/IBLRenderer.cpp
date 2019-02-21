@@ -250,7 +250,10 @@ namespace Luch::Render
 
     bool IBLRenderer::PrepareScene()
     {
-        environmentCubemapPass->PrepareScene();
+        for(auto& pass : environmentCubemapPasses)
+        {
+            pass->PrepareScene();
+        }
 
         return true;
     }
@@ -265,12 +268,19 @@ namespace Luch::Render
             materialManager->UpdateMaterial(material, sharedBuffer.get());
         }
 
-        environmentCubemapPass->UpdateScene();
+        // TODO fix this
+        for(auto& pass : environmentCubemapPasses)
+        {
+            pass->UpdateScene();
+        }
     }
 
     void IBLRenderer::ProbeIndirectLighting(Vec3 position)
     {
-        environmentCubemapTransientContext->position = position;
+        for(auto& transientContext : environmentCubemapTransientContexts)
+        {
+            transientContext->position = position;
+        }
 
         bool timedOut = probeReadySemaphore->Wait(0);
         LUCH_ASSERT(!timedOut);
@@ -300,15 +310,24 @@ namespace Luch::Render
         probeReadySemaphore->Signal();
 
         IBLResult result;
-        result.environmentCubemap = renderGraph->GetResourceManager()->ReleaseTexture(environmentCubemapPass->GetEnvironmentLuminanceCubemapHandle());
+        result.environmentCubemap = renderGraph->GetResourceManager()->ReleaseTexture(environmentLuminanceCubemapHandle);
         result.diffuseIrradianceCubemap = renderGraph->GetResourceManager()->ReleaseTexture(diffuseIrradiancePass->GetIrradianceCubemapHandle());
         result.specularReflectionCubemap = renderGraph->GetResourceManager()->ReleaseTexture(specularReflectionPass->GetSpecularReflectionCubemapHandle());
         result.specularBRDFTexture = renderGraph->GetResourceManager()->ReleaseTexture(specularBRDFPass->GetBRDFTextureHandle());
 
-        environmentCubemapPass.reset();
+        for(auto& pass : environmentCubemapPasses)
+        {
+            pass.reset();
+        }
+
         diffuseIrradiancePass.release();
         specularReflectionTransientContext.reset();
-        environmentCubemapTransientContext.reset();
+
+        for(auto& transientContext : environmentCubemapTransientContexts)
+        {
+            transientContext.reset();
+        }
+
         diffuseIrradianceTransientContext.reset();
         specularReflectionTransientContext.reset();
         builder.reset();
@@ -321,26 +340,58 @@ namespace Luch::Render
 
     bool IBLRenderer::PrepareEnvironmentMapping()
     {
-        auto [result, transientContext] = EnvironmentCubemapRenderPass::PrepareEnvironmentCubemapTransientContext(
-            environmentCubemapPersistentContext.get(),
-            descriptorPool);
+        const auto& supportedDepthFormats = context->device->GetPhysicalDevice()->GetCapabilities().supportedDepthFormats;
+        LUCH_ASSERT_MSG(!supportedDepthFormats.empty(), "No supported depth formats");
+        Format depthStencilFormat = supportedDepthFormats.front();
 
-        if(!result)
+        TextureCreateInfo cubemapCreateInfo;
+        cubemapCreateInfo.width = EnvironmentMapSize.width;
+        cubemapCreateInfo.height = EnvironmentMapSize.height;
+        cubemapCreateInfo.textureType = TextureType::TextureCube;
+        cubemapCreateInfo.usage = TextureUsageFlags::ShaderRead;
+
+        TextureCreateInfo luminanceCubemapCreateInfo = cubemapCreateInfo;
+        luminanceCubemapCreateInfo.format = EnvironmentCubemapRenderPass::LuminanceFormat;
+        luminanceCubemapCreateInfo.usage |= TextureUsageFlags::ColorAttachment;
+
+        environmentLuminanceCubemapHandle = builder->GetResourceManager()->CreateTexture(luminanceCubemapCreateInfo);
+
+        TextureCreateInfo depthCubemapCreateInfo = cubemapCreateInfo;
+        depthCubemapCreateInfo.format = depthStencilFormat;
+        depthCubemapCreateInfo.usage |= TextureUsageFlags::DepthStencilAttachment;
+
+        environmentDepthCubemapHandle = builder->GetResourceManager()->CreateTexture(depthCubemapCreateInfo);
+
+        for(int32 face = 0; face < 6; face++)
         {
-            return false;
+            auto [result, transientContext] = EnvironmentCubemapRenderPass::PrepareEnvironmentCubemapTransientContext(
+                environmentCubemapPersistentContext.get(),
+                descriptorPool);
+
+            if(!result)
+            {
+                return false;
+            }
+
+            transientContext->descriptorPool = descriptorPool;
+            transientContext->outputSize = { 128, 128 };
+            transientContext->scene = scene;
+            transientContext->sharedBuffer = sharedBuffer;
+            transientContext->environmentLuminanceCubemap = environmentLuminanceCubemapHandle;
+            transientContext->environmentDepthCubemap = environmentDepthCubemapHandle;
+            transientContext->faceIndex = face;
+
+            environmentCubemapTransientContexts[face] = std::move(transientContext);
+
+            environmentCubemapPasses[face] = MakeUnique<EnvironmentCubemapRenderPass>(
+                environmentCubemapPersistentContext.get(),
+                environmentCubemapTransientContexts[face].get(),
+                builder.get());
+
+            // Do this to force render pass order
+            environmentLuminanceCubemapHandle = environmentCubemapPasses[face]->GetEnvironmentLuminanceCubemapHandle();
+            environmentDepthCubemapHandle = environmentCubemapPasses[face]->GetEnvironmentDepthCubemapHandle();
         }
-
-        transientContext->descriptorPool = descriptorPool;
-        transientContext->outputSize = { 128, 128 };
-        transientContext->scene = scene;
-        transientContext->sharedBuffer = sharedBuffer;
-
-        environmentCubemapTransientContext = std::move(transientContext);
-
-        environmentCubemapPass = MakeUnique<EnvironmentCubemapRenderPass>(
-            environmentCubemapPersistentContext.get(),
-            environmentCubemapTransientContext.get(),
-            builder.get());
 
         return true;
     }
@@ -360,7 +411,7 @@ namespace Luch::Render
         transientContext->outputSize = { 128, 128 };
         transientContext->scene = scene;
         transientContext->sharedBuffer = sharedBuffer;
-        transientContext->luminanceCubemapHandle = environmentCubemapPass->GetEnvironmentLuminanceCubemapHandle();
+        transientContext->luminanceCubemapHandle = environmentLuminanceCubemapHandle;
 
         diffuseIrradianceTransientContext = std::move(transientContext);
 
@@ -386,7 +437,7 @@ namespace Luch::Render
         transientContext->descriptorPool = descriptorPool;
         transientContext->outputSize = { 128, 128 };
         transientContext->sharedBuffer = sharedBuffer;
-        transientContext->luminanceCubemapHandle = environmentCubemapPass->GetEnvironmentLuminanceCubemapHandle();
+        transientContext->luminanceCubemapHandle = environmentLuminanceCubemapHandle;
 
         specularReflectionTransientContext = std::move(transientContext);
 

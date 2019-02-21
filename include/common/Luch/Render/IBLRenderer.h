@@ -35,6 +35,7 @@ namespace Luch::Render
         static constexpr int32 DescriptorSetCount = 2048;
         static constexpr int32 DescriptorCount = 8192;
         static constexpr int32 SharedBufferSize = 1024 * 1024;
+        static constexpr Size2i EnvironmentMapSize = { 128, 128 };
     public:
         IBLRenderer(RefPtr<SceneV1::Scene> scene);
         ~IBLRenderer();
@@ -66,15 +67,18 @@ namespace Luch::Render
         UniquePtr<IBL::SpecularReflectionPersistentContext> specularReflectionPersistentContext;
         UniquePtr<IBL::SpecularBRDFPersistentContext> specularBRDFPersistentContext;
 
-        UniquePtr<IBL::EnvironmentCubemapTransientContext> environmentCubemapTransientContext;
+        Array<UniquePtr<IBL::EnvironmentCubemapTransientContext>, 6> environmentCubemapTransientContexts;
         UniquePtr<IBL::DiffuseIrradianceTransientContext> diffuseIrradianceTransientContext;
         UniquePtr<IBL::SpecularReflectionTransientContext> specularReflectionTransientContext;
         UniquePtr<IBL::SpecularBRDFTransientContext> specularBRDFTransientContext;
 
-        UniquePtr<IBL::EnvironmentCubemapRenderPass> environmentCubemapPass;
+        Array<UniquePtr<IBL::EnvironmentCubemapRenderPass>, 6> environmentCubemapPasses;
         UniquePtr<IBL::DiffuseIrradianceRenderPass> diffuseIrradiancePass;
         UniquePtr<IBL::SpecularReflectionRenderPass> specularReflectionPass;
         UniquePtr<IBL::SpecularBRDFRenderPass> specularBRDFPass;
+
+        Graph::RenderMutableResource environmentLuminanceCubemapHandle;
+        Graph::RenderMutableResource environmentDepthCubemapHandle;
 
         UniquePtr<Graph::RenderGraphBuilder> builder;
         UniquePtr<Graph::RenderGraph> renderGraph;

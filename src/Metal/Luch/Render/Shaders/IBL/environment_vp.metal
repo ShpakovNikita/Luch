@@ -4,11 +4,6 @@
 
 using namespace metal;
 
-struct CubemapUniform
-{
-    ushort face; 
-};
-
 struct MeshUniform
 {
     float4x4 model;
@@ -40,7 +35,6 @@ struct VertexIn
 struct VertexOut
 {
     float4 positionCS [[ position ]];
-    ushort faceIndex [[ render_target_array_index ]];
 
     float3 positionVS;
 
@@ -60,8 +54,7 @@ struct VertexOut
 vertex VertexOut vp_main(
     VertexIn in [[ stage_in ]],
     constant CameraUniform& camera [[ buffer(0) ]],
-    constant CubemapUniform& cubemap [[ buffer(1) ]],
-    constant MeshUniform& mesh [[ buffer(2) ]])
+    constant MeshUniform& mesh [[ buffer(1) ]])
 {
     VertexOut out;
 
@@ -70,7 +63,6 @@ vertex VertexOut vp_main(
     float4 positionVS = viewModel * float4(in.positionLS.xyz, 1.0);
 
     out.positionVS = positionVS.xyz;
-    out.faceIndex = cubemap.face; 
 
     #if HAS_NORMAL || HAS_TANGENT
         float4x4 normalMatrix = transpose(mesh.inverseModel * camera.inverseView);

@@ -26,8 +26,8 @@ namespace Luch::Render::Passes::IBL
     {
         static constexpr int32 MaxDescriptorSetCount = 4096;
         static constexpr int32 MaxDescriptorCount = 4096;
-        static constexpr Format LuminanceFormat = Format::RGBA8Unorm_sRGB;
     public:
+        static constexpr Format LuminanceFormat = Format::RGBA8Unorm_sRGB;
         static const String RenderPassName;
 
         static ResultValue<bool, UniquePtr<EnvironmentCubemapPersistentContext>> PrepareEnvironmentCubemapPersistentContext(
@@ -50,6 +50,7 @@ namespace Luch::Render::Passes::IBL
         void UpdateScene();
 
         inline RenderMutableResource GetEnvironmentLuminanceCubemapHandle() { return luminanceCubemapHandle; }
+        inline RenderMutableResource GetEnvironmentDepthCubemapHandle() { return luminanceDepthHandle; }
 
         void ExecuteGraphicsPass(
             RenderGraphResourceManager* manager,
@@ -78,6 +79,7 @@ namespace Luch::Render::Passes::IBL
         EnvironmentCubemapTransientContext* transientContext = nullptr;
 
         RenderMutableResource luminanceCubemapHandle;
+        RenderMutableResource luminanceDepthHandle;
 
         UnorderedMap<SceneV1::Mesh*, RefPtr<DescriptorSet>> meshDescriptorSets;
     };

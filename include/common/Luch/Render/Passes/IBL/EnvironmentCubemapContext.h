@@ -27,15 +27,12 @@ namespace Luch::Render::Passes::IBL
 
         DescriptorSetBinding meshUniformBufferBinding;
 
-        DescriptorSetBinding cubemapBufferBinding;
-
         DescriptorSetBinding lightingParamsBinding;
         DescriptorSetBinding lightsBufferBinding;
 
         RefPtr<SceneV1::PerspectiveCamera> camera;
 
         RefPtr<DescriptorSetLayout> lightsBufferDescriptorSetLayout;
-        RefPtr<DescriptorSetLayout> cubemapBufferDescriptorSetLayout;
 
         RefPtr<DescriptorSetLayout> meshBufferDescriptorSetLayout;
 
@@ -47,10 +44,12 @@ namespace Luch::Render::Passes::IBL
         SceneV1::Scene* scene = nullptr;
         Size2i outputSize;
         SharedPtr<SharedBuffer> sharedBuffer;
+        int32 faceIndex = 0;
         Vec3 position = Vec3{ 0 };
         RefPtr<DescriptorPool> descriptorPool;
+        RenderMutableResource environmentLuminanceCubemap;
+        RenderMutableResource environmentDepthCubemap;
         RefPtr<DescriptorSet> cameraBufferDescriptorSet;
         RefPtr<DescriptorSet> lightsBufferDescriptorSet;
-        RefPtr<DescriptorSet> cubemapBufferDescriptorSet;
     };
 }
