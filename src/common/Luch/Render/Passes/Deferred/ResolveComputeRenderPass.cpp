@@ -42,7 +42,7 @@ namespace Luch::Render::Passes::Deferred
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
-        auto node = builder->AddComputeRenderPass(RenderPassName, this);
+        auto node = builder->AddComputePass(RenderPassName, this);
 
         for(int32 i = 0; i < transientContext->gbuffer.color.size(); i++)
         {
@@ -74,7 +74,7 @@ namespace Luch::Render::Passes::Deferred
         UpdateLights(lightNodes);
     }
 
-    void ResolveComputeRenderPass::ExecuteComputeRenderPass(
+    void ResolveComputeRenderPass::ExecuteComputePass(
         RenderGraphResourceManager* manager,
         ComputeCommandList* cmdList)
     {
@@ -101,7 +101,6 @@ namespace Luch::Render::Passes::Deferred
 
         transientContext->gbufferTextureDescriptorSet->Update();
 
-        cmdList->Begin();
         cmdList->BindPipelineState(persistentContext->pipelineState);
 
         cmdList->BindTextureDescriptorSet(
@@ -123,7 +122,6 @@ namespace Luch::Render::Passes::Deferred
         int32 threadgroupRows = (transientContext->outputSize.height + ThreadsPerThreadgroup.height - 1) / ThreadsPerThreadgroup.height;
         int32 threadgroupColumns = (transientContext->outputSize.width + ThreadsPerThreadgroup.width - 1) / ThreadsPerThreadgroup.width;
         cmdList->DispatchThreadgroups({threadgroupColumns, threadgroupRows, 1}, ThreadsPerThreadgroup);
-        cmdList->End();
     }
 
     void ResolveComputeRenderPass::UpdateLights(const RefPtrVector<SceneV1::Node>& lightNodes)

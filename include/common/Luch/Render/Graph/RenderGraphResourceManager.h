@@ -40,6 +40,9 @@ namespace Luch::Render::Graph
 
         RefPtr<Texture> GetTexture(RenderResource resource);
         RefPtr<Buffer> GetBuffer(RenderResource resource);
+
+        RefPtr<Texture> ReleaseTexture(RenderResource resource);
+        RefPtr<Buffer> ReleaseBuffer(RenderResource resource);
     private:
         GraphicsDevice* device = nullptr;
         RenderMutableResource GetNextHandle();

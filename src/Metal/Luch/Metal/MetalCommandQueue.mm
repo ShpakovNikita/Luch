@@ -23,7 +23,8 @@ namespace Luch::Metal
     }
 
     GraphicsResult MetalCommandQueue::Submit(
-        CommandList* commandList)
+        CommandList* commandList,
+        std::function<void()> completedHandler)
     {
         MetalCommandList* mtlCommandList = nullptr;
         switch(commandList->GetType())
@@ -41,8 +42,14 @@ namespace Luch::Metal
             LUCH_ASSERT(false);
         }
 
+        mtlCommandList->commandBuffer.AddCompletedHandler([completedHandler](auto buffer)
+        {
+            if(completedHandler)
+            {
+                completedHandler();
+            }
+        });
         mtlCommandList->commandBuffer.Commit();
-        mtlCommandList->commandBuffer.WaitUntilCompleted();
 
         return GraphicsResult::Success;
     }

@@ -50,18 +50,14 @@ namespace Luch::Render::Passes::Deferred
         void PrepareScene();
         void UpdateScene();
 
-        SceneV1::Node* GetCameraNode() { return cameraNode; }
-        void SetCameraNode(SceneV1::Node* node){ cameraNode = node; }
-
         GBufferReadOnly GetGBuffer() { return gbuffer; }
 
-        void ExecuteGraphicsRenderPass(
+        void ExecuteGraphicsPass(
             RenderGraphResourceManager* manager,
             GraphicsCommandList* commandList) override;
     private:
         void PrepareNode(SceneV1::Node* node);
         void PrepareMeshNode(SceneV1::Node* node);
-        void PrepareCameraNode(SceneV1::Node* node);
         void PrepareMesh(SceneV1::Mesh* mesh);
         void PreparePrimitive(SceneV1::Primitive* primitive);
 
@@ -85,6 +81,5 @@ namespace Luch::Render::Passes::Deferred
 
         UnorderedMap<SceneV1::Mesh*, RefPtr<DescriptorSet>> meshDescriptorSets;
         UnorderedMap<SceneV1::Camera*, RefPtr<DescriptorSet>> cameraDescriptorSets;
-        SceneV1::Node* cameraNode = nullptr;
     };
 }

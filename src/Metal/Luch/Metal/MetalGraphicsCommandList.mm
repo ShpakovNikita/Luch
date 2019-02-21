@@ -163,22 +163,24 @@ namespace Luch::Metal
         auto textures = mtlDescriptorSet->textures.data();
         auto length = (uint32)mtlDescriptorSet->textures.size();
 
-        LUCH_ASSERT(length != 0);
-        auto range = ns::Range { start, length };
-
-        switch(stage)
+        if(length > 0)
         {
-        case ShaderStage::Vertex:
-            commandEncoder.SetVertexTextures(textures, range);
-            break;
-        case ShaderStage::Fragment:
-            commandEncoder.SetFragmentTextures(textures, range);
-            break;
-        case ShaderStage::Tile:
-            commandEncoder.SetTileTextures(textures, range);
-            break;
-        default:
-            LUCH_ASSERT(false);
+            auto range = ns::Range { start, length };
+
+            switch(stage)
+            {
+            case ShaderStage::Vertex:
+                commandEncoder.SetVertexTextures(textures, range);
+                break;
+            case ShaderStage::Fragment:
+                commandEncoder.SetFragmentTextures(textures, range);
+                break;
+            case ShaderStage::Tile:
+                commandEncoder.SetTileTextures(textures, range);
+                break;
+            default:
+                LUCH_ASSERT(false);
+            }
         }
     }
 
@@ -214,22 +216,24 @@ namespace Luch::Metal
         auto samplers = mtlDescriptorSet->samplers.data();
         auto length = (uint32)mtlDescriptorSet->samplers.size();
 
-        LUCH_ASSERT(length != 0);
-        auto range = ns::Range { start, length };
-
-        switch(stage)
+        if(length > 0)
         {
-        case ShaderStage::Vertex:
-            commandEncoder.SetVertexSamplerStates(samplers, range);
-            break;
-        case ShaderStage::Fragment:
-            commandEncoder.SetFragmentSamplerStates(samplers, range);
-            break;
-        case ShaderStage::Tile:
-            commandEncoder.SetTileSamplerStates(samplers, range);
-            break;
-        default:
-            LUCH_ASSERT(false);
+            auto range = ns::Range { start, length };
+
+            switch(stage)
+            {
+            case ShaderStage::Vertex:
+                commandEncoder.SetVertexSamplerStates(samplers, range);
+                break;
+            case ShaderStage::Fragment:
+                commandEncoder.SetFragmentSamplerStates(samplers, range);
+                break;
+            case ShaderStage::Tile:
+                commandEncoder.SetTileSamplerStates(samplers, range);
+                break;
+            default:
+                LUCH_ASSERT(false);
+            }
         }
     }
 
@@ -364,22 +368,24 @@ namespace Luch::Metal
         auto bufferOffsets = (uint32*)mtlDescriptorSet->bufferOffsets.data();
         auto length = (uint32)mtlDescriptorSet->buffers.size();
 
-        LUCH_ASSERT(length != 0);
-        auto range = ns::Range { start, length };
-
-        switch(stage)
+        if(length > 0)
         {
-        case ShaderStage::Vertex:
-            commandEncoder.SetVertexBuffers(buffers, bufferOffsets, range);
-            break;
-        case ShaderStage::Fragment:
-            commandEncoder.SetFragmentBuffers(buffers, bufferOffsets, range);
-            break;
-        case ShaderStage::Tile:
-            commandEncoder.SetTileBuffers(buffers, bufferOffsets, range);
-            break;
-        default:
-            LUCH_ASSERT(false);
+            auto range = ns::Range { start, length };
+
+            switch(stage)
+            {
+            case ShaderStage::Vertex:
+                commandEncoder.SetVertexBuffers(buffers, bufferOffsets, range);
+                break;
+            case ShaderStage::Fragment:
+                commandEncoder.SetFragmentBuffers(buffers, bufferOffsets, range);
+                break;
+            case ShaderStage::Tile:
+                commandEncoder.SetTileBuffers(buffers, bufferOffsets, range);
+                break;
+            default:
+                LUCH_ASSERT(false);
+            }
         }
     }
 

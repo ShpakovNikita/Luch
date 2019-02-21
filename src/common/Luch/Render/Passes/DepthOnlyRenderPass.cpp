@@ -59,9 +59,9 @@ namespace Luch::Render::Passes
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
-        auto node = builder->AddGraphicsRenderPass(RenderPassName, persistentContext->renderPass, this);
+        auto node = builder->AddGraphicsPass(RenderPassName, persistentContext->renderPass, this);
 
-        depthTextureHandle = node->CreateDepthStencilAttachment(transientContext->outputSize);
+        depthTextureHandle = node->CreateDepthStencilAttachment({ transientContext->outputSize });
     }
 
     DepthOnlyRenderPass::~DepthOnlyRenderPass() = default;
@@ -72,14 +72,7 @@ namespace Luch::Render::Passes
 
         for (const auto& node : nodes)
         {
-            if(node->GetMesh() != nullptr)
-            {
-                PrepareMeshNode(node);
-            }
-            if(node->GetCamera() != nullptr)
-            {
-                PrepareCameraNode(node);
-            }
+            PrepareNode(node);
         }
     }
 
@@ -91,7 +84,7 @@ namespace Luch::Render::Passes
         }
     }
 
-    void DepthOnlyRenderPass::ExecuteGraphicsRenderPass(
+    void DepthOnlyRenderPass::ExecuteGraphicsPass(
         RenderGraphResourceManager* manager,
         GraphicsCommandList* commandList)
     {
@@ -122,11 +115,6 @@ namespace Luch::Render::Passes
             PrepareMeshNode(node);
         }
 
-        if(node->GetCamera() != nullptr)
-        {
-            PrepareCameraNode(node);
-        }
-
         for (const auto& child : node->GetChildren())
         {
             PrepareNode(child);
@@ -134,16 +122,6 @@ namespace Luch::Render::Passes
     }
 
     void DepthOnlyRenderPass::PrepareMeshNode(SceneV1::Node* node)
-    {
-        const auto& mesh = node->GetMesh();
-
-        if (mesh != nullptr)
-        {
-            PrepareMesh(mesh);
-        }
-    }
-
-    void DepthOnlyRenderPass::PrepareCameraNode(SceneV1::Node* node)
     {
         const auto& mesh = node->GetMesh();
 

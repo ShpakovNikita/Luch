@@ -15,9 +15,9 @@ namespace Luch::Metal
         dispatch_release(semaphore);
     }
 
-    bool MetalSemaphore::Wait(int64 timeoutNS)
+    bool MetalSemaphore::Wait(Optional<int64> timeoutNS)
     {
-        return dispatch_semaphore_wait(semaphore, timeoutNS) != 0;
+        return dispatch_semaphore_wait(semaphore, timeoutNS.value_or(-1)) != 0;
     }
 
     void MetalSemaphore::Signal()

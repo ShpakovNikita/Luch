@@ -18,7 +18,7 @@ namespace Luch::Render
     struct TextureUploaderResult
     {
         RefPtrVector<Graphics::Buffer> stagingBuffers;
-        RefPtrVector<Graphics::CopyCommandList> commandLists;
+        RefPtrVector<Graphics::CommandList> commandLists;
     };
 
     class TextureUploader

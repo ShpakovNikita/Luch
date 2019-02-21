@@ -47,10 +47,7 @@ namespace Luch::Render::Passes::Deferred
 
         RenderMutableResource GetLuminanceTextureHandle() { return luminanceTextureHandle; }
 
-        SceneV1::Camera* GetCamera() { return camera; }
-        void SetCamera(SceneV1::Camera* aCamera) { camera = aCamera; }
-
-        void ExecuteGraphicsRenderPass(
+        void ExecuteGraphicsPass(
             RenderGraphResourceManager* manager,
             GraphicsCommandList* commandList) override;
     private:
@@ -58,7 +55,6 @@ namespace Luch::Render::Passes::Deferred
 
         static RefPtr<GraphicsPipelineState> CreateResolvePipelineState(ResolvePersistentContext* context);
 
-        SceneV1::Camera* camera = nullptr;
         ResolvePersistentContext* persistentContext = nullptr;
         ResolveTransientContext* transientContext = nullptr;
         GBufferReadOnly gbuffer;

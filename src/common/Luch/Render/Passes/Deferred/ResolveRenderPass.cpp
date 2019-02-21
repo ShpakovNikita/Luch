@@ -53,7 +53,7 @@ namespace Luch::Render::Passes::Deferred
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
-        auto node = builder->AddGraphicsRenderPass(RenderPassName, persistentContext->renderPass, this);
+        auto node = builder->AddGraphicsPass(RenderPassName, persistentContext->renderPass, this);
 
         for(int32 i = 0; i < transientContext->gbuffer.color.size(); i++)
         {
@@ -62,7 +62,7 @@ namespace Luch::Render::Passes::Deferred
 
         gbuffer.depthStencil = node->ReadsTexture(transientContext->gbuffer.depthStencil);
 
-        luminanceTextureHandle = node->CreateColorAttachment(0, transientContext->outputSize);
+        luminanceTextureHandle = node->CreateColorAttachment(0, { transientContext->outputSize });
     }
 
     ResolveRenderPass::~ResolveRenderPass() = default;
@@ -80,7 +80,7 @@ namespace Luch::Render::Passes::Deferred
         UpdateLights(lightNodes);
     }
 
-    void ResolveRenderPass::ExecuteGraphicsRenderPass(
+    void ResolveRenderPass::ExecuteGraphicsPass(
         RenderGraphResourceManager* manager,
         GraphicsCommandList* cmdList)
     {

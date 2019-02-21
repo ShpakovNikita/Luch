@@ -6,7 +6,7 @@
 
 using namespace metal;
 
-constant constexpr int MaxLights = 4;
+constant constexpr int MaxLights = 5;
 
 struct LightsUniform
 {
@@ -75,31 +75,34 @@ struct FragmentOut
 #endif
 fragment FragmentOut fp_main(
     VertexOut in [[stage_in]],
-    constant CameraUniform& camera [[buffer(0)]],
-    constant MaterialUniform& material [[buffer(1)]],
-    constant LightingParamsUniform& lightingParams [[buffer(2)]],
-    constant LightsUniform& lights [[buffer(3)]]
+    constant CameraUniform& camera [[ buffer(0) ]],
+    constant MaterialUniform& material [[ buffer(1) ]],
+    constant LightingParamsUniform& lightingParams [[ buffer(2) ]],
+    constant LightsUniform& lights [[ buffer(3) ]]
 
 #if HAS_BASE_COLOR_TEXTURE
-    , texture2d<half> baseColorMap [[texture(0)]]         // RGB - color, A - opacity
-    , sampler baseColorSampler [[sampler(0)]]
+    , texture2d<half> baseColorMap [[ texture(0) ]]         // RGB - color, A - opacity
+    , sampler baseColorSampler [[ sampler(0) ]]
 #endif
 #if HAS_METALLIC_ROUGHNESS_TEXTURE
-    , texture2d<half> metallicRoughnessMap [[texture(1)]] // R - metallic, G - roughness, BA unused
-    , sampler metallicRoughnessSampler [[sampler(1)]]
+    , texture2d<half> metallicRoughnessMap [[ texture(1) ]] // R - metallic, G - roughness, BA unused
+    , sampler metallicRoughnessSampler [[ sampler(1) ]]
 #endif
 #if HAS_NORMAL_TEXTURE
-    , texture2d<float> normalMap [[texture(2)]]           // RGB - XYZ, A - unused
-    , sampler normalMapSampler [[sampler(2)]]
+    , texture2d<float> normalMap [[ texture(2) ]]           // RGB - XYZ, A - unused
+    , sampler normalMapSampler [[ sampler(2) ]]
 #endif
 #if HAS_OCCLUSION_TEXTURE
-    , texture2d<half> occlusionMap [[texture(3)]]         // greyscale,
-    , sampler occlusionSampler [[sampler(3)]]
+    , texture2d<half> occlusionMap [[ texture(3) ]]         // greyscale,
+    , sampler occlusionSampler [[ sampler(3) ]]
 #endif
 #if HAS_EMISSIVE_TEXTURE
-    , texture2d<half> emissiveMap [[texture(4)]]          // RGB - light color, A unused
-    , sampler emissiveSampler [[sampler(4)]]
+    , texture2d<half> emissiveMap [[ texture(4) ]]          // RGB - light color, A unused
+    , sampler emissiveSampler [[ sampler(4) ]]
 #endif
+    , texturecube<half> diffuseIrradianceMap [[ texture(5) ]]
+    , texturecube<half> specularReflectionMap [[ texture(6) ]]
+    , texture2d<half> specularBRDF [[ texture(7) ]]
     )
 {
     float3 positionVS = in.positionVS;
@@ -214,7 +217,43 @@ fragment FragmentOut fp_main(
 
     FragmentOut result;
 
-    result.luminance.rgb = emitted + baseColor.rgb * lightingResult.diffuse + lightingResult.specular;
+    half3 diffuseIndirect = half3(0);
+    if(!is_null_texture(diffuseIrradianceMap))
+    {
+        constexpr sampler diffuseIrradianceSampler{ filter::linear, min_filter::linear, mag_filter::linear };
+        float3 viewWS = (camera.inverseView * float4(float3(V), 0.0)).xyz;
+        float3 normalWS = (camera.inverseView * float4(float3(N), 0.0)).xyz;
+
+        float3 reflectedWS = reflect(-viewWS, normalWS);
+        half3 diffuseIrradiance = diffuseIrradianceMap.sample(diffuseIrradianceSampler, reflectedWS).rgb;
+        diffuseIndirect = (1 - metallic) * baseColor.rgb * M_1_PI_H * diffuseIrradiance * occlusion;
+    }
+
+    half3 specularReflection = half3(0);
+    if(!is_null_texture(specularReflectionMap) && !is_null_texture(specularBRDF))
+    {
+        constexpr sampler specularReflectionSampler{ filter::linear, mip_filter::linear };
+        constexpr sampler specularBRDFSampler { filter::linear };
+
+        float3 viewWS = (camera.inverseView * float4(float3(V), 0.0)).xyz;
+        float3 normalWS = (camera.inverseView * float4(float3(N), 0.0)).xyz;
+
+        float3 reflectedWS = reflect(-viewWS, normalWS);
+
+        ushort mipLevelCount = specularReflectionMap.get_num_mip_levels();
+        half lod = mix(0, half(mipLevelCount), roughness);
+        half3 prefilteredSpecular = specularReflectionMap.sample(specularReflectionSampler, reflectedWS, level(lod)).rgb;
+
+        half NdotV = saturate(dot(N, V));
+        half2 brdf = specularBRDF.sample(specularBRDFSampler, float2(roughness, NdotV)).xy;
+
+        specularReflection = prefilteredSpecular * (F0*brdf.x + brdf.y);
+    }
+
+    half3 diffuseDirect = baseColor.rgb * lightingResult.diffuse;
+    half3 specularDirect = lightingResult.specular;
+
+    result.luminance.rgb = emitted + diffuseDirect + diffuseIndirect + specularDirect + specularReflection;
     result.luminance.a = baseColor.a;
 
     return result;

@@ -45,7 +45,7 @@ namespace Luch::Render::Passes
         void PrepareScene();
         void UpdateScene();
 
-        void ExecuteGraphicsRenderPass(
+        void ExecuteGraphicsPass(
             RenderGraphResourceManager* manager,
             GraphicsCommandList* commandList) override;
     private:

@@ -1,11 +1,5 @@
 #pragma once
 
-namespace Luch::Render::Graph
-{
-
-}
-#pragma once
-
 #include <Luch/RefPtr.h>
 #include <Luch/Types.h>
 #include <Luch/Graphics/BufferUsageFlags.h>
@@ -31,7 +25,7 @@ namespace Luch::Render::Graph
         RenderMutableResource(const RenderMutableResource& other) = default;
         RenderMutableResource& operator=(const RenderMutableResource& other) = default;
 
-        operator bool()
+        operator bool() const
         {
             return handle != 0;
         }
@@ -75,7 +69,7 @@ namespace Luch::Render::Graph
         {
         }
 
-        operator bool()
+        operator bool() const
         {
             return handle != 0;
         }

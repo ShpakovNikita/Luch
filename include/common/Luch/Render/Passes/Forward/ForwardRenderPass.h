@@ -50,18 +50,14 @@ namespace Luch::Render::Passes::Forward
         void PrepareScene();
         void UpdateScene();
 
-        SceneV1::Node* GetCameraNode() { return cameraNode; }
-        void SetCameraNode(SceneV1::Node* node){ cameraNode = node; }
-
         inline RenderMutableResource GetLuminanceTextureHandle() { return luminanceTextureHandle; }
 
-        void ExecuteGraphicsRenderPass(
+        void ExecuteGraphicsPass(
             RenderGraphResourceManager* manager,
             GraphicsCommandList* commandList) override;
     private:
         void PrepareNode(SceneV1::Node* node);
         void PrepareMeshNode(SceneV1::Node* node);
-        void PrepareCameraNode(SceneV1::Node* node);
         void PrepareMesh(SceneV1::Mesh* mesh);
         void PreparePrimitive(SceneV1::Primitive* primitive);
 
@@ -70,7 +66,7 @@ namespace Luch::Render::Passes::Forward
         void UpdateLights(const RefPtrVector<SceneV1::Node>& lightNodes);
 
         void BindMaterial(SceneV1::PbrMaterial* material, GraphicsCommandList* commandList);
-        void DrawScene(SceneV1::Scene* scene, GraphicsCommandList* commandList);
+        void DrawScene(SceneV1::Scene* scene, RenderGraphResourceManager* manager, GraphicsCommandList* commandList);
         void DrawNode(SceneV1::Node* node, GraphicsCommandList* commandList);
         void DrawMesh(SceneV1::Mesh* mesh, GraphicsCommandList* commandList);
         void DrawPrimitive(SceneV1::Primitive* primitive, GraphicsCommandList* commandList);
@@ -88,8 +84,11 @@ namespace Luch::Render::Passes::Forward
         RenderMutableResource luminanceTextureHandle;
         RenderMutableResource depthStencilTextureHandle;
 
+        RenderResource diffuseIrradianceCubemapHandle;
+        RenderResource specularReflectionCubemapHandle;
+        RenderResource specularBRDFTextureHandle;
+
         UnorderedMap<SceneV1::Mesh*, RefPtr<DescriptorSet>> meshDescriptorSets;
         UnorderedMap<SceneV1::Camera*, RefPtr<DescriptorSet>> cameraDescriptorSets;
-        SceneV1::Node* cameraNode = nullptr;
     };
 }

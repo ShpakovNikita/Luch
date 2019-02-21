@@ -12,6 +12,7 @@
 #include <Luch/Render/Passes/Forward/ForwardForwards.h>
 #include <Luch/Render/Passes/Deferred/DeferredForwards.h>
 #include <Luch/Render/Passes/TiledDeferred/TiledDeferredForwards.h>
+#include <Luch/Render/Passes/IBL/IBLForwards.h>
 #include <Luch/Render/RenderForwards.h>
 #include <Luch/Render/RenderContext.h>
 #include <Luch/Render/CameraResources.h>
@@ -32,6 +33,8 @@ namespace Luch::Render
         RefPtr<DescriptorSet> cameraDescriptorSet;
 
         UniquePtr<Graph::RenderGraphBuilder> builder;
+        UniquePtr<Graph::RenderGraph> renderGraph;
+
         UniquePtr<DepthOnlyRenderPass> depthOnlyPass;
         UniquePtr<Forward::ForwardRenderPass> forwardPass;
         UniquePtr<TiledDeferred::TiledDeferredRenderPass> tiledDeferredPass;
@@ -47,6 +50,10 @@ namespace Luch::Render
         UniquePtr<Deferred::ResolveTransientContext> resolveTransientContext;
         UniquePtr<Deferred::ResolveComputeTransientContext> resolveComputeTransientContext;
         UniquePtr<TonemapTransientContext> tonemapTransientContext;
+
+        Graph::RenderResource diffuseIrradianceCubemapHandle;
+        Graph::RenderResource specularReflectionCubemapHandle;
+        Graph::RenderResource specularBRDFTextureHandle;
 
         Graph::RenderMutableResource outputHandle;
         RefPtr<SwapchainTexture> swapchainTexture;
@@ -66,6 +73,11 @@ namespace Luch::Render
 
         bool Initialize(SharedPtr<RenderContext> context);
         bool Deinitialize();
+
+        bool ProbeIndirectLighting();
+        void ResetIndirectLighting();
+
+        bool PrepareSceneResources();
 
         bool BeginRender();
         bool PrepareScene();
@@ -89,7 +101,13 @@ namespace Luch::Render
 
         SceneRendererConfig config;
 
-        UniquePtr<MaterialManager> materialManager;
+        UniquePtr<IBLRenderer> iblRenderer;
+
+        RefPtr<Texture> diffuseIrradianceCubemap;
+        RefPtr<Texture> specularReflectionCubemap;
+        RefPtr<Texture> specularBRDFTexture;
+
+        SharedPtr<MaterialManager> materialManager;
         UniquePtr<Graph::RenderGraphResourcePool> resourcePool;
 
         UniquePtr<DepthOnlyPersistentContext> depthOnlyPersistentContext;
@@ -101,7 +119,7 @@ namespace Luch::Render
         UniquePtr<TonemapPersistentContext> tonemapPersistentContext;
 
         Array<FrameResources, MaxSwapchainTextures> frameResources;
-        UniquePtr<CameraResources> cameraResources;
+        SharedPtr<CameraResources> cameraResources;
         SharedPtr<RenderContext> context;
         RefPtr<Semaphore> semaphore;
         RefPtr<CommandPool> commandPool;

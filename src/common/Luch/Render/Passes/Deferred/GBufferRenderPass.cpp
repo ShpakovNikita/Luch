@@ -65,18 +65,18 @@ namespace Luch::Render::Passes::Deferred
 
         if(transientContext->useDepthPrepass)
         {
-            node = builder->AddGraphicsRenderPass(RenderPassWithDepthOnlyName, persistentContext->renderPassWithDepthOnly, this);
+            node = builder->AddGraphicsPass(RenderPassWithDepthOnlyName, persistentContext->renderPassWithDepthOnly, this);
             gbuffer.depthStencil = node->UseDepthStencilAttachment(transientContext->depthStencilTextureHandle);
         }
         else
         {
-            node = builder->AddGraphicsRenderPass(RenderPassName, persistentContext->renderPass, this);
-            gbuffer.depthStencil = node->CreateDepthStencilAttachment(transientContext->outputSize);
+            node = builder->AddGraphicsPass(RenderPassName, persistentContext->renderPass, this);
+            gbuffer.depthStencil = node->CreateDepthStencilAttachment({ transientContext->outputSize });
         }
 
         for(int32 i = 0; i < DeferredConstants::GBufferColorAttachmentCount; i++)
         {
-            gbuffer.color[i] = node->CreateColorAttachment(i, transientContext->outputSize);
+            gbuffer.color[i] = node->CreateColorAttachment(i, { transientContext->outputSize });
         }
     }
 
@@ -92,10 +92,6 @@ namespace Luch::Render::Passes::Deferred
             {
                 PrepareMeshNode(node);
             }
-            if(node->GetCamera() != nullptr)
-            {
-                PrepareCameraNode(node);
-            }
         }
     }
 
@@ -107,7 +103,7 @@ namespace Luch::Render::Passes::Deferred
         }
     }
 
-    void GBufferRenderPass::ExecuteGraphicsRenderPass(
+    void GBufferRenderPass::ExecuteGraphicsPass(
         RenderGraphResourceManager* manager,
         GraphicsCommandList* commandList)
     {
@@ -138,11 +134,6 @@ namespace Luch::Render::Passes::Deferred
             PrepareMeshNode(node);
         }
 
-        if(node->GetCamera() != nullptr)
-        {
-            PrepareCameraNode(node);
-        }
-
         for (const auto& child : node->GetChildren())
         {
             PrepareNode(child);
@@ -150,16 +141,6 @@ namespace Luch::Render::Passes::Deferred
     }
 
     void GBufferRenderPass::PrepareMeshNode(SceneV1::Node* node)
-    {
-        const auto& mesh = node->GetMesh();
-
-        if (mesh != nullptr)
-        {
-            PrepareMesh(mesh);
-        }
-    }
-
-    void GBufferRenderPass::PrepareCameraNode(SceneV1::Node* node)
     {
         const auto& mesh = node->GetMesh();
 

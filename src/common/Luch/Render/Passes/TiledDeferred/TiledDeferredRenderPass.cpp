@@ -63,16 +63,16 @@ namespace Luch::Render::Passes::TiledDeferred
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
-        auto node = builder->AddGraphicsRenderPass(RenderPassName, persistentContext->renderPass, this);
+        auto node = builder->AddGraphicsPass(RenderPassName, persistentContext->renderPass, this);
 
         for(int32 i = TiledDeferredConstants::GBufferColorAttachmentBegin; i < TiledDeferredConstants::GBufferColorAttachmentEnd; i++)
         {
-            node->CreateColorAttachment(i, transientContext->outputSize, ResourceStorageMode::Memoryless);
+            node->CreateColorAttachment(i, { transientContext->outputSize, ResourceStorageMode::Memoryless });
         }
 
-        node->CreateDepthStencilAttachment(transientContext->outputSize, ResourceStorageMode::Memoryless);
+        node->CreateDepthStencilAttachment({ transientContext->outputSize, ResourceStorageMode::Memoryless });
 
-        luminanceTextureHandle = node->CreateColorAttachment(TiledDeferredConstants::LuminanceAttachmentIndex, transientContext->outputSize);
+        luminanceTextureHandle = node->CreateColorAttachment(TiledDeferredConstants::LuminanceAttachmentIndex, { transientContext->outputSize });
     }
 
     TiledDeferredRenderPass::~TiledDeferredRenderPass() = default;
@@ -83,14 +83,7 @@ namespace Luch::Render::Passes::TiledDeferred
 
         for (const auto& node : nodes)
         {
-            if(node->GetMesh() != nullptr)
-            {
-                PrepareMeshNode(node);
-            }
-            if(node->GetCamera() != nullptr)
-            {
-                PrepareCameraNode(node);
-            }
+            PrepareNode(node);
         }
     }
 
@@ -108,7 +101,7 @@ namespace Luch::Render::Passes::TiledDeferred
         UpdateLights(lightNodes);
     }
 
-    void TiledDeferredRenderPass::ExecuteGraphicsRenderPass(
+    void TiledDeferredRenderPass::ExecuteGraphicsPass(
         RenderGraphResourceManager* manager,
         GraphicsCommandList* commandList)
     {
@@ -133,11 +126,6 @@ namespace Luch::Render::Passes::TiledDeferred
             PrepareMeshNode(node);
         }
 
-        if(node->GetCamera() != nullptr)
-        {
-            PrepareCameraNode(node);
-        }
-
         for (const auto& child : node->GetChildren())
         {
             PrepareNode(child);
@@ -145,16 +133,6 @@ namespace Luch::Render::Passes::TiledDeferred
     }
 
     void TiledDeferredRenderPass::PrepareMeshNode(SceneV1::Node* node)
-    {
-        const auto& mesh = node->GetMesh();
-
-        if (mesh != nullptr)
-        {
-            PrepareMesh(mesh);
-        }
-    }
-
-    void TiledDeferredRenderPass::PrepareCameraNode(SceneV1::Node* node)
     {
         const auto& mesh = node->GetMesh();
 

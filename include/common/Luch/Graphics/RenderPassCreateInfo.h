@@ -11,6 +11,7 @@ namespace Luch::Graphics
 
         Array<Optional<ColorAttachment>, MaxColorAttachmentCount> colorAttachments;
         Optional<DepthStencilAttachment> depthStencilAttachment;
+        int32 attachmentArrayLength = 0;
         String name = "";
     };
 }

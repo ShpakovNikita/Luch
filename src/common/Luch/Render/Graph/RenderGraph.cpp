@@ -4,6 +4,7 @@
 #include <Luch/Graphics/CommandPool.h>
 #include <Luch/Graphics/GraphicsCommandList.h>
 #include <Luch/Graphics/ComputeCommandList.h>
+#include <Luch/Graphics/CopyCommandList.h>
 
 namespace Luch::Render::Graph
 {
@@ -34,9 +35,11 @@ namespace Luch::Render::Graph
                 auto [allocateResult, allocatedList] = commandPool->AllocateComputeCommandList();
                 LUCH_ASSERT(allocateResult == GraphicsResult::Success);
 
-                node.pass->ExecuteComputeRenderPass(
+                allocatedList->Begin();
+                node.pass->ExecuteComputePass(
                     resourceManager.get(),
                     allocatedList);
+                allocatedList->End();
 
                 commandList = std::move(allocatedList);
                 break;
@@ -48,10 +51,24 @@ namespace Luch::Render::Graph
 
                 allocatedList->Begin();
                 allocatedList->BeginRenderPass(node.frameBuffer);
-                node.pass->ExecuteGraphicsRenderPass(
+                node.pass->ExecuteGraphicsPass(
                     resourceManager.get(),
                     allocatedList);
                 allocatedList->EndRenderPass();
+                allocatedList->End();
+
+                commandList = std::move(allocatedList);
+                break;
+            }
+            case RenderGraphPassType::Copy:
+            {
+                auto [allocateResult, allocatedList] = commandPool->AllocateCopyCommandList();
+                LUCH_ASSERT(allocateResult == GraphicsResult::Success);
+
+                allocatedList->Begin();
+                node.pass->ExecuteCopyPass(
+                    resourceManager.get(),
+                    allocatedList);
                 allocatedList->End();
 
                 commandList = std::move(allocatedList);

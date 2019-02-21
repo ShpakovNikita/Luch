@@ -31,6 +31,8 @@
 
 #include <Luch/Render/RenderUtils.h>
 
+#include <Luch/Render/IBLRenderer.h>
+
 #include <Luch/Render/Passes/DepthOnlyRenderPass.h>
 #include <Luch/Render/Passes/DepthOnlyContext.h>
 
@@ -64,11 +66,13 @@ namespace Luch::Render
     using namespace Deferred;
     using namespace Forward;
     using namespace TiledDeferred;
+    using namespace IBL;
     using namespace Graph;
 
     void FrameResources::Reset()
     {
         builder.reset();
+        renderGraph.reset();
         depthOnlyPass.reset();
         tiledDeferredPass.reset();
         gbufferPass.reset();
@@ -81,6 +85,10 @@ namespace Luch::Render
         resolveTransientContext.reset();
         tonemapTransientContext.reset();
         swapchainTexture.Release();
+
+        diffuseIrradianceCubemapHandle = {};
+        specularReflectionCubemapHandle = {};
+        specularBRDFTextureHandle = {};
     }
 
     SceneRenderer::SceneRenderer(
@@ -105,11 +113,19 @@ namespace Luch::Render
 
         cameraResources = std::move(createdCameraResources);
 
-        materialManager = MakeUnique<MaterialManager>();
+        materialManager = MakeShared<MaterialManager>();
 
         auto materialManagerInitialized = materialManager->Initialize(context->device);
 
         if(!materialManagerInitialized)
+        {
+            return false;
+        }
+
+        iblRenderer = MakeUnique<IBLRenderer>(scene);
+
+        bool iblRendererInitialized = iblRenderer->Initialize(context, materialManager, cameraResources);
+        if(!iblRendererInitialized)
         {
             return false;
         }
@@ -287,12 +303,61 @@ namespace Luch::Render
             return false;
         }
 
+        auto iblRendererDeinitialized = iblRenderer->Deinitialize();
+        if(!iblRendererDeinitialized)
+        {
+            return false;
+        }
+
         return true;
+    }
+
+    bool SceneRenderer::ProbeIndirectLighting()
+    {
+        if(!config.useGlobalIllumination)
+        {
+            return true;
+        }
+
+        bool began = iblRenderer->BeginRender();
+        if(!began)
+        {
+            return false;
+        }
+
+        bool prepared = iblRenderer->PrepareScene();
+        if(!prepared)
+        {
+            return false;
+        }
+
+        iblRenderer->UpdateScene();
+
+        iblRenderer->ProbeIndirectLighting(Vec3{0, 3, 0});
+
+        auto [result, probe] = iblRenderer->EndRender();
+        if(!result)
+        {
+            return false;
+        }
+
+        diffuseIrradianceCubemap = probe.diffuseIrradianceCubemap;
+        specularReflectionCubemap = probe.specularReflectionCubemap;
+        specularBRDFTexture = probe.specularBRDFTexture;
+
+        return true;
+    }
+
+    void SceneRenderer::ResetIndirectLighting()
+    {
+        diffuseIrradianceCubemap = nullptr;
+        specularReflectionCubemap = nullptr;
+        specularBRDFTexture = nullptr;
     }
 
     bool SceneRenderer::BeginRender()
     {
-        bool timedOut = semaphore->Wait(1 * 1000 * 1000 * 1000);
+        bool timedOut = semaphore->Wait();
         if(timedOut)
         {
             return false;
@@ -315,9 +380,21 @@ namespace Luch::Render
         frame.outputHandle = frame.builder->GetResourceManager()->ImportTextureDeferred();
 
         RenderMutableResource luminanceTextureHandle;
+
         LUCH_ASSERT(!(config.useDepthPrepass && config.useTiledDeferredPass));
         LUCH_ASSERT(!(config.useComputeResolve && config.useTiledDeferredPass));
         LUCH_ASSERT(!(config.useForward && config.useTiledDeferredPass));
+
+        if(config.useDiffuseGlobalIllumination)
+        {
+            frame.diffuseIrradianceCubemapHandle = frame.builder->GetResourceManager()->ImportTexture(diffuseIrradianceCubemap);
+        }
+
+        if(config.useSpecularGlobalIllumination)
+        {
+            frame.specularReflectionCubemapHandle = frame.builder->GetResourceManager()->ImportTexture(specularReflectionCubemap);
+            frame.specularBRDFTextureHandle = frame.builder->GetResourceManager()->ImportTexture(specularBRDFTexture);
+        }
 
         if(config.useDepthPrepass)
         {
@@ -385,34 +462,34 @@ namespace Luch::Render
             }
         }
 
-        auto [prepareTonemapTransientContextResult, preparedTonemapTransientContext] = TonemapRenderPass::PrepareTonemapTransientContext(
-            tonemapPersistentContext.get(),
-            descriptorPool);
-
-        if(!prepareTonemapTransientContextResult)
         {
-            return false;
+            auto [prepareTonemapTransientContextResult, preparedTonemapTransientContext] = TonemapRenderPass::PrepareTonemapTransientContext(
+                tonemapPersistentContext.get(),
+                descriptorPool);
+
+            if(!prepareTonemapTransientContextResult)
+            {
+                return false;
+            }
+
+            frame.tonemapTransientContext = std::move(preparedTonemapTransientContext);
+
+            frame.tonemapTransientContext->inputHandle = luminanceTextureHandle;
+            frame.tonemapTransientContext->outputHandle = frame.outputHandle;
+            frame.tonemapTransientContext->outputSize = frame.outputSize;
+            frame.tonemapTransientContext->scene = scene;
+
+            frame.tonemapPass = MakeUnique<TonemapRenderPass>(
+                tonemapPersistentContext.get(),
+                frame.tonemapTransientContext.get(),
+                frame.builder.get());
         }
-
-        frame.tonemapTransientContext = std::move(preparedTonemapTransientContext);
-
-        frame.tonemapTransientContext->inputHandle = luminanceTextureHandle;
-        frame.tonemapTransientContext->outputHandle = frame.outputHandle;
-        frame.tonemapTransientContext->outputSize = frame.outputSize;
-        frame.tonemapTransientContext->scene = scene;
-
-        frame.tonemapPass = MakeUnique<TonemapRenderPass>(
-            tonemapPersistentContext.get(),
-            frame.tonemapTransientContext.get(),
-            frame.builder.get());
 
         return true;
     }
 
-    bool SceneRenderer::PrepareScene()
+    bool SceneRenderer::PrepareSceneResources()
     {
-        auto& frame = frameResources[GetCurrentFrameResourceIndex()];
-
         auto texturesUploaded = UploadSceneTextures();
         if(!texturesUploaded)
         {
@@ -435,6 +512,13 @@ namespace Luch::Render
                 return false;
             }
         }
+
+        return true;
+    }
+
+    bool SceneRenderer::PrepareScene()
+    {
+        auto& frame = frameResources[GetCurrentFrameResourceIndex()];
 
         if(config.useDepthPrepass)
         {
@@ -535,12 +619,11 @@ namespace Luch::Render
 
         frame.builder->GetResourceManager()->ProvideDeferredTexture(frame.outputHandle, swapchainTexture->GetTexture());
 
-        auto [buildResult, renderGraph] = frame.builder->Build();
-        auto commandLists = renderGraph->Execute();
-        for(auto& commandList : commandLists)
-        {
-            context->commandQueue->Submit(commandList);
-        }
+        auto [buildResult, builtRenderGraph] = frame.builder->Build();
+        frame.renderGraph = std::move(builtRenderGraph);
+
+        auto commandLists = frame.renderGraph->Execute();
+        RenderUtils::SubmitCommandLists(context->commandQueue, commandLists);
     }
 
     void SceneRenderer::EndRender()
@@ -558,7 +641,7 @@ namespace Luch::Render
 
         frameIndex++;
     }
-    
+
     bool SceneRenderer::PrepareForward(FrameResources& frame)
     {
         auto [prepareForwardTransientContextResult, preparedForwardTransientContext] = ForwardRenderPass::PrepareForwardTransientContext(
@@ -577,6 +660,17 @@ namespace Luch::Render
         frame.forwardTransientContext->scene = scene;
         frame.forwardTransientContext->sharedBuffer = frame.sharedBuffer;
         frame.forwardTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
+
+        if(config.useDiffuseGlobalIllumination)
+        {
+            frame.forwardTransientContext->diffuseIrradianceCubemapHandle = frame.diffuseIrradianceCubemapHandle;
+        }
+
+        if(config.useSpecularGlobalIllumination)
+        {
+            frame.forwardTransientContext->specularReflectionCubemapHandle = frame.specularReflectionCubemapHandle;
+            frame.forwardTransientContext->specularBRDFTextureHandle = frame.specularBRDFTextureHandle;
+        }
 
         if(config.useDepthPrepass)
         {
@@ -781,10 +875,7 @@ namespace Luch::Render
             return false;
         }
 
-        for (const auto& commandList : uploadTexturesResult.commandLists)
-        {
-            context->commandQueue->Submit(commandList);
-        }
+        RenderUtils::SubmitCommandLists(context->commandQueue, uploadTexturesResult.commandLists);
 
         return true;
     }

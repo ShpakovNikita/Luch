@@ -20,6 +20,18 @@ namespace Luch::Graphics
         Point2i destinationOrigin;
     };
 
+    struct TextureToTextureCopy
+    {
+        int32 sourceSlice = 0;
+        int32 sourceLevel = 0;
+        Point2i sourceOrigin;
+        Size2i sourceSize;
+
+        int32 destinationSlice = 0;
+        int32 destinationLevel = 0;
+        Point2i destinationOrigin;
+    };
+
     class CopyCommandList : public CommandList
     {
     public:
@@ -31,6 +43,7 @@ namespace Luch::Graphics
         CommandListType GetType() const override { return CommandListType::Copy; }
 
         virtual void CopyBufferToTexture(Buffer* buffer, Texture* texture, const BufferToTextureCopy& copy) = 0;
+        virtual void CopyTextureToTexture(Texture* source, Texture* destination, const TextureToTextureCopy& copy) = 0;
         virtual void GenerateMipMaps(Texture* texture) = 0;
     };
 }

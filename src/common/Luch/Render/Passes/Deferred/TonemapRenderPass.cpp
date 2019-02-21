@@ -46,7 +46,7 @@ namespace Luch::Render::Passes
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
-        auto node = builder->AddGraphicsRenderPass(RenderPassName, persistentContext->renderPass, this);
+        auto node = builder->AddGraphicsPass(RenderPassName, persistentContext->renderPass, this);
 
         input = node->ReadsTexture(transientContext->inputHandle);
         output = node->WritesToColorAttachment(0, transientContext->outputHandle);
@@ -62,7 +62,7 @@ namespace Luch::Render::Passes
     {
     }
 
-    void TonemapRenderPass::ExecuteGraphicsRenderPass(
+    void TonemapRenderPass::ExecuteGraphicsPass(
         RenderGraphResourceManager* manager,
         GraphicsCommandList* cmdList)
     {
