@@ -190,6 +190,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
         return false;
     }
 
+    renderer->GetMutableConfig().useGlobalIllumination = true;
     renderer->GetMutableConfig().useDiffuseGlobalIllumination = true;
     renderer->GetMutableConfig().useSpecularGlobalIllumination = true;
     renderer->GetMutableConfig().useForward = true;

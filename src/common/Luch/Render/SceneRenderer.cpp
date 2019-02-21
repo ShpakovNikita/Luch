@@ -314,6 +314,11 @@ namespace Luch::Render
 
     bool SceneRenderer::ProbeIndirectLighting()
     {
+        if(!config.useGlobalIllumination)
+        {
+            return true;
+        }
+
         bool began = iblRenderer->BeginRender();
         if(!began)
         {
