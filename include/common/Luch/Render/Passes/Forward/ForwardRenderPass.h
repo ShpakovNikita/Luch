@@ -52,7 +52,7 @@ namespace Luch::Render::Passes::Forward
 
         inline RenderMutableResource GetLuminanceTextureHandle() { return luminanceTextureHandle; }
 
-        void ExecuteGraphicsRenderPass(
+        void ExecuteGraphicsPass(
             RenderGraphResourceManager* manager,
             GraphicsCommandList* commandList) override;
     private:
@@ -83,7 +83,10 @@ namespace Luch::Render::Passes::Forward
 
         RenderMutableResource luminanceTextureHandle;
         RenderMutableResource depthStencilTextureHandle;
+
         RenderResource diffuseIrradianceCubemapHandle;
+        RenderResource specularReflectionCubemapHandle;
+        RenderResource specularBRDFTextureHandle;
 
         UnorderedMap<SceneV1::Mesh*, RefPtr<DescriptorSet>> meshDescriptorSets;
         UnorderedMap<SceneV1::Camera*, RefPtr<DescriptorSet>> cameraDescriptorSets;

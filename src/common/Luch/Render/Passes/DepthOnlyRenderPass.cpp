@@ -59,7 +59,7 @@ namespace Luch::Render::Passes
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
-        auto node = builder->AddGraphicsRenderPass(RenderPassName, persistentContext->renderPass, this);
+        auto node = builder->AddGraphicsPass(RenderPassName, persistentContext->renderPass, this);
 
         depthTextureHandle = node->CreateDepthStencilAttachment({ transientContext->outputSize });
     }
@@ -84,7 +84,7 @@ namespace Luch::Render::Passes
         }
     }
 
-    void DepthOnlyRenderPass::ExecuteGraphicsRenderPass(
+    void DepthOnlyRenderPass::ExecuteGraphicsPass(
         RenderGraphResourceManager* manager,
         GraphicsCommandList* commandList)
     {

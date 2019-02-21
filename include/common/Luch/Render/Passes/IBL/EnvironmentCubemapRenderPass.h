@@ -51,7 +51,7 @@ namespace Luch::Render::Passes::IBL
 
         inline RenderMutableResource GetEnvironmentLuminanceCubemapHandle() { return luminanceCubemapHandle; }
 
-        void ExecuteGraphicsRenderPass(
+        void ExecuteGraphicsPass(
             RenderGraphResourceManager* manager,
             GraphicsCommandList* commandList) override;
     private:

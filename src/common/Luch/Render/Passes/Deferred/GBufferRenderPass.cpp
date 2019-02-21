@@ -65,12 +65,12 @@ namespace Luch::Render::Passes::Deferred
 
         if(transientContext->useDepthPrepass)
         {
-            node = builder->AddGraphicsRenderPass(RenderPassWithDepthOnlyName, persistentContext->renderPassWithDepthOnly, this);
+            node = builder->AddGraphicsPass(RenderPassWithDepthOnlyName, persistentContext->renderPassWithDepthOnly, this);
             gbuffer.depthStencil = node->UseDepthStencilAttachment(transientContext->depthStencilTextureHandle);
         }
         else
         {
-            node = builder->AddGraphicsRenderPass(RenderPassName, persistentContext->renderPass, this);
+            node = builder->AddGraphicsPass(RenderPassName, persistentContext->renderPass, this);
             gbuffer.depthStencil = node->CreateDepthStencilAttachment({ transientContext->outputSize });
         }
 
@@ -103,7 +103,7 @@ namespace Luch::Render::Passes::Deferred
         }
     }
 
-    void GBufferRenderPass::ExecuteGraphicsRenderPass(
+    void GBufferRenderPass::ExecuteGraphicsPass(
         RenderGraphResourceManager* manager,
         GraphicsCommandList* commandList)
     {

@@ -190,7 +190,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
         return false;
     }
 
-
+    renderer->GetMutableConfig().useEnvironmentMapGlobalIllumination = true;
     renderer->GetMutableConfig().useForward = true;
     renderer->GetMutableConfig().useDepthPrepass = true;
     renderer->GetMutableConfig().useComputeResolve = false;
@@ -227,6 +227,18 @@ void SampleApplication::Process()
     wasdController.Tick(16.0f / 1000.0f);
     scene->Update();
 
+    bool resourcesPrepared = renderer->PrepareSceneResources();
+    if(!resourcesPrepared)
+    {
+        return;
+    }
+
+    if((probeIndirectEveryFrame || !indirectProbed))
+    {
+        indirectProbed = renderer->ProbeIndirectLighting();
+        LUCH_ASSERT(indirectProbed);
+    }
+
     bool beginSucceeded = renderer->BeginRender();
     if(!beginSucceeded)
     {
@@ -241,13 +253,6 @@ void SampleApplication::Process()
     }
 
     renderer->UpdateScene();
-
-    if(!indirectProbed)
-    {
-        indirectProbed = renderer->ProbeIndirectLighting();
-        LUCH_ASSERT(indirectProbed);
-    }
-
     renderer->DrawScene(cameraNode);
     renderer->EndRender();
 }

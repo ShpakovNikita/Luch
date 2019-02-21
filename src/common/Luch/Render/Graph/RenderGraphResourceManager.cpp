@@ -23,9 +23,16 @@ namespace Luch::Render::Graph
 
     RenderMutableResource RenderGraphResourceManager::ImportTexture(RefPtr<Texture> texture)
     {
-        auto handle = GetNextHandle();
-        importedTextures[handle] = texture;
-        return handle;
+        if(texture != nullptr)
+        {
+            auto handle = GetNextHandle();
+            importedTextures[handle] = texture;
+            return handle;
+        }
+        else
+        {
+            return {};
+        }
     }
 
     RenderMutableResource RenderGraphResourceManager::ImportTextureDeferred()
@@ -65,9 +72,16 @@ namespace Luch::Render::Graph
 
     RenderMutableResource RenderGraphResourceManager::ImportBuffer(RefPtr<Buffer> buffer)
     {
-        auto handle = GetNextHandle();
-        importedBuffers[handle] = buffer;
-        return handle;
+        if(buffer != nullptr)
+        {
+            auto handle = GetNextHandle();
+            importedBuffers[handle] = buffer;
+            return handle;
+        }
+        else
+        {
+            return {};
+        }
     }
 
     RenderMutableResource RenderGraphResourceManager::CreateBuffer(const BufferCreateInfo& createInfo)

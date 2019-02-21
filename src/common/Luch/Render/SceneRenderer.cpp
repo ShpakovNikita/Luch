@@ -85,6 +85,10 @@ namespace Luch::Render
         resolveTransientContext.reset();
         tonemapTransientContext.reset();
         swapchainTexture.Release();
+
+        diffuseIrradianceCubemapHandle = {};
+        specularReflectionCubemapHandle = {};
+        specularBRDFTextureHandle = {};
     }
 
     SceneRenderer::SceneRenderer(
@@ -109,7 +113,7 @@ namespace Luch::Render
 
         cameraResources = std::move(createdCameraResources);
 
-        materialManager = MakeUnique<MaterialManager>();
+        materialManager = MakeShared<MaterialManager>();
 
         auto materialManagerInitialized = materialManager->Initialize(context->device);
 
@@ -120,7 +124,7 @@ namespace Luch::Render
 
         iblRenderer = MakeUnique<IBLRenderer>(scene);
 
-        bool iblRendererInitialized = iblRenderer->Initialize(context, cameraResources.get(), materialManager->GetResources());
+        bool iblRendererInitialized = iblRenderer->Initialize(context, materialManager, cameraResources);
         if(!iblRendererInitialized)
         {
             return false;
@@ -333,8 +337,17 @@ namespace Luch::Render
         }
 
         diffuseIrradianceCubemap = probe.diffuseIrradianceCubemap;
+        specularReflectionCubemap = probe.specularReflectionCubemap;
+        specularBRDFTexture = probe.specularBRDFTexture;
 
         return true;
+    }
+
+    void SceneRenderer::ResetIndirectLighting()
+    {
+        diffuseIrradianceCubemap = nullptr;
+        specularReflectionCubemap = nullptr;
+        specularBRDFTexture = nullptr;
     }
 
     bool SceneRenderer::BeginRender()
@@ -370,6 +383,8 @@ namespace Luch::Render
         if(config.useEnvironmentMapGlobalIllumination)
         {
             frame.diffuseIrradianceCubemapHandle = frame.builder->GetResourceManager()->ImportTexture(diffuseIrradianceCubemap);
+            frame.specularReflectionCubemapHandle = frame.builder->GetResourceManager()->ImportTexture(specularReflectionCubemap);
+            frame.specularBRDFTextureHandle = frame.builder->GetResourceManager()->ImportTexture(specularBRDFTexture);
         }
 
         if(config.useDepthPrepass)
@@ -464,10 +479,8 @@ namespace Luch::Render
         return true;
     }
 
-    bool SceneRenderer::PrepareScene()
+    bool SceneRenderer::PrepareSceneResources()
     {
-        auto& frame = frameResources[GetCurrentFrameResourceIndex()];
-
         auto texturesUploaded = UploadSceneTextures();
         if(!texturesUploaded)
         {
@@ -490,6 +503,13 @@ namespace Luch::Render
                 return false;
             }
         }
+
+        return true;
+    }
+
+    bool SceneRenderer::PrepareScene()
+    {
+        auto& frame = frameResources[GetCurrentFrameResourceIndex()];
 
         if(config.useDepthPrepass)
         {
@@ -638,6 +658,8 @@ namespace Luch::Render
         if(config.useEnvironmentMapGlobalIllumination)
         {
             frame.forwardTransientContext->diffuseIrradianceCubemapHandle = frame.diffuseIrradianceCubemapHandle;
+            frame.forwardTransientContext->specularReflectionCubemapHandle = frame.specularReflectionCubemapHandle;
+            frame.forwardTransientContext->specularBRDFTextureHandle = frame.specularBRDFTextureHandle;
         }
 
         if(config.useDepthPrepass)

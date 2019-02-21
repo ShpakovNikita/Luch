@@ -28,6 +28,11 @@ namespace Luch::Metal
             Texture* texture,
             const BufferToTextureCopy& copy) override;
 
+        void CopyTextureToTexture(
+            Texture* source,
+            Texture* destination,
+            const TextureToTextureCopy& copy) override;
+
         void GenerateMipMaps(Texture* texture) override;
     private:
         mtlpp::BlitCommandEncoder commandEncoder;

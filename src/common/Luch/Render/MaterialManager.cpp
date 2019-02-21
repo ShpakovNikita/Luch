@@ -128,30 +128,41 @@ namespace Luch::Render
 
     bool MaterialManager::PrepareMaterial(SceneV1::PbrMaterial* material)
     {
-        auto[allocateTextureDescriptorSetResult, textureDescriptorSet] = resources->descriptorPool->AllocateDescriptorSet(
-            resources->materialTextureDescriptorSetLayout);
-        if(allocateTextureDescriptorSetResult != GraphicsResult::Success)
+        if(material->GetTextureDescriptorSet() == nullptr)
         {
-            return false;
+            auto[allocateTextureDescriptorSetResult, textureDescriptorSet] = resources->descriptorPool->AllocateDescriptorSet(
+                resources->materialTextureDescriptorSetLayout);
+            if(allocateTextureDescriptorSetResult != GraphicsResult::Success)
+            {
+                return false;
+            }
+
+            material->SetTextureDescriptorSet(textureDescriptorSet);
         }
 
-        auto[allocateBufferDescriptorSetResult, bufferDescriptorSet] = resources->descriptorPool->AllocateDescriptorSet(
-            resources->materialBufferDescriptorSetLayout);
-        if(allocateBufferDescriptorSetResult != GraphicsResult::Success)
+        if(material->GetBufferDescriptorSet() == nullptr)
         {
-            return false;
+            auto[allocateBufferDescriptorSetResult, bufferDescriptorSet] = resources->descriptorPool->AllocateDescriptorSet(
+                resources->materialBufferDescriptorSetLayout);
+            if(allocateBufferDescriptorSetResult != GraphicsResult::Success)
+            {
+                return false;
+            }
+
+            material->SetBufferDescriptorSet(bufferDescriptorSet);
         }
 
-        auto[allocateSamplerDescriptorSetResult, samplerDescriptorSet] = resources->descriptorPool->AllocateDescriptorSet(
-            resources->materialSamplerDescriptorSetLayout);
-        if(allocateSamplerDescriptorSetResult != GraphicsResult::Success)
+        if(material->GetSamplerDescriptorSet() == nullptr)
         {
-            return false;
-        }
+            auto[allocateSamplerDescriptorSetResult, samplerDescriptorSet] = resources->descriptorPool->AllocateDescriptorSet(
+                resources->materialSamplerDescriptorSetLayout);
+            if(allocateSamplerDescriptorSetResult != GraphicsResult::Success)
+            {
+                return false;
+            }
 
-        material->SetTextureDescriptorSet(textureDescriptorSet);
-        material->SetBufferDescriptorSet(bufferDescriptorSet);
-        material->SetSamplerDescriptorSet(samplerDescriptorSet);
+            material->SetSamplerDescriptorSet(samplerDescriptorSet);
+        }
 
         return true;
     }

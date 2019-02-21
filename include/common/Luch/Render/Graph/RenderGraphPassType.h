@@ -6,5 +6,6 @@ namespace Luch::Render::Graph
     {
         Graphics,
         Compute,
+        Copy,
     };
 }

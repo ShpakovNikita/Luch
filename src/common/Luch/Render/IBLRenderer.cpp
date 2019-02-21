@@ -29,12 +29,19 @@
 #include <Luch/Graphics/DescriptorPoolCreateInfo.h>
 
 #include <Luch/Render/RenderUtils.h>
+#include <Luch/Render/MaterialManager.h>
 
 #include <Luch/Render/Passes/IBL/EnvironmentCubemapRenderPass.h>
 #include <Luch/Render/Passes/IBL/EnvironmentCubemapContext.h>
 
 #include <Luch/Render/Passes/IBL/DiffuseIrradianceRenderPass.h>
 #include <Luch/Render/Passes/IBL/DiffuseIrradianceContext.h>
+
+#include <Luch/Render/Passes/IBL/SpecularReflectionRenderPass.h>
+#include <Luch/Render/Passes/IBL/SpecularReflectionContext.h>
+
+#include <Luch/Render/Passes/IBL/SpecularBRDFRenderPass.h>
+#include <Luch/Render/Passes/IBL/SpecularBRDFContext.h>
 
 #include <Luch/Render/Graph/RenderGraph.h>
 #include <Luch/Render/Graph/RenderGraphBuilder.h>
@@ -58,12 +65,12 @@ namespace Luch::Render
 
     bool IBLRenderer::Initialize(
         SharedPtr<RenderContext> aContext,
-        CameraResources* aCameraResources,
-        MaterialResources* aMaterialResources)
+        SharedPtr<MaterialManager> aMaterialManager,
+        SharedPtr<CameraResources> aCameraResources)
     {
         context = aContext;
         cameraResources = aCameraResources;
-        materialResources = aMaterialResources;
+        materialManager = aMaterialManager;
 
         resourcePool = MakeUnique<RenderGraphResourcePool>(context->device);
 
@@ -81,8 +88,8 @@ namespace Luch::Render
         {
             auto [result, createdContext] = EnvironmentCubemapRenderPass::PrepareEnvironmentCubemapPersistentContext(
                 context->device,
-                cameraResources,
-                materialResources);
+                cameraResources.get(),
+                materialManager->GetResources());
             
             if(!result)
             {
@@ -102,6 +109,30 @@ namespace Luch::Render
             }
 
             diffuseIrradiancePersistentContext = std::move(createdContext);
+        }
+
+        // Specular Reflection Persistent Context
+        {
+            auto [result, createdContext] = SpecularReflectionRenderPass::PrepareSpecularReflectionPersistentContext(context->device);
+
+            if(!result)
+            {
+                return false;
+            }
+
+            specularReflectionPersistentContext = std::move(createdContext);
+        }
+
+        // Specular Reflection Persistent Context
+        {
+            auto [result, createdContext] = SpecularBRDFRenderPass::PrepareSpecularBRDFPersistentContext(context->device);
+
+            if(!result)
+            {
+                return false;
+            }
+
+            specularBRDFPersistentContext = std::move(createdContext);
         }
 
         {
@@ -167,8 +198,8 @@ namespace Luch::Render
         environmentCubemapPersistentContext.reset();
         diffuseIrradiancePersistentContext.reset();
         context.reset();
-        cameraResources = nullptr;
-        materialResources = nullptr;
+        cameraResources.reset();
+        materialManager.reset();
 
         return true;
     }
@@ -202,6 +233,18 @@ namespace Luch::Render
             return false;
         }
 
+        bool specularReflectionPrepared = PrepareSpecularReflection();
+        if(!specularReflectionPrepared)
+        {
+            return false;
+        }
+
+        bool specularBRDFPrepared = PrepareSpecularBRDF();
+        if(!specularBRDFPrepared)
+        {
+            return false;
+        }
+
         return true;
     }
 
@@ -214,6 +257,14 @@ namespace Luch::Render
 
     void IBLRenderer::UpdateScene()
     {
+        auto& materials = scene->GetSceneProperties().materials;
+
+        // TODO fix this
+        for(auto& material : materials)
+        {
+            materialManager->UpdateMaterial(material, sharedBuffer.get());
+        }
+
         environmentCubemapPass->UpdateScene();
     }
 
@@ -251,13 +302,19 @@ namespace Luch::Render
         IBLResult result;
         result.environmentCubemap = renderGraph->GetResourceManager()->ReleaseTexture(environmentCubemapPass->GetEnvironmentLuminanceCubemapHandle());
         result.diffuseIrradianceCubemap = renderGraph->GetResourceManager()->ReleaseTexture(diffuseIrradiancePass->GetIrradianceCubemapHandle());
+        result.specularReflectionCubemap = renderGraph->GetResourceManager()->ReleaseTexture(specularReflectionPass->GetSpecularReflectionCubemapHandle());
+        result.specularBRDFTexture = renderGraph->GetResourceManager()->ReleaseTexture(specularBRDFPass->GetBRDFTextureHandle());
 
         environmentCubemapPass.reset();
         diffuseIrradiancePass.release();
+        specularReflectionTransientContext.reset();
         environmentCubemapTransientContext.reset();
         diffuseIrradianceTransientContext.reset();
+        specularReflectionTransientContext.reset();
         builder.reset();
         renderGraph.reset();
+
+        renderSemaphore->Signal();
 
         return { true, result };
     }
@@ -273,12 +330,13 @@ namespace Luch::Render
             return false;
         }
 
+        transientContext->descriptorPool = descriptorPool;
+        transientContext->outputSize = { 128, 128 };
+        transientContext->scene = scene;
+        transientContext->sharedBuffer = sharedBuffer;
+
         environmentCubemapTransientContext = std::move(transientContext);
 
-        environmentCubemapTransientContext->descriptorPool = descriptorPool;
-        environmentCubemapTransientContext->outputSize = { 256, 256 };
-        environmentCubemapTransientContext->scene = scene;
-        environmentCubemapTransientContext->sharedBuffer = sharedBuffer;
         environmentCubemapPass = MakeUnique<EnvironmentCubemapRenderPass>(
             environmentCubemapPersistentContext.get(),
             environmentCubemapTransientContext.get(),
@@ -298,16 +356,68 @@ namespace Luch::Render
             return false;
         }
 
+        transientContext->descriptorPool = descriptorPool;
+        transientContext->outputSize = { 128, 128 };
+        transientContext->scene = scene;
+        transientContext->sharedBuffer = sharedBuffer;
+        transientContext->luminanceCubemapHandle = environmentCubemapPass->GetEnvironmentLuminanceCubemapHandle();
+
         diffuseIrradianceTransientContext = std::move(transientContext);
 
-        diffuseIrradianceTransientContext->descriptorPool = descriptorPool;
-        diffuseIrradianceTransientContext->outputSize = { 128, 128 };
-        diffuseIrradianceTransientContext->scene = scene;
-        diffuseIrradianceTransientContext->sharedBuffer = sharedBuffer;
-        diffuseIrradianceTransientContext->luminanceCubemapHandle = environmentCubemapPass->GetEnvironmentLuminanceCubemapHandle();
         diffuseIrradiancePass = MakeUnique<DiffuseIrradianceRenderPass>(
             diffuseIrradiancePersistentContext.get(),
             diffuseIrradianceTransientContext.get(),
+            builder.get());
+
+        return true;
+    }
+
+    bool IBLRenderer::PrepareSpecularReflection()
+    {
+        auto [result, transientContext] = SpecularReflectionRenderPass::PrepareSpecularReflectionTransientContext(
+            specularReflectionPersistentContext.get(),
+            descriptorPool);
+
+        if(!result)
+        {
+            return false;
+        }
+
+        transientContext->descriptorPool = descriptorPool;
+        transientContext->outputSize = { 128, 128 };
+        transientContext->sharedBuffer = sharedBuffer;
+        transientContext->luminanceCubemapHandle = environmentCubemapPass->GetEnvironmentLuminanceCubemapHandle();
+
+        specularReflectionTransientContext = std::move(transientContext);
+
+        specularReflectionPass = MakeUnique<SpecularReflectionRenderPass>(
+            specularReflectionPersistentContext.get(),
+            specularReflectionTransientContext.get(),
+            builder.get());
+
+        return true;
+    }
+
+    bool IBLRenderer::PrepareSpecularBRDF()
+    {
+        auto [result, transientContext] = SpecularBRDFRenderPass::PrepareSpecularBRDFTransientContext(
+            specularBRDFPersistentContext.get(),
+            descriptorPool);
+
+        if(!result)
+        {
+            return false;
+        }
+
+        transientContext->descriptorPool = descriptorPool;
+        transientContext->outputSize = { 128, 128 };
+        transientContext->sharedBuffer = sharedBuffer;
+
+        specularBRDFTransientContext = std::move(transientContext);
+
+        specularBRDFPass = MakeUnique<SpecularBRDFRenderPass>(
+            specularBRDFPersistentContext.get(),
+            specularBRDFTransientContext.get(),
             builder.get());
 
         return true;

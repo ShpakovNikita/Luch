@@ -28,6 +28,9 @@ namespace Luch::Render::Passes::Forward
         DescriptorSetBinding meshUniformBufferBinding;
 
         DescriptorSetBinding diffuseIrradianceCubemapBinding;
+        DescriptorSetBinding specularReflectionCubemapBinding;
+        DescriptorSetBinding specularBRDFTextureBinding;
+
         DescriptorSetBinding lightingParamsBinding;
         DescriptorSetBinding lightsBufferBinding;
 
@@ -49,8 +52,13 @@ namespace Luch::Render::Passes::Forward
         RefPtr<DescriptorSet> cameraBufferDescriptorSet;
         bool useDepthPrepass = false;
         RenderMutableResource depthStencilTextureHandle;
-        RenderResource diffuseIrradianceCubemapHandle;
+
         RefPtr<DescriptorSet> lightsBufferDescriptorSet;
+
+        RenderResource diffuseIrradianceCubemapHandle;
+        RenderResource specularReflectionCubemapHandle;
+        RenderResource specularBRDFTextureHandle;
+
         RefPtr<DescriptorSet> indirectLightingTexturesDescriptorSet;
     };
 }

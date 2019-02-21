@@ -68,13 +68,13 @@ namespace Luch::Render::Passes::Forward
 
         if(transientContext->useDepthPrepass)
         {
-            node = builder->AddGraphicsRenderPass(RenderPassNameWithDepthOnly, persistentContext->renderPassWithDepthOnly, this);
+            node = builder->AddGraphicsPass(RenderPassNameWithDepthOnly, persistentContext->renderPassWithDepthOnly, this);
             luminanceTextureHandle = node->CreateColorAttachment(0, { transientContext->outputSize });
             depthStencilTextureHandle = node->UseDepthStencilAttachment(transientContext->depthStencilTextureHandle);
         }
         else
         {
-            node = builder->AddGraphicsRenderPass(RenderPassName, persistentContext->renderPass, this);
+            node = builder->AddGraphicsPass(RenderPassName, persistentContext->renderPass, this);
             luminanceTextureHandle = node->CreateColorAttachment(0, { transientContext->outputSize });
             depthStencilTextureHandle = node->CreateDepthStencilAttachment({ transientContext->outputSize });
         }
@@ -82,6 +82,12 @@ namespace Luch::Render::Passes::Forward
         if(transientContext->diffuseIrradianceCubemapHandle)
         {
             diffuseIrradianceCubemapHandle = node->ReadsTexture(transientContext->diffuseIrradianceCubemapHandle);
+        }
+
+        if(transientContext->specularReflectionCubemapHandle && transientContext->specularBRDFTextureHandle)
+        {
+            specularReflectionCubemapHandle = node->ReadsTexture(transientContext->specularReflectionCubemapHandle);
+            specularBRDFTextureHandle = node->ReadsTexture(transientContext->specularBRDFTextureHandle);
         }
     }
 
@@ -111,7 +117,7 @@ namespace Luch::Render::Passes::Forward
         UpdateLights(lightNodes);
     }
 
-    void ForwardRenderPass::ExecuteGraphicsRenderPass(
+    void ForwardRenderPass::ExecuteGraphicsPass(
         RenderGraphResourceManager* manager,
         GraphicsCommandList* commandList)
     {
@@ -266,13 +272,33 @@ namespace Luch::Render::Passes::Forward
                 persistentContext->diffuseIrradianceCubemapBinding,
                 diffuseIrradianceCubemap);
 
-            transientContext->indirectLightingTexturesDescriptorSet->Update();
-
             commandList->BindTextureDescriptorSet(
                 ShaderStage::Fragment,
                 persistentContext->pipelineLayout,
                 transientContext->indirectLightingTexturesDescriptorSet);
         }
+
+        if(specularReflectionCubemapHandle && specularBRDFTextureHandle)
+        {
+            auto specularReflectionCubemap = manager->GetTexture(specularReflectionCubemapHandle);
+
+            transientContext->indirectLightingTexturesDescriptorSet->WriteTexture(
+                persistentContext->specularReflectionCubemapBinding,
+                specularReflectionCubemap);
+
+            auto specularBRDFTexture = manager->GetTexture(specularBRDFTextureHandle);
+
+            transientContext->indirectLightingTexturesDescriptorSet->WriteTexture(
+                persistentContext->specularBRDFTextureBinding,
+                specularBRDFTexture);
+        }
+
+        transientContext->indirectLightingTexturesDescriptorSet->Update();
+
+        commandList->BindTextureDescriptorSet(
+            ShaderStage::Fragment,
+            persistentContext->pipelineLayout,
+            transientContext->indirectLightingTexturesDescriptorSet);
 
         commandList->BindBufferDescriptorSet(
             ShaderStage::Vertex,
@@ -622,35 +648,39 @@ namespace Luch::Render::Passes::Forward
             context->descriptorPool = std::move(createdDescriptorPool);
         }
 
-        context->meshUniformBufferBinding.OfType(ResourceType::UniformBuffer);
-
         {
-            DescriptorSetLayoutCreateInfo meshDescriptorSetLayoutCreateInfo;
-            meshDescriptorSetLayoutCreateInfo
+            context->meshUniformBufferBinding.OfType(ResourceType::UniformBuffer);
+
+            DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo;
+            descriptorSetLayoutCreateInfo
                 .OfType(DescriptorSetType::Buffer)
+                .WithNBindings(1)
                 .AddBinding(&context->meshUniformBufferBinding);
 
-            auto[createMeshDescriptorSetLayoutResult, createdMeshDescriptorSetLayout] = device->CreateDescriptorSetLayout(
-                meshDescriptorSetLayoutCreateInfo);
+            auto [result, createdDescriptorSetLayout] = device->CreateDescriptorSetLayout(descriptorSetLayoutCreateInfo);
 
-            if (createMeshDescriptorSetLayoutResult != GraphicsResult::Success)
+            if (result != GraphicsResult::Success)
             {
                 LUCH_ASSERT(false);
                 return { false };
             }
 
-            context->meshBufferDescriptorSetLayout = std::move(createdMeshDescriptorSetLayout);
+            context->meshBufferDescriptorSetLayout = std::move(createdDescriptorSetLayout);
         }
 
         // Indirect lighting descriptor set layout
         {
             context->diffuseIrradianceCubemapBinding.OfType(ResourceType::Texture);
+            context->specularReflectionCubemapBinding.OfType(ResourceType::Texture);
+            context->specularBRDFTextureBinding.OfType(ResourceType::Texture);
 
             DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo;
             descriptorSetLayoutCreateInfo
                 .OfType(DescriptorSetType::Texture)
-                .WithNBindings(1)
-                .AddBinding(&context->diffuseIrradianceCubemapBinding);
+                .WithNBindings(3)
+                .AddBinding(&context->diffuseIrradianceCubemapBinding)
+                .AddBinding(&context->specularReflectionCubemapBinding)
+                .AddBinding(&context->specularBRDFTextureBinding);
 
             auto [result, createdDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(descriptorSetLayoutCreateInfo);
             if(result != GraphicsResult::Success)

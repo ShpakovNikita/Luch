@@ -64,7 +64,7 @@ namespace Luch::Render::Passes::IBL
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
-        auto node = builder->AddGraphicsRenderPass(RenderPassName, persistentContext->renderPass, this);
+        auto node = builder->AddGraphicsPass(RenderPassName, persistentContext->renderPass, this);
 
         RenderGraphAttachmentCreateInfo cubemapAttachmentCreateInfo;
         cubemapAttachmentCreateInfo.size = transientContext->outputSize;
@@ -100,7 +100,7 @@ namespace Luch::Render::Passes::IBL
         UpdateLights(lightNodes);
     }
 
-    void EnvironmentCubemapRenderPass::ExecuteGraphicsRenderPass(
+    void EnvironmentCubemapRenderPass::ExecuteGraphicsPass(
         RenderGraphResourceManager* manager,
         GraphicsCommandList* commandList)
     {

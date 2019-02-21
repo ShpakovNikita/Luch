@@ -28,6 +28,7 @@ namespace Luch::Metal
 
     void MetalCopyCommandList::End()
     {
+        commandBuffer.SetLabel(ns::String{ label.c_str() });
         commandEncoder.SetLabel(ns::String{ label.c_str() });
         commandEncoder.EndEncoding();
         commandEncoder = {};
@@ -49,6 +50,25 @@ namespace Luch::Metal
             mtlTexture,
             copy.destinationSlice,
             copy.destinationMipmapLevel,
+            { (uint32)copy.destinationOrigin.x, (uint32)copy.destinationOrigin.y, 0 });
+    }
+
+    void MetalCopyCommandList::CopyTextureToTexture(
+        Texture* source,
+        Texture* destination,
+        const TextureToTextureCopy& copy)
+    {
+        auto mtlSource = static_cast<MetalTexture*>(source)->texture;
+        auto mtlDestination = static_cast<MetalTexture*>(destination)->texture;
+        commandEncoder.Copy(
+            mtlSource,
+            copy.sourceSlice,
+            copy.sourceLevel,
+            { (uint32)copy.sourceOrigin.x, (uint32)copy.sourceOrigin.y, 0 },
+            { (uint32)copy.sourceSize.width, (uint32)copy.sourceSize.height, 1 },
+            mtlDestination,
+            copy.destinationSlice,
+            copy.destinationLevel,
             { (uint32)copy.destinationOrigin.x, (uint32)copy.destinationOrigin.y, 0 });
     }
 

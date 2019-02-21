@@ -50,7 +50,7 @@ namespace Luch::Render::Passes
 
         RenderMutableResource GetDepthTextureHandle() { return depthTextureHandle; }
 
-        void ExecuteGraphicsRenderPass(
+        void ExecuteGraphicsPass(
             RenderGraphResourceManager* manager,
             GraphicsCommandList* commandList) override;
     private:

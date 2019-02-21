@@ -42,7 +42,7 @@ namespace Luch::Render::Passes::IBL
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
-        auto node = builder->AddComputeRenderPass(RenderPassName, this);
+        auto node = builder->AddComputePass(RenderPassName, this);
 
         luminanceCubemapHandle = node->ReadsTexture(transientContext->luminanceCubemapHandle);
 
@@ -57,7 +57,7 @@ namespace Luch::Render::Passes::IBL
 
     DiffuseIrradianceRenderPass::~DiffuseIrradianceRenderPass() = default;
 
-    void DiffuseIrradianceRenderPass::ExecuteComputeRenderPass(
+    void DiffuseIrradianceRenderPass::ExecuteComputePass(
         RenderGraphResourceManager* manager,
         ComputeCommandList* cmdList)
     {
@@ -75,7 +75,6 @@ namespace Luch::Render::Passes::IBL
 
         transientContext->cubemapDescriptorSet->Update();
 
-        cmdList->Begin();
         cmdList->BindPipelineState(persistentContext->pipelineState);
 
         cmdList->BindTextureDescriptorSet(
@@ -86,7 +85,6 @@ namespace Luch::Render::Passes::IBL
         int32 threadgroupColumns = (transientContext->outputSize.width + ThreadsPerThreadgroup.width - 1) / ThreadsPerThreadgroup.width;
 
         cmdList->DispatchThreadgroups({threadgroupColumns, threadgroupRows, 6}, ThreadsPerThreadgroup);
-        cmdList->End();
     }
 
     RefPtr<ComputePipelineState> DiffuseIrradianceRenderPass::CreateDiffuseIrradiancePipelineState(DiffuseIrradiancePersistentContext* context)

@@ -74,4 +74,5 @@ private:
     Luch::MouseNodeController mouseController;
 
     bool indirectProbed = false;
+    bool probeIndirectEveryFrame = true;
 };

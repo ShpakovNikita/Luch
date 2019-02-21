@@ -52,6 +52,9 @@ namespace Luch::Render
         UniquePtr<TonemapTransientContext> tonemapTransientContext;
 
         Graph::RenderResource diffuseIrradianceCubemapHandle;
+        Graph::RenderResource specularReflectionCubemapHandle;
+        Graph::RenderResource specularBRDFTextureHandle;
+
         Graph::RenderMutableResource outputHandle;
         RefPtr<SwapchainTexture> swapchainTexture;
 
@@ -72,6 +75,10 @@ namespace Luch::Render
         bool Deinitialize();
 
         bool ProbeIndirectLighting();
+        void ResetIndirectLighting();
+
+        bool PrepareSceneResources();
+
         bool BeginRender();
         bool PrepareScene();
         void UpdateScene();
@@ -97,8 +104,10 @@ namespace Luch::Render
         UniquePtr<IBLRenderer> iblRenderer;
 
         RefPtr<Texture> diffuseIrradianceCubemap;
+        RefPtr<Texture> specularReflectionCubemap;
+        RefPtr<Texture> specularBRDFTexture;
 
-        UniquePtr<MaterialManager> materialManager;
+        SharedPtr<MaterialManager> materialManager;
         UniquePtr<Graph::RenderGraphResourcePool> resourcePool;
 
         UniquePtr<DepthOnlyPersistentContext> depthOnlyPersistentContext;

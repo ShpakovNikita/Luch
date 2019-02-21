@@ -27,6 +27,7 @@ namespace Luch::Render
         RefPtr<Texture> environmentCubemap;
         RefPtr<Texture> diffuseIrradianceCubemap;
         RefPtr<Texture> specularReflectionCubemap;
+        RefPtr<Texture> specularBRDFTexture;
     };
 
     class IBLRenderer
@@ -40,8 +41,8 @@ namespace Luch::Render
 
         bool Initialize(
             SharedPtr<RenderContext> context,
-            CameraResources* cameraResources,
-            MaterialResources* materialResources);
+            SharedPtr<MaterialManager> materialManager,
+            SharedPtr<CameraResources> cameraResources);
 
         bool Deinitialize();
 
@@ -53,6 +54,8 @@ namespace Luch::Render
     private:
         bool PrepareEnvironmentMapping();
         bool PrepareDiffuseIrradiance();
+        bool PrepareSpecularReflection();
+        bool PrepareSpecularBRDF();
 
         SharedPtr<SharedBuffer> sharedBuffer;
 
@@ -60,19 +63,25 @@ namespace Luch::Render
 
         UniquePtr<IBL::EnvironmentCubemapPersistentContext> environmentCubemapPersistentContext;
         UniquePtr<IBL::DiffuseIrradiancePersistentContext> diffuseIrradiancePersistentContext;
+        UniquePtr<IBL::SpecularReflectionPersistentContext> specularReflectionPersistentContext;
+        UniquePtr<IBL::SpecularBRDFPersistentContext> specularBRDFPersistentContext;
 
         UniquePtr<IBL::EnvironmentCubemapTransientContext> environmentCubemapTransientContext;
         UniquePtr<IBL::DiffuseIrradianceTransientContext> diffuseIrradianceTransientContext;
+        UniquePtr<IBL::SpecularReflectionTransientContext> specularReflectionTransientContext;
+        UniquePtr<IBL::SpecularBRDFTransientContext> specularBRDFTransientContext;
 
         UniquePtr<IBL::EnvironmentCubemapRenderPass> environmentCubemapPass;
         UniquePtr<IBL::DiffuseIrradianceRenderPass> diffuseIrradiancePass;
+        UniquePtr<IBL::SpecularReflectionRenderPass> specularReflectionPass;
+        UniquePtr<IBL::SpecularBRDFRenderPass> specularBRDFPass;
 
         UniquePtr<Graph::RenderGraphBuilder> builder;
         UniquePtr<Graph::RenderGraph> renderGraph;
 
         SharedPtr<RenderContext> context;
-        CameraResources* cameraResources = nullptr;
-        MaterialResources* materialResources = nullptr;
+        SharedPtr<MaterialManager> materialManager;
+        SharedPtr<CameraResources> cameraResources;
 
         RefPtr<Semaphore> renderSemaphore;
         RefPtr<Semaphore> probeReadySemaphore;

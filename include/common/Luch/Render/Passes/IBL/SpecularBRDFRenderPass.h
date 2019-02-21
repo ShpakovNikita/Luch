@@ -21,41 +21,44 @@ namespace Luch::Render::Passes::IBL
     using namespace Graphics;
     using namespace Graph;
 
-    class DiffuseIrradianceRenderPass : public RenderGraphPass
+    class SpecularBRDFRenderPass : public RenderGraphPass
     {
         static constexpr int32 SharedUniformBufferSize = 1024 * 1024;
         static constexpr int32 MaxDescriptorSetCount = 4096;
         static constexpr int32 MaxDescriptorCount = 4096;
         static constexpr Size3i ThreadsPerThreadgroup = { 16, 16, 1 };
-        static constexpr Format IrradianceFormat = Format::RGBA8Unorm;
+        static constexpr Format BRDFFormat = Format::RGBA16Sfloat;
     public:
         static const String RenderPassName;
 
-        static ResultValue<bool, UniquePtr<DiffuseIrradiancePersistentContext>> PrepareDiffuseIrradiancePersistentContext(GraphicsDevice* device);
+        static ResultValue<bool, UniquePtr<SpecularBRDFPersistentContext>> PrepareSpecularBRDFPersistentContext(GraphicsDevice* device);
 
-        static ResultValue<bool, UniquePtr<DiffuseIrradianceTransientContext>> PrepareDiffuseIrradianceTransientContext(
-            DiffuseIrradiancePersistentContext* persistentContext,
+        static ResultValue<bool, UniquePtr<SpecularBRDFTransientContext>> PrepareSpecularBRDFTransientContext(
+            SpecularBRDFPersistentContext* persistentContext,
             RefPtr<DescriptorPool> descriptorPool);
 
-        DiffuseIrradianceRenderPass(
-            DiffuseIrradiancePersistentContext* persistentContext,
-            DiffuseIrradianceTransientContext* transientContext,
+        SpecularBRDFRenderPass(
+            SpecularBRDFPersistentContext* persistentContext,
+            SpecularBRDFTransientContext* transientContext,
             RenderGraphBuilder* builder);
 
-        ~DiffuseIrradianceRenderPass();
+        ~SpecularBRDFRenderPass();
 
-        RenderMutableResource GetIrradianceCubemapHandle() { return irradianceCubemapHandle; }
+        RenderMutableResource GetBRDFTextureHandle() { return brdfTextureHandle; }
 
         void ExecuteComputePass(
             RenderGraphResourceManager* manager,
             ComputeCommandList* commandList) override;
     private:
-        static RefPtr<ComputePipelineState> CreateDiffuseIrradiancePipelineState(DiffuseIrradiancePersistentContext* context);
+        void ComputeBRDF(
+            RenderGraphResourceManager* manager,
+            ComputeCommandList* commandList);
 
-        DiffuseIrradiancePersistentContext* persistentContext = nullptr;
-        DiffuseIrradianceTransientContext* transientContext = nullptr;
+        static RefPtr<ComputePipelineState> CreateBRDFPipelineState(SpecularBRDFPersistentContext* context);
 
-        RenderResource luminanceCubemapHandle;
-        RenderMutableResource irradianceCubemapHandle;
+        SpecularBRDFPersistentContext* persistentContext = nullptr;
+        SpecularBRDFTransientContext* transientContext = nullptr;
+
+        RenderMutableResource brdfTextureHandle;
     };
 }

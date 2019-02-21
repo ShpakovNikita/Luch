@@ -52,7 +52,7 @@ namespace Luch::Render::Passes::Deferred
 
         GBufferReadOnly GetGBuffer() { return gbuffer; }
 
-        void ExecuteGraphicsRenderPass(
+        void ExecuteGraphicsPass(
             RenderGraphResourceManager* manager,
             GraphicsCommandList* commandList) override;
     private:

@@ -50,7 +50,7 @@ namespace Luch::Render::Passes::TiledDeferred
 
         RenderMutableResource GetLuminanceTextureHandle() { return luminanceTextureHandle; }
 
-        void ExecuteGraphicsRenderPass(
+        void ExecuteGraphicsPass(
             RenderGraphResourceManager* manager,
             GraphicsCommandList* commandList) override;
     private:

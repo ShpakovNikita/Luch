@@ -63,7 +63,7 @@ namespace Luch::Render::Passes::TiledDeferred
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
-        auto node = builder->AddGraphicsRenderPass(RenderPassName, persistentContext->renderPass, this);
+        auto node = builder->AddGraphicsPass(RenderPassName, persistentContext->renderPass, this);
 
         for(int32 i = TiledDeferredConstants::GBufferColorAttachmentBegin; i < TiledDeferredConstants::GBufferColorAttachmentEnd; i++)
         {
@@ -101,7 +101,7 @@ namespace Luch::Render::Passes::TiledDeferred
         UpdateLights(lightNodes);
     }
 
-    void TiledDeferredRenderPass::ExecuteGraphicsRenderPass(
+    void TiledDeferredRenderPass::ExecuteGraphicsPass(
         RenderGraphResourceManager* manager,
         GraphicsCommandList* commandList)
     {
