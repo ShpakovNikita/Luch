@@ -380,9 +380,13 @@ namespace Luch::Render
         LUCH_ASSERT(!(config.useComputeResolve && config.useTiledDeferredPass));
         LUCH_ASSERT(!(config.useForward && config.useTiledDeferredPass));
 
-        if(config.useEnvironmentMapGlobalIllumination)
+        if(config.useDiffuseGlobalIllumination)
         {
             frame.diffuseIrradianceCubemapHandle = frame.builder->GetResourceManager()->ImportTexture(diffuseIrradianceCubemap);
+        }
+
+        if(config.useSpecularGlobalIllumination)
+        {
             frame.specularReflectionCubemapHandle = frame.builder->GetResourceManager()->ImportTexture(specularReflectionCubemap);
             frame.specularBRDFTextureHandle = frame.builder->GetResourceManager()->ImportTexture(specularBRDFTexture);
         }
@@ -614,10 +618,7 @@ namespace Luch::Render
         frame.renderGraph = std::move(builtRenderGraph);
 
         auto commandLists = frame.renderGraph->Execute();
-        for(auto& commandList : commandLists)
-        {
-            context->commandQueue->Submit(commandList, {});
-        }
+        RenderUtils::SubmitCommandLists(context->commandQueue, commandLists);
     }
 
     void SceneRenderer::EndRender()
@@ -655,9 +656,13 @@ namespace Luch::Render
         frame.forwardTransientContext->sharedBuffer = frame.sharedBuffer;
         frame.forwardTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
 
-        if(config.useEnvironmentMapGlobalIllumination)
+        if(config.useDiffuseGlobalIllumination)
         {
             frame.forwardTransientContext->diffuseIrradianceCubemapHandle = frame.diffuseIrradianceCubemapHandle;
+        }
+
+        if(config.useSpecularGlobalIllumination)
+        {
             frame.forwardTransientContext->specularReflectionCubemapHandle = frame.specularReflectionCubemapHandle;
             frame.forwardTransientContext->specularBRDFTextureHandle = frame.specularBRDFTextureHandle;
         }
@@ -865,10 +870,7 @@ namespace Luch::Render
             return false;
         }
 
-        for (const auto& commandList : uploadTexturesResult.commandLists)
-        {
-            context->commandQueue->Submit(commandList, {});
-        }
+        RenderUtils::SubmitCommandLists(context->commandQueue, uploadTexturesResult.commandLists);
 
         return true;
     }

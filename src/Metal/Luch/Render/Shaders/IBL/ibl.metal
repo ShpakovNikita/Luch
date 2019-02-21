@@ -31,7 +31,8 @@ half3 ImportanceSampleGGX(half2 Xi, half roughness, half3 N)
 {
     half3 H = ImportanceSampleGGXTangent(Xi, roughness);
     half3 up = abs(N.z) < 0.999 ? half3(0, 0, 1) : half3(1, 0, 0);
-    half3 tangentX = normalize(cross(up, N));
+    // Workaround, for some reason normalize(half3(1.0, 0.0, 0.0)) returns (inf, 0, 0)
+    half3 tangentX = half3(normalize(float3(cross(up, N))));
     half3 tangentY = cross(N, tangentX);
     return tangentX * H.x + tangentY * H.y + N * H.z;
 }

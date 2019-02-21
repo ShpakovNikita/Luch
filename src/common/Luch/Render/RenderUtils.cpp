@@ -1,5 +1,6 @@
 #include <Luch/Render/RenderUtils.h>
 #include <Luch/Graphics/GraphicsDevice.h>
+#include <Luch/Graphics/CommandQueue.h>
 #include <Luch/SceneV1/Camera.h>
 #include <Luch/SceneV1/PbrMaterial.h>
 #include <Luch/SceneV1/Light.h>
@@ -178,5 +179,23 @@ namespace Luch::Render::RenderUtils
     {
         UnorderedSet<String> alreadyIncluded;
         return SubstituteIncludesImpl(includeDir, source, alreadyIncluded);
+    }
+
+    void SubmitCommandLists(
+        const RefPtr<CommandQueue>& queue,
+        const RefPtrVector<CommandList>& commandLists,
+        const std::function<void()> completedHandler)
+    {
+        for(int32 i = 0; i < commandLists.size(); i++)
+        {
+            if(i == commandLists.size() - 1)
+            {
+               queue->Submit(commandLists[i], completedHandler); 
+            }
+            else
+            {
+                queue->Submit(commandLists[i], {});
+            }
+        }
     }
 }

@@ -6,7 +6,8 @@ namespace Luch::Render
 {
     struct SceneRendererConfig
     {
-        bool useEnvironmentMapGlobalIllumination = false;
+        bool useDiffuseGlobalIllumination = false;
+        bool useSpecularGlobalIllumination = false;
         bool useForward = false;
         bool useDepthPrepass = false;
         bool useComputeResolve = false;

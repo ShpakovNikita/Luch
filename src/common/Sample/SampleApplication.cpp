@@ -190,7 +190,8 @@ bool SampleApplication::Initialize(const Vector<String>& args)
         return false;
     }
 
-    renderer->GetMutableConfig().useEnvironmentMapGlobalIllumination = true;
+    renderer->GetMutableConfig().useDiffuseGlobalIllumination = true;
+    renderer->GetMutableConfig().useSpecularGlobalIllumination = true;
     renderer->GetMutableConfig().useForward = true;
     renderer->GetMutableConfig().useDepthPrepass = true;
     renderer->GetMutableConfig().useComputeResolve = false;
@@ -324,7 +325,10 @@ void SampleApplication::HandleKeyboardEvent(const SDL_Event& event)
             directionalLightNode->GetLight()->SetEnabled(!directionalLightNode->GetLight()->IsEnabled());
             break;
         case SDL_SCANCODE_V:
-            renderer->GetMutableConfig().useEnvironmentMapGlobalIllumination = !renderer->GetMutableConfig().useEnvironmentMapGlobalIllumination;
+            renderer->GetMutableConfig().useDiffuseGlobalIllumination = !renderer->GetMutableConfig().useDiffuseGlobalIllumination;
+            break;
+        case SDL_SCANCODE_B:
+            renderer->GetMutableConfig().useSpecularGlobalIllumination = !renderer->GetMutableConfig().useSpecularGlobalIllumination;
             break;
         case SDL_SCANCODE_I:
             indirectProbed = false;

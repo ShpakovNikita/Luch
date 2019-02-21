@@ -25,5 +25,10 @@ namespace Luch::Render
         ResultValue<bool, String> SubstituteIncludes(
             const String& includeDir,
             String source);
+
+        void SubmitCommandLists(
+            const RefPtr<CommandQueue>& queue,
+            const RefPtrVector<CommandList>& commandLists,
+            const std::function<void()> completedHandler = {});
     }
 }

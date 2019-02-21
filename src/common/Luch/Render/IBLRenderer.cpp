@@ -289,13 +289,10 @@ namespace Luch::Render
         renderGraph = std::move(builtRenderGraph);
 
         auto commandLists = renderGraph->Execute();
-        for(auto& commandList : commandLists)
+        RenderUtils::SubmitCommandLists(context->commandQueue, commandLists, [this]()
         {
-            context->commandQueue->Submit(commandList, [this]()
-            {
-                probeReadySemaphore->Signal();
-            });
-        }
+            probeReadySemaphore->Signal();
+        });
     }
 
     ResultValue<bool, IBLResult> IBLRenderer::EndRender()
@@ -461,7 +458,7 @@ namespace Luch::Render
         }
 
         transientContext->descriptorPool = descriptorPool;
-        transientContext->outputSize = { 128, 128 };
+        transientContext->outputSize = { 64, 64 };
         transientContext->sharedBuffer = sharedBuffer;
 
         specularBRDFTransientContext = std::move(transientContext);
