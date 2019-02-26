@@ -93,7 +93,6 @@ bool SampleApplication::Initialize(const Vector<String>& /*args*/)
 
     context->device = std::move(createdDevice);
 
-    // /////////////////////////////////////////////////
     auto [createCommandQueueResult, createdCommandQueue] = context->device->CreateCommandQueue();
     if (createCommandQueueResult != GraphicsResult::Success)
     {
@@ -108,6 +107,7 @@ bool SampleApplication::Initialize(const Vector<String>& /*args*/)
     swapchainInfo.width = width;
     swapchainInfo.height = height;
 
+    // /////////////////////////////////////////////////
     auto [createSwapchainResult, createdSwapchain] = context->device->CreateSwapchain(swapchainInfo, surface);
     if(createSwapchainResult != GraphicsResult::Success)
     {
@@ -199,7 +199,7 @@ bool SampleApplication::CreateWindow()
         return false;
     }
 
-    // if need allocation callbacks store it where you init it
+    // if you need allocation callbacks store it somewhere
     physicalDevice = MakeRef<Luch::Vulkan::VulkanPhysicalDevice>(vulkanInstance.GetInstance(), surface, nullptr);
     if (!physicalDevice->Init())
     {

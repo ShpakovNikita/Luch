@@ -19,9 +19,9 @@ namespace Luch::Vulkan
 
     struct VulkanQueueInfo
     {
-        RefPtr<VulkanQueue> computeQueue;
-        RefPtr<VulkanQueue> graphicsQueue;
-        RefPtr<VulkanPresentQueue> presentQueue;
+        vk::Queue computeQueue;
+        vk::Queue graphicsQueue;
+        vk::Queue presentQueue;
 
         QueueIndices indices;
         Luch::Vector<vk::Queue> uniqueQueues;

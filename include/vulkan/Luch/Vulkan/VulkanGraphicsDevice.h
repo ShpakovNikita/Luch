@@ -75,20 +75,11 @@ namespace Luch::Vulkan
         { return allocationCallbacks; }
 
         inline const QueueIndices* GetQueueIndices() { return &queueInfo.indices; }
-        inline VulkanQueue* GetGraphicsQueue() { return queueInfo.graphicsQueue; }
-        inline VulkanPresentQueue* GetPresentQueue() { return queueInfo.presentQueue; }
-        inline VulkanQueue* GetComputeQueue() { return queueInfo.computeQueue; }
 
         vk::Result WaitIdle();
 
         int32 ChooseMemoryType(Luch::uint32 memoryTypeBits, vk::MemoryPropertyFlags memoryProperties);
         vk::ImageViewCreateInfo GetDefaultImageViewCreateInfo(VulkanImage* image);
-
-
-        GraphicsResultRefPtr<VulkanCommandPool> CreateCommandPool(
-            QueueIndex queueIndex,
-            bool transient = false,
-            bool canReset = false);
 
         GraphicsResultRefPtr<Buffer> CreateBuffer(
                 const BufferCreateInfo& createInfo,

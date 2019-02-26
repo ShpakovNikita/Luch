@@ -5,6 +5,7 @@
 #include <Luch/Vulkan/VulkanSurface.h>
 #include <Luch/Vulkan/VulkanCommandBuffer.h>
 #include <Luch/Vulkan/VulkanCommandPool.h>
+#include <Luch/Vulkan/VulkanCommandQueue.h>
 #include <Luch/Vulkan/VulkanDeviceBuffer.h>
 #include <Luch/Vulkan/VulkanDeviceBufferView.h>
 #include <Luch/Vulkan/VulkanDescriptorPool.h>
@@ -246,38 +247,6 @@ namespace Luch::Vulkan
         {
             device.destroySwapchainKHR(vulkanSwapchain);
             return { result };
-        }
-    }
-
-    GraphicsResultRefPtr<VulkanCommandPool> VulkanGraphicsDevice::CreateCommandPool(
-        QueueIndex queueIndex,
-        bool transient,
-        bool canReset)
-    {
-        vk::CommandPoolCreateInfo ci;
-
-        if (transient)
-        {
-            ci.flags |= vk::CommandPoolCreateFlagBits::eTransient;
-        }
-
-        if (canReset)
-        {
-            ci.flags |= vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
-        }
-
-        ci.setQueueFamilyIndex(queueIndex);
-        
-        auto [result, vulkanCommandPool] = device.createCommandPool(ci, allocationCallbacks);
-
-        if (result != vk::Result::eSuccess)
-        {
-            device.destroyCommandPool(vulkanCommandPool, allocationCallbacks);
-            return { result };
-        }
-        else
-        {
-            return { result, MakeRef<VulkanCommandPool>(this, vulkanCommandPool) };
         }
     }
 
@@ -618,8 +587,7 @@ namespace Luch::Vulkan
 
     GraphicsResultRefPtr<CommandQueue> VulkanGraphicsDevice::CreateCommandQueue()
     {
-        // todo: implement
-        return {GraphicsResult::Unsupported};
+        return {GraphicsResult::Success, MakeRef<VulkanCommandQueue>(this, queueInfo.graphicsQueue, queueInfo.presentQueue)};
     }
 
     GraphicsResultRefPtr<PipelineState> VulkanGraphicsDevice::CreatePipelineState(const PipelineStateCreateInfo& createInfo)

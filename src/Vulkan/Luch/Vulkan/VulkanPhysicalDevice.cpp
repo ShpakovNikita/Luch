@@ -225,19 +225,15 @@ namespace Luch::Vulkan
     {
         VulkanQueueInfo queueInfo;
 
-        auto vulkanGraphicsQueue = device.getQueue(indices.graphicsQueueFamilyIndex, 0);
-        auto vulkanPresentQueue = device.getQueue(indices.presentQueueFamilyIndex, 0);
-        auto vulkanComputeQueue = device.getQueue(indices.computeQueueFamilyIndex, 0);
-
-        queueInfo.graphicsQueue = MakeRef<VulkanQueue>(vulkanGraphicsQueue);
-        queueInfo.computeQueue = MakeRef<VulkanQueue>(vulkanComputeQueue);
-        queueInfo.presentQueue = MakeRef<VulkanPresentQueue>(vulkanPresentQueue);
+        queueInfo.graphicsQueue = device.getQueue(indices.graphicsQueueFamilyIndex, 0);
+        queueInfo.presentQueue = device.getQueue(indices.presentQueueFamilyIndex, 0);
+        queueInfo.computeQueue = device.getQueue(indices.computeQueueFamilyIndex, 0);
         queueInfo.indices = indices;
 
         Set<vk::Queue> uniqueQueues;
-        uniqueQueues.insert(vulkanGraphicsQueue);
-        uniqueQueues.insert(vulkanPresentQueue);
-        uniqueQueues.insert(vulkanComputeQueue);
+        uniqueQueues.insert(queueInfo.graphicsQueue);
+        uniqueQueues.insert(queueInfo.presentQueue);
+        uniqueQueues.insert(queueInfo.computeQueue);
 
         std::copy(uniqueQueues.begin(), uniqueQueues.end(), std::back_inserter(queueInfo.uniqueQueues));
 
