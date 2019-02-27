@@ -1,12 +1,15 @@
 #include <Luch/Vulkan/VulkanCommandPool.h>
 #include <Luch/Vulkan/VulkanGraphicsDevice.h>
+#include <Luch/Vulkan/VulkanCopyCommandList.h>
+#include <Luch/Vulkan/VulkanGraphicsCommandList.h>
 
 namespace Luch::Vulkan
 {
     VulkanCommandPool::VulkanCommandPool(
         VulkanGraphicsDevice* aDevice,
         vk::CommandPool aCommandPool)
-        : device(aDevice)
+        : CommandPool (aDevice)
+        , device(aDevice)
         , commandPool(aCommandPool)
     {
     }
@@ -16,64 +19,36 @@ namespace Luch::Vulkan
         Destroy();
     }
 
-    GraphicsResultValue<RefPtrVector<VulkanCommandBuffer>> VulkanCommandPool::AllocateCommandBuffers(
-        int32 count,
-        CommandBufferLevel level)
+    GraphicsResultRefPtr<GraphicsCommandList> VulkanCommandPool::AllocateGraphicsCommandList()
     {
         vk::CommandBufferAllocateInfo allocateInfo;
-        allocateInfo.setCommandBufferCount(count);
+        allocateInfo.setCommandBufferCount(1);
         allocateInfo.setCommandPool(commandPool);
-
-        switch (level)
-        {
-        case CommandBufferLevel::Primary:
-            allocateInfo.setLevel(vk::CommandBufferLevel::ePrimary);
-            break;
-        case CommandBufferLevel::Secondary:
-            allocateInfo.setLevel(vk::CommandBufferLevel::eSecondary);
-            break;
-        }
+        allocateInfo.setLevel(vk::CommandBufferLevel::ePrimary);
 
         auto [allocateResult, allocatedBuffers] = device->device.allocateCommandBuffers(allocateInfo);
         if (allocateResult != vk::Result::eSuccess)
         {
             return { allocateResult };
         }
-
-        RefPtrVector<VulkanCommandBuffer> buffers;
-        buffers.reserve(count);
-
-        for (auto vulkanBuffer : allocatedBuffers)
-        {
-            buffers.emplace_back(MakeRef<VulkanCommandBuffer>(device, vulkanBuffer));
-        }
-
-        return { allocateResult, std::move(buffers) };
+        auto copyCommandList = MakeRef<VulkanGraphicsCommandList>(device, allocatedBuffers.front());
+        return {GraphicsResult::Success, copyCommandList};
     }
 
-    GraphicsResultRefPtr<VulkanCommandBuffer> VulkanCommandPool::AllocateCommandBuffer(CommandBufferLevel level)
+    GraphicsResultRefPtr<CopyCommandList> VulkanCommandPool::AllocateCopyCommandList()
     {
         vk::CommandBufferAllocateInfo allocateInfo;
         allocateInfo.setCommandBufferCount(1);
         allocateInfo.setCommandPool(commandPool);
+        allocateInfo.setLevel(vk::CommandBufferLevel::ePrimary);
 
-        switch (level)
-        {
-        case CommandBufferLevel::Primary:
-            allocateInfo.setLevel(vk::CommandBufferLevel::ePrimary);
-            break;
-        case CommandBufferLevel::Secondary:
-            allocateInfo.setLevel(vk::CommandBufferLevel::eSecondary);
-            break;
-        }
-
-        auto[allocateResult, allocatedBuffers] = device->device.allocateCommandBuffers(allocateInfo);
+        auto [allocateResult, allocatedBuffers] = device->device.allocateCommandBuffers(allocateInfo);
         if (allocateResult != vk::Result::eSuccess)
         {
             return { allocateResult };
         }
-
-        return { allocateResult, MakeRef<VulkanCommandBuffer>(device, allocatedBuffers[0]) };
+        auto copyCommandList = MakeRef<VulkanCopyCommandList>(device, allocatedBuffers.front());
+        return {GraphicsResult::Success, copyCommandList};
     }
 
     vk::Result VulkanCommandPool::Reset(bool releaseResources)
@@ -91,7 +66,7 @@ namespace Luch::Vulkan
     {
         if (device)
         {
-              device->DestroyCommandPool(this);
+            device->DestroyCommandPool(this);
         }
     }
 }

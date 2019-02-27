@@ -109,7 +109,7 @@ bool SampleApplication::Initialize(const Vector<String>& /*args*/)
 
     // /////////////////////////////////////////////////
     auto [createSwapchainResult, createdSwapchain] = context->device->CreateSwapchain(swapchainInfo, surface);
-    if(createSwapchainResult != GraphicsResult::Success)
+    if (createSwapchainResult != GraphicsResult::Success)
     {
         return false;
     }

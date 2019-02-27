@@ -7,19 +7,24 @@
 namespace Luch::Vulkan
 {
 
-VulkanCommandQueue::VulkanCommandQueue(VulkanGraphicsDevice* aDevice, vk::Queue aSubmitQueue, vk::Queue aPresentQueue)
+VulkanCommandQueue::VulkanCommandQueue(VulkanGraphicsDevice* aDevice, VulkanQueueInfo aQueueInfo)
     : CommandQueue(aDevice)
-    , submitQueue(aSubmitQueue)
-    , presentQueue(aPresentQueue)
+    , vulkanQueueInfo(aQueueInfo)
 {
 }
 
 GraphicsResultRefPtr<CommandPool> VulkanCommandQueue::CreateCommandPool()
 {
-    return GraphicsResult::InvalidValue;
+    auto [result, vulkanCommanPool] = CreateVulkanCommandPool(vulkanQueueInfo.indices.graphicsQueueFamilyIndex);
+    if (result != GraphicsResult::Success)
+    {
+        return result;
+    }
+
+    return {result, vulkanCommanPool};
 }
 
-GraphicsResultRefPtr<VulkanCommandPool> VulkanCommandQueue::CreateCommandPool(
+GraphicsResultRefPtr<VulkanCommandPool> VulkanCommandQueue::CreateVulkanCommandPool(
     QueueIndex queueIndex,
     bool transient,
     bool canReset)
@@ -51,14 +56,19 @@ GraphicsResultRefPtr<VulkanCommandPool> VulkanCommandQueue::CreateCommandPool(
     }
 }
 
-GraphicsResult VulkanCommandQueue::Submit(
-        GraphicsCommandList* commandList) { return GraphicsResult::InvalidValue; }
+GraphicsResult VulkanCommandQueue::Submit(GraphicsCommandList* commandList)
+{
+    return GraphicsResult::InvalidValue;
+}
 
-GraphicsResult VulkanCommandQueue::Submit(
-    CopyCommandList* commandList) { return GraphicsResult::InvalidValue; }
+GraphicsResult VulkanCommandQueue::Submit(CopyCommandList* commandList)
+{
+    return GraphicsResult::InvalidValue;
+}
 
-GraphicsResult VulkanCommandQueue::Present(
-    int32 imageIndex,
-    Swapchain* swapchain) { return GraphicsResult::InvalidValue; }
+GraphicsResult VulkanCommandQueue::Present(int32 imageIndex, Swapchain* swapchain)
+{
+    return GraphicsResult::InvalidValue;
+}
 
 }

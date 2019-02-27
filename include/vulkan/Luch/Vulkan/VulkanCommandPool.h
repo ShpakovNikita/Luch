@@ -3,17 +3,13 @@
 #include <Luch/BaseObject.h>
 #include <Luch/Vulkan.h>
 #include <Luch/Vulkan/VulkanForwards.h>
-#include <Luch/Vulkan/VulkanCommandBuffer.h>
+#include <Luch/Graphics/CommandPool.h>
+
+using namespace Luch::Graphics;
 
 namespace Luch::Vulkan
 {
-    enum class CommandBufferLevel
-    {
-        Primary,
-        Secondary,
-    };
-
-    class VulkanCommandPool : public BaseObject
+    class VulkanCommandPool : public CommandPool
     {
         friend class VulkanGraphicsDevice;
     public:
@@ -22,15 +18,12 @@ namespace Luch::Vulkan
             vk::CommandPool commandPool);
         ~VulkanCommandPool() override;
 
+        GraphicsResultRefPtr<GraphicsCommandList> AllocateGraphicsCommandList() override;
+        GraphicsResultRefPtr<CopyCommandList> AllocateCopyCommandList() override;
+
         inline vk::CommandPool GetCommandPool() { return commandPool; }
-
-        GraphicsResultValue<RefPtrVector<VulkanCommandBuffer>> AllocateCommandBuffers(
-            int32 count,
-            CommandBufferLevel level);
-
-        GraphicsResultRefPtr<VulkanCommandBuffer> AllocateCommandBuffer(CommandBufferLevel level);
-
         vk::Result Reset(bool releaseResources = false);
+
     private:
         void Destroy();
 

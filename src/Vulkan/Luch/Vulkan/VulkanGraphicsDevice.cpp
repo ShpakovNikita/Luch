@@ -3,7 +3,6 @@
 #include <Luch/Vulkan/VulkanPhysicalDevice.h>
 #include <Luch/Vulkan/VulkanShaderCompiler.h>
 #include <Luch/Vulkan/VulkanSurface.h>
-#include <Luch/Vulkan/VulkanCommandBuffer.h>
 #include <Luch/Vulkan/VulkanCommandPool.h>
 #include <Luch/Vulkan/VulkanCommandQueue.h>
 #include <Luch/Vulkan/VulkanDeviceBuffer.h>
@@ -587,7 +586,7 @@ namespace Luch::Vulkan
 
     GraphicsResultRefPtr<CommandQueue> VulkanGraphicsDevice::CreateCommandQueue()
     {
-        return {GraphicsResult::Success, MakeRef<VulkanCommandQueue>(this, queueInfo.graphicsQueue, queueInfo.presentQueue)};
+        return {GraphicsResult::Success, MakeRef<VulkanCommandQueue>(this, queueInfo)};
     }
 
     GraphicsResultRefPtr<PipelineState> VulkanGraphicsDevice::CreatePipelineState(const PipelineStateCreateInfo& createInfo)

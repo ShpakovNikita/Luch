@@ -14,16 +14,10 @@ namespace Luch::Vulkan
     class VulkanCommandQueue : public CommandQueue
     {
     public:
-        VulkanCommandQueue(VulkanGraphicsDevice* aDevice, vk::Queue aSubmitQueue, vk::Queue aPresentQueue);
+        VulkanCommandQueue(VulkanGraphicsDevice* aDevice, VulkanQueueInfo aQueueInfo);
         ~VulkanCommandQueue() = default;
 
         GraphicsResultRefPtr<CommandPool> CreateCommandPool() override;
-
-        // todo: inherit VulkanCommandPool::CommandPool
-        GraphicsResultRefPtr<VulkanCommandPool> CreateCommandPool(
-            QueueIndex queueIndex,
-            bool transient = false,
-            bool canReset = false);
 
         GraphicsResult Submit(
                 GraphicsCommandList* commandList) override;
@@ -36,8 +30,12 @@ namespace Luch::Vulkan
             Swapchain* swapchain) override;
 
     private:
+        GraphicsResultRefPtr<VulkanCommandPool> CreateVulkanCommandPool(
+            QueueIndex queueIndex,
+            bool transient = false,
+            bool canReset = false);
+
         VulkanGraphicsDevice* device = nullptr;
-        vk::Queue submitQueue;
-        vk::Queue presentQueue;
+        VulkanQueueInfo vulkanQueueInfo;
     };
 }
