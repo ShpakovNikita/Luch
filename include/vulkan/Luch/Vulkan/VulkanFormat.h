@@ -2,6 +2,7 @@
 
 #include <Luch/Vulkan.h>
 #include <Luch/Graphics/Format.h>
+#include <Luch/Graphics/ResourceType.h>
 
 using namespace Luch::Graphics;
 namespace Luch::Vulkan
@@ -17,6 +18,8 @@ namespace Luch::Vulkan
             return vk::Format::eR8G8B8A8Unorm;
         case Format::B8G8R8A8Unorm:
             return vk::Format::eB8G8R8A8Unorm;
+        case Format::B8G8R8A8Unorm_sRGB:
+            return vk::Format::eB8G8R8A8Srgb;
         case Format::D16Unorm:
             return vk::Format::eD16Unorm;
         case Format::D32Sfloat:
@@ -96,8 +99,23 @@ namespace Luch::Vulkan
             return Format::D24UnormS8Uint;
         case vk::Format::eD32SfloatS8Uint:
             return Format::D32SfloatS8Uint;
+        case vk::Format::eB8G8R8A8Srgb:
+            return Format::B8G8R8A8Unorm_sRGB;
         default:
             LUCH_ASSERT_MSG(false, "Unknown format");
+        }
+    }
+
+    inline vk::DescriptorType ToVulkanType(ResourceType type)
+    {
+        switch (type)
+        {
+            case ResourceType::Sampler:
+                return vk::DescriptorType::eSampler;
+            case ResourceType::Texture:
+                return vk::DescriptorType::eSampledImage;
+            case ResourceType::UniformBuffer:
+                return vk::DescriptorType::eUniformBuffer;
         }
     }
 }

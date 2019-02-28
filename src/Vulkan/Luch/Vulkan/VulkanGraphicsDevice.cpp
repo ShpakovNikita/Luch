@@ -33,6 +33,7 @@
 #include <Luch/Graphics/FrameBufferCreateInfo.h>
 #include <Luch/Graphics/BufferCreateInfo.h>
 #include <Luch/Graphics/Buffer.h>
+#include <Luch/Graphics/DescriptorPoolCreateInfo.h>
 
 using namespace Luch::Graphics;
 
@@ -455,24 +456,18 @@ namespace Luch::Vulkan
     }
 
     GraphicsResultRefPtr<DescriptorPool> VulkanGraphicsDevice::CreateDescriptorPool(
-        const DescriptorPoolCreateInfo&)
+        const DescriptorPoolCreateInfo& ci)
     {
-        // todo: figure out params
         bool canFreeDescriptors = false;
-        uint32_t maxSets = 8;
-        int32_t count = 0;
 
         Vector<vk::DescriptorPoolSize> vulkanPoolSizes;
-        /*
-        auto count = (int32)poolSizes.size();
-
+        size_t count = ci.descriptorCount.size();
         vulkanPoolSizes.reserve(count);
 
-        for (auto& poolSize : poolSizes)
+        for (auto& poolSize : ci.descriptorCount)
         {
-            vulkanPoolSizes.emplace_back(poolSize.first, poolSize.second);
-        }*/
-        // endof todo
+            vulkanPoolSizes.emplace_back(ToVulkanType(poolSize.first), poolSize.second);
+        }
 
         vk::DescriptorPoolCreateFlags flags;
         if (canFreeDescriptors)
@@ -481,7 +476,7 @@ namespace Luch::Vulkan
         }
 
         vk::DescriptorPoolCreateInfo createInfo;
-        createInfo.setMaxSets(maxSets);
+        createInfo.setMaxSets(ci.maxDescriptorSets);
         createInfo.setPoolSizeCount(count);
         createInfo.setPPoolSizes(vulkanPoolSizes.data());
         createInfo.setFlags(flags);

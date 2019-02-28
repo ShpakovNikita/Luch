@@ -51,9 +51,7 @@ namespace Luch::Vulkan
             return this;
         }
 
-        // TODO
-        //inline CommandBuffer& BeginRenderPass(RenderPass* renderPass, Framebuffer* framebuffer, CommandBuffer* secondaryCommandBuffer);
-        
+
         inline VulkanCommandBuffer* BeginInlineRenderPass(
             VulkanRenderPass* renderPass,
             VulkanFramebuffer* framebuffer,

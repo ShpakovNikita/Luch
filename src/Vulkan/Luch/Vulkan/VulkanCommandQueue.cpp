@@ -9,6 +9,7 @@ namespace Luch::Vulkan
 
 VulkanCommandQueue::VulkanCommandQueue(VulkanGraphicsDevice* aDevice, VulkanQueueInfo aQueueInfo)
     : CommandQueue(aDevice)
+    , device(aDevice)
     , vulkanQueueInfo(aQueueInfo)
 {
 }

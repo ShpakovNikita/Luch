@@ -31,55 +31,92 @@ namespace Luch::Vulkan
         void Begin() override;
         void End() override;
 
-        virtual void BeginRenderPass(FrameBuffer* framebuffer) override {}
-        virtual void EndRenderPass() override {}
+        void BeginRenderPass(FrameBuffer* framebuffer) override;
+        void EndRenderPass() override;
 
-        virtual void BindPipelineState(PipelineState* pipelineState) override {}
+        void BindPipelineState(PipelineState* pipelineState) override;
 
-        virtual void BindTextureDescriptorSet(
+        void BindTextureDescriptorSet(
             ShaderStage stage,
             PipelineLayout* pipelineLayout,
-            DescriptorSet* descriptorSet) override {}
+            DescriptorSet* descriptorSet) override;
 
-        virtual void BindBufferDescriptorSet(
+        void BindBufferDescriptorSet(
             ShaderStage stage,
             PipelineLayout* pipelineLayout,
-            DescriptorSet* descriptorSet) override {}
+            DescriptorSet* descriptorSet) override;
 
-        virtual void BindSamplerDescriptorSet(
+        void BindSamplerDescriptorSet(
             ShaderStage stage,
             PipelineLayout* pipelineLayout,
-            DescriptorSet* descriptorSet) override {}
+            DescriptorSet* descriptorSet) override;
 
-        virtual void BindVertexBuffers(
+        void BindVertexBuffers(
             const ArrayProxy<Buffer*>& buffers,
-            const ArrayProxy<int32>& offsets) override {}
+            const ArrayProxy<int32>& offsets) override;
 
-        virtual void BindIndexBuffer(
+        void BindIndexBuffer(
             Buffer* indexBuffer,
             IndexType indexType,
-            int32 indexBufferOffset) override {}
+            int32 indexBufferOffset) override;
 
-        virtual void SetViewports(const ArrayProxy<Viewport>& viewports) override {}
-        virtual void SetScissorRects(const ArrayProxy<Rect2i>& scissorRects) override {}
+        void SetViewports(const ArrayProxy<Viewport>& viewports) override;
+        void SetScissorRects(const ArrayProxy<Rect2i>& scissorRects) override;
 
-        virtual void Draw(
+        void Draw(
             int32 vertexStart,
-            int32 vertexCount) override {}
+            int32 vertexCount) override;
 
-        virtual void DrawInstanced(
+        void DrawInstanced(
             int32 vertexStart,
             int32 vertexCount,
             int32 instanceCount,
-            int32 baseInstance) override {}
+            int32 baseInstance) override;
 
-        virtual void DrawIndexedInstanced(
+        void DrawIndexedInstanced(
             int32 indexCount,
             int32 baseVertex,
             int32 instanceCount,
-            int32 baseInstance) override {}
+            int32 baseInstance) override;
 
         inline vk::CommandBuffer GetCommandBuffer() { return commandBuffer; }
+
+        /*
+
+        inline VulkanCommandBuffer* PipelineBarrier(
+            const PipelineBarrier& barrier)
+        {
+            auto vulkanBarrier = PipelineBarrier::ToVulkanPipelineBarrier(barrier);
+
+            commandBuffer.pipelineBarrier(
+                vulkanBarrier.srcStageMask,
+                vulkanBarrier.dstStageMask,
+                vulkanBarrier.dependencyFlags,
+                {},
+                vulkanBarrier.bufferMemoryBarriers,
+                vulkanBarrier.imageMemoryBarriers
+            );
+
+            return this;
+        }
+
+        template<typename T>
+        inline VulkanCommandBuffer* PushConstants(
+            VulkanPipelineLayout* layout,
+            ShaderStage stages,
+            int32 offset,
+            const T& value)
+        {
+            commandBuffer.pushConstants(
+                layout->GetPipelineLayout(),
+                ToVulkanShaderStages(stages),
+                offset,
+                sizeof(T),
+                &value);
+
+            return this;
+        }
+         */
 
     private:
         VulkanGraphicsDevice* device = nullptr;

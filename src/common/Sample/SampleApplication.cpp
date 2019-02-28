@@ -30,6 +30,7 @@
     #include <SDL2/SDL_vulkan.h>
     #include <Luch/Vulkan/VulkanInstance.h>
     #include <Luch/Vulkan/VulkanPhysicalDevice.h>
+    #include <Luch/Vulkan/VulkanSurface.h>
 #endif
 
 #include <Luch/Graphics/PhysicalDevice.h>
@@ -107,7 +108,6 @@ bool SampleApplication::Initialize(const Vector<String>& /*args*/)
     swapchainInfo.width = width;
     swapchainInfo.height = height;
 
-    // /////////////////////////////////////////////////
     auto [createSwapchainResult, createdSwapchain] = context->device->CreateSwapchain(swapchainInfo, surface);
     if (createSwapchainResult != GraphicsResult::Success)
     {
@@ -118,6 +118,7 @@ bool SampleApplication::Initialize(const Vector<String>& /*args*/)
 
     renderer = MakeUnique<Render::SceneRenderer>(scene);
 
+    // /////////////
     auto rendererInitialized = renderer->Initialize(context);
     if(!rendererInitialized)
     {
@@ -190,17 +191,19 @@ bool SampleApplication::CreateWindow()
         return false;
     }
 
-    VkSurfaceKHR surface = nullptr;
-    SDL_bool result = SDL_Vulkan_CreateSurface(window, vulkanInstance.GetInstance(), &surface);
+    vk::Instance vkInstance = vulkanInstance.GetInstance();
+    VkSurfaceKHR vkSurface = nullptr;
+    SDL_bool result = SDL_Vulkan_CreateSurface(window, vkInstance, &vkSurface);
 
     if (window == 0 || result != SDL_TRUE)
     {
         LUCH_ASSERT_MSG(false, "Failed to create Vulkan Surface");
         return false;
     }
+    surface = MakeRef<Luch::Vulkan::VulkanSurface>(vkInstance, vkSurface, nullptr);
 
     // if you need allocation callbacks store it somewhere
-    physicalDevice = MakeRef<Luch::Vulkan::VulkanPhysicalDevice>(vulkanInstance.GetInstance(), surface, nullptr);
+    physicalDevice = MakeRef<Luch::Vulkan::VulkanPhysicalDevice>(vkInstance, vkSurface, nullptr);
     if (!physicalDevice->Init())
     {
         LUCH_ASSERT_MSG(false, "Failed to create Vulkan Physical Device");
