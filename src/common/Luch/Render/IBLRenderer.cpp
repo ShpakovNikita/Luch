@@ -204,7 +204,7 @@ namespace Luch::Render
         return true;
     }
 
-    bool IBLRenderer::BeginRender()
+    bool IBLRenderer::BeginRender(const IBLRequest& iblRequest)
     {
         bool timedOut = renderSemaphore->Wait();
         if(timedOut)
@@ -221,28 +221,34 @@ namespace Luch::Render
             return false;
         }
 
-        bool environmentMappingPrepared = PrepareEnvironmentMapping();
+        bool environmentMappingPrepared = PrepareEnvironmentMapping(iblRequest);
         if(!environmentMappingPrepared)
         {
             return false;
         }
 
-        bool diffuseIrradiancePrepared = PrepareDiffuseIrradiance();
-        if(!diffuseIrradiancePrepared)
+        if(iblRequest.probeDiffuseIrradiance)
         {
-            return false;
+            bool diffuseIrradiancePrepared = PrepareDiffuseIrradiance(iblRequest);
+            if(!diffuseIrradiancePrepared)
+            {
+                return false;
+            }
         }
 
-        bool specularReflectionPrepared = PrepareSpecularReflection();
-        if(!specularReflectionPrepared)
+        if(iblRequest.probeSpecularReflection)
         {
-            return false;
-        }
+            bool specularReflectionPrepared = PrepareSpecularReflection(iblRequest);
+            if(!specularReflectionPrepared)
+            {
+                return false;
+            }
 
-        bool specularBRDFPrepared = PrepareSpecularBRDF();
-        if(!specularBRDFPrepared)
-        {
-            return false;
+            bool specularBRDFPrepared = PrepareSpecularBRDF(iblRequest);
+            if(!specularBRDFPrepared)
+            {
+                return false;
+            }
         }
 
         return true;
@@ -275,13 +281,8 @@ namespace Luch::Render
         }
     }
 
-    void IBLRenderer::ProbeIndirectLighting(Vec3 position)
+    void IBLRenderer::ProbeIndirectLighting()
     {
-        for(auto& transientContext : environmentCubemapTransientContexts)
-        {
-            transientContext->position = position;
-        }
-
         bool timedOut = probeReadySemaphore->Wait(0);
         LUCH_ASSERT(!timedOut);
 
@@ -335,15 +336,15 @@ namespace Luch::Render
         return { true, result };
     }
 
-    bool IBLRenderer::PrepareEnvironmentMapping()
+    bool IBLRenderer::PrepareEnvironmentMapping(const IBLRequest& iblRequest)
     {
         const auto& supportedDepthFormats = context->device->GetPhysicalDevice()->GetCapabilities().supportedDepthFormats;
         LUCH_ASSERT_MSG(!supportedDepthFormats.empty(), "No supported depth formats");
         Format depthStencilFormat = supportedDepthFormats.front();
 
         TextureCreateInfo cubemapCreateInfo;
-        cubemapCreateInfo.width = EnvironmentMapSize.width;
-        cubemapCreateInfo.height = EnvironmentMapSize.height;
+        cubemapCreateInfo.width = iblRequest.size.width;
+        cubemapCreateInfo.height = iblRequest.size.height;
         cubemapCreateInfo.textureType = TextureType::TextureCube;
         cubemapCreateInfo.usage = TextureUsageFlags::ShaderRead;
 
@@ -363,6 +364,8 @@ namespace Luch::Render
         {
             auto [result, transientContext] = EnvironmentCubemapRenderPass::PrepareEnvironmentCubemapTransientContext(
                 environmentCubemapPersistentContext.get(),
+                iblRequest.zNear,
+                iblRequest.zFar,
                 descriptorPool);
 
             if(!result)
@@ -371,12 +374,13 @@ namespace Luch::Render
             }
 
             transientContext->descriptorPool = descriptorPool;
-            transientContext->outputSize = { 128, 128 };
+            transientContext->outputSize = iblRequest.size;
             transientContext->scene = scene;
             transientContext->sharedBuffer = sharedBuffer;
             transientContext->environmentLuminanceCubemap = environmentLuminanceCubemapHandle;
             transientContext->environmentDepthCubemap = environmentDepthCubemapHandle;
             transientContext->faceIndex = face;
+            transientContext->position = iblRequest.position;
 
             environmentCubemapTransientContexts[face] = std::move(transientContext);
 
@@ -393,7 +397,7 @@ namespace Luch::Render
         return true;
     }
 
-    bool IBLRenderer::PrepareDiffuseIrradiance()
+    bool IBLRenderer::PrepareDiffuseIrradiance(const IBLRequest& iblRequest)
     {
         auto [result, transientContext] = DiffuseIrradianceRenderPass::PrepareDiffuseIrradianceTransientContext(
             diffuseIrradiancePersistentContext.get(),
@@ -405,7 +409,7 @@ namespace Luch::Render
         }
 
         transientContext->descriptorPool = descriptorPool;
-        transientContext->outputSize = { 128, 128 };
+        transientContext->outputSize = iblRequest.size;
         transientContext->scene = scene;
         transientContext->sharedBuffer = sharedBuffer;
         transientContext->luminanceCubemapHandle = environmentLuminanceCubemapHandle;
@@ -420,7 +424,7 @@ namespace Luch::Render
         return true;
     }
 
-    bool IBLRenderer::PrepareSpecularReflection()
+    bool IBLRenderer::PrepareSpecularReflection(const IBLRequest& iblRequest)
     {
         auto [result, transientContext] = SpecularReflectionRenderPass::PrepareSpecularReflectionTransientContext(
             specularReflectionPersistentContext.get(),
@@ -432,7 +436,7 @@ namespace Luch::Render
         }
 
         transientContext->descriptorPool = descriptorPool;
-        transientContext->outputSize = { 128, 128 };
+        transientContext->outputSize = iblRequest.size;
         transientContext->sharedBuffer = sharedBuffer;
         transientContext->luminanceCubemapHandle = environmentLuminanceCubemapHandle;
 
@@ -446,7 +450,7 @@ namespace Luch::Render
         return true;
     }
 
-    bool IBLRenderer::PrepareSpecularBRDF()
+    bool IBLRenderer::PrepareSpecularBRDF(const IBLRequest& iblRequest)
     {
         auto [result, transientContext] = SpecularBRDFRenderPass::PrepareSpecularBRDFTransientContext(
             specularBRDFPersistentContext.get(),

@@ -314,9 +314,15 @@ struct NodeLightsPunctual
     int32 light = -1;
 };
 
+struct NodeLightsProbe
+{
+    int32 probe = -1;
+};
+
 struct NodeExtensions
 {
     Optional<NodeLightsPunctual> lights;
+    Optional<NodeLightsProbe> probes;
 };
 
 struct Node
@@ -363,14 +369,30 @@ struct LightPunctual
     Optional<Spot> spot;
 };
 
+struct LightProbe
+{
+    String name = "";
+    glm::ivec2 size = glm::ivec2{ 0, 0 };
+    float32 znear = 0.0;
+    float32 zfar = 0.0;
+    bool specularReflection = true;
+    bool diffuseIrradiance = true;
+};
+
 struct RootLightsPunctual
 {
     Vector<LightPunctual> lights;
 };
 
+struct RootLightsProbe
+{
+    Vector<LightProbe> probes;
+};
+
 struct RootExtensions
 {
     Optional<RootLightsPunctual> lights;
+    Optional<RootLightsProbe> probe;
 };
 
 struct glTFRoot

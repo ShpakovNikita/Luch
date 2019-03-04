@@ -18,6 +18,8 @@ namespace Luch::SceneV1
         Usages<PbrMaterial> materials;
         Usages<Texture> textures;
         Usages<Light> lights;
+        Usages<LightProbe> lightsProbes;
         Usages<Node> lightNodes;
+        Usages<Node> lightProbeNodes;
     };
 }

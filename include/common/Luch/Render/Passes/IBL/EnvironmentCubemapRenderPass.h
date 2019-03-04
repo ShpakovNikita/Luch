@@ -37,6 +37,8 @@ namespace Luch::Render::Passes::IBL
 
         static ResultValue<bool, UniquePtr<EnvironmentCubemapTransientContext>> PrepareEnvironmentCubemapTransientContext(
             EnvironmentCubemapPersistentContext* persistentContext,
+            float32 zNear,
+            float32 zFar,
             RefPtr<DescriptorPool> descriptorPool);
 
         EnvironmentCubemapRenderPass(

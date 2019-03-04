@@ -2,7 +2,7 @@
 
 #include <Luch/ArrayProxy.h>
 #include <Luch/BaseObject.h>
-#include <Luch/Graphics/Size3.h>
+#include <Luch/Size3.h>
 #include <Luch/Graphics/CommandList.h>
 
 namespace Luch::Graphics

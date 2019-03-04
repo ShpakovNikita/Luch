@@ -1,9 +1,9 @@
 #pragma once
 
-#include <Luch/Graphics/Point2.h>
-#include <Luch/Graphics/Size2.h>
+#include <Luch/Point2.h>
+#include <Luch/Size2.h>
 
-namespace Luch::Graphics
+namespace Luch
 {
     template<typename T>
     struct Rect2

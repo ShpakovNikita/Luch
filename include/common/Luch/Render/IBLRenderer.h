@@ -22,6 +22,16 @@ namespace Luch::Render
     using namespace Graphics;
     using namespace Passes;
 
+    struct IBLRequest
+    {
+        Vec3 position;
+        float32 zNear = 0.0;
+        float32 zFar = 0.0;
+        bool probeDiffuseIrradiance = false;
+        bool probeSpecularReflection = false;
+        Size2i size;
+    };
+
     struct IBLResult
     {
         RefPtr<Texture> environmentCubemap;
@@ -35,7 +45,6 @@ namespace Luch::Render
         static constexpr int32 DescriptorSetCount = 2048;
         static constexpr int32 DescriptorCount = 8192;
         static constexpr int32 SharedBufferSize = 1024 * 1024;
-        static constexpr Size2i EnvironmentMapSize = { 128, 128 };
     public:
         IBLRenderer(RefPtr<SceneV1::Scene> scene);
         ~IBLRenderer();
@@ -47,16 +56,16 @@ namespace Luch::Render
 
         bool Deinitialize();
 
-        bool BeginRender();
+        bool BeginRender(const IBLRequest& iblRequest);
         void UpdateScene();
         bool PrepareScene();
-        void ProbeIndirectLighting(Vec3 position);
+        void ProbeIndirectLighting();
         ResultValue<bool, IBLResult> EndRender();
     private:
-        bool PrepareEnvironmentMapping();
-        bool PrepareDiffuseIrradiance();
-        bool PrepareSpecularReflection();
-        bool PrepareSpecularBRDF();
+        bool PrepareEnvironmentMapping(const IBLRequest& iblRequest);
+        bool PrepareDiffuseIrradiance(const IBLRequest& iblRequest);
+        bool PrepareSpecularReflection(const IBLRequest& iblRequest);
+        bool PrepareSpecularBRDF(const IBLRequest& iblRequest);
 
         SharedPtr<SharedBuffer> sharedBuffer;
 

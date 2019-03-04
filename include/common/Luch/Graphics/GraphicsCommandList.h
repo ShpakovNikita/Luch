@@ -2,9 +2,9 @@
 
 #include <Luch/ArrayProxy.h>
 #include <Luch/BaseObject.h>
+#include <Luch/Rect2.h>
 #include <Luch/Graphics/IndexType.h>
 #include <Luch/Graphics/ShaderStage.h>
-#include <Luch/Graphics/Rect2.h>
 #include <Luch/Graphics/Viewport.h>
 #include <Luch/Graphics/Color.h>
 #include <Luch/Graphics/CommandList.h>

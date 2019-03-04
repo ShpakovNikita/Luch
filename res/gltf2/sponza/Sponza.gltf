@@ -1,6 +1,7 @@
 {
     "extensionsUsed": [
-        "KHR_lights_punctual"
+        "KHR_lights_punctual",
+        "EXT_lights_probe"
     ],
     "asset": {
         "generator": "Granite glTF 2.0 exporter",
@@ -10,11 +11,22 @@
     "scenes": [
         {
             "nodes": [
-                0, 1, 2, 3, 4, 5, 6
+                0, 1, 2, 3, 4, 5, 6, 7
             ]
         }
     ],
     "extensions": {
+        "EXT_lights_probe": {
+            "probes": [
+                {
+                    "size": [128, 128],
+                    "specularReflection": true,
+                    "diffuseIrradiance": true,
+                    "znear": 0.1,
+                    "zfar": 50
+                }
+            ]
+        },
         "KHR_lights_punctual": {
             "lights": [
                 {
@@ -124,6 +136,14 @@
             "extensions": {
                 "KHR_lights_punctual": {
                     "light": 5
+                }
+            }
+        },
+        {
+            "translation": [ 0, 3, 0 ],
+            "extensions": {
+                "EXT_lights_probe": {
+                    "probe": 0
                 }
             }
         }

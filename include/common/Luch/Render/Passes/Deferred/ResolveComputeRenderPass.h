@@ -5,8 +5,8 @@
 #include <Luch/UniquePtr.h>
 #include <Luch/SharedPtr.h>
 #include <Luch/ResultValue.h>
+#include <Luch/Size3.h>
 #include <Luch/Graphics/Format.h>
-#include <Luch/Graphics/Size3.h>
 #include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/SceneV1/SceneV1Forwards.h>
 #include <Luch/Render/Common.h>

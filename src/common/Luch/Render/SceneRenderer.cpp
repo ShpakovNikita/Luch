@@ -10,6 +10,7 @@
 #include <Luch/SceneV1/PbrMaterial.h>
 #include <Luch/SceneV1/Texture.h>
 #include <Luch/SceneV1/Light.h>
+#include <Luch/SceneV1/LightProbe.h>
 #include <Luch/SceneV1/Sampler.h>
 #include <Luch/SceneV1/VertexBuffer.h>
 #include <Luch/SceneV1/IndexBuffer.h>
@@ -319,7 +320,28 @@ namespace Luch::Render
             return true;
         }
 
-        bool began = iblRenderer->BeginRender();
+        auto lightProbeNodeIt = std::find_if(
+            scene->GetNodes().begin(),
+            scene->GetNodes().end(),
+            [](const auto& node) { return node->GetLightProbe() != nullptr && node->GetLightProbe()->IsEnabled(); });
+
+        if(lightProbeNodeIt == scene->GetNodes().end())
+        {
+            return true;
+        }
+
+        const auto& lightProbeNode = *lightProbeNodeIt;
+        const auto& lightProbe = lightProbeNode->GetLightProbe();
+
+        IBLRequest iblRequest;
+        iblRequest.position = lightProbeNode->GetWorldTransform() * Vec4{ 0, 0, 0, 1 };
+        iblRequest.probeDiffuseIrradiance = lightProbe->HasDiffuseIrradiance();
+        iblRequest.probeSpecularReflection = lightProbe->HasSpecularReflection();
+        iblRequest.size = lightProbe->GetSize();
+        iblRequest.zNear = lightProbe->GetZNear();
+        iblRequest.zFar = lightProbe->GetZFar();
+
+        bool began = iblRenderer->BeginRender(iblRequest);
         if(!began)
         {
             return false;
@@ -333,7 +355,7 @@ namespace Luch::Render
 
         iblRenderer->UpdateScene();
 
-        iblRenderer->ProbeIndirectLighting(Vec3{0, 3, 0});
+        iblRenderer->ProbeIndirectLighting();
 
         auto [result, probe] = iblRenderer->EndRender();
         if(!result)

@@ -40,6 +40,9 @@ namespace Luch::SceneV1
         inline const RefPtr<Light>& GetLight() const { return light; }
         void SetLight(const RefPtr<Light>& aLight) { light = aLight; }
 
+        inline const RefPtr<LightProbe>& GetLightProbe() const { return lightProbe; }
+        void SetLightProbe(const RefPtr<LightProbe>& aLightProbe) { lightProbe = aLightProbe; }
+
         inline const TransformType& GetLocalTransform() const { return localTransform; }
         void SetLocalTransform(const TransformType& aLocalTransform) { localTransform = aLocalTransform; }
 
@@ -58,6 +61,7 @@ namespace Luch::SceneV1
         RefPtr<Mesh> mesh;
         RefPtr<Camera> camera;
         RefPtr<Light> light;
+        RefPtr<LightProbe> lightProbe;
 
         TransformType localTransform = Mat4x4{ 1.0 };
         Mat4x4 worldTransform = Mat4x4 { 1.0 };

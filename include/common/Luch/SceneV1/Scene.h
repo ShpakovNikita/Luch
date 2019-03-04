@@ -39,6 +39,7 @@ private:
         void AddPrimitiveProperties(const RefPtr<Primitive>& primitive);
         void AddMaterialProperties(const RefPtr<PbrMaterial>& material);
         void AddLightProperties(const RefPtr<Light>& light, const RefPtr<Node>& node);
+        void AddLightProbeProperties(const RefPtr<LightProbe>& lightProbe, const RefPtr<Node>& node);
         void AddCameraProperties(const RefPtr<Camera>& camera, const RefPtr<Node>& node);
 
         String name;
