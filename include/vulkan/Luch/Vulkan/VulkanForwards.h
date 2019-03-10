@@ -12,7 +12,6 @@ namespace Luch::Vulkan
     class VulkanDescriptorSetBinding;
     class VulkanDescriptorSetLayout;
     struct VulkanDescriptorSetLayoutCreateInfo;
-    class DescriptorSetLayoutCreateInfo;
     class VulkanDescriptorSetWrites;
     class VulkanFence;
     class VulkanFramebuffer;

@@ -440,9 +440,9 @@ namespace Luch::Vulkan
     }
 
     GraphicsResultRefPtr<DescriptorSetLayout> VulkanGraphicsDevice::CreateDescriptorSetLayout(
-        const Graphics::DescriptorSetLayoutCreateInfo& ci)
+        const DescriptorSetLayoutCreateInfo& ci)
     {
-        auto vkci = DescriptorSetLayoutCreateInfo::ToVulkanCreateInfo(ci);
+        auto vkci = VulkanDescriptorSetLayoutCreateInfo::ToVulkanCreateInfo(ci);
         auto [createResult, vulkanDescriptorSetLayout] = device.createDescriptorSetLayout(vkci.createInfo, allocationCallbacks);
         if (createResult != vk::Result::eSuccess)
         {
@@ -451,7 +451,7 @@ namespace Luch::Vulkan
         }
         else
         {
-            return { createResult, MakeRef<VulkanDescriptorSetLayout>(this, vulkanDescriptorSetLayout) };
+            return { createResult, MakeRef<VulkanDescriptorSetLayout>(this, ci, vulkanDescriptorSetLayout) };
         }
     }
 

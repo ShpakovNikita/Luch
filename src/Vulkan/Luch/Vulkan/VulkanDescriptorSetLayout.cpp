@@ -6,9 +6,11 @@ namespace Luch::Vulkan
 {
     VulkanDescriptorSetLayout::VulkanDescriptorSetLayout(
         VulkanGraphicsDevice* aDevice,
+        const DescriptorSetLayoutCreateInfo& ci,
         vk::DescriptorSetLayout aDescriptorSetLayout)
         : DescriptorSetLayout (aDevice)
         , device(aDevice)
+        , createInfo(ci)
         , descriptorSetLayout(aDescriptorSetLayout)
     {
     }

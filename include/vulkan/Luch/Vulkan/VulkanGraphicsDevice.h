@@ -112,7 +112,7 @@ namespace Luch::Vulkan
         GraphicsResultRefPtr<RenderPass> CreateRenderPass(const RenderPassCreateInfo& createInfo) override;
 
         GraphicsResultRefPtr<DescriptorSetLayout> CreateDescriptorSetLayout(
-            const Graphics::DescriptorSetLayoutCreateInfo& createInfo) override;
+            const DescriptorSetLayoutCreateInfo& createInfo) override;
 
         GraphicsResultRefPtr<DescriptorPool> CreateDescriptorPool(
             const DescriptorPoolCreateInfo&) override;

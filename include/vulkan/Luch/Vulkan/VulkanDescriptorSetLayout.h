@@ -17,20 +17,21 @@ namespace Luch::Vulkan
     public:
         VulkanDescriptorSetLayout(
             VulkanGraphicsDevice* device,
+            const DescriptorSetLayoutCreateInfo& ci,
             vk::DescriptorSetLayout descriptorSetLayout);
 
         ~VulkanDescriptorSetLayout() override;
 
-        const Graphics::DescriptorSetLayoutCreateInfo& GetCreateInfo() const override
+        const DescriptorSetLayoutCreateInfo& GetCreateInfo() const override
         {
-            return createInfoUnused;
+            return createInfo;
         }
 
         vk::DescriptorSetLayout GetDescriptorSetLayout() { return descriptorSetLayout; }
     private:
         void Destroy();
 
-        Graphics::DescriptorSetLayoutCreateInfo createInfoUnused; // todo: fix
+        DescriptorSetLayoutCreateInfo createInfo;
         VulkanGraphicsDevice* device = nullptr;
         vk::DescriptorSetLayout descriptorSetLayout;
     };

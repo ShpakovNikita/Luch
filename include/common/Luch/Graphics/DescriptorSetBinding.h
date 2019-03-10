@@ -2,7 +2,6 @@
 
 #include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/Graphics/ResourceType.h>
-#include <Luch/Graphics/ShaderStage.h>
 
 namespace Luch::Graphics
 {
