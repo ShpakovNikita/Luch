@@ -21,20 +21,16 @@ namespace Luch::Render::Passes::Forward
 
         MaterialResources* materialResources = nullptr;
         CameraResources* cameraResources = nullptr;
+        IndirectLightingResources* indirectLightingResources = nullptr;
 
         RefPtr<PipelineLayout> pipelineLayout;
         RefPtr<DescriptorPool> descriptorPool;
 
         DescriptorSetBinding meshUniformBufferBinding;
 
-        DescriptorSetBinding diffuseIrradianceCubemapBinding;
-        DescriptorSetBinding specularReflectionCubemapBinding;
-        DescriptorSetBinding specularBRDFTextureBinding;
-
         DescriptorSetBinding lightingParamsBinding;
         DescriptorSetBinding lightsBufferBinding;
 
-        RefPtr<DescriptorSetLayout> indirectLightingTexturesDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> lightsBufferDescriptorSetLayout;
 
         RefPtr<DescriptorSetLayout> meshBufferDescriptorSetLayout;

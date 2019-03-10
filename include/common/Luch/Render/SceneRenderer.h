@@ -93,6 +93,7 @@ namespace Luch::Render
 
         int32 GetCurrentFrameResourceIndex() const;
         static ResultValue<bool, UniquePtr<CameraResources>> PrepareCameraResources(GraphicsDevice* device);
+        static ResultValue<bool, UniquePtr<IndirectLightingResources>> PrepareIndirectLightingResources(GraphicsDevice* device);
 
         bool UploadSceneTextures();
         bool UploadSceneBuffers();
@@ -120,6 +121,7 @@ namespace Luch::Render
 
         Array<FrameResources, MaxSwapchainTextures> frameResources;
         SharedPtr<CameraResources> cameraResources;
+        SharedPtr<IndirectLightingResources> indirectLightingResources;
         SharedPtr<RenderContext> context;
         RefPtr<Semaphore> semaphore;
         RefPtr<CommandPool> commandPool;

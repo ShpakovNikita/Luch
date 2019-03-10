@@ -3,6 +3,7 @@
 #include <simd/simd.h>
 #include "Common/lighting.metal"
 #include "Common/material.metal"
+#include "IBL/ibl_lighting.metal"
 
 using namespace metal;
 
@@ -217,43 +218,36 @@ fragment FragmentOut fp_main(
 
     FragmentOut result;
 
-    half3 diffuseIndirect = half3(0);
-    if(!is_null_texture(diffuseIrradianceMap))
-    {
-        constexpr sampler diffuseIrradianceSampler{ filter::linear, min_filter::linear, mag_filter::linear };
-        float3 viewWS = (camera.inverseView * float4(float3(V), 0.0)).xyz;
-        float3 normalWS = (camera.inverseView * float4(float3(N), 0.0)).xyz;
+    float3 R = float3(reflect(-V, N));
+    half NdotV = half(saturate(dot(N, V)));
 
-        float3 reflectedWS = reflect(-viewWS, normalWS);
-        half3 diffuseIrradiance = diffuseIrradianceMap.sample(diffuseIrradianceSampler, reflectedWS).rgb;
-        diffuseIndirect = (1 - metallic) * baseColor.rgb * M_1_PI_H * diffuseIrradiance * occlusion;
-    }
+    // TODO think about non-uniform scale
+    float3 reflectedWS = (camera.inverseView * float4(R, 0.0)).xyz;
 
-    half3 specularReflection = half3(0);
-    if(!is_null_texture(specularReflectionMap) && !is_null_texture(specularBRDF))
-    {
-        constexpr sampler specularReflectionSampler{ filter::linear, mip_filter::linear };
-        constexpr sampler specularBRDFSampler { filter::linear };
+    half3 diffuseIndirectLuminance = CalculateIndirectDiffuse(
+        diffuseIrradianceMap,
+        reflectedWS,
+        baseColor.rgb,
+        metallic);
 
-        float3 viewWS = (camera.inverseView * float4(float3(V), 0.0)).xyz;
-        float3 normalWS = (camera.inverseView * float4(float3(N), 0.0)).xyz;
-
-        float3 reflectedWS = reflect(-viewWS, normalWS);
-
-        ushort mipLevelCount = specularReflectionMap.get_num_mip_levels();
-        half lod = mix(0, half(mipLevelCount), roughness);
-        half3 prefilteredSpecular = specularReflectionMap.sample(specularReflectionSampler, reflectedWS, level(lod)).rgb;
-
-        half NdotV = saturate(dot(N, V));
-        half2 brdf = specularBRDF.sample(specularBRDFSampler, float2(roughness, NdotV)).xy;
-
-        specularReflection = prefilteredSpecular * (F0*brdf.x + brdf.y);
-    }
+    half3 specularReflectionLuminance = CalculateSpecularReflection(
+        specularReflectionMap,
+        specularBRDF,
+        F0,
+        reflectedWS,
+        NdotV,
+        metallic,
+        roughness);
 
     half3 diffuseDirect = baseColor.rgb * lightingResult.diffuse;
     half3 specularDirect = lightingResult.specular;
 
-    result.luminance.rgb = emitted + diffuseDirect + diffuseIndirect + specularDirect + specularReflection;
+    result.luminance.rgb =
+        emitted
+        + diffuseDirect
+        + specularDirect
+        + (specularReflectionLuminance + diffuseIndirectLuminance) * occlusion;
+
     result.luminance.a = baseColor.a;
 
     return result;

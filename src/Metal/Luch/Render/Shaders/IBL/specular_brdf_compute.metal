@@ -7,6 +7,14 @@
 
 using namespace metal;
 
+half GDFG(half NdotV, half NdotL, half roughness)
+{
+    float a2 = roughness * roughness;
+    float GGXL = NdotV * sqrt((-NdotL * a2 + NdotL) * NdotL + a2);
+    float GGXV = NdotL * sqrt((-NdotV * a2 + NdotV) * NdotV + a2);
+    return (2 * NdotL) / (GGXV + GGXL);
+}
+
 half2 IntegrateBRDF(half roughness, half NdotV, ushort sampleCount)
 {
     half3 V = half3(sqrt(1 - NdotV * NdotV), 0, NdotV);
@@ -23,11 +31,12 @@ half2 IntegrateBRDF(half roughness, half NdotV, ushort sampleCount)
         half NdotL = saturate(dot(N, L));
         half NdotH = saturate(dot(N, H));
         half VdotH = saturate(dot(V, H));
+        half NdotV = saturate(dot(N, V));
 
         if(NdotL > 0)
         {
             // TODO check and understand math here
-            half G = G_CookTorranceGGX(VdotH, NdotH, NdotV, NdotL);
+            half G = GDFG(NdotV, NdotL, roughness);
 
             half Gv = G * VdotH / NdotH;
             half Fc = pow(1 - VdotH, 5);

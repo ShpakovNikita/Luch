@@ -21,6 +21,7 @@ half D_GGX(half NdotH, half roughness)
     return alpha2 / (M_PI_H * den * den);
 }
 
+// TODO this is wrong
 half G_CookTorranceGGX(half VdotH, half NdotH, half NdotV, half NdotL)
 {
     half intermediate = min(NdotV, NdotL);

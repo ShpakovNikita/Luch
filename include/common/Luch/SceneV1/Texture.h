@@ -18,17 +18,20 @@ namespace Luch::SceneV1
     class Texture : public BaseObject
     {
     public:
-        Texture(
-            const RefPtr<Sampler>& sampler,
-            const RefPtr<Image>& hostImage,
-            const String& name = "");
+        Texture() = default;
 
         inline const RefPtr<Image>& GetHostImage() const { return hostImage; }
-        inline const RefPtr<Graphics::Texture>& GetDeviceTexture() const { return deviceTexture; }
+        inline void SetHostImage(const RefPtr<Image>& image) { hostImage = image; }
 
+        inline const RefPtr<Graphics::Texture>& GetDeviceTexture() const { return deviceTexture; }
         inline void SetDeviceTexture(const RefPtr<Graphics::Texture>& aDeviceTexture) { deviceTexture = aDeviceTexture; }
 
+        const String& GetName() const { return name; }
+        void SetName(const String& aName) { name = aName; }
+
         inline const RefPtr<Sampler>& GetSampler() const { return sampler; }
+        inline void SetSampler(const RefPtr<Sampler>& aSampler) { sampler = aSampler; }
+
         inline const RefPtr<Graphics::Sampler>& GetDeviceSampler() const { return sampler->GetDeviceSampler(); }
 
         inline bool IsSRGB() const { return isSRGB; }

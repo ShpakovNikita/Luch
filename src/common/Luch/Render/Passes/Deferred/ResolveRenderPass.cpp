@@ -3,6 +3,7 @@
 #include <Luch/Render/RenderUtils.h>
 #include <Luch/Render/SharedBuffer.h>
 #include <Luch/Render/CameraResources.h>
+#include <Luch/Render/IndirectLightingResources.h>
 #include <Luch/Render/Passes/Deferred/ResolveContext.h>
 #include <Luch/Render/Graph/RenderGraphResourceManager.h>
 #include <Luch/Render/Graph/RenderGraphNodeBuilder.h>
@@ -62,6 +63,17 @@ namespace Luch::Render::Passes::Deferred
 
         gbuffer.depthStencil = node->ReadsTexture(transientContext->gbuffer.depthStencil);
 
+        if(transientContext->diffuseIrradianceCubemapHandle)
+        {
+            diffuseIrradianceCubemapHandle = node->ReadsTexture(transientContext->diffuseIrradianceCubemapHandle);
+        }
+
+        if(transientContext->specularReflectionCubemapHandle && transientContext->specularBRDFTextureHandle)
+        {
+            specularReflectionCubemapHandle = node->ReadsTexture(transientContext->specularReflectionCubemapHandle);
+            specularBRDFTextureHandle = node->ReadsTexture(transientContext->specularBRDFTextureHandle);
+        }
+
         luminanceTextureHandle = node->CreateColorAttachment(0, { transientContext->outputSize });
     }
 
@@ -84,22 +96,8 @@ namespace Luch::Render::Passes::Deferred
         RenderGraphResourceManager* manager,
         GraphicsCommandList* cmdList)
     {
-        for(int32 i = 0; i < gbuffer.color.size(); i++)
-        {
-            auto colorTexture = manager->GetTexture(gbuffer.color[i]);
-
-            transientContext->gbufferTextureDescriptorSet->WriteTexture(
-                persistentContext->colorTextureBindings[i],
-                colorTexture);
-        }
-
-        auto depthStencilTexture = manager->GetTexture(gbuffer.depthStencil);
-
-        transientContext->gbufferTextureDescriptorSet->WriteTexture(
-            persistentContext->depthStencilTextureBinding,
-            depthStencilTexture);
-
-        transientContext->gbufferTextureDescriptorSet->Update();
+        UpdateGBufferDescriptorSet(manager, transientContext->gbufferTextureDescriptorSet);
+        UpdateIndirectLightingDescriptorSet(manager, transientContext->indirectLightingTexturesDescriptorSet);
 
         Viewport viewport;
         viewport.width = transientContext->outputSize.width;
@@ -111,6 +109,11 @@ namespace Luch::Render::Passes::Deferred
         cmdList->BindGraphicsPipelineState(persistentContext->pipelineState);
         cmdList->SetViewports({ viewport });
         cmdList->SetScissorRects({ scissorRect });
+
+        cmdList->BindTextureDescriptorSet(
+            ShaderStage::Fragment,
+            persistentContext->pipelineLayout,
+            transientContext->indirectLightingTexturesDescriptorSet);
 
         cmdList->BindTextureDescriptorSet(
             ShaderStage::Fragment,
@@ -127,7 +130,7 @@ namespace Luch::Render::Passes::Deferred
             persistentContext->pipelineLayout,
             transientContext->lightsBufferDescriptorSet);
 
-        cmdList->BindVertexBuffers({ persistentContext->fullscreenQuadBuffer }, {0});
+        cmdList->BindVertexBuffers({ persistentContext->fullscreenQuadBuffer }, { 0 });
         cmdList->Draw(0, fullscreenQuadVertices.size());
     }
 
@@ -171,11 +174,64 @@ namespace Luch::Render::Passes::Deferred
         transientContext->lightsBufferDescriptorSet->Update();
     }
 
+    void ResolveRenderPass::UpdateGBufferDescriptorSet(
+        RenderGraphResourceManager* manager,
+        DescriptorSet* descriptorSet)
+    {
+        for(int32 i = 0; i < gbuffer.color.size(); i++)
+        {
+            auto colorTexture = manager->GetTexture(gbuffer.color[i]);
+
+            descriptorSet->WriteTexture(
+                persistentContext->colorTextureBindings[i],
+                colorTexture);
+        }
+
+        auto depthStencilTexture = manager->GetTexture(gbuffer.depthStencil);
+
+        descriptorSet->WriteTexture(
+            persistentContext->depthStencilTextureBinding,
+            depthStencilTexture);
+
+        descriptorSet->Update();
+    }
+
+    void ResolveRenderPass::UpdateIndirectLightingDescriptorSet(
+        RenderGraphResourceManager* manager,
+        DescriptorSet* descriptorSet)
+    {
+        if(diffuseIrradianceCubemapHandle)
+        {
+            auto diffuseIrradianceCubemap = manager->GetTexture(diffuseIrradianceCubemapHandle);
+
+            transientContext->indirectLightingTexturesDescriptorSet->WriteTexture(
+                persistentContext->indirectLightingResources->diffuseIrradianceCubemapBinding,
+                diffuseIrradianceCubemap);
+        }
+
+        if(specularReflectionCubemapHandle && specularBRDFTextureHandle)
+        {
+            auto specularReflectionCubemap = manager->GetTexture(specularReflectionCubemapHandle);
+
+            descriptorSet->WriteTexture(
+                persistentContext->indirectLightingResources->specularReflectionCubemapBinding,
+                specularReflectionCubemap);
+
+            auto specularBRDFTexture = manager->GetTexture(specularBRDFTextureHandle);
+
+            descriptorSet->WriteTexture(
+                persistentContext->indirectLightingResources->specularBRDFTextureBinding,
+                specularBRDFTexture);
+        }
+
+        descriptorSet->Update();
+    }
+
     RefPtr<GraphicsPipelineState> ResolveRenderPass::CreateResolvePipelineState(ResolvePersistentContext* context)
     {
         GraphicsPipelineStateCreateInfo ci;
 
-        ci.name = "Resolve";
+        ci.name = RenderPassName;
 
         auto& bindingDescription = ci.inputAssembler.bindings.emplace_back();
         bindingDescription.stride = sizeof(QuadVertex);
@@ -220,157 +276,175 @@ namespace Luch::Render::Passes::Deferred
 
     ResultValue<bool, UniquePtr<ResolvePersistentContext>> ResolveRenderPass::PrepareResolvePersistentContext(
         GraphicsDevice* device,
-        CameraResources* cameraResources)
+        CameraResources* cameraResources,
+        IndirectLightingResources* indirectLightingResources)
     {
         UniquePtr<ResolvePersistentContext> context = MakeUnique<ResolvePersistentContext>();
         context->device = device;
         context->cameraResources = cameraResources;
+        context->indirectLightingResources = indirectLightingResources;
 
-        ColorAttachment colorAttachment;
-        colorAttachment.format = ColorFormat;
-        colorAttachment.colorLoadOperation = AttachmentLoadOperation::Clear;
-        colorAttachment.colorStoreOperation = AttachmentStoreOperation::Store;
-
-        RenderPassCreateInfo renderPassCreateInfo;
-        renderPassCreateInfo.name = RenderPassName;
-        renderPassCreateInfo.colorAttachments[0] = colorAttachment;
-
-        auto[createRenderPassResult, createdRenderPass] = device->CreateRenderPass(renderPassCreateInfo);
-        if(createRenderPassResult != GraphicsResult::Success)
         {
-            LUCH_ASSERT(false);
-            return { false };
+            ColorAttachment colorAttachment;
+            colorAttachment.format = ColorFormat;
+            colorAttachment.colorLoadOperation = AttachmentLoadOperation::Clear;
+            colorAttachment.colorStoreOperation = AttachmentStoreOperation::Store;
+
+            RenderPassCreateInfo createInfo;
+            createInfo.name = RenderPassName;
+            createInfo.colorAttachments[0] = colorAttachment;
+
+            auto[result, renderPass] = device->CreateRenderPass(createInfo);
+            if(result != GraphicsResult::Success)
+            {
+                LUCH_ASSERT(false);
+                return { false };
+            }
+
+            context->renderPass = std::move(renderPass);
         }
 
-        context->renderPass = std::move(createdRenderPass);
-
-        auto [vertexShaderLibraryCreated, createdVertexShaderLibrary] = RenderUtils::CreateShaderLibrary(
-            context->device,
-            "Data/Shaders/",
-            "Data/Shaders/Deferred/",
-            "resolve_vp",
-            {});
-
-        if (!vertexShaderLibraryCreated)
         {
-            LUCH_ASSERT(false);
-            return { false };
+            auto [libraryCreated, createdVertexShaderLibrary] = RenderUtils::CreateShaderLibrary(
+                context->device,
+                "Data/Shaders/",
+                "Data/Shaders/Deferred/",
+                "resolve_vp",
+                {});
+
+            if (!libraryCreated)
+            {
+                LUCH_ASSERT(false);
+                return { false };
+            }
+
+            auto [result, vertexShaderProgram] = createdVertexShaderLibrary->CreateShaderProgram(ShaderStage::Vertex, "vp_main");
+            if(result != GraphicsResult::Success)
+            {
+                LUCH_ASSERT(false);
+                return { false };
+            }
+
+            context->vertexShader = std::move(vertexShaderProgram);
         }
 
-        auto [vertexShaderProgramCreateResult, vertexShaderProgram] = createdVertexShaderLibrary->CreateShaderProgram(ShaderStage::Vertex, "vp_main");
-        if(vertexShaderProgramCreateResult != GraphicsResult::Success)
         {
-            LUCH_ASSERT(false);
-            return { false };
+            auto [libraryCreated, createdFragmentShaderLibrary] = RenderUtils::CreateShaderLibrary(
+                device,
+                "Data/Shaders/",
+                "Data/Shaders/Deferred/",
+                "resolve_fp",
+                {});
+
+            if (!libraryCreated)
+            {
+                LUCH_ASSERT(false);
+                return { false };
+            }
+
+            auto [result, fragmentShaderProgram] = createdFragmentShaderLibrary->CreateShaderProgram(
+                ShaderStage::Fragment,
+                "fp_main");
+
+            if(result != GraphicsResult::Success)
+            {
+                LUCH_ASSERT(false);
+                return { false };
+            }
+
+            context->fragmentShader = std::move(fragmentShaderProgram);
         }
 
-        context->vertexShader = std::move(vertexShaderProgram);
-
-        auto[fragmentShaderLibraryCreated, createdFragmentShaderLibrary] = RenderUtils::CreateShaderLibrary(
-            device,
-            "Data/Shaders/",
-            "Data/Shaders/Deferred/",
-            "resolve_fp",
-            {});
-
-        if (!fragmentShaderLibraryCreated)
         {
-            LUCH_ASSERT(false);
-            return { false };
+            context->lightingParamsBinding.OfType(ResourceType::UniformBuffer);
+            context->lightsBufferBinding.OfType(ResourceType::UniformBuffer);
+
+            DescriptorSetLayoutCreateInfo createInfo;
+            createInfo
+                .OfType(DescriptorSetType::Buffer)
+                .WithNBindings(2)
+                .AddBinding(&context->lightingParamsBinding)
+                .AddBinding(&context->lightsBufferBinding);
+
+            auto[result, descriptorSetLayout] = device->CreateDescriptorSetLayout(createInfo);
+            if (result != GraphicsResult::Success)
+            {
+                LUCH_ASSERT(false);
+                return { false };
+            }
+
+            context->lightsBufferDescriptorSetLayout = std::move(descriptorSetLayout);
         }
 
-        auto [fragmentShaderProgramCreateResult, fragmentShaderProgram] = createdFragmentShaderLibrary->CreateShaderProgram(
-            ShaderStage::Fragment,
-            "fp_main");
-
-        if(fragmentShaderProgramCreateResult != GraphicsResult::Success)
         {
-            LUCH_ASSERT(false);
-            return { false };
+            for(int32 i = 0; i < DeferredConstants::GBufferColorAttachmentCount; i++)
+            {
+                context->colorTextureBindings[i].OfType(ResourceType::Texture);
+            }
+            
+            context->depthStencilTextureBinding.OfType(ResourceType::Texture);
+
+            DescriptorSetLayoutCreateInfo createInfo;
+            createInfo
+                .OfType(DescriptorSetType::Texture)
+                .WithNBindings(DeferredConstants::GBufferColorAttachmentCount + 1);
+
+            for(int32 i = 0; i < DeferredConstants::GBufferColorAttachmentCount; i++)
+            {
+                createInfo.AddBinding(&context->colorTextureBindings[i]);
+            }
+
+            createInfo.AddBinding(&context->depthStencilTextureBinding);
+
+            auto[result, descriptorSetLayout] = context->device->CreateDescriptorSetLayout(createInfo);
+            if (result != GraphicsResult::Success)
+            {
+                LUCH_ASSERT(false);
+                return { false };
+            }
+
+            context->gbufferTextureDescriptorSetLayout = std::move(descriptorSetLayout);
         }
 
-        context->fragmentShader = std::move(fragmentShaderProgram);
-
-        context->lightingParamsBinding.OfType(ResourceType::UniformBuffer);
-        context->lightsBufferBinding.OfType(ResourceType::UniformBuffer);
-
-        DescriptorSetLayoutCreateInfo lightsDescriptorSetLayoutCreateInfo;
-        lightsDescriptorSetLayoutCreateInfo
-            .OfType(DescriptorSetType::Buffer)
-            .WithNBindings(2)
-            .AddBinding(&context->lightingParamsBinding)
-            .AddBinding(&context->lightsBufferBinding);
-
-        auto[createLightsDescriptorSetLayoutResult, createdLightsDescriptorSetLayout] = device->CreateDescriptorSetLayout(lightsDescriptorSetLayoutCreateInfo);
-        if (createLightsDescriptorSetLayoutResult != GraphicsResult::Success)
         {
-            LUCH_ASSERT(false);
-            return { false };
+            PipelineLayoutCreateInfo createInfo;
+            createInfo
+                .AddSetLayout(ShaderStage::Fragment, context->cameraResources->cameraBufferDescriptorSetLayout)
+                .AddSetLayout(ShaderStage::Fragment, context->lightsBufferDescriptorSetLayout)
+                .AddSetLayout(ShaderStage::Fragment, context->gbufferTextureDescriptorSetLayout)
+                .AddSetLayout(ShaderStage::Fragment, context->indirectLightingResources->indirectLightingTexturesDescriptorSetLayout);
+
+            auto[result, pipelineLayout] = context->device->CreatePipelineLayout(createInfo);
+            if (result != GraphicsResult::Success)
+            {
+                LUCH_ASSERT(false);
+                return { false };
+            }
+
+            context->pipelineLayout = std::move(pipelineLayout);
         }
-
-        context->lightsBufferDescriptorSetLayout = std::move(createdLightsDescriptorSetLayout);
-
-        for(int32 i = 0; i < DeferredConstants::GBufferColorAttachmentCount; i++)
-        {
-            context->colorTextureBindings[i].OfType(ResourceType::Texture);
-        }
-        
-        context->depthStencilTextureBinding.OfType(ResourceType::Texture);
-
-        DescriptorSetLayoutCreateInfo gbufferTextureDescriptorSetLayoutCreateInfo;
-        gbufferTextureDescriptorSetLayoutCreateInfo
-            .OfType(DescriptorSetType::Texture)
-            .WithNBindings(DeferredConstants::GBufferColorAttachmentCount + 1);
-        for(int32 i = 0; i < DeferredConstants::GBufferColorAttachmentCount; i++)
-        {
-            gbufferTextureDescriptorSetLayoutCreateInfo.AddBinding(&context->colorTextureBindings[i]);
-        }
-
-        gbufferTextureDescriptorSetLayoutCreateInfo.AddBinding(&context->depthStencilTextureBinding);
-
-        auto[createGBufferTextureDescriptorSetLayoutResult, createdGBufferTextureDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(gbufferTextureDescriptorSetLayoutCreateInfo);
-        if (createGBufferTextureDescriptorSetLayoutResult != GraphicsResult::Success)
-        {
-            LUCH_ASSERT(false);
-            return { false };
-        }
-
-        context->gbufferTextureDescriptorSetLayout = std::move(createdGBufferTextureDescriptorSetLayout);
-
-        PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
-        pipelineLayoutCreateInfo
-            .AddSetLayout(ShaderStage::Fragment, context->cameraResources->cameraBufferDescriptorSetLayout)
-            .AddSetLayout(ShaderStage::Fragment, context->lightsBufferDescriptorSetLayout)
-            .AddSetLayout(ShaderStage::Fragment, context->gbufferTextureDescriptorSetLayout);
-
-        auto[createPipelineLayoutResult, createdPipelineLayout] = context->device->CreatePipelineLayout(pipelineLayoutCreateInfo);
-        if (createPipelineLayoutResult != GraphicsResult::Success)
-        {
-            LUCH_ASSERT(false);
-            return { false };
-        }
-
-        context->pipelineLayout = std::move(createdPipelineLayout);
 
         // TODO result
         context->pipelineState = CreateResolvePipelineState(context.get());
 
-        BufferCreateInfo quadBufferCreateInfo;
-        quadBufferCreateInfo.length = fullscreenQuadVertices.size() * sizeof(QuadVertex);
-        quadBufferCreateInfo.storageMode = ResourceStorageMode::Shared;
-        quadBufferCreateInfo.usage = BufferUsageFlags::VertexBuffer;
-
-        auto[createQuadBufferResult, createdQuadBuffer] = device->CreateBuffer(
-            quadBufferCreateInfo,
-            fullscreenQuadVertices.data());
-
-        if (createQuadBufferResult != GraphicsResult::Success)
         {
-            LUCH_ASSERT(false);
-            return { false };
-        }
+            BufferCreateInfo createInfo;
+            createInfo.length = fullscreenQuadVertices.size() * sizeof(QuadVertex);
+            createInfo.storageMode = ResourceStorageMode::Shared;
+            createInfo.usage = BufferUsageFlags::VertexBuffer;
 
-        context->fullscreenQuadBuffer = std::move(createdQuadBuffer);
+            auto[result, quadBuffer] = device->CreateBuffer(
+                createInfo,
+                fullscreenQuadVertices.data());
+
+            if (result != GraphicsResult::Success)
+            {
+                LUCH_ASSERT(false);
+                return { false };
+            }
+
+            context->fullscreenQuadBuffer = std::move(quadBuffer);
+        }
 
         return { true, std::move(context) };
     }
@@ -382,25 +456,41 @@ namespace Luch::Render::Passes::Deferred
         UniquePtr<ResolveTransientContext> context = MakeUnique<ResolveTransientContext>();
         context->descriptorPool = descriptorPool;
 
-        auto [allocateTextureSetResult, allocatedTextureSet] = context->descriptorPool->AllocateDescriptorSet(
+        {
+            auto [result, textureSet] = context->descriptorPool->AllocateDescriptorSet(
                 persistentContext->gbufferTextureDescriptorSetLayout);
 
-        if (allocateTextureSetResult != GraphicsResult::Success)
-        {
-            return { false };
+            if (result != GraphicsResult::Success)
+            {
+                return { false };
+            }
+
+            context->gbufferTextureDescriptorSet = std::move(textureSet);
         }
 
-        context->gbufferTextureDescriptorSet = std::move(allocatedTextureSet);
-
-        auto [allocateLightsDescriptorSetResult, allocatedLightsBufferSet] = context->descriptorPool->AllocateDescriptorSet(
-            persistentContext->lightsBufferDescriptorSetLayout);
-
-        if(allocateLightsDescriptorSetResult != GraphicsResult::Success)
         {
-            return { false };
+            auto [result, bufferSet] = context->descriptorPool->AllocateDescriptorSet(
+                persistentContext->lightsBufferDescriptorSetLayout);
+
+            if(result != GraphicsResult::Success)
+            {
+                return { false };
+            }
+
+            context->lightsBufferDescriptorSet = std::move(bufferSet);
         }
 
-        context->lightsBufferDescriptorSet = allocatedLightsBufferSet;
+        {
+            auto [result, textureSet] = context->descriptorPool->AllocateDescriptorSet(
+                persistentContext->indirectLightingResources->indirectLightingTexturesDescriptorSetLayout);
+
+            if(result != GraphicsResult::Success)
+            {
+                return { false };
+            }
+
+            context->indirectLightingTexturesDescriptorSet = std::move(textureSet);
+        }
 
         return { true, std::move(context) };
     }

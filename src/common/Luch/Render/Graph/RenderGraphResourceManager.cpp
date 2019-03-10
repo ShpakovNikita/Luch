@@ -131,60 +131,65 @@ namespace Luch::Render::Graph
 
     RefPtr<Texture> RenderGraphResourceManager::GetTexture(RenderResource handle)
     {
-         {
+        if(!handle)
+        {
+            return nullptr;
+        }
+
+        {
             auto it = modifiedResources.find(handle);
             if(it != modifiedResources.end())
             {
                 handle = it->second;
             }
-         }
+        }
 
-         {
+        {
             auto it = acquiredTextures.find(handle);
             if(it != acquiredTextures.end())
             {
                 return it->second;
             }
-         }
+        }
 
-         {
+        {
             auto it = importedTextures.find(handle);
             if(it != importedTextures.end())
             {
                 return it->second;
             }
-         }
+        }
 
-         return nullptr;
+        return nullptr;
     }
 
     RefPtr<Buffer> RenderGraphResourceManager::GetBuffer(RenderResource handle)
     {
-         {
-            auto it = modifiedResources.find(handle);
-            if(it != modifiedResources.end())
-            {
-                handle = it->second;
-            }
-         }
+        {
+           auto it = modifiedResources.find(handle);
+           if(it != modifiedResources.end())
+           {
+               handle = it->second;
+           }
+        }
 
-         {
-            auto it = acquiredBuffers.find(handle);
-            if(it != acquiredBuffers.end())
-            {
-                return it->second;
-            }
-         }
+        {
+           auto it = acquiredBuffers.find(handle);
+           if(it != acquiredBuffers.end())
+           {
+               return it->second;
+           }
+        }
 
-         {
-            auto it = importedBuffers.find(handle);
-            if(it != importedBuffers.end())
-            {
-                return it->second;
-            }
-         }
+        {
+           auto it = importedBuffers.find(handle);
+           if(it != importedBuffers.end())
+           {
+               return it->second;
+           }
+        }
 
-         return nullptr;
+        return nullptr;
     }
 
     RefPtr<Texture> RenderGraphResourceManager::ReleaseTexture(RenderResource handle)

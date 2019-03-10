@@ -1,5 +1,4 @@
 #include <Luch/Render/Passes/Deferred/GBufferRenderPass.h>
-#include <Luch/Render/TextureUploader.h>
 #include <Luch/Render/ShaderDefines.h>
 #include <Luch/Render/CameraResources.h>
 #include <Luch/Render/MaterialResources.h>

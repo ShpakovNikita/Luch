@@ -34,7 +34,8 @@ namespace Luch::Render::Passes::Deferred
 
         static ResultValue<bool, UniquePtr<ResolveComputePersistentContext>> PrepareResolvePersistentContext(
             GraphicsDevice* device,
-            CameraResources* cameraResources);
+            CameraResources* cameraResources,
+            IndirectLightingResources* indirectLightingResources);
 
         static ResultValue<bool, UniquePtr<ResolveComputeTransientContext>> PrepareResolveTransientContext(
             ResolveComputePersistentContext* persistentContext,
@@ -58,11 +59,23 @@ namespace Luch::Render::Passes::Deferred
     private:
         void UpdateLights(const RefPtrVector<SceneV1::Node>& lightNodes);
 
+        void UpdateGBufferDescriptorSet(
+            RenderGraphResourceManager* manager,
+            DescriptorSet* descriptorSet);
+
+        void UpdateIndirectLightingDescriptorSet(
+            RenderGraphResourceManager* manager,
+            DescriptorSet* descriptorSet);
+
         static RefPtr<ComputePipelineState> CreateResolvePipelineState(ResolveComputePersistentContext* context);
 
         ResolveComputePersistentContext* persistentContext = nullptr;
         ResolveComputeTransientContext* transientContext = nullptr;
+
         GBufferReadOnly gbuffer;
+        RenderResource diffuseIrradianceCubemapHandle;
+        RenderResource specularReflectionCubemapHandle;
+        RenderResource specularBRDFTextureHandle;
 
         RenderMutableResource luminanceTextureHandle;
     };

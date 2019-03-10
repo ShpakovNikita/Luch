@@ -21,6 +21,7 @@ namespace Luch::Render::Passes::Deferred
         GraphicsDevice* device = nullptr;
 
         CameraResources* cameraResources = nullptr;
+        IndirectLightingResources* indirectLightingResources = nullptr;
 
         RefPtr<ComputePipelineState> pipelineState;
         RefPtr<PipelineLayout> pipelineLayout;
@@ -51,5 +52,11 @@ namespace Luch::Render::Passes::Deferred
         RefPtr<DescriptorSet> luminanceTextureDescriptorSet;
         RefPtr<DescriptorSet> gbufferTextureDescriptorSet;
         RefPtr<DescriptorSet> lightsBufferDescriptorSet;
+
+        RenderResource diffuseIrradianceCubemapHandle;
+        RenderResource specularReflectionCubemapHandle;
+        RenderResource specularBRDFTextureHandle;
+
+        RefPtr<DescriptorSet> indirectLightingTexturesDescriptorSet;
     };
 }

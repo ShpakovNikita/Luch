@@ -710,20 +710,20 @@ namespace Luch::SceneV1::Loader
         return material;
     }
 
-    RefPtr<Texture> glTFLoader::MakeTexture(const glTF::Texture& texture, const SceneLoadContext& context)
+    RefPtr<Texture> glTFLoader::MakeTexture(const glTF::Texture& glTFTexture, const SceneLoadContext& context)
     {
-        const auto& name = texture.name;
+        const auto& name = glTFTexture.name;
 
         RefPtr<Sampler> sampler;
-        if (texture.sampler.has_value())
+        if (glTFTexture.sampler.has_value())
         {
-            sampler = context.loadedSamplers[*texture.sampler];
+            sampler = context.loadedSamplers[*glTFTexture.sampler];
         }
 
         TextureSource source;
-        if (texture.source.has_value())
+        if (glTFTexture.source.has_value())
         {
-            const auto& image = root->images[*texture.source];
+            const auto& image = root->images[*glTFTexture.source];
             source.root = rootFolder;
             source.filename = image.uri;
         }
@@ -732,7 +732,12 @@ namespace Luch::SceneV1::Loader
 
         LUCH_ASSERT(image != nullptr);
 
-        return MakeRef<Texture>(sampler, image, name);
+        auto texture = MakeRef<Texture>();
+        texture->SetHostImage(image);
+        texture->SetName(name);
+        texture->SetSampler(sampler);
+
+        return texture;
     }
 
     RefPtr<Sampler> glTFLoader::MakeSampler(

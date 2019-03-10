@@ -2,7 +2,6 @@
 #include <Luch/Render/Passes/IBL/EnvironmentCubemapContext.h>
 #include <Luch/Render/Passes/IBL/IBLCommon.h>
 #include <Luch/Render/CubemapCommon.h>
-#include <Luch/Render/TextureUploader.h>
 #include <Luch/Render/ShaderDefines.h>
 #include <Luch/Render/CameraResources.h>
 #include <Luch/Render/MaterialResources.h>

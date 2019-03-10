@@ -2,6 +2,7 @@
 #include <simd/simd.h>
 #include "Common/lighting.metal"
 #include "Common/camera.metal"
+#include "IBL/ibl_lighting.metal"
 
 using namespace metal;
 
@@ -22,14 +23,17 @@ half2 FragCoordToNDC(half2 fragCoord, half2 size)
 
 kernel void kernel_main(
     ushort2 gid [[thread_position_in_grid]],
-    constant CameraUniform& camera [[buffer(0)]],
-    constant LightingParamsUniform& lightingParams [[buffer(1)]],
-    constant Light* lights [[buffer(2)]],
-    texture2d<half, access::read> gbuffer0 [[texture(0)]],
-    texture2d<half, access::read> gbuffer1 [[texture(1)]],
-    texture2d<half, access::read> gbuffer2 [[texture(2)]],
-    depth2d<float, access::read> depthBuffer [[texture(3)]],
-    texture2d<half, access::write> luminance [[texture(4)]])
+    constant CameraUniform& camera [[ buffer(0) ]],
+    constant LightingParamsUniform& lightingParams [[ buffer(1) ]],
+    constant Light* lights [[ buffer(2) ]],
+    texture2d<half, access::read> gbuffer0 [[ texture(0) ]],
+    texture2d<half, access::read> gbuffer1 [[ texture(1) ]],
+    texture2d<half, access::read> gbuffer2 [[ texture(2) ]],
+    depth2d<float, access::read> depthBuffer [[ texture(3) ]],
+    texture2d<half, access::write> luminance [[ texture(4) ]],
+    texturecube<half> diffuseIrradianceMap [[ texture(5) ]],
+    texturecube<half> specularReflectionMap [[ texture(6) ]],
+    texture2d<half> specularBRDF [[ texture(7) ]])
 {
     half4 gbuffer0Sample = gbuffer0.read(gid);
     half4 gbuffer1Sample = gbuffer1.read(gid);
@@ -86,9 +90,39 @@ kernel void kernel_main(
         lightingResult.specular += intermediateResult.specular;
     }
 
-    half4 resultColor;
-    resultColor.rgb = emitted + baseColor * lightingResult.diffuse + lightingResult.specular;
-    resultColor.a = 1.0;
+    float3 R = float3(reflect(-V, N));
+    half NdotV = half(saturate(dot(N, V)));
 
-    luminance.write(resultColor, gid);
+    // TODO think about non-uniform scale
+    float3 reflectedWS = (camera.inverseView * float4(R, 0.0)).xyz;
+
+    half3 diffuseIndirectLuminance = CalculateIndirectDiffuse(
+        diffuseIrradianceMap,
+        reflectedWS,
+        baseColor.rgb,
+        metallic);
+
+    half3 specularReflectionLuminance = CalculateSpecularReflection(
+        specularReflectionMap,
+        specularBRDF,
+        F0,
+        reflectedWS,
+        NdotV,
+        metallic,
+        roughness);
+
+    half3 diffuseDirect = baseColor.rgb * lightingResult.diffuse;
+    half3 specularDirect = lightingResult.specular;
+
+    half4 resultLuminance;
+
+    resultLuminance.rgb =
+        emitted
+        + diffuseDirect
+        + specularDirect
+        + (specularReflectionLuminance + diffuseIndirectLuminance) * occlusion;
+
+    resultLuminance.a = 1.0;
+
+    luminance.write(resultLuminance, gid);
 }

@@ -10,6 +10,7 @@ namespace Luch::Render
 
     struct IBLResult;
     struct CameraResources;
+    struct IndirectLightingResources;
     struct MaterialResources;
     struct RenderContext;
     struct SharedBufferSuballocation;
