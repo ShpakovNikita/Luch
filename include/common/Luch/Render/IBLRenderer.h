@@ -29,6 +29,7 @@ namespace Luch::Render
         float32 zFar = 0.0;
         bool probeDiffuseIrradiance = false;
         bool probeSpecularReflection = false;
+        bool computeSpecularBRDF = false;
         Size2i size;
     };
 

@@ -17,7 +17,7 @@ struct LightingParamsUniform
 
 half2 FragCoordToNDC(half2 fragCoord, half2 size)
 {
-    half2 pd = 2 * fragCoord / size - half2(1.0h);
+    half2 pd = 2 * fragCoord / size - half2(1);
     return half2(pd.x, -pd.y);
 }
 
@@ -64,7 +64,7 @@ fragment FragmentOut fp_main(
 
     half3 emitted = gbuffer2Sample.rgb;
 
-    half3 F0 = half3(0.04h);
+    half3 F0 = half3(0.04);
     // If material is dielectrict, it's reflection coefficient can be approximated by 0.04
     // Otherwise (for metals), take base color to "tint" reflections
     F0 = mix(F0, baseColor, metallic);
@@ -73,7 +73,7 @@ fragment FragmentOut fp_main(
     half2 attachmentSize = half2(depthBuffer.get_width(), depthBuffer.get_height());
     half2 positionSS = half2(in.position.xy);
     half2 xyNDC = FragCoordToNDC(positionSS, attachmentSize);
-    float4 intermediatePosition = camera.inverseProjection * float4(xyNDC.x, xyNDC.y, depth, 1.0);
+    float4 intermediatePosition = camera.inverseProjection * float4(xyNDC.x, xyNDC.y, depth, 1);
     half3 P = half3(intermediatePosition.xyz / intermediatePosition.w);
     constexpr half3 eyePosVS = half3(0); // in view space eye is at origin
     half3 V = normalize(eyePosVS - P);
@@ -109,7 +109,7 @@ fragment FragmentOut fp_main(
     half NdotV = half(saturate(dot(N, V)));
 
     // TODO think about non-uniform scale
-    float3 reflectedWS = (camera.inverseView * float4(R, 0.0)).xyz;
+    float3 reflectedWS = (camera.inverseView * float4(R, 0)).xyz;
 
     half3 diffuseIndirectLuminance = CalculateIndirectDiffuse(
         diffuseIrradianceMap,
@@ -137,7 +137,7 @@ fragment FragmentOut fp_main(
         + specularDirect
         + (specularReflectionLuminance + diffuseIndirectLuminance) * occlusion;
     
-    result.luminance.a = 1.0;
+    result.luminance.a = 1;
 
     return result;
 }

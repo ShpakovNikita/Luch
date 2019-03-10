@@ -221,10 +221,15 @@ namespace Luch::Render
             return false;
         }
 
-        bool environmentMappingPrepared = PrepareEnvironmentMapping(iblRequest);
-        if(!environmentMappingPrepared)
+        bool needEnvironmentMap = iblRequest.probeDiffuseIrradiance || iblRequest.probeSpecularReflection;
+
+        if(needEnvironmentMap)
         {
-            return false;
+            bool environmentMappingPrepared = PrepareEnvironmentMapping(iblRequest);
+            if(!environmentMappingPrepared)
+            {
+                return false;
+            }
         }
 
         if(iblRequest.probeDiffuseIrradiance)
@@ -244,6 +249,10 @@ namespace Luch::Render
                 return false;
             }
 
+        }
+
+        if(iblRequest.computeSpecularBRDF)
+        {
             bool specularBRDFPrepared = PrepareSpecularBRDF(iblRequest);
             if(!specularBRDFPrepared)
             {
@@ -258,7 +267,10 @@ namespace Luch::Render
     {
         for(auto& pass : environmentCubemapPasses)
         {
-            pass->PrepareScene();
+            if(pass != nullptr)
+            {
+                pass->PrepareScene();
+            }
         }
 
         return true;
@@ -277,7 +289,10 @@ namespace Luch::Render
         // TODO fix this
         for(auto& pass : environmentCubemapPasses)
         {
-            pass->UpdateScene();
+            if(pass != nullptr)
+            {
+                pass->UpdateScene();
+            }
         }
     }
 
@@ -309,9 +324,21 @@ namespace Luch::Render
 
         IBLResult result;
         result.environmentCubemap = renderGraph->GetResourceManager()->ReleaseTexture(environmentLuminanceCubemapHandle);
-        result.diffuseIrradianceCubemap = renderGraph->GetResourceManager()->ReleaseTexture(diffuseIrradiancePass->GetIrradianceCubemapHandle());
-        result.specularReflectionCubemap = renderGraph->GetResourceManager()->ReleaseTexture(specularReflectionPass->GetSpecularReflectionCubemapHandle());
-        result.specularBRDFTexture = renderGraph->GetResourceManager()->ReleaseTexture(specularBRDFPass->GetBRDFTextureHandle());
+
+        if(diffuseIrradiancePass != nullptr)
+        {
+            result.diffuseIrradianceCubemap = renderGraph->GetResourceManager()->ReleaseTexture(diffuseIrradiancePass->GetIrradianceCubemapHandle());
+        }
+
+        if(specularReflectionPass != nullptr)
+        {
+            result.specularReflectionCubemap = renderGraph->GetResourceManager()->ReleaseTexture(specularReflectionPass->GetSpecularReflectionCubemapHandle());
+        }
+
+        if(specularBRDFPass != nullptr)
+        {
+            result.specularBRDFTexture = renderGraph->GetResourceManager()->ReleaseTexture(specularBRDFPass->GetBRDFTextureHandle());
+        }
 
         for(auto& pass : environmentCubemapPasses)
         {

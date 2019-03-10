@@ -9,15 +9,15 @@ using namespace metal;
 
 struct LightingResult
 {
-    half3 diffuse = half3(0);
-    half3 specular = half3(0);
+    half3 diffuse = 0;
+    half3 specular = 0;
 };
 
 half D_GGX(half NdotH, half roughness)
 {
     half alpha = roughness * roughness;
     half alpha2 = alpha * alpha;
-    half den = NdotH * NdotH * (alpha2 - 1.0h) + 1.0h;
+    half den = NdotH * NdotH * (alpha2 - 1) + 1;
     return alpha2 / (M_PI_H * den * den);
 }
 
@@ -33,7 +33,7 @@ half G_CookTorranceGGX(half VdotH, half NdotH, half NdotV, half NdotL)
 
 half3 F_Schlick(half cosTheta, half3 F0)
 {
-    return F0 + (1.0h - F0) * pow(1.0h - cosTheta, 5.0h);
+    return F0 + (1 - F0) * pow(1 - cosTheta, 5);
 }
 
 half3 DiffuseLighting(half3 color, half3 L, half3 N)
@@ -51,7 +51,7 @@ half3 SpecularLighting(half3 color, half3 V, half3 L, half3 N, half3 F, half rou
     half NdotH = saturate(dot(N, H));
     half NdotL = saturate(dot(N, L));
 
-    half den = 4 * NdotV * NdotL + 0.001h;
+    half den = 4 * NdotV * NdotL + 0.001;
     half D = D_GGX(NdotH, roughness);
     half G = G_CookTorranceGGX(VdotH, NdotH, NdotV, NdotL);
     half3 spec = D * F * G / den;
@@ -65,7 +65,7 @@ half Attenuation(Light light, half d)
     half d4 = d2 * d2;
     half r2 = half(light.range) * half(light.range);
     half r4 = r2 * r2;
-    return max(min(1.0h - d4/r4, 1.0h), 0.0h) / (d2 + 0.0001h);
+    return max(min(1 - d4/r4, 1.0h), 0.0h) / (d2 + 0.0001h);
 }
 
 LightingResult ApplyDirectionalLight(
@@ -82,7 +82,7 @@ LightingResult ApplyDirectionalLight(
     half3 color = half3(light.color.xyz);
     half3 directionVS = half3((camera.view * light.directionWS).xyz);
     half3 L = directionVS.xyz;
-    half NdotV = saturate(half(dot(N, V)));
+    half NdotV = saturate(dot(N, V));
 
     half3 F = F_Schlick(NdotV, F0);
     half3 kD = (1 - metallic);
@@ -109,7 +109,7 @@ LightingResult ApplyPointlLightImpl(
     half3 color = half3(light.color.xyz);
     half attenuation = Attenuation(light, dist);
 
-    half NdotV = saturate(half(dot(N, V)));
+    half NdotV = saturate(dot(N, V));
 
     half3 F = F_Schlick(NdotV, F0);
     half3 kD = (1 - metallic);
@@ -134,7 +134,7 @@ LightingResult ApplyPointlLight(
     half3 positionVS = half3((camera.view * light.positionWS).xyz);
     half3 L = positionVS.xyz - P;
     half dist = length(L);
-    L = L/dist;
+    L = L / dist;
 
     return ApplyPointlLightImpl(light, L, dist, V, P, N, F0, metallic, roughness);
 }
@@ -164,7 +164,7 @@ LightingResult ApplySpotLight(
     half3 directionVS = half3((camera.view * light.directionWS).xyz);
     half3 L = positionVS - P;
     half dist = length(L);
-    L = L/dist;
+    L = L / dist;
 
     LightingResult pointLighting = ApplyPointlLightImpl(light, L, dist, V, P, N, F0, metallic, roughness);
     half spotIntensity = SpotCone(light.innerConeAngle, light.outerConeAngle, directionVS, L);

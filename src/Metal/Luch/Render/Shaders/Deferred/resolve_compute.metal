@@ -17,7 +17,7 @@ struct LightingParamsUniform
 
 half2 FragCoordToNDC(half2 fragCoord, half2 size)
 {
-    half2 pd = 2 * fragCoord / size - half2(1.0h);
+    half2 pd = 2 * fragCoord / size - half2(1);
     return half2(pd.x, -pd.y);
 }
 
@@ -58,9 +58,9 @@ kernel void kernel_main(
     half2 attachmentSize = half2(depthBuffer.get_width(), depthBuffer.get_height());
     half2 positionSS = half2(gid);
     half2 xyNDC = FragCoordToNDC(positionSS, attachmentSize);
-    float4 intermediatePosition = camera.inverseProjection * float4(xyNDC.x, xyNDC.y, depth, 1.0);
+    float4 intermediatePosition = camera.inverseProjection * float4(xyNDC.x, xyNDC.y, depth, 1);
     float3 P = intermediatePosition.xyz / intermediatePosition.w;
-    constexpr float3 eyePosVS = float3(0); // in view space eye is at origin
+    constexpr float3 eyePosVS = 0; // in view space eye is at origin
     half3 V = half3(normalize(eyePosVS - P));
 
     LightingResult lightingResult;
@@ -94,7 +94,7 @@ kernel void kernel_main(
     half NdotV = half(saturate(dot(N, V)));
 
     // TODO think about non-uniform scale
-    float3 reflectedWS = (camera.inverseView * float4(R, 0.0)).xyz;
+    float3 reflectedWS = (camera.inverseView * float4(R, 0)).xyz;
 
     half3 diffuseIndirectLuminance = CalculateIndirectDiffuse(
         diffuseIrradianceMap,
@@ -122,7 +122,7 @@ kernel void kernel_main(
         + specularDirect
         + (specularReflectionLuminance + diffuseIndirectLuminance) * occlusion;
 
-    resultLuminance.a = 1.0;
+    resultLuminance.a = 1;
 
     luminance.write(resultLuminance, gid);
 }

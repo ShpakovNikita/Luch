@@ -353,6 +353,7 @@ namespace Luch::Render
         iblRequest.position = lightProbeNode->GetWorldTransform() * Vec4{ 0, 0, 0, 1 };
         iblRequest.probeDiffuseIrradiance = lightProbe->HasDiffuseIrradiance();
         iblRequest.probeSpecularReflection = lightProbe->HasSpecularReflection();
+        iblRequest.computeSpecularBRDF = true;
         iblRequest.size = lightProbe->GetSize();
         iblRequest.zNear = lightProbe->GetZNear();
         iblRequest.zFar = lightProbe->GetZFar();
