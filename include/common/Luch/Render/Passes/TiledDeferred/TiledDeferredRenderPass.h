@@ -32,7 +32,8 @@ namespace Luch::Render::Passes::TiledDeferred
         static ResultValue<bool, UniquePtr<TiledDeferredPersistentContext>> PrepareTiledDeferredPersistentContext(
             GraphicsDevice* device,
             CameraResources* cameraResources,
-            MaterialResources* materialResources);
+            MaterialResources* materialResources,
+            IndirectLightingResources* indirectLightingResources);
 
         static ResultValue<bool, UniquePtr<TiledDeferredTransientContext>> PrepareTiledDeferredTransientContext(
             TiledDeferredPersistentContext* persistentContext,
@@ -54,6 +55,10 @@ namespace Luch::Render::Passes::TiledDeferred
             RenderGraphResourceManager* manager,
             GraphicsCommandList* commandList) override;
     private:
+        void UpdateIndirectLightingDescriptorSet(
+            RenderGraphResourceManager* manager,
+            DescriptorSet* descriptorSet);
+
         void PrepareNode(SceneV1::Node* node);
         void PrepareMeshNode(SceneV1::Node* node);
         void PrepareMesh(SceneV1::Mesh* mesh);
@@ -63,8 +68,13 @@ namespace Luch::Render::Passes::TiledDeferred
         void UpdateMesh(SceneV1::Mesh* mesh, const Mat4x4& transform);
         void UpdateLights(const RefPtrVector<SceneV1::Node>& lightNodes);
 
-        void DrawGBuffer(GraphicsCommandList* commandList);
-        void Resolve(GraphicsCommandList* commandList);
+        void DrawGBuffer(
+            RenderGraphResourceManager* manager,
+            GraphicsCommandList* commandList);
+
+        void Resolve(
+            RenderGraphResourceManager* manager,
+            GraphicsCommandList* commandList);
 
         void BindMaterial(SceneV1::PbrMaterial* material, GraphicsCommandList* commandList);
         void DrawNode(SceneV1::Node* node, GraphicsCommandList* commandList);
@@ -78,6 +88,9 @@ namespace Luch::Render::Passes::TiledDeferred
         TiledDeferredTransientContext* transientContext = nullptr;
 
         RenderMutableResource luminanceTextureHandle;
+        RenderResource diffuseIrradianceCubemapHandle;
+        RenderResource specularReflectionCubemapHandle;
+        RenderResource specularBRDFTextureHandle;
 
         UnorderedMap<SceneV1::Mesh*, RefPtr<DescriptorSet>> meshDescriptorSets;
     };

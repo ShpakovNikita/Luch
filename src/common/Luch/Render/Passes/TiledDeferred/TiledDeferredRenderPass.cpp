@@ -3,11 +3,13 @@
 #include <Luch/Render/Passes/TiledDeferred/TiledDeferredConstants.h>
 #include <Luch/Render/ShaderDefines.h>
 #include <Luch/Render/CameraResources.h>
+#include <Luch/Render/IndirectLightingResources.h>
 #include <Luch/Render/MaterialResources.h>
 #include <Luch/Render/RenderUtils.h>
 #include <Luch/Render/Common.h>
 #include <Luch/Render/SharedBuffer.h>
 #include <Luch/Render/Graph/RenderGraphNode.h>
+#include <Luch/Render/Graph/RenderGraphResourceManager.h>
 #include <Luch/Render/Graph/RenderGraphBuilder.h>
 #include <Luch/Render/Graph/RenderGraphNodeBuilder.h>
 
@@ -72,6 +74,17 @@ namespace Luch::Render::Passes::TiledDeferred
         node->CreateDepthStencilAttachment({ transientContext->outputSize, ResourceStorageMode::Memoryless });
 
         luminanceTextureHandle = node->CreateColorAttachment(TiledDeferredConstants::LuminanceAttachmentIndex, { transientContext->outputSize });
+
+        if(transientContext->diffuseIrradianceCubemapHandle)
+        {
+            diffuseIrradianceCubemapHandle = node->ReadsTexture(transientContext->diffuseIrradianceCubemapHandle);
+        }
+
+        if(transientContext->specularReflectionCubemapHandle && transientContext->specularBRDFTextureHandle)
+        {
+            specularReflectionCubemapHandle = node->ReadsTexture(transientContext->specularReflectionCubemapHandle);
+            specularBRDFTextureHandle = node->ReadsTexture(transientContext->specularBRDFTextureHandle);
+        }
     }
 
     TiledDeferredRenderPass::~TiledDeferredRenderPass() = default;
@@ -114,8 +127,39 @@ namespace Luch::Render::Passes::TiledDeferred
         commandList->SetViewports({ viewport });
         commandList->SetScissorRects({ scissorRect });
 
-        DrawGBuffer(commandList);
-        Resolve(commandList);
+        DrawGBuffer(manager, commandList);
+        Resolve(manager, commandList);
+    }
+
+    void TiledDeferredRenderPass::UpdateIndirectLightingDescriptorSet(
+        RenderGraphResourceManager* manager,
+        DescriptorSet* descriptorSet)
+    {
+        if(diffuseIrradianceCubemapHandle)
+        {
+            auto diffuseIrradianceCubemap = manager->GetTexture(diffuseIrradianceCubemapHandle);
+
+            transientContext->indirectLightingTexturesDescriptorSet->WriteTexture(
+                persistentContext->indirectLightingResources->diffuseIrradianceCubemapBinding,
+                diffuseIrradianceCubemap);
+        }
+
+        if(specularReflectionCubemapHandle && specularBRDFTextureHandle)
+        {
+            auto specularReflectionCubemap = manager->GetTexture(specularReflectionCubemapHandle);
+
+            descriptorSet->WriteTexture(
+                persistentContext->indirectLightingResources->specularReflectionCubemapBinding,
+                specularReflectionCubemap);
+
+            auto specularBRDFTexture = manager->GetTexture(specularBRDFTextureHandle);
+
+            descriptorSet->WriteTexture(
+                persistentContext->indirectLightingResources->specularBRDFTextureBinding,
+                specularBRDFTexture);
+        }
+
+        descriptorSet->Update();
     }
 
     void TiledDeferredRenderPass::PrepareNode(SceneV1::Node* node)
@@ -274,7 +318,9 @@ namespace Luch::Render::Passes::TiledDeferred
         }
     }
 
-    void TiledDeferredRenderPass::DrawGBuffer(GraphicsCommandList* commandList)
+    void TiledDeferredRenderPass::DrawGBuffer(
+        RenderGraphResourceManager*,
+        GraphicsCommandList* commandList)
     {
         commandList->BindBufferDescriptorSet(
             ShaderStage::Vertex,
@@ -287,8 +333,12 @@ namespace Luch::Render::Passes::TiledDeferred
         }
     }
 
-    void TiledDeferredRenderPass::Resolve(GraphicsCommandList* commandList)
+    void TiledDeferredRenderPass::Resolve(
+        RenderGraphResourceManager* manager,
+        GraphicsCommandList* commandList)
     {
+        UpdateIndirectLightingDescriptorSet(manager, transientContext->indirectLightingTexturesDescriptorSet);
+
         commandList->BindTiledPipelineState(persistentContext->resolvePipelineState);
 
         commandList->BindBufferDescriptorSet(
@@ -300,6 +350,11 @@ namespace Luch::Render::Passes::TiledDeferred
             ShaderStage::Tile,
             persistentContext->resolvePipelineLayout,
             transientContext->lightsBufferDescriptorSet);
+
+        commandList->BindTextureDescriptorSet(
+            ShaderStage::Tile,
+            persistentContext->resolvePipelineLayout,
+            transientContext->indirectLightingTexturesDescriptorSet);
 
         commandList->DispatchThreadsPerTile(commandList->GetTileSize());
     }
@@ -545,12 +600,14 @@ namespace Luch::Render::Passes::TiledDeferred
     ResultValue<bool, UniquePtr<TiledDeferredPersistentContext>> TiledDeferredRenderPass::PrepareTiledDeferredPersistentContext(
         GraphicsDevice* device,
         CameraResources* cameraResources,
-        MaterialResources* materialResources)
+        MaterialResources* materialResources,
+        IndirectLightingResources* indirectLightingResources)
     {
         auto context = MakeUnique<TiledDeferredPersistentContext>();
         context->device = device;
         context->cameraResources = cameraResources;
         context->materialResources = materialResources;
+        context->indirectLightingResources = indirectLightingResources;
 
         const auto& supportedDepthFormats = context->device->GetPhysicalDevice()->GetCapabilities().supportedDepthFormats;
         LUCH_ASSERT_MSG(!supportedDepthFormats.empty(), "No supported depth formats");
@@ -577,126 +634,123 @@ namespace Luch::Render::Passes::TiledDeferred
             depthStencilAttachment.depthClearValue = 1.0;
             depthStencilAttachment.stencilClearValue = 0x00000000;
 
-            RenderPassCreateInfo renderPassCreateInfo;
+            RenderPassCreateInfo createInfo;
             for(int32 i = TiledDeferredConstants::GBufferColorAttachmentBegin; i < TiledDeferredConstants::GBufferColorAttachmentEnd; i++)
             {
                 ColorAttachment attachment = gbufferColorAttachmentTemplate;
                 attachment.format = TiledDeferredConstants::ColorAttachmentFormats[i];
-                renderPassCreateInfo.colorAttachments[i] = attachment;
+                createInfo.colorAttachments[i] = attachment;
             }
 
-            renderPassCreateInfo.colorAttachments[TiledDeferredConstants::LuminanceAttachmentIndex] = luminanceColorAttachment;
-            renderPassCreateInfo.depthStencilAttachment = depthStencilAttachment;
+            createInfo.colorAttachments[TiledDeferredConstants::LuminanceAttachmentIndex] = luminanceColorAttachment;
+            createInfo.depthStencilAttachment = depthStencilAttachment;
 
-            auto [createRenderPassResult, createdRenderPass] = device->CreateRenderPass(renderPassCreateInfo);
-            if(createRenderPassResult != GraphicsResult::Success)
+            auto [result, renderPass] = device->CreateRenderPass(createInfo);
+            if(result != GraphicsResult::Success)
             {
                 return { false };
             }
 
-            context->renderPass = std::move(createdRenderPass);
+            context->renderPass = std::move(renderPass);
         }
 
         {
-            DescriptorPoolCreateInfo descriptorPoolCreateInfo;
-            descriptorPoolCreateInfo.maxDescriptorSets = MaxDescriptorSetCount;
-            descriptorPoolCreateInfo.descriptorCount =
+            DescriptorPoolCreateInfo createInfo;
+            createInfo.maxDescriptorSets = MaxDescriptorSetCount;
+            createInfo.descriptorCount =
             {
                 { ResourceType::Texture, MaxDescriptorCount },
                 { ResourceType::UniformBuffer, MaxDescriptorCount },
                 { ResourceType::Sampler, MaxDescriptorCount },
             };
 
-            auto[createDescriptorPoolResult, createdDescriptorPool] = device->CreateDescriptorPool(
-                descriptorPoolCreateInfo);
+            auto [result, descriptorPool] = device->CreateDescriptorPool(createInfo);
 
-            if (createDescriptorPoolResult != GraphicsResult::Success)
+            if (result != GraphicsResult::Success)
             {
                 LUCH_ASSERT(false);
                 return { false };
             }
 
-            context->descriptorPool = std::move(createdDescriptorPool);
+            context->descriptorPool = std::move(descriptorPool);
         }
 
-        context->meshUniformBufferBinding.OfType(ResourceType::UniformBuffer);
-
         {
-            DescriptorSetLayoutCreateInfo meshDescriptorSetLayoutCreateInfo;
-            meshDescriptorSetLayoutCreateInfo
+            context->meshUniformBufferBinding.OfType(ResourceType::UniformBuffer);
+
+            DescriptorSetLayoutCreateInfo createInfo;
+            createInfo
                 .OfType(DescriptorSetType::Buffer)
                 .AddBinding(&context->meshUniformBufferBinding);
 
-            auto[createMeshDescriptorSetLayoutResult, createdMeshDescriptorSetLayout] = device->CreateDescriptorSetLayout(
-                meshDescriptorSetLayoutCreateInfo);
+            auto[result, meshDescriptorSetLayout] = device->CreateDescriptorSetLayout(createInfo);
 
-            if (createMeshDescriptorSetLayoutResult != GraphicsResult::Success)
+            if (result != GraphicsResult::Success)
             {
                 LUCH_ASSERT(false);
                 return { false };
             }
 
-            context->meshBufferDescriptorSetLayout = std::move(createdMeshDescriptorSetLayout);
+            context->meshBufferDescriptorSetLayout = std::move(meshDescriptorSetLayout);
         }
 
         {
-            PipelineLayoutCreateInfo gbufferPipelineLayoutCreateInfo;
-            gbufferPipelineLayoutCreateInfo
+            PipelineLayoutCreateInfo createInfo;
+            createInfo
                 .AddSetLayout(ShaderStage::Vertex, cameraResources->cameraBufferDescriptorSetLayout)
                 .AddSetLayout(ShaderStage::Vertex, context->meshBufferDescriptorSetLayout)
                 .AddSetLayout(ShaderStage::Fragment, materialResources->materialTextureDescriptorSetLayout)
                 .AddSetLayout(ShaderStage::Fragment, materialResources->materialBufferDescriptorSetLayout)
                 .AddSetLayout(ShaderStage::Fragment, materialResources->materialSamplerDescriptorSetLayout);
 
-            auto[createGBufferPipelineLayoutResult, createdGBufferPipelineLayout] = device->CreatePipelineLayout(
-                gbufferPipelineLayoutCreateInfo);
+            auto[result, gbufferPipelineLayout] = device->CreatePipelineLayout(createInfo);
 
-            if (createGBufferPipelineLayoutResult != GraphicsResult::Success)
+            if (result != GraphicsResult::Success)
             {
                 LUCH_ASSERT(false);
                 return { false };
             }
 
-            context->gbufferPipelineLayout = std::move(createdGBufferPipelineLayout);
+            context->gbufferPipelineLayout = std::move(gbufferPipelineLayout);
         }
 
-        context->lightingParamsBinding.OfType(ResourceType::UniformBuffer);
-        context->lightsBufferBinding.OfType(ResourceType::UniformBuffer);
-
         {
-            DescriptorSetLayoutCreateInfo lightsDescriptorSetLayoutCreateInfo;
-            lightsDescriptorSetLayoutCreateInfo
+            context->lightingParamsBinding.OfType(ResourceType::UniformBuffer);
+            context->lightsBufferBinding.OfType(ResourceType::UniformBuffer);
+
+            DescriptorSetLayoutCreateInfo createInfo;
+            createInfo
                 .OfType(DescriptorSetType::Buffer)
                 .WithNBindings(2)
                 .AddBinding(&context->lightingParamsBinding)
                 .AddBinding(&context->lightsBufferBinding);
 
-            auto[createLightsDescriptorSetLayoutResult, createdLightsDescriptorSetLayout] = device->CreateDescriptorSetLayout(lightsDescriptorSetLayoutCreateInfo);
-            if (createLightsDescriptorSetLayoutResult != GraphicsResult::Success)
+            auto[result, lightsDescriptorSetLayout] = device->CreateDescriptorSetLayout(createInfo);
+            if (result != GraphicsResult::Success)
             {
                 LUCH_ASSERT(false);
                 return { false };
             }
 
-            context->lightsBufferDescriptorSetLayout = std::move(createdLightsDescriptorSetLayout);
+            context->lightsBufferDescriptorSetLayout = std::move(lightsDescriptorSetLayout);
         }
 
         {
-            PipelineLayoutCreateInfo resolvePipelineLayoutCreateInfo;
-            resolvePipelineLayoutCreateInfo
+            PipelineLayoutCreateInfo createInfo;
+            createInfo
                 .AddSetLayout(ShaderStage::Tile, context->cameraResources->cameraBufferDescriptorSetLayout)
-                .AddSetLayout(ShaderStage::Tile, context->lightsBufferDescriptorSetLayout);
+                .AddSetLayout(ShaderStage::Tile, context->lightsBufferDescriptorSetLayout)
+                .AddSetLayout(ShaderStage::Tile, context->indirectLightingResources->indirectLightingTexturesDescriptorSetLayout);
 
-            auto[createResolvePipelineLayoutResult, createdResolvePipelineLayout] = device->CreatePipelineLayout(
-                resolvePipelineLayoutCreateInfo);
+            auto [result, resolvePipelineLayout] = device->CreatePipelineLayout(createInfo);
 
-            if (createResolvePipelineLayoutResult != GraphicsResult::Success)
+            if (result != GraphicsResult::Success)
             {
                 LUCH_ASSERT(false);
                 return { false };
             }
 
-            context->resolvePipelineLayout = std::move(createdResolvePipelineLayout);
+            context->resolvePipelineLayout = std::move(resolvePipelineLayout);
         }
 
         context->resolvePipelineState = CreateResolvePipelineState(context.get());
@@ -711,15 +765,29 @@ namespace Luch::Render::Passes::TiledDeferred
         auto context = MakeUnique<TiledDeferredTransientContext>();
         context->descriptorPool = descriptorPool;
 
-        auto [allocateLightsDescriptorSetResult, allocatedLightsBufferSet] = context->descriptorPool->AllocateDescriptorSet(
-            persistentContext->lightsBufferDescriptorSetLayout);
-
-        if(allocateLightsDescriptorSetResult != GraphicsResult::Success)
         {
-            return { false };
+            auto [result, lightsBufferSet] = context->descriptorPool->AllocateDescriptorSet(
+                persistentContext->lightsBufferDescriptorSetLayout);
+
+            if(result != GraphicsResult::Success)
+            {
+                return { false };
+            }
+
+            context->lightsBufferDescriptorSet = lightsBufferSet;
         }
 
-        context->lightsBufferDescriptorSet = allocatedLightsBufferSet;
+        {
+            auto [result, indirectLightingTextureSet] = context->descriptorPool->AllocateDescriptorSet(
+                persistentContext->indirectLightingResources->indirectLightingTexturesDescriptorSetLayout);
+
+            if(result != GraphicsResult::Success)
+            {
+                return { false };
+            }
+
+            context->indirectLightingTexturesDescriptorSet = indirectLightingTextureSet;
+        }
 
         return { true, std::move(context) };
     }

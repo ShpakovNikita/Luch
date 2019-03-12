@@ -197,7 +197,8 @@ namespace Luch::Render
             auto [createTiledDeferredPersistentContextResult, createdTiledDeferredPersistentContext] = TiledDeferredRenderPass::PrepareTiledDeferredPersistentContext(
                 context->device,
                 cameraResources.get(),
-                materialManager->GetResources());
+                materialManager->GetResources(),
+                indirectLightingResources.get());
 
             if(!createTiledDeferredPersistentContextResult)
             {
@@ -684,39 +685,39 @@ namespace Luch::Render
 
     bool SceneRenderer::PrepareForward(FrameResources& frame)
     {
-        auto [prepareForwardTransientContextResult, preparedForwardTransientContext] = ForwardRenderPass::PrepareForwardTransientContext(
+        auto [result, forwardTransientContext] = ForwardRenderPass::PrepareForwardTransientContext(
             forwardPersistentContext.get(),
             descriptorPool);
 
-        if(!prepareForwardTransientContextResult)
+        if(!result)
         {
             return false;
         }
 
-        frame.forwardTransientContext = std::move(preparedForwardTransientContext);
-
-        frame.forwardTransientContext->descriptorPool = descriptorPool;
-        frame.forwardTransientContext->outputSize = frame.outputSize;
-        frame.forwardTransientContext->scene = scene;
-        frame.forwardTransientContext->sharedBuffer = frame.sharedBuffer;
-        frame.forwardTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
+        forwardTransientContext->descriptorPool = descriptorPool;
+        forwardTransientContext->outputSize = frame.outputSize;
+        forwardTransientContext->scene = scene;
+        forwardTransientContext->sharedBuffer = frame.sharedBuffer;
+        forwardTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
 
         if(config.useDiffuseGlobalIllumination)
         {
-            frame.forwardTransientContext->diffuseIrradianceCubemapHandle = frame.diffuseIrradianceCubemapHandle;
+            forwardTransientContext->diffuseIrradianceCubemapHandle = frame.diffuseIrradianceCubemapHandle;
         }
 
         if(config.useSpecularGlobalIllumination)
         {
-            frame.forwardTransientContext->specularReflectionCubemapHandle = frame.specularReflectionCubemapHandle;
-            frame.forwardTransientContext->specularBRDFTextureHandle = frame.specularBRDFTextureHandle;
+            forwardTransientContext->specularReflectionCubemapHandle = frame.specularReflectionCubemapHandle;
+            forwardTransientContext->specularBRDFTextureHandle = frame.specularBRDFTextureHandle;
         }
 
         if(config.useDepthPrepass)
         {
-            frame.forwardTransientContext->useDepthPrepass = true;
-            frame.forwardTransientContext->depthStencilTextureHandle = frame.depthOnlyPass->GetDepthTextureHandle();
+            forwardTransientContext->useDepthPrepass = true;
+            forwardTransientContext->depthStencilTextureHandle = frame.depthOnlyPass->GetDepthTextureHandle();
         }
+
+        frame.forwardTransientContext = std::move(forwardTransientContext);
 
         frame.forwardPass = MakeUnique<ForwardRenderPass>(
             forwardPersistentContext.get(),
@@ -834,23 +835,34 @@ namespace Luch::Render
 
     bool SceneRenderer::PrepareTiledDeferred(FrameResources& frame)
     {
-        auto [prepareTiledDeferredTransientContextResult, preparedTiledDeferredTransientContext] = TiledDeferredRenderPass::PrepareTiledDeferredTransientContext(
+        auto [result, tiledDeferredTransientContext] = TiledDeferredRenderPass::PrepareTiledDeferredTransientContext(
             tiledDeferredPersistentContext.get(),
             descriptorPool);
 
-        if(!prepareTiledDeferredTransientContextResult)
+        if(!result)
         {
             LUCH_ASSERT(false);
             return false;
         }
 
-        frame.tiledDeferredTransientContext = std::move(preparedTiledDeferredTransientContext);
+        if(config.useDiffuseGlobalIllumination)
+        {
+            tiledDeferredTransientContext->diffuseIrradianceCubemapHandle = frame.diffuseIrradianceCubemapHandle;
+        }
 
-        frame.tiledDeferredTransientContext->descriptorPool = descriptorPool;
-        frame.tiledDeferredTransientContext->outputSize = frame.outputSize;
-        frame.tiledDeferredTransientContext->scene = scene;
-        frame.tiledDeferredTransientContext->sharedBuffer = frame.sharedBuffer;
-        frame.tiledDeferredTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
+        if(config.useSpecularGlobalIllumination)
+        {
+            tiledDeferredTransientContext->specularReflectionCubemapHandle = frame.specularReflectionCubemapHandle;
+            tiledDeferredTransientContext->specularBRDFTextureHandle = frame.specularBRDFTextureHandle;
+        }
+
+        tiledDeferredTransientContext->descriptorPool = descriptorPool;
+        tiledDeferredTransientContext->outputSize = frame.outputSize;
+        tiledDeferredTransientContext->scene = scene;
+        tiledDeferredTransientContext->sharedBuffer = frame.sharedBuffer;
+        tiledDeferredTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
+
+        frame.tiledDeferredTransientContext = std::move(tiledDeferredTransientContext);
 
         frame.tiledDeferredPass = MakeUnique<TiledDeferredRenderPass>(
             tiledDeferredPersistentContext.get(),

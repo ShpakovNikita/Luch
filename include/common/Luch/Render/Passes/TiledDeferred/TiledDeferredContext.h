@@ -19,6 +19,7 @@ namespace Luch::Render::Passes::TiledDeferred
 
         MaterialResources* materialResources = nullptr;
         CameraResources* cameraResources = nullptr;
+        IndirectLightingResources* indirectLightingResources = nullptr;
 
         RefPtr<DescriptorPool> descriptorPool;
 
@@ -47,5 +48,11 @@ namespace Luch::Render::Passes::TiledDeferred
         RefPtr<DescriptorPool> descriptorPool;
         RefPtr<DescriptorSet> cameraBufferDescriptorSet;
         RefPtr<DescriptorSet> lightsBufferDescriptorSet;
+
+        RenderResource diffuseIrradianceCubemapHandle;
+        RenderResource specularReflectionCubemapHandle;
+        RenderResource specularBRDFTextureHandle;
+
+        RefPtr<DescriptorSet> indirectLightingTexturesDescriptorSet;
     };
 }
