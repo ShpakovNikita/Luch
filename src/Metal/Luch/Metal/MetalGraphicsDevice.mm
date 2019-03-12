@@ -263,8 +263,10 @@ namespace Luch::Metal
 
         MTLCompileOptions* o = (__bridge MTLCompileOptions*)options.GetPtr();
         [o setPreprocessorMacros:dict];
-
         [dict release];
+
+        // Disabling fastmath breaks all the math on MacBook Pro Retina Early 2015
+        [o setFastMathEnabled:true];
 
         auto mtlLibrary = device.NewLibrary(source.data(), options, &error);
 

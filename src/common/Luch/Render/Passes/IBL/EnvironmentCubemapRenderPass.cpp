@@ -2,7 +2,6 @@
 #include <Luch/Render/Passes/IBL/EnvironmentCubemapContext.h>
 #include <Luch/Render/Passes/IBL/IBLCommon.h>
 #include <Luch/Render/CubemapCommon.h>
-#include <Luch/Render/TextureUploader.h>
 #include <Luch/Render/ShaderDefines.h>
 #include <Luch/Render/CameraResources.h>
 #include <Luch/Render/MaterialResources.h>
@@ -254,7 +253,7 @@ namespace Luch::Render::Passes::IBL
             * glm::toMat4(glm::quatLookAt(CubemapCommon::CubemapNormal[face], CubemapCommon::CubemapUp[face]));
 
         CameraUniform cameraUniform;
-        cameraUniform = RenderUtils::GetCameraUniform(persistentContext->camera, cameraTransform);
+        cameraUniform = RenderUtils::GetCameraUniform(transientContext->camera, cameraTransform);
 
         auto cameraSuballocation = transientContext->sharedBuffer->Suballocate(sizeof(CameraUniform), 256);
         memcpy(cameraSuballocation.offsetMemory, &cameraUniform, sizeof(CameraUniform));
@@ -638,13 +637,13 @@ namespace Luch::Render::Passes::IBL
             context->pipelineLayout = std::move(createdPipelineLayout);
         }
 
-        context->camera = MakeRef<SceneV1::PerspectiveCamera>(glm::pi<float32>()/2, 1, 100, 1);
-
         return { true, std::move(context) };
     }
 
     ResultValue<bool, UniquePtr<EnvironmentCubemapTransientContext>> EnvironmentCubemapRenderPass::PrepareEnvironmentCubemapTransientContext(
         EnvironmentCubemapPersistentContext* persistentContext,
+        float32 zNear,
+        float32 zFar,
         RefPtr<DescriptorPool> descriptorPool)
     {
         auto context = MakeUnique<EnvironmentCubemapTransientContext>();
@@ -673,6 +672,8 @@ namespace Luch::Render::Passes::IBL
 
             context->cameraBufferDescriptorSet = allocatedCameraBufferSet;
         }
+
+        context->camera = MakeRef<SceneV1::PerspectiveCamera>(glm::pi<float32>()/2, zNear, zFar, 1);
 
         return { true, std::move(context) };
     }

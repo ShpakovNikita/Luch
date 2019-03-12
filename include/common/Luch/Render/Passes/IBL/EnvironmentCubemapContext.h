@@ -3,7 +3,7 @@
 #include <Luch/RefPtr.h>
 #include <Luch/SharedPtr.h>
 #include <Luch/UniquePtr.h>
-#include <Luch/Graphics/Size2.h>
+#include <Luch/Size2.h>
 #include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/Graphics/DescriptorSetBinding.h>
 #include <Luch/Render/RenderForwards.h>
@@ -30,8 +30,6 @@ namespace Luch::Render::Passes::IBL
         DescriptorSetBinding lightingParamsBinding;
         DescriptorSetBinding lightsBufferBinding;
 
-        RefPtr<SceneV1::PerspectiveCamera> camera;
-
         RefPtr<DescriptorSetLayout> lightsBufferDescriptorSetLayout;
 
         RefPtr<DescriptorSetLayout> meshBufferDescriptorSetLayout;
@@ -49,6 +47,7 @@ namespace Luch::Render::Passes::IBL
         RefPtr<DescriptorPool> descriptorPool;
         RenderMutableResource environmentLuminanceCubemap;
         RenderMutableResource environmentDepthCubemap;
+        RefPtr<SceneV1::PerspectiveCamera> camera;
         RefPtr<DescriptorSet> cameraBufferDescriptorSet;
         RefPtr<DescriptorSet> lightsBufferDescriptorSet;
     };

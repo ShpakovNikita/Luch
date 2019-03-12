@@ -1,16 +1,16 @@
 #pragma once
 
+#include <Luch/RefPtr.h>
+#include <Luch/SharedPtr.h>
+#include <Luch/Size2.h>
 #include <Luch/Render/RenderForwards.h>
 #include <Luch/Render/Passes/Deferred/DeferredForwards.h>
 #include <Luch/Render/SharedBuffer.h>
 #include <Luch/Render/Passes/Deferred/GBuffer.h>
 #include <Luch/Render/Passes/Deferred/DeferredConstants.h>
 #include <Luch/Graphics/GraphicsForwards.h>
-#include <Luch/Graphics/Size2.h>
 #include <Luch/Graphics/DescriptorSetBinding.h>
 #include <Luch/SceneV1/SceneV1Forwards.h>
-#include <Luch/RefPtr.h>
-#include <Luch/SharedPtr.h>
 
 namespace Luch::Render::Passes::Deferred
 {
@@ -21,6 +21,7 @@ namespace Luch::Render::Passes::Deferred
         GraphicsDevice* device = nullptr;
 
         CameraResources* cameraResources = nullptr;
+        IndirectLightingResources* indirectLightingResources = nullptr;
 
         RefPtr<GraphicsPipelineState> pipelineState;
         RefPtr<PipelineLayout> pipelineLayout;
@@ -53,5 +54,11 @@ namespace Luch::Render::Passes::Deferred
         RefPtr<DescriptorSet> cameraBufferDescriptorSet;
         RefPtr<DescriptorSet> gbufferTextureDescriptorSet;
         RefPtr<DescriptorSet> lightsBufferDescriptorSet;
+
+        RenderResource diffuseIrradianceCubemapHandle;
+        RenderResource specularReflectionCubemapHandle;
+        RenderResource specularBRDFTextureHandle;
+
+        RefPtr<DescriptorSet> indirectLightingTexturesDescriptorSet;
     };
 }

@@ -2,9 +2,9 @@
 
 #include <Luch/ArrayProxy.h>
 #include <Luch/BaseObject.h>
+#include <Luch/Point2.h>
+#include <Luch/Size2.h>
 #include <Luch/Graphics/CommandList.h>
-#include <Luch/Graphics/Point2.h>
-#include <Luch/Graphics/Size2.h>
 
 namespace Luch::Graphics
 {

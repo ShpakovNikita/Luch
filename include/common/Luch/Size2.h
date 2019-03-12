@@ -2,7 +2,7 @@
 
 #include <Luch/Types.h>
 
-namespace Luch::Graphics
+namespace Luch
 {
     template<typename T>
     struct Size2

@@ -28,6 +28,7 @@ namespace Luch::Render::Graph
                 [](auto left, auto right) { return left.addedOnTick < right.addedOnTick; });
 
             auto texture = it->texture;
+            LUCH_ASSERT(texture != nullptr);
             matchingEntries.erase(it);
             return { GraphicsResult::Success, texture };
         }
@@ -69,6 +70,7 @@ namespace Luch::Render::Graph
 
             auto buffer = it->buffer;
             matchingEntries.erase(it);
+            LUCH_ASSERT(buffer != nullptr);
             return { GraphicsResult::Success, buffer };
         }
         else

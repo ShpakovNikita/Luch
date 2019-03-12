@@ -1,8 +1,8 @@
 #pragma once
 
 #include <Luch/RefPtr.h>
+#include <Luch/Size2.h>
 #include <Luch/Render/Graph/RenderGraphForwards.h>
-#include <Luch/Graphics/Size2.h>
 #include <Luch/Graphics/TextureCreateInfo.h>
 #include <Luch/Graphics/BufferCreateInfo.h>
 #include <Luch/Graphics/GraphicsForwards.h>

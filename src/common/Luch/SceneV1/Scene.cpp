@@ -75,6 +75,12 @@ namespace Luch::SceneV1
             AddLightProperties(light, node);
         }
 
+        const auto& lightProbe = node->GetLightProbe();
+        if(lightProbe != nullptr)
+        {
+            AddLightProbeProperties(lightProbe, node);
+        }
+
         const auto& camera = node->GetCamera();
         if(camera != nullptr)
         {
@@ -152,6 +158,12 @@ namespace Luch::SceneV1
     {
         sceneProperties.lights.insert(light);
         sceneProperties.lightNodes.insert(node);
+    }
+
+    void Scene::AddLightProbeProperties(const RefPtr<LightProbe>& lightProbe, const RefPtr<Node>& node)
+    {
+        sceneProperties.lightsProbes.insert(lightProbe);
+        sceneProperties.lightProbeNodes.insert(node);
     }
 
     void Scene::AddCameraProperties(const RefPtr<Camera>& camera, const RefPtr<Node>& node)

@@ -3,7 +3,7 @@
 #include <Luch/RefPtr.h>
 #include <Luch/SharedPtr.h>
 #include <Luch/UniquePtr.h>
-#include <Luch/Graphics/Size2.h>
+#include <Luch/Size2.h>
 #include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/Graphics/DescriptorSetBinding.h>
 #include <Luch/Render/RenderForwards.h>
@@ -19,6 +19,7 @@ namespace Luch::Render::Passes::TiledDeferred
 
         MaterialResources* materialResources = nullptr;
         CameraResources* cameraResources = nullptr;
+        IndirectLightingResources* indirectLightingResources = nullptr;
 
         RefPtr<DescriptorPool> descriptorPool;
 
@@ -47,5 +48,11 @@ namespace Luch::Render::Passes::TiledDeferred
         RefPtr<DescriptorPool> descriptorPool;
         RefPtr<DescriptorSet> cameraBufferDescriptorSet;
         RefPtr<DescriptorSet> lightsBufferDescriptorSet;
+
+        RenderResource diffuseIrradianceCubemapHandle;
+        RenderResource specularReflectionCubemapHandle;
+        RenderResource specularBRDFTextureHandle;
+
+        RefPtr<DescriptorSet> indirectLightingTexturesDescriptorSet;
     };
 }

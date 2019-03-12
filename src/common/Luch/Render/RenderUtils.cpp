@@ -100,11 +100,7 @@ namespace Luch::Render::RenderUtils
             String extension = "";
         #endif
 
-        #if LUCH_PLATFORM_IOS
-            String path = filename + extension;
-        #else
-            String path = dir + filename + extension;
-        #endif
+        String path = dir + filename + extension;
 
         auto shaderSource = LoadShaderSource(path);
 

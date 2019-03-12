@@ -2,6 +2,7 @@
 #include <simd/simd.h>
 #include "Common/lighting.metal"
 #include "Common/camera.metal"
+#include "IBL/ibl_lighting.metal"
 
 using namespace metal;
 
@@ -16,20 +17,23 @@ struct LightingParamsUniform
 
 half2 FragCoordToNDC(half2 fragCoord, half2 size)
 {
-    half2 pd = 2 * fragCoord / size - half2(1.0h);
+    half2 pd = 2 * fragCoord / size - half2(1);
     return half2(pd.x, -pd.y);
 }
 
 kernel void kernel_main(
     ushort2 gid [[thread_position_in_grid]],
-    constant CameraUniform& camera [[buffer(0)]],
-    constant LightingParamsUniform& lightingParams [[buffer(1)]],
-    constant Light* lights [[buffer(2)]],
-    texture2d<half, access::read> gbuffer0 [[texture(0)]],
-    texture2d<half, access::read> gbuffer1 [[texture(1)]],
-    texture2d<half, access::read> gbuffer2 [[texture(2)]],
-    depth2d<float, access::read> depthBuffer [[texture(3)]],
-    texture2d<half, access::write> luminance [[texture(4)]])
+    constant CameraUniform& camera [[ buffer(0) ]],
+    constant LightingParamsUniform& lightingParams [[ buffer(1) ]],
+    constant Light* lights [[ buffer(2) ]],
+    texture2d<half, access::read> gbuffer0 [[ texture(0) ]],
+    texture2d<half, access::read> gbuffer1 [[ texture(1) ]],
+    texture2d<half, access::read> gbuffer2 [[ texture(2) ]],
+    depth2d<float, access::read> depthBuffer [[ texture(3) ]],
+    texture2d<half, access::write> luminance [[ texture(4) ]],
+    texturecube<half> diffuseIrradianceMap [[ texture(5) ]],
+    texturecube<half> specularReflectionMap [[ texture(6) ]],
+    texture2d<half> specularBRDF [[ texture(7) ]])
 {
     half4 gbuffer0Sample = gbuffer0.read(gid);
     half4 gbuffer1Sample = gbuffer1.read(gid);
@@ -54,9 +58,9 @@ kernel void kernel_main(
     half2 attachmentSize = half2(depthBuffer.get_width(), depthBuffer.get_height());
     half2 positionSS = half2(gid);
     half2 xyNDC = FragCoordToNDC(positionSS, attachmentSize);
-    float4 intermediatePosition = camera.inverseProjection * float4(xyNDC.x, xyNDC.y, depth, 1.0);
+    float4 intermediatePosition = camera.inverseProjection * float4(xyNDC.x, xyNDC.y, depth, 1);
     float3 P = intermediatePosition.xyz / intermediatePosition.w;
-    constexpr float3 eyePosVS = float3(0); // in view space eye is at origin
+    constexpr float3 eyePosVS = 0; // in view space eye is at origin
     half3 V = half3(normalize(eyePosVS - P));
 
     LightingResult lightingResult;
@@ -86,9 +90,39 @@ kernel void kernel_main(
         lightingResult.specular += intermediateResult.specular;
     }
 
-    half4 resultColor;
-    resultColor.rgb = emitted + baseColor * lightingResult.diffuse + lightingResult.specular;
-    resultColor.a = 1.0;
+    float3 R = float3(reflect(-V, N));
+    half NdotV = half(saturate(dot(N, V)));
 
-    luminance.write(resultColor, gid);
+    // TODO think about non-uniform scale
+    float3 reflectedWS = (camera.inverseView * float4(R, 0)).xyz;
+
+    half3 diffuseIndirectLuminance = CalculateIndirectDiffuse(
+        diffuseIrradianceMap,
+        reflectedWS,
+        baseColor.rgb,
+        metallic);
+
+    half3 specularReflectionLuminance = CalculateSpecularReflection(
+        specularReflectionMap,
+        specularBRDF,
+        F0,
+        reflectedWS,
+        NdotV,
+        metallic,
+        roughness);
+
+    half3 diffuseDirect = baseColor.rgb * lightingResult.diffuse;
+    half3 specularDirect = lightingResult.specular;
+
+    half4 resultLuminance;
+
+    resultLuminance.rgb =
+        emitted
+        + diffuseDirect
+        + specularDirect
+        + (specularReflectionLuminance + diffuseIndirectLuminance) * occlusion;
+
+    resultLuminance.a = 1;
+
+    luminance.write(resultLuminance, gid);
 }

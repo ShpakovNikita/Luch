@@ -2,7 +2,7 @@
 
 #include <Luch/RefPtr.h>
 #include <Luch/UniquePtr.h>
-#include <Luch/Graphics/Size2.h>
+#include <Luch/Size2.h>
 #include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/Graphics/DescriptorSetBinding.h>
 

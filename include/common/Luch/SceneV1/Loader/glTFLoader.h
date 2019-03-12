@@ -19,6 +19,7 @@ namespace Luch::SceneV1::Loader
         RefPtrVector<Sampler> loadedSamplers;
         RefPtrVector<Texture> loadedTextures;
         RefPtrVector<Light> loadedLights;
+        RefPtrVector<LightProbe> loadedLightProbes;
     };
 
     class glTFLoader
@@ -47,6 +48,7 @@ namespace Luch::SceneV1::Loader
         RefPtr<Texture> MakeTexture(const glTF::Texture& texture, const SceneLoadContext& context);
         RefPtr<Sampler> MakeSampler(const glTF::Sampler& sampler, const SceneLoadContext& context);
         RefPtr<Light> MakeLight(const glTF::LightPunctual& light, const SceneLoadContext& context);
+        RefPtr<LightProbe> MakeLightProbe(const glTF::LightProbe& probe, const SceneLoadContext& context);
 
         RefPtr<Buffer> ReadHostBuffer(const BufferSource& source);
         RefPtr<Image> ReadHostImage(const TextureSource& source);

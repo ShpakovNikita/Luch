@@ -34,7 +34,8 @@ namespace Luch::Render::Passes::Forward
         static ResultValue<bool, UniquePtr<ForwardPersistentContext>> PrepareForwardPersistentContext(
             GraphicsDevice* device,
             CameraResources* cameraResources,
-            MaterialResources* materialResources);
+            MaterialResources* materialResources,
+            IndirectLightingResources* indirectLightingResources);
 
         static ResultValue<bool, UniquePtr<ForwardTransientContext>> PrepareForwardTransientContext(
             ForwardPersistentContext* persistentContext,
@@ -64,6 +65,7 @@ namespace Luch::Render::Passes::Forward
         void UpdateNode(SceneV1::Node* node);
         void UpdateMesh(SceneV1::Mesh* mesh, const Mat4x4& transform);
         void UpdateLights(const RefPtrVector<SceneV1::Node>& lightNodes);
+        void UpdateIndirectLightingDescriptorSet(RenderGraphResourceManager* manager, DescriptorSet* descriptorSet);
 
         void BindMaterial(SceneV1::PbrMaterial* material, GraphicsCommandList* commandList);
         void DrawScene(SceneV1::Scene* scene, RenderGraphResourceManager* manager, GraphicsCommandList* commandList);

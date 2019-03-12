@@ -3,7 +3,7 @@
 #include <Luch/RefPtr.h>
 #include <Luch/SharedPtr.h>
 #include <Luch/UniquePtr.h>
-#include <Luch/Graphics/Size2.h>
+#include <Luch/Size2.h>
 #include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/Graphics/DescriptorSetBinding.h>
 #include <Luch/Render/RenderForwards.h>
@@ -21,20 +21,16 @@ namespace Luch::Render::Passes::Forward
 
         MaterialResources* materialResources = nullptr;
         CameraResources* cameraResources = nullptr;
+        IndirectLightingResources* indirectLightingResources = nullptr;
 
         RefPtr<PipelineLayout> pipelineLayout;
         RefPtr<DescriptorPool> descriptorPool;
 
         DescriptorSetBinding meshUniformBufferBinding;
 
-        DescriptorSetBinding diffuseIrradianceCubemapBinding;
-        DescriptorSetBinding specularReflectionCubemapBinding;
-        DescriptorSetBinding specularBRDFTextureBinding;
-
         DescriptorSetBinding lightingParamsBinding;
         DescriptorSetBinding lightsBufferBinding;
 
-        RefPtr<DescriptorSetLayout> indirectLightingTexturesDescriptorSetLayout;
         RefPtr<DescriptorSetLayout> lightsBufferDescriptorSetLayout;
 
         RefPtr<DescriptorSetLayout> meshBufferDescriptorSetLayout;

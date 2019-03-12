@@ -316,51 +316,60 @@ set_target_properties(
     LuchEngineSample PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${SAMPLE_RUNTIME_OUTPUT_DIR})
 
+set(SAMPLE_DATA_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/Data)
 set(SAMPLE_DATA_DIR ${SAMPLE_RUNTIME_OUTPUT_DIR}/Data/)
 
-if(LUCH_PLATFORM_IOS)
-    set(SAMPLE_RESOURCES)
+file(MAKE_DIRECTORY ${SAMPLE_DATA_SOURCE_DIR})
+file(MAKE_DIRECTORY ${SAMPLE_DATA_DIR})
 
-    file(GLOB_RECURSE SAMPLE_GLTF2_FILES ${CMAKE_CURRENT_SOURCE_DIR}/res/gltf2/*)
-    list(APPEND SAMPLE_RESOURCES ${SAMPLE_GLTF2_FILES})
-    if(USE_METAL)
-        file(GLOB_RECURSE SAMPLE_SHADERS ${CMAKE_CURRENT_SOURCE_DIR}/src/Metal/Luch/Render/Shaders/*)
-        list(APPEND SAMPLE_RESOURCES ${SAMPLE_SHADERS})
-    endif()
+add_custom_command(
+    TARGET LuchEngineSample
+    PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E remove_directory
+    ${SAMPLE_DATA_SOURCE_DIR})
 
-    set_source_files_properties(
-        ${SAMPLE_RESOURCES}
-        PROPERTIES
-        MACOSX_PACKAGE_LOCATION Resources)
-else()
-    add_custom_command(
-        TARGET LuchEngineSample
-        PRE_BUILD
-        COMMAND ${CMAKE_COMMAND} -E remove_directory
-        ${SAMPLE_DATA_DIR})
+add_custom_command(
+    TARGET LuchEngineSample
+    PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E remove_directory
+    ${SAMPLE_DATA_DIR})
 
-    add_custom_command(
-        TARGET LuchEngineSample
-        PRE_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory
-        ${SAMPLE_DATA_DIR})
+add_custom_command(
+    TARGET LuchEngineSample
+    PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+    ${SAMPLE_DATA_SOURCE_DIR})
 
-    if(USE_METAL)
-        add_custom_command(
-            TARGET LuchEngineSample
-            PRE_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/Metal/Luch/Render/Shaders/
-            ${SAMPLE_DATA_DIR}/Shaders/)
-    endif()
+add_custom_command(
+    TARGET LuchEngineSample
+    PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+    ${SAMPLE_DATA_SOURCE_DIR})
 
+if(USE_METAL)
     add_custom_command(
         TARGET LuchEngineSample
         PRE_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_SOURCE_DIR}/res/gltf2
-        ${SAMPLE_DATA_DIR}/gltf2/)
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/Metal/Luch/Render/Shaders/
+        ${SAMPLE_DATA_SOURCE_DIR}/Shaders/)
 endif()
+
+add_custom_command(
+    TARGET LuchEngineSample
+    PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_CURRENT_SOURCE_DIR}/res/gltf2
+    ${SAMPLE_DATA_SOURCE_DIR}/gltf2/)
+
+add_custom_command(
+    TARGET LuchEngineSample
+    PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${SAMPLE_DATA_SOURCE_DIR}/
+    ${SAMPLE_DATA_DIR}/)
+
+list(APPEND SAMPLE_RESOURCES ${SAMPLE_DATA_SOURCE_DIR})
 
 if(LUCH_PLATFORM_WIN32)
     file(GLOB_RECURSE SAMPLE_WIN32_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/win32/Sample/*.cpp)
@@ -381,22 +390,14 @@ if(LUCH_PLATFORM_APPLE)
         ${SAMPLE_APPLE_CPP_FILES}
         ${SAMPLE_APPLE_OBJC_FILES}
         ${SAMPLE_APPLE_OBJCPP_FILES}
-        ${SAMPLE_APPLE_HEADER_FILES})
+        ${SAMPLE_APPLE_HEADER_FILES}
+        ${SAMPLE_RESOURCES})
 
     if(LUCH_PLATFORM_IOS)
         set_xcode_property(LuchEngineSample CODE_SIGN_IDENTITY "iPhone Developer")
     elseif(LUCH_PLATFORM_MACOS)
         set_xcode_property(LuchEngineSample CODE_SIGN_IDENTITY "Mac Developer")
     endif()
-
-    target_sources(LuchEngineSample PRIVATE
-        ${SAMPLE_RESOURCES})
-
-    set_source_files_properties(
-        ${SAMPLE_RESOURCES}
-        PROPERTIES
-        HEADER_FILE_ONLY ON
-        XCODE_EXPLICIT_FILE_TYPE "compiled")
 
     if(DEVELOPMENT_TEAM_ID)
         set_xcode_property(LuchEngineSample DEVELOPMENT_TEAM ${DEVELOPMENT_TEAM_ID})

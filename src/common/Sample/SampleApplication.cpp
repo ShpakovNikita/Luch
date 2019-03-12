@@ -112,22 +112,19 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     glTF::glTFParser glTFparser;
 
-#if LUCH_PLATFORM_IOS
-    String rootDir{ "" };
-#else
     String rootDir{ "Data/gltf2/sponza/" };
-    //String rootDir{ "Data/gltf2/helmet/" };
-#endif
 
-    String filename { "Sponza.gltf" };
-    //String filename { "DamagedHelmet.gltf" };
+    {
+        String filename { "Sponza.gltf" };
+        //String filename { "DamagedHelmet.gltf" };
 
-    FileStream fileStream{ rootDir + filename, FileOpenModes::Read };
+        FileStream fileStream{ rootDir + filename, FileOpenModes::Read };
+        
+        auto root = glTFparser.ParseJSON(&fileStream);
 
-    auto root = glTFparser.ParseJSON(&fileStream);
-
-    SceneV1::Loader::glTFLoader loader{ rootDir, root };
-    scene = loader.LoadScene(0);
+        SceneV1::Loader::glTFLoader loader{ rootDir, root };
+        scene = loader.LoadScene(0);
+    }
 
     auto cameraIt = std::find_if(
         scene->GetNodes().begin(),

@@ -66,10 +66,11 @@ namespace Luch::Metal
         auto textures = mtlDescriptorSet->textures.data();
         auto length = (uint32)mtlDescriptorSet->textures.size();
 
-        LUCH_ASSERT(length != 0);
-        auto range = ns::Range { start, length };
-
-        commandEncoder.SetTextures(textures, range);
+        if(length > 0)
+        {
+            auto range = ns::Range { start, length };
+            commandEncoder.SetTextures(textures, range);
+        }
     }
 
     void MetalComputeCommandList::BindBufferDescriptorSet(
@@ -95,10 +96,11 @@ namespace Luch::Metal
         auto bufferOffsets = (uint32*)mtlDescriptorSet->bufferOffsets.data();
         auto length = (uint32)mtlDescriptorSet->buffers.size();
 
-        LUCH_ASSERT(length != 0);
-        auto range = ns::Range { start, length };
-
-        commandEncoder.SetBuffers(buffers, bufferOffsets, range);
+        if(length > 0)
+        {
+            auto range = ns::Range { start, length };
+            commandEncoder.SetBuffers(buffers, bufferOffsets, range);
+        }
     }
 
     void MetalComputeCommandList::BindSamplerDescriptorSet(
@@ -123,10 +125,11 @@ namespace Luch::Metal
         auto samplers = mtlDescriptorSet->samplers.data();
         auto length = (uint32)mtlDescriptorSet->samplers.size();
 
-        LUCH_ASSERT(length != 0);
-        auto range = ns::Range { start, length };
-
-        commandEncoder.SetSamplerStates(samplers, range);
+        if(length > 0)
+        {
+            auto range = ns::Range { start, length };
+            commandEncoder.SetSamplerStates(samplers, range);
+        }
     }
 
     void MetalComputeCommandList::DispatchThreadgroups(

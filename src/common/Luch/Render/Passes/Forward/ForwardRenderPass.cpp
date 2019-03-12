@@ -1,8 +1,8 @@
 #include <Luch/Render/Passes/Forward/ForwardRenderPass.h>
 #include <Luch/Render/Passes/Forward/ForwardContext.h>
-#include <Luch/Render/TextureUploader.h>
 #include <Luch/Render/ShaderDefines.h>
 #include <Luch/Render/CameraResources.h>
+#include <Luch/Render/IndirectLightingResources.h>
 #include <Luch/Render/MaterialResources.h>
 #include <Luch/Render/RenderUtils.h>
 #include <Luch/Render/Common.h>
@@ -259,41 +259,43 @@ namespace Luch::Render::Passes::Forward
         transientContext->lightsBufferDescriptorSet->Update();
     }
 
-    void ForwardRenderPass::DrawScene(
-        SceneV1::Scene* scene,
+    void ForwardRenderPass::UpdateIndirectLightingDescriptorSet(
         RenderGraphResourceManager* manager,
-        GraphicsCommandList* commandList)
+        DescriptorSet* descriptorSet)
     {
         if(diffuseIrradianceCubemapHandle)
         {
             auto diffuseIrradianceCubemap = manager->GetTexture(diffuseIrradianceCubemapHandle);
 
             transientContext->indirectLightingTexturesDescriptorSet->WriteTexture(
-                persistentContext->diffuseIrradianceCubemapBinding,
+                persistentContext->indirectLightingResources->diffuseIrradianceCubemapBinding,
                 diffuseIrradianceCubemap);
-
-            commandList->BindTextureDescriptorSet(
-                ShaderStage::Fragment,
-                persistentContext->pipelineLayout,
-                transientContext->indirectLightingTexturesDescriptorSet);
         }
 
         if(specularReflectionCubemapHandle && specularBRDFTextureHandle)
         {
             auto specularReflectionCubemap = manager->GetTexture(specularReflectionCubemapHandle);
 
-            transientContext->indirectLightingTexturesDescriptorSet->WriteTexture(
-                persistentContext->specularReflectionCubemapBinding,
+            descriptorSet->WriteTexture(
+                persistentContext->indirectLightingResources->specularReflectionCubemapBinding,
                 specularReflectionCubemap);
 
             auto specularBRDFTexture = manager->GetTexture(specularBRDFTextureHandle);
 
-            transientContext->indirectLightingTexturesDescriptorSet->WriteTexture(
-                persistentContext->specularBRDFTextureBinding,
+            descriptorSet->WriteTexture(
+                persistentContext->indirectLightingResources->specularBRDFTextureBinding,
                 specularBRDFTexture);
         }
 
-        transientContext->indirectLightingTexturesDescriptorSet->Update();
+        descriptorSet->Update();
+    }
+
+    void ForwardRenderPass::DrawScene(
+        SceneV1::Scene* scene,
+        RenderGraphResourceManager* manager,
+        GraphicsCommandList* commandList)
+    {
+        UpdateIndirectLightingDescriptorSet(manager, transientContext->indirectLightingTexturesDescriptorSet);
 
         commandList->BindTextureDescriptorSet(
             ShaderStage::Fragment,
@@ -560,12 +562,14 @@ namespace Luch::Render::Passes::Forward
     ResultValue<bool, UniquePtr<ForwardPersistentContext>> ForwardRenderPass::PrepareForwardPersistentContext(
         GraphicsDevice* device,
         CameraResources* cameraResources,
-        MaterialResources* materialResources)
+        MaterialResources* materialResources,
+        IndirectLightingResources* indirectLightingResources)
     {
         auto context = MakeUnique<ForwardPersistentContext>();
         context->device = device;
         context->cameraResources = cameraResources;
         context->materialResources = materialResources;
+        context->indirectLightingResources = indirectLightingResources;
 
         const auto& supportedDepthFormats = context->device->GetPhysicalDevice()->GetCapabilities().supportedDepthFormats;
         LUCH_ASSERT_MSG(!supportedDepthFormats.empty(), "No supported depth formats");
@@ -668,29 +672,6 @@ namespace Luch::Render::Passes::Forward
             context->meshBufferDescriptorSetLayout = std::move(createdDescriptorSetLayout);
         }
 
-        // Indirect lighting descriptor set layout
-        {
-            context->diffuseIrradianceCubemapBinding.OfType(ResourceType::Texture);
-            context->specularReflectionCubemapBinding.OfType(ResourceType::Texture);
-            context->specularBRDFTextureBinding.OfType(ResourceType::Texture);
-
-            DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo;
-            descriptorSetLayoutCreateInfo
-                .OfType(DescriptorSetType::Texture)
-                .WithNBindings(3)
-                .AddBinding(&context->diffuseIrradianceCubemapBinding)
-                .AddBinding(&context->specularReflectionCubemapBinding)
-                .AddBinding(&context->specularBRDFTextureBinding);
-
-            auto [result, createdDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(descriptorSetLayoutCreateInfo);
-            if(result != GraphicsResult::Success)
-            {
-                return false;
-            }
-
-            context->indirectLightingTexturesDescriptorSetLayout = std::move(createdDescriptorSetLayout);
-        }
-
         {
             context->lightingParamsBinding.OfType(ResourceType::UniformBuffer);
             context->lightsBufferBinding.OfType(ResourceType::UniformBuffer);
@@ -720,7 +701,7 @@ namespace Luch::Render::Passes::Forward
                 .AddSetLayout(ShaderStage::Fragment, materialResources->materialTextureDescriptorSetLayout)
                 .AddSetLayout(ShaderStage::Fragment, materialResources->materialBufferDescriptorSetLayout)
                 .AddSetLayout(ShaderStage::Fragment, materialResources->materialSamplerDescriptorSetLayout)
-                .AddSetLayout(ShaderStage::Fragment, context->indirectLightingTexturesDescriptorSetLayout)
+                .AddSetLayout(ShaderStage::Fragment, context->indirectLightingResources->indirectLightingTexturesDescriptorSetLayout)
                 .AddSetLayout(ShaderStage::Fragment, context->lightsBufferDescriptorSetLayout);
 
             auto[createPipelineLayoutResult, createdPipelineLayout] = device->CreatePipelineLayout(
@@ -759,7 +740,7 @@ namespace Luch::Render::Passes::Forward
 
         {
             auto [result, allocatedBufferSet] = context->descriptorPool->AllocateDescriptorSet(
-                persistentContext->indirectLightingTexturesDescriptorSetLayout);
+                persistentContext->indirectLightingResources->indirectLightingTexturesDescriptorSetLayout);
 
             if(result != GraphicsResult::Success)
             {

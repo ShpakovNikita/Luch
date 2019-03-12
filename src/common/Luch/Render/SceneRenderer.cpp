@@ -10,6 +10,7 @@
 #include <Luch/SceneV1/PbrMaterial.h>
 #include <Luch/SceneV1/Texture.h>
 #include <Luch/SceneV1/Light.h>
+#include <Luch/SceneV1/LightProbe.h>
 #include <Luch/SceneV1/Sampler.h>
 #include <Luch/SceneV1/VertexBuffer.h>
 #include <Luch/SceneV1/IndexBuffer.h>
@@ -30,7 +31,8 @@
 #include <Luch/Graphics/DescriptorPoolCreateInfo.h>
 
 #include <Luch/Render/RenderUtils.h>
-
+#include <Luch/Render/CameraResources.h>
+#include <Luch/Render/IndirectLightingResources.h>
 #include <Luch/Render/IBLRenderer.h>
 
 #include <Luch/Render/Passes/DepthOnlyRenderPass.h>
@@ -86,9 +88,9 @@ namespace Luch::Render
         tonemapTransientContext.reset();
         swapchainTexture.Release();
 
-        diffuseIrradianceCubemapHandle = {};
-        specularReflectionCubemapHandle = {};
-        specularBRDFTextureHandle = {};
+        diffuseIrradianceCubemapHandle = nullptr;
+        specularReflectionCubemapHandle = nullptr;
+        specularBRDFTextureHandle = nullptr;
     }
 
     SceneRenderer::SceneRenderer(
@@ -105,13 +107,25 @@ namespace Luch::Render
 
         canUseTiledDeferredRender = context->device->GetPhysicalDevice()->GetCapabilities().hasTileBasedArchitecture;
 
-        auto [createCameraResourcesResult, createdCameraResources] = PrepareCameraResources(context->device);
-        if(!createCameraResourcesResult)
         {
-            return false;
+            auto [result, createdCameraResources] = PrepareCameraResources(context->device);
+            if(!result)
+            {
+                return false;
+            }
+
+            cameraResources = std::move(createdCameraResources);
         }
 
-        cameraResources = std::move(createdCameraResources);
+        {
+            auto [result, createdIndirectLightingResources] = PrepareIndirectLightingResources(context->device);
+            if(!result)
+            {
+                return false;
+            }
+
+            indirectLightingResources = std::move(createdIndirectLightingResources);
+        }
 
         materialManager = MakeShared<MaterialManager>();
 
@@ -166,7 +180,8 @@ namespace Luch::Render
             auto [createForwardPersistentContextResult, createdForwardPersistentContext] = ForwardRenderPass::PrepareForwardPersistentContext(
                 context->device,
                 cameraResources.get(),
-                materialManager->GetResources());
+                materialManager->GetResources(),
+                indirectLightingResources.get());
             
             if(!createForwardPersistentContextResult)
             {
@@ -182,7 +197,8 @@ namespace Luch::Render
             auto [createTiledDeferredPersistentContextResult, createdTiledDeferredPersistentContext] = TiledDeferredRenderPass::PrepareTiledDeferredPersistentContext(
                 context->device,
                 cameraResources.get(),
-                materialManager->GetResources());
+                materialManager->GetResources(),
+                indirectLightingResources.get());
 
             if(!createTiledDeferredPersistentContextResult)
             {
@@ -208,7 +224,8 @@ namespace Luch::Render
         // Resolve (Compute) Persistent Context
         auto [createResolveComputePersistentContextResult, createdResolveComputePersistentContext] = ResolveComputeRenderPass::PrepareResolvePersistentContext(
             context->device,
-            cameraResources.get());
+            cameraResources.get(),
+            indirectLightingResources.get());
 
         if(!createResolveComputePersistentContextResult)
         {
@@ -220,7 +237,8 @@ namespace Luch::Render
         // Resolve (Graphics) Persistent Context
         auto [createResolvePersistentContextResult, createdResolvePersistentContext] = ResolveRenderPass::PrepareResolvePersistentContext(
             context->device,
-            cameraResources.get());
+            cameraResources.get(),
+            indirectLightingResources.get());
 
         if(!createResolvePersistentContextResult)
         {
@@ -319,7 +337,29 @@ namespace Luch::Render
             return true;
         }
 
-        bool began = iblRenderer->BeginRender();
+        auto lightProbeNodeIt = std::find_if(
+            scene->GetNodes().begin(),
+            scene->GetNodes().end(),
+            [](const auto& node) { return node->GetLightProbe() != nullptr && node->GetLightProbe()->IsEnabled(); });
+
+        if(lightProbeNodeIt == scene->GetNodes().end())
+        {
+            return true;
+        }
+
+        const auto& lightProbeNode = *lightProbeNodeIt;
+        const auto& lightProbe = lightProbeNode->GetLightProbe();
+
+        IBLRequest iblRequest;
+        iblRequest.position = lightProbeNode->GetWorldTransform() * Vec4{ 0, 0, 0, 1 };
+        iblRequest.probeDiffuseIrradiance = lightProbe->HasDiffuseIrradiance();
+        iblRequest.probeSpecularReflection = lightProbe->HasSpecularReflection();
+        iblRequest.computeSpecularBRDF = true;
+        iblRequest.size = lightProbe->GetSize();
+        iblRequest.zNear = lightProbe->GetZNear();
+        iblRequest.zFar = lightProbe->GetZFar();
+
+        bool began = iblRenderer->BeginRender(iblRequest);
         if(!began)
         {
             return false;
@@ -333,7 +373,7 @@ namespace Luch::Render
 
         iblRenderer->UpdateScene();
 
-        iblRenderer->ProbeIndirectLighting(Vec3{0, 3, 0});
+        iblRenderer->ProbeIndirectLighting();
 
         auto [result, probe] = iblRenderer->EndRender();
         if(!result)
@@ -364,6 +404,8 @@ namespace Luch::Render
         }
 
         auto& frame = frameResources[GetCurrentFrameResourceIndex()];
+
+        frame.Reset();
 
         frame.sharedBuffer->Reset();
 
@@ -634,7 +676,6 @@ namespace Luch::Render
             frameResources[index].swapchainTexture,
             [this, index]()
             {
-                frameResources[index].Reset();
                 resourcePool->Tick();
                 semaphore->Signal();
             });
@@ -644,39 +685,39 @@ namespace Luch::Render
 
     bool SceneRenderer::PrepareForward(FrameResources& frame)
     {
-        auto [prepareForwardTransientContextResult, preparedForwardTransientContext] = ForwardRenderPass::PrepareForwardTransientContext(
+        auto [result, forwardTransientContext] = ForwardRenderPass::PrepareForwardTransientContext(
             forwardPersistentContext.get(),
             descriptorPool);
 
-        if(!prepareForwardTransientContextResult)
+        if(!result)
         {
             return false;
         }
 
-        frame.forwardTransientContext = std::move(preparedForwardTransientContext);
-
-        frame.forwardTransientContext->descriptorPool = descriptorPool;
-        frame.forwardTransientContext->outputSize = frame.outputSize;
-        frame.forwardTransientContext->scene = scene;
-        frame.forwardTransientContext->sharedBuffer = frame.sharedBuffer;
-        frame.forwardTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
+        forwardTransientContext->descriptorPool = descriptorPool;
+        forwardTransientContext->outputSize = frame.outputSize;
+        forwardTransientContext->scene = scene;
+        forwardTransientContext->sharedBuffer = frame.sharedBuffer;
+        forwardTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
 
         if(config.useDiffuseGlobalIllumination)
         {
-            frame.forwardTransientContext->diffuseIrradianceCubemapHandle = frame.diffuseIrradianceCubemapHandle;
+            forwardTransientContext->diffuseIrradianceCubemapHandle = frame.diffuseIrradianceCubemapHandle;
         }
 
         if(config.useSpecularGlobalIllumination)
         {
-            frame.forwardTransientContext->specularReflectionCubemapHandle = frame.specularReflectionCubemapHandle;
-            frame.forwardTransientContext->specularBRDFTextureHandle = frame.specularBRDFTextureHandle;
+            forwardTransientContext->specularReflectionCubemapHandle = frame.specularReflectionCubemapHandle;
+            forwardTransientContext->specularBRDFTextureHandle = frame.specularBRDFTextureHandle;
         }
 
         if(config.useDepthPrepass)
         {
-            frame.forwardTransientContext->useDepthPrepass = true;
-            frame.forwardTransientContext->depthStencilTextureHandle = frame.depthOnlyPass->GetDepthTextureHandle();
+            forwardTransientContext->useDepthPrepass = true;
+            forwardTransientContext->depthStencilTextureHandle = frame.depthOnlyPass->GetDepthTextureHandle();
         }
+
+        frame.forwardTransientContext = std::move(forwardTransientContext);
 
         frame.forwardPass = MakeUnique<ForwardRenderPass>(
             forwardPersistentContext.get(),
@@ -688,52 +729,65 @@ namespace Luch::Render
 
     bool SceneRenderer::PrepareDeferred(FrameResources& frame)
     {
-        auto [prepareGBufferTransientContextResult, preparedGBufferTransientContext] = GBufferRenderPass::PrepareGBufferTransientContext(
-            gbufferPersistentContext.get(),
-            descriptorPool);
-
-        if(!prepareGBufferTransientContextResult)
         {
-            return false;
-        }
-
-        frame.gbufferTransientContext = std::move(preparedGBufferTransientContext);
-
-        frame.gbufferTransientContext->descriptorPool = descriptorPool;
-        frame.gbufferTransientContext->outputSize = frame.outputSize;
-        frame.gbufferTransientContext->scene = scene;
-        frame.gbufferTransientContext->sharedBuffer = frame.sharedBuffer;
-        frame.gbufferTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
-
-        if(config.useDepthPrepass)
-        {
-            frame.gbufferTransientContext->useDepthPrepass = true;
-            frame.gbufferTransientContext->depthStencilTextureHandle = frame.depthOnlyPass->GetDepthTextureHandle();
-        }
-
-        frame.gbufferPass = MakeUnique<GBufferRenderPass>(
-            gbufferPersistentContext.get(),
-            frame.gbufferTransientContext.get(),
-            frame.builder.get());
-
-        if(config.useComputeResolve)
-        {
-            auto [prepareResolveTransientContextResult, preparedResolveTransientContext] = ResolveComputeRenderPass::PrepareResolveTransientContext(
-                resolveComputePersistentContext.get(),
+            auto [contextPrepared, transientContext] = GBufferRenderPass::PrepareGBufferTransientContext(
+                gbufferPersistentContext.get(),
                 descriptorPool);
 
-            if(!prepareResolveTransientContextResult)
+            if(!contextPrepared)
             {
                 return false;
             }
 
-            frame.resolveComputeTransientContext = std::move(preparedResolveTransientContext);
+            transientContext->descriptorPool = descriptorPool;
+            transientContext->outputSize = frame.outputSize;
+            transientContext->scene = scene;
+            transientContext->sharedBuffer = frame.sharedBuffer;
+            transientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
 
-            frame.resolveComputeTransientContext->gbuffer = frame.gbufferPass->GetGBuffer();
-            frame.resolveComputeTransientContext->outputSize = frame.outputSize;
-            frame.resolveComputeTransientContext->scene = scene;
-            frame.resolveComputeTransientContext->sharedBuffer = frame.sharedBuffer;
-            frame.resolveComputeTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
+            if(config.useDepthPrepass)
+            {
+                transientContext->useDepthPrepass = true;
+                transientContext->depthStencilTextureHandle = frame.depthOnlyPass->GetDepthTextureHandle();
+            }
+
+            frame.gbufferTransientContext = std::move(transientContext);
+
+            frame.gbufferPass = MakeUnique<GBufferRenderPass>(
+                gbufferPersistentContext.get(),
+                frame.gbufferTransientContext.get(),
+                frame.builder.get());
+        }
+
+        if(config.useComputeResolve)
+        {
+            auto [contextPrepared, transientContext] = ResolveComputeRenderPass::PrepareResolveTransientContext(
+                resolveComputePersistentContext.get(),
+                descriptorPool);
+
+            if(!contextPrepared)
+            {
+                return false;
+            }
+
+            transientContext->gbuffer = frame.gbufferPass->GetGBuffer();
+            transientContext->outputSize = frame.outputSize;
+            transientContext->scene = scene;
+            transientContext->sharedBuffer = frame.sharedBuffer;
+            transientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
+
+            if(config.useDiffuseGlobalIllumination)
+            {
+                transientContext->diffuseIrradianceCubemapHandle = frame.diffuseIrradianceCubemapHandle;
+            }
+
+            if(config.useSpecularGlobalIllumination)
+            {
+                transientContext->specularReflectionCubemapHandle = frame.specularReflectionCubemapHandle;
+                transientContext->specularBRDFTextureHandle = frame.specularBRDFTextureHandle;
+            }
+
+            frame.resolveComputeTransientContext = std::move(transientContext);
 
             frame.resolveComputePass = MakeUnique<ResolveComputeRenderPass>(
                 resolveComputePersistentContext.get(),
@@ -742,22 +796,33 @@ namespace Luch::Render
         }
         else
         {
-            auto [prepareResolveTransientContextResult, preparedResolveTransientContext] = ResolveRenderPass::PrepareResolveTransientContext(
+            auto [contextPrepared, transientContext] = ResolveRenderPass::PrepareResolveTransientContext(
                 resolvePersistentContext.get(),
                 descriptorPool);
 
-            if(!prepareResolveTransientContextResult)
+            if(!contextPrepared)
             {
                 return false;
             }
 
-            frame.resolveTransientContext = std::move(preparedResolveTransientContext);
+            transientContext->gbuffer = frame.gbufferPass->GetGBuffer();
+            transientContext->outputSize = frame.outputSize;
+            transientContext->scene = scene;
+            transientContext->sharedBuffer = frame.sharedBuffer;
+            transientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
 
-            frame.resolveTransientContext->gbuffer = frame.gbufferPass->GetGBuffer();
-            frame.resolveTransientContext->outputSize = frame.outputSize;
-            frame.resolveTransientContext->scene = scene;
-            frame.resolveTransientContext->sharedBuffer = frame.sharedBuffer;
-            frame.resolveTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
+            if(config.useDiffuseGlobalIllumination)
+            {
+                transientContext->diffuseIrradianceCubemapHandle = frame.diffuseIrradianceCubemapHandle;
+            }
+
+            if(config.useSpecularGlobalIllumination)
+            {
+                transientContext->specularReflectionCubemapHandle = frame.specularReflectionCubemapHandle;
+                transientContext->specularBRDFTextureHandle = frame.specularBRDFTextureHandle;
+            }
+
+            frame.resolveTransientContext = std::move(transientContext);
 
             frame.resolvePass = MakeUnique<ResolveRenderPass>(
                 resolvePersistentContext.get(),
@@ -770,23 +835,34 @@ namespace Luch::Render
 
     bool SceneRenderer::PrepareTiledDeferred(FrameResources& frame)
     {
-        auto [prepareTiledDeferredTransientContextResult, preparedTiledDeferredTransientContext] = TiledDeferredRenderPass::PrepareTiledDeferredTransientContext(
+        auto [result, tiledDeferredTransientContext] = TiledDeferredRenderPass::PrepareTiledDeferredTransientContext(
             tiledDeferredPersistentContext.get(),
             descriptorPool);
 
-        if(!prepareTiledDeferredTransientContextResult)
+        if(!result)
         {
             LUCH_ASSERT(false);
             return false;
         }
 
-        frame.tiledDeferredTransientContext = std::move(preparedTiledDeferredTransientContext);
+        if(config.useDiffuseGlobalIllumination)
+        {
+            tiledDeferredTransientContext->diffuseIrradianceCubemapHandle = frame.diffuseIrradianceCubemapHandle;
+        }
 
-        frame.tiledDeferredTransientContext->descriptorPool = descriptorPool;
-        frame.tiledDeferredTransientContext->outputSize = frame.outputSize;
-        frame.tiledDeferredTransientContext->scene = scene;
-        frame.tiledDeferredTransientContext->sharedBuffer = frame.sharedBuffer;
-        frame.tiledDeferredTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
+        if(config.useSpecularGlobalIllumination)
+        {
+            tiledDeferredTransientContext->specularReflectionCubemapHandle = frame.specularReflectionCubemapHandle;
+            tiledDeferredTransientContext->specularBRDFTextureHandle = frame.specularBRDFTextureHandle;
+        }
+
+        tiledDeferredTransientContext->descriptorPool = descriptorPool;
+        tiledDeferredTransientContext->outputSize = frame.outputSize;
+        tiledDeferredTransientContext->scene = scene;
+        tiledDeferredTransientContext->sharedBuffer = frame.sharedBuffer;
+        tiledDeferredTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
+
+        frame.tiledDeferredTransientContext = std::move(tiledDeferredTransientContext);
 
         frame.tiledDeferredPass = MakeUnique<TiledDeferredRenderPass>(
             tiledDeferredPersistentContext.get(),
@@ -803,7 +879,8 @@ namespace Luch::Render
         return frameIndex % swapchainImageCount;
     }
 
-    ResultValue<bool, UniquePtr<CameraResources>> SceneRenderer::PrepareCameraResources(GraphicsDevice* device)
+    ResultValue<bool, UniquePtr<CameraResources>> SceneRenderer::PrepareCameraResources(
+        GraphicsDevice* device)
     {
         UniquePtr<CameraResources> cameraResources = MakeUnique<CameraResources>();
 
@@ -840,6 +917,35 @@ namespace Luch::Render
         return { true, std::move(cameraResources) };
     }
 
+    ResultValue<bool, UniquePtr<IndirectLightingResources>> SceneRenderer::PrepareIndirectLightingResources(
+        GraphicsDevice* device)
+    {
+        auto resources = MakeUnique<IndirectLightingResources>();
+
+        resources->diffuseIrradianceCubemapBinding.OfType(ResourceType::Texture);
+        resources->specularReflectionCubemapBinding.OfType(ResourceType::Texture);
+        resources->specularBRDFTextureBinding.OfType(ResourceType::Texture);
+
+        DescriptorSetLayoutCreateInfo createInfo;
+        createInfo
+            .OfType(DescriptorSetType::Texture)
+            .WithNBindings(3)
+            .AddBinding(&resources->diffuseIrradianceCubemapBinding)
+            .AddBinding(&resources->specularReflectionCubemapBinding)
+            .AddBinding(&resources->specularBRDFTextureBinding);
+
+        auto[result, descriptorSetLayout] = device->CreateDescriptorSetLayout(createInfo);
+        if (result != GraphicsResult::Success)
+        {
+            LUCH_ASSERT(false);
+            return { false };
+        }
+
+        resources->indirectLightingTexturesDescriptorSetLayout = std::move(descriptorSetLayout);
+
+        return { true, std::move(resources) };
+    }
+
     bool SceneRenderer::UploadSceneTextures()
     {
         const auto& sceneProperties = scene->GetSceneProperties();
@@ -848,6 +954,11 @@ namespace Luch::Render
         Vector<SceneV1::Texture*> texturesVector;
         for (const auto& texture : textures)
         {
+            if(texture->GetHostImage() == nullptr)
+            {
+                continue;
+            }
+
             if(texture->GetDeviceTexture() != nullptr && texture->GetDeviceSampler() != nullptr)
             {
                 continue;
@@ -876,6 +987,12 @@ namespace Luch::Render
         }
 
         RenderUtils::SubmitCommandLists(context->commandQueue, uploadTexturesResult.commandLists);
+
+        // Release uploaded host images
+        for (const auto& texture : textures)
+        {
+            texture->SetHostImage(nullptr);
+        }
 
         return true;
     }
