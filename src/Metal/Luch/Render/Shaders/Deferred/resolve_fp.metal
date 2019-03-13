@@ -62,12 +62,13 @@ fragment FragmentOut fp_main(
     half metallic = half(gbuffer1Sample.a);
     half roughness = half(gbuffer2Sample.a);
 
-    half3 emitted = gbuffer2Sample.rgb;
+    half3 emittedLuminance = gbuffer2Sample.rgb;
 
-    half3 F0 = half3(0.04);
-    // If material is dielectrict, it's reflection coefficient can be approximated by 0.04
-    // Otherwise (for metals), take base color to "tint" reflections
-    F0 = mix(F0, baseColor, metallic);
+    constexpr half3 dielectricF0 = half3(0.04);
+    constexpr half3 black = 0;
+
+    half3 cdiff = mix(baseColor.rgb * (1 - dielectricF0.r), black, metallic);
+    half3 F0 = mix(dielectricF0, baseColor.rgb, metallic);
 
     // Reconstruct view-space position
     half2 attachmentSize = half2(depthBuffer.get_width(), depthBuffer.get_height());
@@ -78,38 +79,37 @@ fragment FragmentOut fp_main(
     constexpr half3 eyePosVS = half3(0); // in view space eye is at origin
     half3 V = normalize(eyePosVS - P);
 
-    LightingResult lightingResult;
+    half3 directLuminance = 0.0;
 
     for(ushort i = 0; i < lightingParams.lightCount; i++)
     {
         Light light = lights[i];
 
-        LightingResult intermediateResult;
+        half3 intermediateLuminance;
 
         switch(light.type)
         {
         case LightType::LIGHT_DIRECTIONAL:
-            intermediateResult = ApplyDirectionalLight(camera, light, V, N, F0, metallic, roughness);
+            intermediateLuminance = ApplyDirectionalLight(camera, light, V, N, F0, cdiff, metallic, roughness);
             break;
         case LightType::LIGHT_POINT:
-            intermediateResult = ApplyPointlLight(camera, light, V, P, N, F0, metallic, roughness);
+            intermediateLuminance = ApplyPointLight(camera, light, V, P, N, F0, cdiff, metallic, roughness);
             break;
         case LightType::LIGHT_SPOT:
-            intermediateResult = ApplySpotLight(camera, light, V, P, N, F0, metallic, roughness);
+            intermediateLuminance = ApplySpotLight(camera, light, V, P, N, F0, cdiff, metallic, roughness);
             break;
         default:
-            intermediateResult = { NAN, NAN };
+            intermediateLuminance = { NAN, NAN };
         }
 
-        lightingResult.diffuse += intermediateResult.diffuse;
-        lightingResult.specular += intermediateResult.specular;
+        directLuminance += intermediateLuminance;
     }
 
     float3 R = float3(reflect(-V, N));
     half NdotV = half(saturate(dot(N, V)));
 
     // TODO think about non-uniform scale
-    float3 reflectedWS = (camera.inverseView * float4(R, 0)).xyz;
+    float3 reflectedWS = (camera.inverseView * float4(R, 0.0)).xyz;
 
     half3 diffuseIndirectLuminance = CalculateIndirectDiffuse(
         diffuseIrradianceMap,
@@ -128,13 +128,9 @@ fragment FragmentOut fp_main(
 
     FragmentOut result;
 
-    half3 diffuseDirect = baseColor.rgb * lightingResult.diffuse;
-    half3 specularDirect = lightingResult.specular;
-
     result.luminance.rgb =
-        emitted
-        + diffuseDirect
-        + specularDirect
+        emittedLuminance
+        + directLuminance
         + (specularReflectionLuminance + diffuseIndirectLuminance) * occlusion;
     
     result.luminance.a = 1;

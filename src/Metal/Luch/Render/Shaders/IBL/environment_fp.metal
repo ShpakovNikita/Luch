@@ -163,11 +163,11 @@ fragment FragmentOut fp_main(
         roughness *= clamp(metallicRoughnessSample.g, 0.04h, 1.0h);
     #endif
 
-    half3 emitted = half3(material.emissiveFactor);
+    half3 emittedLuminance = half3(material.emissiveFactor);
 
     #if HAS_EMISSIVE_TEXTURE && HAS_TEXCOORD_0
         half4 emissiveSample = emissiveMap.sample(emissiveSampler, texCoord);
-        emitted *= emissiveSample.rgb;
+        emittedLuminance *= emissiveSample.rgb;
     #endif
 
     #if HAS_OCCLUSION_TEXTURE && HAS_TEXCOORD_0
@@ -181,41 +181,41 @@ fragment FragmentOut fp_main(
     constexpr half3 eyePosVS = half3(0); // in view space eye is at origin
     half3 V = normalize(eyePosVS - P);
 
-    half3 F0 = half3(0.04h);
-    // If material is dielectrict, it's reflection coefficient can be approximated by 0.04
-    // Otherwise (for metals), take base color to "tint" reflections
-    F0 = mix(F0, baseColor.rgb, metallic);
+    constexpr half3 dielectricF0 = half3(0.04);
+    constexpr half3 black = 0;
 
-    LightingResult lightingResult;
+    half3 cdiff = mix(baseColor.rgb * (1 - dielectricF0.r), black, metallic);
+    half3 F0 = mix(dielectricF0, baseColor.rgb, metallic);
+
+    half3 directLuminance = 0.0;
 
     for(ushort i = 0; i < lightingParams.lightCount; i++)
     {
         Light light = lights.lights[i];
 
-        LightingResult intermediateResult;
+        half3 intermediateLuminance;
 
         switch(light.type)
         {
         case LightType::LIGHT_DIRECTIONAL:
-            intermediateResult = ApplyDirectionalLight(camera, light, V, N, F0, metallic, roughness);
+            intermediateLuminance = ApplyDirectionalLight(camera, light, V, N, F0, cdiff, metallic, roughness);
             break;
         case LightType::LIGHT_POINT:
-            intermediateResult = ApplyPointlLight(camera, light, V, P, N, F0, metallic, roughness);
+            intermediateLuminance = ApplyPointLight(camera, light, V, P, N, F0, cdiff, metallic, roughness);
             break;
         case LightType::LIGHT_SPOT:
-            intermediateResult = ApplySpotLight(camera, light, V, P, N, F0, metallic, roughness);
+            intermediateLuminance = ApplySpotLight(camera, light, V, P, N, F0, cdiff, metallic, roughness);
             break;
         default:
-            intermediateResult = { NAN, NAN };
+            intermediateLuminance = { NAN, NAN };
         }
 
-        lightingResult.diffuse += intermediateResult.diffuse;
-        lightingResult.specular += intermediateResult.specular;
+        directLuminance += intermediateLuminance;
     }
 
     FragmentOut result;
 
-    result.luminance.rgb = emitted + baseColor.rgb * lightingResult.diffuse + lightingResult.specular;
+    result.luminance.rgb = emittedLuminance + directLuminance;
     result.luminance.a = baseColor.a;
 
     return result;
