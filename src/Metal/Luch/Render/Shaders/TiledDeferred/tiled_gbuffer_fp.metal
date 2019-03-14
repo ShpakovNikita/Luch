@@ -68,7 +68,7 @@ fragment FragmentOut fp_main(
     , sampler baseColorSampler [[sampler(0)]]
 #endif
 #if HAS_METALLIC_ROUGHNESS_TEXTURE
-    , texture2d<half> metallicRoughnessMap [[texture(1)]] // R - metallic, G - roughness, BA unused
+    , texture2d<half> metallicRoughnessMap [[texture(1)]] // B - metallic, G - roughness, RA unused
     , sampler metallicRoughnessSampler [[sampler(1)]]
 #endif
 #if HAS_NORMAL_TEXTURE
@@ -136,12 +136,12 @@ fragment FragmentOut fp_main(
     #endif
 
     half metallic = half(material.metallicFactor);
-    half roughness = half(material.roughnessFactor);
+    half linearRoughness = half(material.roughnessFactor);
 
     #if HAS_METALLIC_ROUGHNESS_TEXTURE && HAS_TEXCOORD_0
         half4 metallicRoughnessSample = metallicRoughnessMap.sample(metallicRoughnessSampler, texCoord);
         metallic *= metallicRoughnessSample.b;
-        roughness *= clamp(metallicRoughnessSample.g, 0.04h, 1.0h);
+        linearRoughness *= clamp(metallicRoughnessSample.g, 0.04h, 1.0h);
     #endif
 
     half3 emissive = half3(material.emissiveFactor);
@@ -164,7 +164,7 @@ fragment FragmentOut fp_main(
     out.gbuffer1.a = metallic;
 
     out.gbuffer2.rgb = emissive.rgb;
-    out.gbuffer2.a = roughness;
+    out.gbuffer2.a = linearRoughness;
 
     out.gbufferDepth = in.positionCS.z;
 

@@ -86,7 +86,7 @@ fragment FragmentOut fp_main(
     , sampler baseColorSampler [[sampler(0)]]
 #endif
 #if HAS_METALLIC_ROUGHNESS_TEXTURE
-    , texture2d<half> metallicRoughnessMap [[texture(1)]] // R - metallic, G - roughness, BA unused
+    , texture2d<half> metallicRoughnessMap [[texture(1)]] // B - metallic, G - roughness, RA unused
     , sampler metallicRoughnessSampler [[sampler(1)]]
 #endif
 #if HAS_NORMAL_TEXTURE
@@ -155,12 +155,12 @@ fragment FragmentOut fp_main(
     #endif
 
     half metallic = half(material.metallicFactor);
-    half roughness = half(material.roughnessFactor);
+    half linearRoughness = half(material.roughnessFactor);
 
     #if HAS_METALLIC_ROUGHNESS_TEXTURE && HAS_TEXCOORD_0
         half4 metallicRoughnessSample = metallicRoughnessMap.sample(metallicRoughnessSampler, texCoord);
         metallic *= metallicRoughnessSample.b;
-        roughness *= clamp(metallicRoughnessSample.g, 0.04h, 1.0h);
+        linearRoughness *= clamp(metallicRoughnessSample.g, 0.04h, 1.0h);
     #endif
 
     half3 emittedLuminance = half3(material.emissiveFactor);
@@ -198,13 +198,13 @@ fragment FragmentOut fp_main(
         switch(light.type)
         {
         case LightType::LIGHT_DIRECTIONAL:
-            intermediateLuminance = ApplyDirectionalLight(camera, light, V, N, F0, cdiff, metallic, roughness);
+            intermediateLuminance = ApplyDirectionalLight(camera, light, V, N, F0, cdiff, metallic, linearRoughness);
             break;
         case LightType::LIGHT_POINT:
-            intermediateLuminance = ApplyPointLight(camera, light, V, P, N, F0, cdiff, metallic, roughness);
+            intermediateLuminance = ApplyPointLight(camera, light, V, P, N, F0, cdiff, metallic, linearRoughness);
             break;
         case LightType::LIGHT_SPOT:
-            intermediateLuminance = ApplySpotLight(camera, light, V, P, N, F0, cdiff, metallic, roughness);
+            intermediateLuminance = ApplySpotLight(camera, light, V, P, N, F0, cdiff, metallic, linearRoughness);
             break;
         default:
             intermediateLuminance = { NAN, NAN };

@@ -26,7 +26,6 @@ half3 CalculateSpecularReflection(
     half3 F0,
     float3 reflectedWS,
     half NdotV,
-    half metallic,
     half linearRoughness)
 {
     if(is_null_texture(specularReflectionCube) || is_null_texture(specularBRDF))

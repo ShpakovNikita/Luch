@@ -60,7 +60,7 @@ fragment FragmentOut fp_main(
 
     half3 N = gbuffer1Sample.rgb;
     half metallic = half(gbuffer1Sample.a);
-    half roughness = half(gbuffer2Sample.a);
+    half linearRoughness = half(gbuffer2Sample.a);
 
     half3 emittedLuminance = gbuffer2Sample.rgb;
 
@@ -90,13 +90,13 @@ fragment FragmentOut fp_main(
         switch(light.type)
         {
         case LightType::LIGHT_DIRECTIONAL:
-            intermediateLuminance = ApplyDirectionalLight(camera, light, V, N, F0, cdiff, metallic, roughness);
+            intermediateLuminance = ApplyDirectionalLight(camera, light, V, N, F0, cdiff, metallic, linearRoughness);
             break;
         case LightType::LIGHT_POINT:
-            intermediateLuminance = ApplyPointLight(camera, light, V, P, N, F0, cdiff, metallic, roughness);
+            intermediateLuminance = ApplyPointLight(camera, light, V, P, N, F0, cdiff, metallic, linearRoughness);
             break;
         case LightType::LIGHT_SPOT:
-            intermediateLuminance = ApplySpotLight(camera, light, V, P, N, F0, cdiff, metallic, roughness);
+            intermediateLuminance = ApplySpotLight(camera, light, V, P, N, F0, cdiff, metallic, linearRoughness);
             break;
         default:
             intermediateLuminance = { NAN, NAN };
@@ -122,8 +122,7 @@ fragment FragmentOut fp_main(
         F0,
         reflectedWS,
         NdotV,
-        metallic,
-        roughness);
+        linearRoughness);
 
     FragmentOut result;
 

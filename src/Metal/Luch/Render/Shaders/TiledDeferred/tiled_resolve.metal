@@ -49,7 +49,7 @@ kernel void tile_main(
 
     half3 N = img.gbuffer1.rgb;
     half metallic = half(img.gbuffer1.a);
-    half roughness = half(img.gbuffer2.a);
+    half linearRoughness = half(img.gbuffer2.a);
 
     half3 emittedLuminance = img.gbuffer2.rgb;
 
@@ -81,13 +81,13 @@ kernel void tile_main(
         switch(light.type)
         {
         case LightType::LIGHT_DIRECTIONAL:
-            intermediateLuminance = ApplyDirectionalLight(camera, light, V, N, F0, cdiff, metallic, roughness);
+            intermediateLuminance = ApplyDirectionalLight(camera, light, V, N, F0, cdiff, metallic, linearRoughness);
             break;
         case LightType::LIGHT_POINT:
-            intermediateLuminance = ApplyPointLight(camera, light, V, P, N, F0, cdiff, metallic, roughness);
+            intermediateLuminance = ApplyPointLight(camera, light, V, P, N, F0, cdiff, metallic, linearRoughness);
             break;
         case LightType::LIGHT_SPOT:
-            intermediateLuminance = ApplySpotLight(camera, light, V, P, N, F0, cdiff, metallic, roughness);
+            intermediateLuminance = ApplySpotLight(camera, light, V, P, N, F0, cdiff, metallic, linearRoughness);
             break;
         default:
             intermediateLuminance = { NAN, NAN };
@@ -113,8 +113,7 @@ kernel void tile_main(
         F0,
         reflectedWS,
         NdotV,
-        metallic,
-        roughness);
+        linearRoughness);
 
     half4 resultLuminance;
 
