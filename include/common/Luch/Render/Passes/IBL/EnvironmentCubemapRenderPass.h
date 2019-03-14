@@ -27,7 +27,7 @@ namespace Luch::Render::Passes::IBL
         static constexpr int32 MaxDescriptorSetCount = 4096;
         static constexpr int32 MaxDescriptorCount = 4096;
     public:
-        static constexpr Format LuminanceFormat = Format::RGBA8Unorm_sRGB;
+        static constexpr Format LuminanceFormat = Format::RGBA16Sfloat;
         static const String RenderPassName;
 
         static ResultValue<bool, UniquePtr<EnvironmentCubemapPersistentContext>> PrepareEnvironmentCubemapPersistentContext(

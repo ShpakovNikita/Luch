@@ -619,7 +619,7 @@ LightProbe ParseLightProbe(const json& j)
     probe.size = ParseOrDefault<glm::ivec2, ParseIVec2>(j, "size", { 0, 0 });
     probe.znear = ParseBuiltin<float32>(j, "znear");
     probe.zfar = ParseBuiltin<float32>(j, "zfar");
-    probe.diffuseIrradiance = ParseBuiltinOrDefault<bool>(j, "diffuseIrradiance", true);
+    probe.diffuseIlluminance = ParseBuiltinOrDefault<bool>(j, "diffuseIlluminance", true);
     probe.specularReflection = ParseBuiltinOrDefault<bool>(j, "specularReflection", true);
     return probe;
 }

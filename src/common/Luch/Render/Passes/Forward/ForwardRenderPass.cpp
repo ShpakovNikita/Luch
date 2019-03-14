@@ -79,9 +79,9 @@ namespace Luch::Render::Passes::Forward
             depthStencilTextureHandle = node->CreateDepthStencilAttachment({ transientContext->outputSize });
         }
 
-        if(transientContext->diffuseIrradianceCubemapHandle)
+        if(transientContext->diffuseIlluminanceCubemapHandle)
         {
-            diffuseIrradianceCubemapHandle = node->ReadsTexture(transientContext->diffuseIrradianceCubemapHandle);
+            diffuseIlluminanceCubemapHandle = node->ReadsTexture(transientContext->diffuseIlluminanceCubemapHandle);
         }
 
         if(transientContext->specularReflectionCubemapHandle && transientContext->specularBRDFTextureHandle)
@@ -263,13 +263,13 @@ namespace Luch::Render::Passes::Forward
         RenderGraphResourceManager* manager,
         DescriptorSet* descriptorSet)
     {
-        if(diffuseIrradianceCubemapHandle)
+        if(diffuseIlluminanceCubemapHandle)
         {
-            auto diffuseIrradianceCubemap = manager->GetTexture(diffuseIrradianceCubemapHandle);
+            auto diffuseIlluminanceCubemap = manager->GetTexture(diffuseIlluminanceCubemapHandle);
 
             transientContext->indirectLightingTexturesDescriptorSet->WriteTexture(
-                persistentContext->indirectLightingResources->diffuseIrradianceCubemapBinding,
-                diffuseIrradianceCubemap);
+                persistentContext->indirectLightingResources->diffuseIlluminanceCubemapBinding,
+                diffuseIlluminanceCubemap);
         }
 
         if(specularReflectionCubemapHandle && specularBRDFTextureHandle)

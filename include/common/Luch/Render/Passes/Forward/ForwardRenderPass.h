@@ -86,7 +86,7 @@ namespace Luch::Render::Passes::Forward
         RenderMutableResource luminanceTextureHandle;
         RenderMutableResource depthStencilTextureHandle;
 
-        RenderResource diffuseIrradianceCubemapHandle;
+        RenderResource diffuseIlluminanceCubemapHandle;
         RenderResource specularReflectionCubemapHandle;
         RenderResource specularBRDFTextureHandle;
 

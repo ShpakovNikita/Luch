@@ -376,7 +376,7 @@ struct LightProbe
     float32 znear = 0.0;
     float32 zfar = 0.0;
     bool specularReflection = true;
-    bool diffuseIrradiance = true;
+    bool diffuseIlluminance = true;
 };
 
 struct RootLightsPunctual

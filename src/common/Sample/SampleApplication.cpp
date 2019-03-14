@@ -113,6 +113,7 @@ bool SampleApplication::Initialize(const Vector<String>& args)
     glTF::glTFParser glTFparser;
 
     String rootDir{ "Data/gltf2/sponza/" };
+    //String rootDir{ "Data/gltf2/helmet/" };
 
     {
         String filename { "Sponza.gltf" };

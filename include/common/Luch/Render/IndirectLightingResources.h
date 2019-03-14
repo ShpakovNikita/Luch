@@ -12,7 +12,7 @@ namespace Luch::Render
 
     struct IndirectLightingResources
     {
-        DescriptorSetBinding diffuseIrradianceCubemapBinding;
+        DescriptorSetBinding diffuseIlluminanceCubemapBinding;
         DescriptorSetBinding specularReflectionCubemapBinding;
         DescriptorSetBinding specularBRDFTextureBinding;
 

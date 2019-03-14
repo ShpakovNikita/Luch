@@ -11,8 +11,8 @@ namespace Luch::SceneV1
     public:
         LightProbe() = default;
 
-        bool HasDiffuseIrradiance() const { return diffuseIrradiance; }
-        void SetHasDiffuseIrradiance(bool value) { diffuseIrradiance = value; }
+        bool HasDiffuseIlluminance() const { return diffuseIlluminance; }
+        void SetHasDiffuseIlluminance(bool value) { diffuseIlluminance = value; }
 
         bool HasSpecularReflection() const { return specularReflection; }
         void SetHasSpecularReflection(bool value) { specularReflection = value; }
@@ -33,7 +33,7 @@ namespace Luch::SceneV1
         void SetName(const String& aName) { name = aName; }
     private:
         bool enabled = true;
-        bool diffuseIrradiance = false;
+        bool diffuseIlluminance = false;
         bool specularReflection = false;
         float32 zNear = 0.0;
         float32 zFar = 0.0;

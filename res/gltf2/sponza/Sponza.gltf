@@ -21,7 +21,7 @@
                 {
                     "size": [128, 128],
                     "specularReflection": true,
-                    "diffuseIrradiance": true,
+                    "diffuseIlluminance": true,
                     "znear": 0.1,
                     "zfar": 50
                 }

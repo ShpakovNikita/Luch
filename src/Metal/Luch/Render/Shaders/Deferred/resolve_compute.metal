@@ -31,8 +31,8 @@ kernel void kernel_main(
     texture2d<half, access::read> gbuffer2 [[ texture(2) ]],
     depth2d<float, access::read> depthBuffer [[ texture(3) ]],
     texture2d<half, access::write> luminance [[ texture(4) ]],
-    texturecube<half> diffuseIrradianceMap [[ texture(5) ]],
-    texturecube<half> specularReflectionMap [[ texture(6) ]],
+    texturecube<half> diffuseIlluminanceCube [[ texture(5) ]],
+    texturecube<half> specularReflectionCube [[ texture(6) ]],
     texture2d<half> specularBRDF [[ texture(7) ]])
 {
     half4 gbuffer0Sample = gbuffer0.read(gid);
@@ -45,84 +45,74 @@ kernel void kernel_main(
 
     half3 N = gbuffer1Sample.rgb;
     half metallic = half(gbuffer1Sample.a);
-    half roughness = half(gbuffer2Sample.a);
+    half linearRoughness = half(gbuffer2Sample.a);
 
-    half3 emitted = gbuffer2Sample.rgb;
+    half3 emittedLuminance = gbuffer2Sample.rgb;
 
-    half3 F0 = half3(0.04h);
-    // If material is dielectrict, it's reflection coefficient can be approximated by 0.04
-    // Otherwise (for metals), take base color to "tint" reflections
-    F0 = mix(F0, baseColor, metallic);
+    constexpr half3 dielectricF0 = half3(0.04);
+    constexpr half3 black = 0;
+
+    half3 cdiff = mix(baseColor.rgb * (1 - dielectricF0.r), black, metallic);
+    half3 F0 = mix(dielectricF0, baseColor.rgb, metallic);
 
     // Reconstruct view-space position
     half2 attachmentSize = half2(depthBuffer.get_width(), depthBuffer.get_height());
     half2 positionSS = half2(gid);
     half2 xyNDC = FragCoordToNDC(positionSS, attachmentSize);
     float4 intermediatePosition = camera.inverseProjection * float4(xyNDC.x, xyNDC.y, depth, 1);
-    float3 P = intermediatePosition.xyz / intermediatePosition.w;
-    constexpr float3 eyePosVS = 0; // in view space eye is at origin
-    half3 V = half3(normalize(eyePosVS - P));
+    half3 P = half3(intermediatePosition.xyz / intermediatePosition.w);
+    constexpr half3 eyePosVS = 0; // in view space eye is at origin
+    half3 V = normalize(eyePosVS - P);
 
-    LightingResult lightingResult;
+    half3 directLuminance = 0.0;
 
     for(ushort i = 0; i < lightingParams.lightCount; i++)
     {
         Light light = lights[i];
 
-        LightingResult intermediateResult;
+        half3 intermediateLuminance;
 
         switch(light.type)
         {
         case LightType::LIGHT_DIRECTIONAL:
-            intermediateResult = ApplyDirectionalLight(camera, light, V, N, F0, metallic, roughness);
+            intermediateLuminance = ApplyDirectionalLight(camera, light, V, N, F0, cdiff, metallic, linearRoughness);
             break;
         case LightType::LIGHT_POINT:
-            intermediateResult = ApplyPointlLight(camera, light, V, half3(P), N, F0, metallic, roughness);
+            intermediateLuminance = ApplyPointLight(camera, light, V, P, N, F0, cdiff, metallic, linearRoughness);
             break;
         case LightType::LIGHT_SPOT:
-            intermediateResult = ApplySpotLight(camera, light, V, half3(P), N, F0, metallic, roughness);
+            intermediateLuminance = ApplySpotLight(camera, light, V, P, N, F0, cdiff, metallic, linearRoughness);
             break;
         default:
-            intermediateResult = { NAN, NAN };
+            intermediateLuminance = { NAN, NAN };
         }
 
-        lightingResult.diffuse += intermediateResult.diffuse;
-        lightingResult.specular += intermediateResult.specular;
+        directLuminance += intermediateLuminance;
     }
 
     float3 R = float3(reflect(-V, N));
-    half NdotV = half(saturate(dot(N, V)));
+    half NdotV = clamp(abs(dot(N, V)), 0.00001h, 1.0h);
 
     // TODO think about non-uniform scale
-    float3 reflectedWS = (camera.inverseView * float4(R, 0)).xyz;
+    float3 reflectedWS = (camera.inverseView * float4(R, 0.0)).xyz;
 
     half3 diffuseIndirectLuminance = CalculateIndirectDiffuse(
-        diffuseIrradianceMap,
+        diffuseIlluminanceCube,
         reflectedWS,
-        baseColor.rgb,
-        metallic);
+        cdiff);
 
     half3 specularReflectionLuminance = CalculateSpecularReflection(
-        specularReflectionMap,
+        specularReflectionCube,
         specularBRDF,
         F0,
         reflectedWS,
         NdotV,
-        metallic,
-        roughness);
+        linearRoughness);
 
-    half3 diffuseDirect = baseColor.rgb * lightingResult.diffuse;
-    half3 specularDirect = lightingResult.specular;
-
-    half4 resultLuminance;
-
-    resultLuminance.rgb =
-        emitted
-        + diffuseDirect
-        + specularDirect
+    half3 resultLuminance =
+        emittedLuminance
+        + directLuminance
         + (specularReflectionLuminance + diffuseIndirectLuminance) * occlusion;
 
-    resultLuminance.a = 1;
-
-    luminance.write(resultLuminance, gid);
+    luminance.write(half4(resultLuminance, 1.0), gid);
 }

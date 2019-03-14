@@ -49,7 +49,7 @@ namespace Luch::Render::Passes::TiledDeferred
         RefPtr<DescriptorSet> cameraBufferDescriptorSet;
         RefPtr<DescriptorSet> lightsBufferDescriptorSet;
 
-        RenderResource diffuseIrradianceCubemapHandle;
+        RenderResource diffuseIlluminanceCubemapHandle;
         RenderResource specularReflectionCubemapHandle;
         RenderResource specularBRDFTextureHandle;
 

@@ -55,7 +55,7 @@ namespace Luch::Render::Passes::Deferred
         RefPtr<DescriptorSet> gbufferTextureDescriptorSet;
         RefPtr<DescriptorSet> lightsBufferDescriptorSet;
 
-        RenderResource diffuseIrradianceCubemapHandle;
+        RenderResource diffuseIlluminanceCubemapHandle;
         RenderResource specularReflectionCubemapHandle;
         RenderResource specularBRDFTextureHandle;
 

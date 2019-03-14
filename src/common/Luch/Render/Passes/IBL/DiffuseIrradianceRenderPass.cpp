@@ -1,5 +1,5 @@
-#include <Luch/Render/Passes/IBL/DiffuseIrradianceRenderPass.h>
-#include <Luch/Render/Passes/IBL/DiffuseIrradianceContext.h>
+#include <Luch/Render/Passes/IBL/DiffuseIlluminanceRenderPass.h>
+#include <Luch/Render/Passes/IBL/DiffuseIlluminanceContext.h>
 #include <Luch/Render/RenderContext.h>
 #include <Luch/Render/RenderUtils.h>
 #include <Luch/Render/SharedBuffer.h>
@@ -33,11 +33,11 @@ namespace Luch::Render::Passes::IBL
 {
     using namespace Graphics;
 
-    const String DiffuseIrradianceRenderPass::RenderPassName{"DiffuseIrradiance"};
+    const String DiffuseIlluminanceRenderPass::RenderPassName{"DiffuseIlluminance"};
 
-    DiffuseIrradianceRenderPass::DiffuseIrradianceRenderPass(
-        DiffuseIrradiancePersistentContext* aPersistentContext,
-        DiffuseIrradianceTransientContext* aTransientContext,
+    DiffuseIlluminanceRenderPass::DiffuseIlluminanceRenderPass(
+        DiffuseIlluminancePersistentContext* aPersistentContext,
+        DiffuseIlluminanceTransientContext* aTransientContext,
         RenderGraphBuilder* builder)
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
@@ -47,17 +47,17 @@ namespace Luch::Render::Passes::IBL
         luminanceCubemapHandle = node->ReadsTexture(transientContext->luminanceCubemapHandle);
 
         TextureCreateInfo textureCreateInfo;
-        textureCreateInfo.format = IrradianceFormat;
+        textureCreateInfo.format = IlluminanceFormat;
         textureCreateInfo.textureType = TextureType::TextureCube;
         textureCreateInfo.width = transientContext->outputSize.width;
         textureCreateInfo.height = transientContext->outputSize.height;
         textureCreateInfo.usage = TextureUsageFlags::ShaderRead | TextureUsageFlags::ShaderWrite;
-        irradianceCubemapHandle = node->CreateTexture(textureCreateInfo);
+        illuminanceCubemapHandle = node->CreateTexture(textureCreateInfo);
     }
 
-    DiffuseIrradianceRenderPass::~DiffuseIrradianceRenderPass() = default;
+    DiffuseIlluminanceRenderPass::~DiffuseIlluminanceRenderPass() = default;
 
-    void DiffuseIrradianceRenderPass::ExecuteComputePass(
+    void DiffuseIlluminanceRenderPass::ExecuteComputePass(
         RenderGraphResourceManager* manager,
         ComputeCommandList* cmdList)
     {
@@ -67,11 +67,11 @@ namespace Luch::Render::Passes::IBL
             persistentContext->luminanceCubemapBinding,
             luminanceCubemap);
 
-        auto irradianceCubemap = manager->GetTexture(irradianceCubemapHandle);
+        auto illuminanceCubemap = manager->GetTexture(illuminanceCubemapHandle);
 
         transientContext->cubemapDescriptorSet->WriteTexture(
-            persistentContext->irradianceCubemapBinding,
-            irradianceCubemap);
+            persistentContext->illuminanceCubemapBinding,
+            illuminanceCubemap);
 
         transientContext->cubemapDescriptorSet->Update();
 
@@ -87,7 +87,7 @@ namespace Luch::Render::Passes::IBL
         cmdList->DispatchThreadgroups({threadgroupColumns, threadgroupRows, 6}, ThreadsPerThreadgroup);
     }
 
-    RefPtr<ComputePipelineState> DiffuseIrradianceRenderPass::CreateDiffuseIrradiancePipelineState(DiffuseIrradiancePersistentContext* context)
+    RefPtr<ComputePipelineState> DiffuseIlluminanceRenderPass::CreateDiffuseIlluminancePipelineState(DiffuseIlluminancePersistentContext* context)
     {
         ComputePipelineStateCreateInfo ci;
 
@@ -105,9 +105,9 @@ namespace Luch::Render::Passes::IBL
         return createdPipeline;
     }
 
-    ResultValue<bool, UniquePtr<DiffuseIrradiancePersistentContext>> DiffuseIrradianceRenderPass::PrepareDiffuseIrradiancePersistentContext(GraphicsDevice* device)
+    ResultValue<bool, UniquePtr<DiffuseIlluminancePersistentContext>> DiffuseIlluminanceRenderPass::PrepareDiffuseIlluminancePersistentContext(GraphicsDevice* device)
     {
-        auto context = MakeUnique<DiffuseIrradiancePersistentContext>();
+        auto context = MakeUnique<DiffuseIlluminancePersistentContext>();
         context->device = device;
 
         {
@@ -115,7 +115,7 @@ namespace Luch::Render::Passes::IBL
                 device,
                 "Data/Shaders/",
                 "Data/Shaders/IBL/",
-                "diffuse_irradiance_compute",
+                "diffuse_illuminance_compute",
                 {});
 
             if (!kernelShaderLibraryCreated)
@@ -139,14 +139,14 @@ namespace Luch::Render::Passes::IBL
 
         {
             context->luminanceCubemapBinding.OfType(ResourceType::Texture);
-            context->irradianceCubemapBinding.OfType(ResourceType::Texture);
+            context->illuminanceCubemapBinding.OfType(ResourceType::Texture);
 
             DescriptorSetLayoutCreateInfo cubemapDescriptorSetLayoutCreateInfo;
             cubemapDescriptorSetLayoutCreateInfo
                 .OfType(DescriptorSetType::Texture)
                 .WithNBindings(2)
                 .AddBinding(&context->luminanceCubemapBinding)
-                .AddBinding(&context->irradianceCubemapBinding);
+                .AddBinding(&context->illuminanceCubemapBinding);
 
             auto[createCubemapDescriptorSetLayoutResult, createdCubemapDescriptorSetLayout] = context->device->CreateDescriptorSetLayout(cubemapDescriptorSetLayoutCreateInfo);
             if (createCubemapDescriptorSetLayoutResult != GraphicsResult::Success)
@@ -174,16 +174,16 @@ namespace Luch::Render::Passes::IBL
         }
 
         // TODO result
-        context->pipelineState = CreateDiffuseIrradiancePipelineState(context.get());
+        context->pipelineState = CreateDiffuseIlluminancePipelineState(context.get());
 
         return { true, std::move(context) };
     }
 
-    ResultValue<bool, UniquePtr<DiffuseIrradianceTransientContext>> DiffuseIrradianceRenderPass::PrepareDiffuseIrradianceTransientContext(
-        DiffuseIrradiancePersistentContext* persistentContext,
+    ResultValue<bool, UniquePtr<DiffuseIlluminanceTransientContext>> DiffuseIlluminanceRenderPass::PrepareDiffuseIlluminanceTransientContext(
+        DiffuseIlluminancePersistentContext* persistentContext,
         RefPtr<DescriptorPool> descriptorPool)
     {
-        auto context = MakeUnique<DiffuseIrradianceTransientContext>();
+        auto context = MakeUnique<DiffuseIlluminanceTransientContext>();
         context->descriptorPool = descriptorPool;
 
         {

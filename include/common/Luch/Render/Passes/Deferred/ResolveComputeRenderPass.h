@@ -73,7 +73,7 @@ namespace Luch::Render::Passes::Deferred
         ResolveComputeTransientContext* transientContext = nullptr;
 
         GBufferReadOnly gbuffer;
-        RenderResource diffuseIrradianceCubemapHandle;
+        RenderResource diffuseIlluminanceCubemapHandle;
         RenderResource specularReflectionCubemapHandle;
         RenderResource specularBRDFTextureHandle;
 

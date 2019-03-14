@@ -7,56 +7,90 @@
 
 using namespace metal;
 
-struct LightingResult
-{
-    half3 diffuse = 0;
-    half3 specular = 0;
-};
+// roughness is not the same as linear roughness
+// roughness is "alpha"
 
-half D_GGX(half NdotH, half roughness)
+half D_GGX(half NdotH, half a2)
 {
-    half alpha = roughness * roughness;
-    half alpha2 = alpha * alpha;
-    half den = NdotH * NdotH * (alpha2 - 1) + 1;
-    return alpha2 / (M_PI_H * den * den);
+    half den = (NdotH * a2 - NdotH) * NdotH + 1;
+    return a2 / (M_PI_H * den * den) ;
 }
 
-// TODO this is wrong
-half G_CookTorranceGGX(half VdotH, half NdotH, half NdotV, half NdotL)
+half V_SmithGGXCorrelated(half NdotL, half NdotV, half a2)
 {
-    half intermediate = min(NdotV, NdotL);
-
-    half g = 2 * NdotH * intermediate / (VdotH + 0.00001h);
-
-    return saturate(g);
+    half Lambda_GGXV = NdotL * sqrt((-NdotV * a2 + NdotV) * NdotV + a2);
+    half Lambda_GGXL = NdotV * sqrt((-NdotL * a2 + NdotL) * NdotL + a2);
+    return 0.5f / (Lambda_GGXV + Lambda_GGXL);
 }
 
-half3 F_Schlick(half cosTheta, half3 F0)
+half G_SmithGGXCorrelated(half NdotL, half NdotV, half a2)
 {
-    return F0 + (1 - F0) * pow(1 - cosTheta, 5);
+    half NdotL2 = NdotL * NdotL;
+    half NdotV2 = NdotV * NdotV;
+    half lambdaV = (-1 + sqrt(a2 * (1 - NdotL2) / NdotL2 + 1)) * 0.5;
+    half lambdaL = (-1 + sqrt(a2 * (1 - NdotV2) / NdotV2 + 1)) * 0.5;
+    return 1 / (1 + lambdaV + lambdaL);
 }
 
-half3 DiffuseLighting(half3 color, half3 L, half3 N)
+half3 F_Schlick(half3 F0, half F90, half cosTheta)
 {
-    half NdotL = max(half(dot(N, L)), 0.0h);
-    return color * NdotL;
+    return F0 + (half3(F90) - F0) * pow(1 - cosTheta, 5);
 }
 
-half3 SpecularLighting(half3 color, half3 V, half3 L, half3 N, half3 F, half roughness)
+half3 F_Schlick(half3 F0, half cosTheta)
+{
+    return F_Schlick(F0, 1.0, cosTheta);
+}
+
+half Fr_DisneyDiffuse(half NdotV, half NdotL, half LdotH, half linearRoughness)
+{
+    half energyBias = mix(0.0h, 0.5h, linearRoughness);
+    half energyFactor = mix(1.0h, 1.0h / 1.51h, linearRoughness);
+    half Fd90 = energyBias + 2 * LdotH * LdotH * linearRoughness;
+    half3 F0 = half3(1);
+    half lightScatter = F_Schlick(F0, Fd90, NdotL).r;
+    half viewScatter = F_Schlick(F0, Fd90, NdotV).r;
+
+    return lightScatter * viewScatter * energyFactor / M_PI_H;
+}
+
+half Fr_Lambert()
+{
+    return 1 / M_PI_H;
+}
+
+half3 Specular(half3 F0, half NdotH, half NdotL, half NdotV, half LdotH, half linearRoughness)
+{
+    half a = linearRoughness * linearRoughness;
+    half a2 = a * a;
+    half D = D_GGX(NdotH, a2);
+    half V = V_SmithGGXCorrelated(NdotL, NdotV, a2);
+    half3 F = F_Schlick(F0, LdotH);
+
+    return (D * V) * F;
+}
+
+half3 Luminance(
+    half3 F0,
+    half3 cdiff,
+    half3 V,
+    half3 L,
+    half3 N,
+    half metallic,
+    half linearRoughness)
 {
     half3 H = normalize(V + L);
 
-    half VdotH = saturate(dot(V, H));
-    half NdotV = saturate(dot(N, V));
+    half NdotV = clamp(abs(dot(N, V)),  0.00001h, 1.0h);
+    half LdotH = saturate(dot(L, H));
     half NdotH = saturate(dot(N, H));
     half NdotL = saturate(dot(N, L));
 
-    half den = 4 * NdotV * NdotL + 0.001;
-    half D = D_GGX(NdotH, roughness);
-    half G = G_CookTorranceGGX(VdotH, NdotH, NdotV, NdotL);
-    half3 spec = D * F * G / den;
+    //half Fd = Fr_DisneyDiffuse(NdotV, NdotL, LdotH, linearRoughness);
+    half Fd = Fr_Lambert();
+    half3 specular = Specular(F0, NdotH, NdotL, NdotV, LdotH, linearRoughness);
 
-    return color * spec;
+    return (Fd * cdiff + specular) * NdotL;
 }
 
 half Attenuation(Light light, half d)
@@ -68,32 +102,26 @@ half Attenuation(Light light, half d)
     return max(min(1 - d4/r4, 1.0h), 0.0h) / (d2 + 0.0001h);
 }
 
-LightingResult ApplyDirectionalLight(
+half3 ApplyDirectionalLight(
     CameraUniform camera,
     Light light,
     half3 V,
     half3 N,
     half3 F0,
+    half3 cdiff,
     half metallic,
-    half roughness)
+    half linearRoughness)
 {
-    LightingResult result;
-
-    half3 color = half3(light.color.xyz);
+    half3 lightColor = half3(light.color.rgb);
     half3 directionVS = half3((camera.view * light.directionWS).xyz);
     half3 L = directionVS.xyz;
-    half NdotV = saturate(dot(N, V));
 
-    half3 F = F_Schlick(NdotV, F0);
-    half3 kD = (1 - metallic);
+    half3 luminance = Luminance(F0, cdiff, V, L, N, metallic, linearRoughness);
 
-    result.diffuse = kD * DiffuseLighting(color, L, N) * light.intensity;
-    result.specular = SpecularLighting(color, V, L, N, F, roughness) * light.intensity;
-
-    return result;
+    return luminance * lightColor * light.intensity;
 }
 
-LightingResult ApplyPointlLightImpl(
+half3 ApplyPointLightImpl(
     Light light,
     half3 L,
     half dist,
@@ -101,42 +129,37 @@ LightingResult ApplyPointlLightImpl(
     half3 P,
     half3 N,
     half3 F0,
+    half3 cdiff,
     half metallic,
-    half roughness)
+    half linearRoughness)
 {
-    LightingResult result;
-
-    half3 color = half3(light.color.xyz);
+    half3 lightColor = half3(light.color.xyz);
     half attenuation = Attenuation(light, dist);
 
-    half NdotV = saturate(dot(N, V));
-
-    half3 F = F_Schlick(NdotV, F0);
-    half3 kD = (1 - metallic);
     half intensity = half(light.intensity) * attenuation;
 
-    result.diffuse = kD * DiffuseLighting(color, L, N) * intensity;
-    result.specular = SpecularLighting(color, V, L, N, F, roughness) * intensity;
+    half3 luminance = Luminance(F0, cdiff, V, L, N, metallic, linearRoughness);
 
-    return result;
+    return luminance * lightColor * intensity;
 }
 
-LightingResult ApplyPointlLight(
+half3 ApplyPointLight(
     CameraUniform camera,
     Light light,
     half3 V,
     half3 P,
     half3 N,
     half3 F0,
+    half3 cdiff,
     half metallic,
-    half roughness)
+    half linearRoughness)
 {
     half3 positionVS = half3((camera.view * light.positionWS).xyz);
     half3 L = positionVS.xyz - P;
     half dist = length(L);
     L = L / dist;
 
-    return ApplyPointlLightImpl(light, L, dist, V, P, N, F0, metallic, roughness);
+    return ApplyPointLightImpl(light, L, dist, V, P, N, F0, cdiff, metallic, linearRoughness);
 }
 
 half SpotCone(half innerConeAngle, half outerConeAngle, half3 directionVS, half3 L)
@@ -148,29 +171,25 @@ half SpotCone(half innerConeAngle, half outerConeAngle, half3 directionVS, half3
     return angularAttenuation * angularAttenuation;
 }
 
-LightingResult ApplySpotLight(
+half3 ApplySpotLight(
     CameraUniform camera,
     Light light,
     half3 V,
     half3 P,
     half3 N,
     half3 F0,
+    half3 cdiff,
     half metallic,
-    half roughness)
+    half linearRoughness)
 {
-    LightingResult result;
-
     half3 positionVS = half3((camera.view * light.positionWS).xyz);
     half3 directionVS = half3((camera.view * light.directionWS).xyz);
     half3 L = positionVS - P;
     half dist = length(L);
     L = L / dist;
 
-    LightingResult pointLighting = ApplyPointlLightImpl(light, L, dist, V, P, N, F0, metallic, roughness);
+    half3 pointLighting = ApplyPointLightImpl(light, L, dist, V, P, N, F0, cdiff, metallic, linearRoughness);
     half spotIntensity = SpotCone(light.innerConeAngle, light.outerConeAngle, directionVS, L);
 
-    result.diffuse = pointLighting.diffuse * spotIntensity;
-    result.specular = pointLighting.specular * spotIntensity;
-
-    return result;
+    return pointLighting * spotIntensity;
 }

@@ -796,7 +796,7 @@ namespace Luch::SceneV1::Loader
     {
         RefPtr<LightProbe> probe = MakeRef<LightProbe>();
         probe->SetName(glTFProbe.name);
-        probe->SetHasDiffuseIrradiance(glTFProbe.diffuseIrradiance);
+        probe->SetHasDiffuseIlluminance(glTFProbe.diffuseIlluminance);
         probe->SetHasSpecularReflection(glTFProbe.specularReflection);
         probe->SetSize({ glTFProbe.size.x, glTFProbe.size.y });
         probe->SetZNear(glTFProbe.znear);
