@@ -16,9 +16,8 @@ float2 Hammersley(uint i, uint sampleCount)
     return float2(float(i) / sampleCount, bits / exp2(32.0));
 }
 
-half3 ImportanceSampleGGXTangent(half2 Xi, half linearRoughness)
+half3 ImportanceSampleGGXTangent(half2 Xi, half a2)
 {
-    half a2 = linearRoughness * linearRoughness;
     half phi = 2 * M_PI_H * Xi.x;
     half cosTheta = sqrt((1 - Xi.y) / (1 + (a2 - 1) * Xi.y));
     half sinTheta = sqrt(1 - cosTheta * cosTheta);
@@ -26,9 +25,9 @@ half3 ImportanceSampleGGXTangent(half2 Xi, half linearRoughness)
     return half3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
 }
 
-half3 ImportanceSampleGGX(half2 Xi, half linearRoughness, half3 N)
+half3 ImportanceSampleGGX(half2 Xi, half a2, half3 N)
 {
-    half3 H = ImportanceSampleGGXTangent(Xi, linearRoughness);
+    half3 H = ImportanceSampleGGXTangent(Xi, a2);
     half3 up = abs(N.z) < 0.999 ? half3(0, 0, 1) : half3(1, 0, 0);
     // Workaround, for some reason normalize(half3(1.0, 0.0, 0.0)) returns (inf, 0, 0)
     half3 tangentX = half3(normalize(float3(cross(up, N))));

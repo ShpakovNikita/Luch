@@ -489,7 +489,7 @@ namespace Luch::Render
         }
 
         transientContext->descriptorPool = descriptorPool;
-        transientContext->outputSize = { 64, 64 };
+        transientContext->outputSize = { 128, 128 };
         transientContext->sharedBuffer = sharedBuffer;
 
         specularBRDFTransientContext = std::move(transientContext);

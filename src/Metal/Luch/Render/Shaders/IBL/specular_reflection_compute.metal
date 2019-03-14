@@ -15,7 +15,7 @@ struct SpecularReflectionParams
 
 half3 PrefilteredSpecularReflection(
     texturecube<half> luminanceMap,
-    half roughness,
+    half linearRoughness,
     half3 N,
     ushort sampleCount)
 {
@@ -26,10 +26,14 @@ half3 PrefilteredSpecularReflection(
     half3 luminance = 0;
     half totalWeight = 0;
 
+    half a = linearRoughness * linearRoughness;
+    half a2 = a  * a;
+
     for(ushort i = 0; i < sampleCount; i++)
     {
+
         half2 Xi = half2(Hammersley(i, sampleCount));
-        half3 H = ImportanceSampleGGX(Xi, roughness, N);
+        half3 H = ImportanceSampleGGX(Xi, a2, N);
         half3 L = reflect(-V, H);
 
         half NdotL = saturate(dot(N, L));
@@ -54,16 +58,17 @@ kernel void specular_reflection_kernel(
     constexpr sampler s;
     ushort face = gid.z;
 
-    constexpr ushort sampleCount = 32;
+    constexpr ushort sampleCount = 64;
 
     ushort mipLevel = params.mipLevel;
     ushort mipLevelCount = params.mipLevelCount;
-    half roughness = mipLevel / (mipLevelCount - 1);
+    half linearRoughnessSqrt = mipLevel / (mipLevelCount - 1);
+    half linearRoughness = linearRoughnessSqrt * linearRoughnessSqrt;
     half2 invOutputSize = half2(1.0h / specularReflectionMap.get_width(), 1.0h / specularReflectionMap.get_height());
 
     half3 N = CubemapDirection(gid.xy, face, invOutputSize);
 
-    half3 luminance = PrefilteredSpecularReflection(luminanceMap, roughness, N, sampleCount);
+    half3 luminance = PrefilteredSpecularReflection(luminanceMap, linearRoughness, N, sampleCount);
 
     specularReflectionMap.write(half4(luminance, 1.0), gid.xy, face);
 }

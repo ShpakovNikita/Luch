@@ -1,6 +1,7 @@
 {
     "extensionsUsed": [
-        "KHR_lights_punctual"
+        "KHR_lights_punctual",
+        "EXT_lights_probe"
     ],
     "extensions": {
         "KHR_lights_punctual": {
@@ -10,6 +11,17 @@
                     "intensity": 30,
                     "type": "point",
                     "range": 30
+                }
+            ]
+        },
+        "EXT_lights_probe": {
+            "probes": [
+                {
+                    "size": [128, 128],
+                    "specularReflection": false,
+                    "diffuseIrradiance": false,
+                    "znear": 1,
+                    "zfar": 50
                 }
             ]
         }
@@ -201,6 +213,18 @@
                     "light": 0
                 }
             }
+        },
+        {
+            "translation": [
+                0,
+                0,
+                0
+            ],
+            "extensions": {
+                "EXT_lights_probe": {
+                    "probe": 0
+                }
+            }
         }
     ],
     "samplers" : [
@@ -221,7 +245,7 @@
         {
             "name" : "Scene",
             "nodes" : [
-                0, 1, 2
+                0, 1, 2, 3
             ]
         }
     ],

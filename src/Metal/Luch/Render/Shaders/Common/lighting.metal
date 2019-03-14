@@ -25,8 +25,11 @@ half V_SmithGGXCorrelated(half NdotL, half NdotV, half a2)
 
 half G_SmithGGXCorrelated(half NdotL, half NdotV, half a2)
 {
-    half Vis = V_SmithGGXCorrelated(NdotL, NdotV, a2);
-    return Vis * (4.0f * NdotL * NdotV);
+    half NdotL2 = NdotL * NdotL;
+    half NdotV2 = NdotV * NdotV;
+    half lambdaV = (-1 + sqrt(a2 * (1 - NdotL2) / NdotL2 + 1)) * 0.5;
+    half lambdaL = (-1 + sqrt(a2 * (1 - NdotV2) / NdotV2 + 1)) * 0.5;
+    return 1 / (1 + lambdaV + lambdaL);
 }
 
 half3 F_Schlick(half3 F0, half F90, half cosTheta)
@@ -51,9 +54,15 @@ half Fr_DisneyDiffuse(half NdotV, half NdotL, half LdotH, half linearRoughness)
     return lightScatter * viewScatter * energyFactor / M_PI_H;
 }
 
+half Fr_Lambert()
+{
+    return 1 / M_PI_H;
+}
+
 half3 Specular(half3 F0, half NdotH, half NdotL, half NdotV, half LdotH, half linearRoughness)
 {
-    half a2 = linearRoughness * linearRoughness;
+    half a = linearRoughness * linearRoughness;
+    half a2 = a * a;
     half D = D_GGX(NdotH, a2);
     half V = V_SmithGGXCorrelated(NdotL, NdotV, a2);
     half3 F = F_Schlick(F0, LdotH);
@@ -72,12 +81,13 @@ half3 Luminance(
 {
     half3 H = normalize(V + L);
 
+    half NdotV = clamp(abs(dot(N, V)),  0.00001h, 1.0h);
     half LdotH = saturate(dot(L, H));
-    half NdotV = saturate(dot(N, V));
     half NdotH = saturate(dot(N, H));
     half NdotL = saturate(dot(N, L));
 
-    half Fd = Fr_DisneyDiffuse(NdotV, NdotL, LdotH, linearRoughness);
+    //half Fd = Fr_DisneyDiffuse(NdotV, NdotL, LdotH, linearRoughness);
+    half Fd = Fr_Lambert();
     half3 specular = Specular(F0, NdotH, NdotL, NdotV, LdotH, linearRoughness);
 
     return (Fd * cdiff + specular) * NdotL;

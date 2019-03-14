@@ -217,7 +217,7 @@ fragment FragmentOut fp_main(
     }
 
     float3 R = float3(reflect(-V, N));
-    half NdotV = half(saturate(dot(N, V)));
+    half NdotV = clamp(abs(dot(N, V)), 0.00001h, 1.0h);
 
     // TODO think about non-uniform scale
     float3 reflectedWS = (camera.inverseView * float4(R, 0.0)).xyz;

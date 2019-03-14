@@ -27,7 +27,7 @@ namespace Luch::Render::Passes::IBL
         static constexpr int32 MaxDescriptorSetCount = 4096;
         static constexpr int32 MaxDescriptorCount = 4096;
         static constexpr Size3i ThreadsPerThreadgroup = { 16, 16, 1 };
-        static constexpr Format SpecularReflectionFormat = Format::RGBA8Unorm;
+        static constexpr Format SpecularReflectionFormat = Format::RGBA16Sfloat;
         static constexpr Format BRDFFormat = Format::RGBA16Sfloat;
     public:
         static const String RenderPassName;
