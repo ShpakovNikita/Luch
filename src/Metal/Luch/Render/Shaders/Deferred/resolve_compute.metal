@@ -31,8 +31,8 @@ kernel void kernel_main(
     texture2d<half, access::read> gbuffer2 [[ texture(2) ]],
     depth2d<float, access::read> depthBuffer [[ texture(3) ]],
     texture2d<half, access::write> luminance [[ texture(4) ]],
-    texturecube<half> diffuseIrradianceMap [[ texture(5) ]],
-    texturecube<half> specularReflectionMap [[ texture(6) ]],
+    texturecube<half> diffuseIlluminanceCube [[ texture(5) ]],
+    texturecube<half> specularReflectionCube [[ texture(6) ]],
     texture2d<half> specularBRDF [[ texture(7) ]])
 {
     half4 gbuffer0Sample = gbuffer0.read(gid);
@@ -97,13 +97,12 @@ kernel void kernel_main(
     float3 reflectedWS = (camera.inverseView * float4(R, 0.0)).xyz;
 
     half3 diffuseIndirectLuminance = CalculateIndirectDiffuse(
-        diffuseIrradianceMap,
+        diffuseIlluminanceCube,
         reflectedWS,
-        baseColor.rgb,
-        metallic);
+        cdiff);
 
     half3 specularReflectionLuminance = CalculateSpecularReflection(
-        specularReflectionMap,
+        specularReflectionCube,
         specularBRDF,
         F0,
         reflectedWS,

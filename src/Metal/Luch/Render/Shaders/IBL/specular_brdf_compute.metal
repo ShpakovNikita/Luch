@@ -19,38 +19,59 @@ half2 ApproximateBRDF(half roughness, half NdotV)
     // return vec2(1.0, pow(1.0 - max(roughness, NoV), 3.0));
 }
 
-// TODO Disney BRDF
-half2 IntegrateBRDF(half linearRoughness, half NdotV, ushort sampleCount)
+half3 IntegrateBRDF(half linearRoughness, half NdotV, ushort sampleCount)
 {
     constexpr half minRoughness = 0.001;
 
     half3 V = half3(sqrt(1 - NdotV * NdotV), 0, NdotV);
     half3 N = half3(0, 0, 1);
 
-    half2 result = 0;
+    half3 result = 0;
 
     half a = max(linearRoughness * linearRoughness, minRoughness);
     half a2 = a  * a;
 
+    half clampedNdotV = max(NdotV, 0.000001h);
+
     for(ushort i = 0; i < sampleCount; i++)
     {
         half2 Xi = half2(Hammersley(i, sampleCount));
-        half3 H = ImportanceSampleGGX(Xi, a2, N);
-        half3 L = reflect(-V, H);
 
-        half NdotL = saturate(dot(N, L));
-        half NdotH = saturate(dot(N, H));
-        half VdotH = saturate(dot(V, H));
-        half NdotV = clamp(abs(dot(N, V)), 0.000001h, 1.0h);
-
-        if(NdotL > 0)
+        // specular term
         {
-            half G = G_SmithGGXCorrelated(NdotL, NdotV, a2);
-            half Gv = G * VdotH / (NdotV * NdotH);
-            half Fc = pow(1 - VdotH, 5);
-            result.x += Gv * (1 - Fc);
-            result.y += Gv * Fc;
+            half3 H = ImportanceSampleGGX(Xi, a2, N);
+            half3 L = reflect(-V, H);
+
+            half NdotL = saturate(dot(N, L));
+            half NdotH = saturate(dot(N, H));
+            half VdotH = saturate(dot(V, H));
+
+            if(NdotL > 0)
+            {
+                half G = G_SmithGGXCorrelated(NdotL, clampedNdotV, a2);
+                half Gv = G * VdotH / (clampedNdotV * NdotH);
+                half Fc = pow(1 - VdotH, 5);
+                result.x += Gv * (1 - Fc);
+                result.y += Gv * Fc;
+            }
         }
+
+        // Big todo if I wanna use some complex diffuse term
+        // // Disney diffuse term
+        // {
+        //     half3 L = ImportanceSampleCos(Xi, N);
+
+        //     half NdotL = saturate(dot(N, L));
+
+        //     if(NdotL > 0)
+        //     {
+        //         // TODO optimize, we only need LdotH
+        //         half3 H = normalize(V + L);
+        //         half NdotV = saturate(dot(N, V));
+        //         half LdotH = saturate(dot(L, H));
+        //         result.z += Fr_DisneyDiffuse(NdotV, NdotL, LdotH, linearRoughness) * M_PI_H;
+        //     }
+        // }
     }
 
     return result / sampleCount;
@@ -64,7 +85,7 @@ kernel void brdf_kernel(
     half NdotV = half(gid.x) / brdfTexture.get_width();
     half linearRoughness = half(gid.y) / brdfTexture.get_height();
 
-    half2 dfg = IntegrateBRDF(linearRoughness, NdotV, sampleCount);
+    half3 dfg = IntegrateBRDF(linearRoughness, NdotV, sampleCount);
 
-    brdfTexture.write(half4(dfg, 0, 0), gid);
+    brdfTexture.write(half4(dfg, 0), gid);
 }

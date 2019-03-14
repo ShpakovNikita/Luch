@@ -14,7 +14,7 @@ namespace Luch::Render::Passes::IBL
 {
     using namespace Graphics;
 
-    struct DiffuseIrradiancePersistentContext
+    struct DiffuseIlluminancePersistentContext
     {
         GraphicsDevice* device = nullptr;
 
@@ -22,14 +22,14 @@ namespace Luch::Render::Passes::IBL
         RefPtr<PipelineLayout> pipelineLayout;
 
         DescriptorSetBinding luminanceCubemapBinding;
-        DescriptorSetBinding irradianceCubemapBinding;
+        DescriptorSetBinding illuminanceCubemapBinding;
 
         RefPtr<DescriptorSetLayout> cubemapDescriptorSetLayout;
 
         RefPtr<ShaderProgram> kernelShader;
     };
 
-    struct DiffuseIrradianceTransientContext
+    struct DiffuseIlluminanceTransientContext
     {
         SceneV1::Scene* scene = nullptr;
         RefPtr<DescriptorPool> descriptorPool;

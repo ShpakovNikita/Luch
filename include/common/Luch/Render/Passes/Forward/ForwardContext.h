@@ -51,7 +51,7 @@ namespace Luch::Render::Passes::Forward
 
         RefPtr<DescriptorSet> lightsBufferDescriptorSet;
 
-        RenderResource diffuseIrradianceCubemapHandle;
+        RenderResource diffuseIlluminanceCubemapHandle;
         RenderResource specularReflectionCubemapHandle;
         RenderResource specularBRDFTextureHandle;
 

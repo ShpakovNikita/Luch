@@ -88,7 +88,7 @@ namespace Luch::Render
         tonemapTransientContext.reset();
         swapchainTexture.Release();
 
-        diffuseIrradianceCubemapHandle = nullptr;
+        diffuseIlluminanceCubemapHandle = nullptr;
         specularReflectionCubemapHandle = nullptr;
         specularBRDFTextureHandle = nullptr;
     }
@@ -352,7 +352,7 @@ namespace Luch::Render
 
         IBLRequest iblRequest;
         iblRequest.position = lightProbeNode->GetWorldTransform() * Vec4{ 0, 0, 0, 1 };
-        iblRequest.probeDiffuseIrradiance = lightProbe->HasDiffuseIrradiance();
+        iblRequest.probeDiffuseIlluminance = lightProbe->HasDiffuseIlluminance();
         iblRequest.probeSpecularReflection = lightProbe->HasSpecularReflection();
         iblRequest.computeSpecularBRDF = true;
         iblRequest.size = lightProbe->GetSize();
@@ -381,7 +381,7 @@ namespace Luch::Render
             return false;
         }
 
-        diffuseIrradianceCubemap = probe.diffuseIrradianceCubemap;
+        diffuseIlluminanceCubemap = probe.diffuseIlluminanceCubemap;
         specularReflectionCubemap = probe.specularReflectionCubemap;
         specularBRDFTexture = probe.specularBRDFTexture;
 
@@ -390,7 +390,7 @@ namespace Luch::Render
 
     void SceneRenderer::ResetIndirectLighting()
     {
-        diffuseIrradianceCubemap = nullptr;
+        diffuseIlluminanceCubemap = nullptr;
         specularReflectionCubemap = nullptr;
         specularBRDFTexture = nullptr;
     }
@@ -429,7 +429,7 @@ namespace Luch::Render
 
         if(config.useDiffuseGlobalIllumination)
         {
-            frame.diffuseIrradianceCubemapHandle = frame.builder->GetResourceManager()->ImportTexture(diffuseIrradianceCubemap);
+            frame.diffuseIlluminanceCubemapHandle = frame.builder->GetResourceManager()->ImportTexture(diffuseIlluminanceCubemap);
         }
 
         if(config.useSpecularGlobalIllumination)
@@ -702,7 +702,7 @@ namespace Luch::Render
 
         if(config.useDiffuseGlobalIllumination)
         {
-            forwardTransientContext->diffuseIrradianceCubemapHandle = frame.diffuseIrradianceCubemapHandle;
+            forwardTransientContext->diffuseIlluminanceCubemapHandle = frame.diffuseIlluminanceCubemapHandle;
         }
 
         if(config.useSpecularGlobalIllumination)
@@ -778,7 +778,7 @@ namespace Luch::Render
 
             if(config.useDiffuseGlobalIllumination)
             {
-                transientContext->diffuseIrradianceCubemapHandle = frame.diffuseIrradianceCubemapHandle;
+                transientContext->diffuseIlluminanceCubemapHandle = frame.diffuseIlluminanceCubemapHandle;
             }
 
             if(config.useSpecularGlobalIllumination)
@@ -813,7 +813,7 @@ namespace Luch::Render
 
             if(config.useDiffuseGlobalIllumination)
             {
-                transientContext->diffuseIrradianceCubemapHandle = frame.diffuseIrradianceCubemapHandle;
+                transientContext->diffuseIlluminanceCubemapHandle = frame.diffuseIlluminanceCubemapHandle;
             }
 
             if(config.useSpecularGlobalIllumination)
@@ -847,7 +847,7 @@ namespace Luch::Render
 
         if(config.useDiffuseGlobalIllumination)
         {
-            tiledDeferredTransientContext->diffuseIrradianceCubemapHandle = frame.diffuseIrradianceCubemapHandle;
+            tiledDeferredTransientContext->diffuseIlluminanceCubemapHandle = frame.diffuseIlluminanceCubemapHandle;
         }
 
         if(config.useSpecularGlobalIllumination)
@@ -922,7 +922,7 @@ namespace Luch::Render
     {
         auto resources = MakeUnique<IndirectLightingResources>();
 
-        resources->diffuseIrradianceCubemapBinding.OfType(ResourceType::Texture);
+        resources->diffuseIlluminanceCubemapBinding.OfType(ResourceType::Texture);
         resources->specularReflectionCubemapBinding.OfType(ResourceType::Texture);
         resources->specularBRDFTextureBinding.OfType(ResourceType::Texture);
 
@@ -930,7 +930,7 @@ namespace Luch::Render
         createInfo
             .OfType(DescriptorSetType::Texture)
             .WithNBindings(3)
-            .AddBinding(&resources->diffuseIrradianceCubemapBinding)
+            .AddBinding(&resources->diffuseIlluminanceCubemapBinding)
             .AddBinding(&resources->specularReflectionCubemapBinding)
             .AddBinding(&resources->specularBRDFTextureBinding);
 

@@ -14,7 +14,7 @@ struct SpecularReflectionParams
 };
 
 half3 PrefilteredSpecularReflection(
-    texturecube<half> luminanceMap,
+    texturecube<half> luminanceCube,
     half linearRoughness,
     half3 N,
     ushort sampleCount)
@@ -39,7 +39,7 @@ half3 PrefilteredSpecularReflection(
         half NdotL = saturate(dot(N, L));
         if(NdotL > 0)
         {
-            luminance += luminanceMap.sample(luminanceSampler, float3(N)).rgb * NdotL;
+            luminance += luminanceCube.sample(luminanceSampler, float3(N)).rgb * NdotL;
             totalWeight += NdotL;
         }
     }
@@ -51,8 +51,8 @@ half3 PrefilteredSpecularReflection(
 
 kernel void specular_reflection_kernel(
     ushort3 gid [[thread_position_in_grid]],
-    texturecube<half> luminanceMap [[ texture(0) ]],
-    texturecube<half, access::write> specularReflectionMap [[ texture(1) ]],
+    texturecube<half> luminanceCube [[ texture(0) ]],
+    texturecube<half, access::write> specularReflectionCube [[ texture(1) ]],
     constant SpecularReflectionParams& params [[ buffer(0) ]])
 {
     constexpr sampler s;
@@ -64,11 +64,11 @@ kernel void specular_reflection_kernel(
     ushort mipLevelCount = params.mipLevelCount;
     half linearRoughnessSqrt = mipLevel / (mipLevelCount - 1);
     half linearRoughness = linearRoughnessSqrt * linearRoughnessSqrt;
-    half2 invOutputSize = half2(1.0h / specularReflectionMap.get_width(), 1.0h / specularReflectionMap.get_height());
+    half2 invOutputSize = half2(1.0h / specularReflectionCube.get_width(), 1.0h / specularReflectionCube.get_height());
 
     half3 N = CubemapDirection(gid.xy, face, invOutputSize);
 
-    half3 luminance = PrefilteredSpecularReflection(luminanceMap, linearRoughness, N, sampleCount);
+    half3 luminance = PrefilteredSpecularReflection(luminanceCube, linearRoughness, N, sampleCount);
 
-    specularReflectionMap.write(half4(luminance, 1.0), gid.xy, face);
+    specularReflectionCube.write(half4(luminance, 1.0), gid.xy, face);
 }

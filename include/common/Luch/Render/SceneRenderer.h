@@ -51,7 +51,7 @@ namespace Luch::Render
         UniquePtr<Deferred::ResolveComputeTransientContext> resolveComputeTransientContext;
         UniquePtr<TonemapTransientContext> tonemapTransientContext;
 
-        Graph::RenderResource diffuseIrradianceCubemapHandle;
+        Graph::RenderResource diffuseIlluminanceCubemapHandle;
         Graph::RenderResource specularReflectionCubemapHandle;
         Graph::RenderResource specularBRDFTextureHandle;
 
@@ -104,7 +104,7 @@ namespace Luch::Render
 
         UniquePtr<IBLRenderer> iblRenderer;
 
-        RefPtr<Texture> diffuseIrradianceCubemap;
+        RefPtr<Texture> diffuseIlluminanceCubemap;
         RefPtr<Texture> specularReflectionCubemap;
         RefPtr<Texture> specularBRDFTexture;
 

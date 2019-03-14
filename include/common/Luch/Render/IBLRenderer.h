@@ -27,7 +27,7 @@ namespace Luch::Render
         Vec3 position;
         float32 zNear = 0.0;
         float32 zFar = 0.0;
-        bool probeDiffuseIrradiance = false;
+        bool probeDiffuseIlluminance = false;
         bool probeSpecularReflection = false;
         bool computeSpecularBRDF = false;
         Size2i size;
@@ -36,7 +36,7 @@ namespace Luch::Render
     struct IBLResult
     {
         RefPtr<Texture> environmentCubemap;
-        RefPtr<Texture> diffuseIrradianceCubemap;
+        RefPtr<Texture> diffuseIlluminanceCubemap;
         RefPtr<Texture> specularReflectionCubemap;
         RefPtr<Texture> specularBRDFTexture;
     };
@@ -64,7 +64,7 @@ namespace Luch::Render
         ResultValue<bool, IBLResult> EndRender();
     private:
         bool PrepareEnvironmentMapping(const IBLRequest& iblRequest);
-        bool PrepareDiffuseIrradiance(const IBLRequest& iblRequest);
+        bool PrepareDiffuseIlluminance(const IBLRequest& iblRequest);
         bool PrepareSpecularReflection(const IBLRequest& iblRequest);
         bool PrepareSpecularBRDF(const IBLRequest& iblRequest);
 
@@ -73,17 +73,17 @@ namespace Luch::Render
         UniquePtr<Graph::RenderGraphResourcePool> resourcePool;
 
         UniquePtr<IBL::EnvironmentCubemapPersistentContext> environmentCubemapPersistentContext;
-        UniquePtr<IBL::DiffuseIrradiancePersistentContext> diffuseIrradiancePersistentContext;
+        UniquePtr<IBL::DiffuseIlluminancePersistentContext> diffuseIlluminancePersistentContext;
         UniquePtr<IBL::SpecularReflectionPersistentContext> specularReflectionPersistentContext;
         UniquePtr<IBL::SpecularBRDFPersistentContext> specularBRDFPersistentContext;
 
         Array<UniquePtr<IBL::EnvironmentCubemapTransientContext>, 6> environmentCubemapTransientContexts;
-        UniquePtr<IBL::DiffuseIrradianceTransientContext> diffuseIrradianceTransientContext;
+        UniquePtr<IBL::DiffuseIlluminanceTransientContext> diffuseIlluminanceTransientContext;
         UniquePtr<IBL::SpecularReflectionTransientContext> specularReflectionTransientContext;
         UniquePtr<IBL::SpecularBRDFTransientContext> specularBRDFTransientContext;
 
         Array<UniquePtr<IBL::EnvironmentCubemapRenderPass>, 6> environmentCubemapPasses;
-        UniquePtr<IBL::DiffuseIrradianceRenderPass> diffuseIrradiancePass;
+        UniquePtr<IBL::DiffuseIlluminanceRenderPass> diffuseIlluminancePass;
         UniquePtr<IBL::SpecularReflectionRenderPass> specularReflectionPass;
         UniquePtr<IBL::SpecularBRDFRenderPass> specularBRDFPass;
 

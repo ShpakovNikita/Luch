@@ -41,8 +41,8 @@ fragment FragmentOut fp_main(
     texture2d<half> gbuffer1 [[ texture(1 )]],
     texture2d<half> gbuffer2 [[ texture(2) ]],
     depth2d<float> depthBuffer [[ texture(3) ]],
-    texturecube<half> diffuseIrradianceMap [[ texture(4) ]],
-    texturecube<half> specularReflectionMap [[ texture(5) ]],
+    texturecube<half> diffuseIlluminanceCube [[ texture(4) ]],
+    texturecube<half> specularReflectionCube [[ texture(5) ]],
     texture2d<half> specularBRDF [[ texture(6) ]])
 {
     constexpr sampler gbufferSampler(coord::normalized, filter::nearest);
@@ -112,13 +112,12 @@ fragment FragmentOut fp_main(
     float3 reflectedWS = (camera.inverseView * float4(R, 0.0)).xyz;
 
     half3 diffuseIndirectLuminance = CalculateIndirectDiffuse(
-        diffuseIrradianceMap,
+        diffuseIlluminanceCube,
         reflectedWS,
-        baseColor.rgb,
-        metallic);
+        cdiff);
 
     half3 specularReflectionLuminance = CalculateSpecularReflection(
-        specularReflectionMap,
+        specularReflectionCube,
         specularBRDF,
         F0,
         reflectedWS,

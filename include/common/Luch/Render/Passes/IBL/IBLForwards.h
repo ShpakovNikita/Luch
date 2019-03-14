@@ -3,14 +3,14 @@
 namespace Luch::Render::Passes::IBL
 {
     class EnvironmentCubemapRenderPass;
-    class DiffuseIrradianceRenderPass;
+    class DiffuseIlluminanceRenderPass;
     class SpecularBRDFRenderPass;
     class SpecularReflectionRenderPass;
 
     struct EnvironmentCubemapPersistentContext;
     struct EnvironmentCubemapTransientContext;
-    struct DiffuseIrradiancePersistentContext;
-    struct DiffuseIrradianceTransientContext;
+    struct DiffuseIlluminancePersistentContext;
+    struct DiffuseIlluminanceTransientContext;
     struct SpecularBRDFPersistentContext;
     struct SpecularBRDFTransientContext;
     struct SpecularReflectionPersistentContext;

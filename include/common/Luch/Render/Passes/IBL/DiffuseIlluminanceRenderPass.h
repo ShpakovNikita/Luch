@@ -21,41 +21,41 @@ namespace Luch::Render::Passes::IBL
     using namespace Graphics;
     using namespace Graph;
 
-    class DiffuseIrradianceRenderPass : public RenderGraphPass
+    class DiffuseIlluminanceRenderPass : public RenderGraphPass
     {
         static constexpr int32 SharedUniformBufferSize = 1024 * 1024;
         static constexpr int32 MaxDescriptorSetCount = 4096;
         static constexpr int32 MaxDescriptorCount = 4096;
         static constexpr Size3i ThreadsPerThreadgroup = { 16, 16, 1 };
-        static constexpr Format IrradianceFormat = Format::RGBA8Unorm;
+        static constexpr Format IlluminanceFormat = Format::RGBA8Unorm;
     public:
         static const String RenderPassName;
 
-        static ResultValue<bool, UniquePtr<DiffuseIrradiancePersistentContext>> PrepareDiffuseIrradiancePersistentContext(GraphicsDevice* device);
+        static ResultValue<bool, UniquePtr<DiffuseIlluminancePersistentContext>> PrepareDiffuseIlluminancePersistentContext(GraphicsDevice* device);
 
-        static ResultValue<bool, UniquePtr<DiffuseIrradianceTransientContext>> PrepareDiffuseIrradianceTransientContext(
-            DiffuseIrradiancePersistentContext* persistentContext,
+        static ResultValue<bool, UniquePtr<DiffuseIlluminanceTransientContext>> PrepareDiffuseIlluminanceTransientContext(
+            DiffuseIlluminancePersistentContext* persistentContext,
             RefPtr<DescriptorPool> descriptorPool);
 
-        DiffuseIrradianceRenderPass(
-            DiffuseIrradiancePersistentContext* persistentContext,
-            DiffuseIrradianceTransientContext* transientContext,
+        DiffuseIlluminanceRenderPass(
+            DiffuseIlluminancePersistentContext* persistentContext,
+            DiffuseIlluminanceTransientContext* transientContext,
             RenderGraphBuilder* builder);
 
-        ~DiffuseIrradianceRenderPass();
+        ~DiffuseIlluminanceRenderPass();
 
-        RenderMutableResource GetIrradianceCubemapHandle() { return irradianceCubemapHandle; }
+        RenderMutableResource GetIlluminanceCubemapHandle() { return illuminanceCubemapHandle; }
 
         void ExecuteComputePass(
             RenderGraphResourceManager* manager,
             ComputeCommandList* commandList) override;
     private:
-        static RefPtr<ComputePipelineState> CreateDiffuseIrradiancePipelineState(DiffuseIrradiancePersistentContext* context);
+        static RefPtr<ComputePipelineState> CreateDiffuseIlluminancePipelineState(DiffuseIlluminancePersistentContext* context);
 
-        DiffuseIrradiancePersistentContext* persistentContext = nullptr;
-        DiffuseIrradianceTransientContext* transientContext = nullptr;
+        DiffuseIlluminancePersistentContext* persistentContext = nullptr;
+        DiffuseIlluminanceTransientContext* transientContext = nullptr;
 
         RenderResource luminanceCubemapHandle;
-        RenderMutableResource irradianceCubemapHandle;
+        RenderMutableResource illuminanceCubemapHandle;
     };
 }

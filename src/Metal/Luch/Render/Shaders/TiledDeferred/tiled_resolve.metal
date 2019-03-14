@@ -38,8 +38,8 @@ kernel void tile_main(
     constant CameraUniform& camera [[ buffer(0) ]],
     constant LightingParamsUniform& lightingParams [[ buffer(1) ]],
     constant Light* lights [[ buffer(2) ]],
-    texturecube<half> diffuseIrradianceMap [[ texture(0) ]],
-    texturecube<half> specularReflectionMap [[ texture(1) ]],
+    texturecube<half> diffuseIlluminanceCube [[ texture(0) ]],
+    texturecube<half> specularReflectionCube [[ texture(1) ]],
     texture2d<half> specularBRDF [[ texture(2) ]])
 {
     ImageBlock img = imageBlock.read(lid);
@@ -103,13 +103,12 @@ kernel void tile_main(
     float3 reflectedWS = (camera.inverseView * float4(R, 0.0)).xyz;
 
     half3 diffuseIndirectLuminance = CalculateIndirectDiffuse(
-        diffuseIrradianceMap,
+        diffuseIlluminanceCube,
         reflectedWS,
-        baseColor.rgb,
-        metallic);
+        cdiff);
 
     half3 specularReflectionLuminance = CalculateSpecularReflection(
-        specularReflectionMap,
+        specularReflectionCube,
         specularBRDF,
         F0,
         reflectedWS,

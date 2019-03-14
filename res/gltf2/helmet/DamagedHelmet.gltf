@@ -19,7 +19,7 @@
                 {
                     "size": [128, 128],
                     "specularReflection": false,
-                    "diffuseIrradiance": false,
+                    "diffuseIlluminance": false,
                     "znear": 1,
                     "zfar": 50
                 }

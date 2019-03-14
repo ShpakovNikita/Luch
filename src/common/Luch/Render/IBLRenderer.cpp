@@ -34,8 +34,8 @@
 #include <Luch/Render/Passes/IBL/EnvironmentCubemapRenderPass.h>
 #include <Luch/Render/Passes/IBL/EnvironmentCubemapContext.h>
 
-#include <Luch/Render/Passes/IBL/DiffuseIrradianceRenderPass.h>
-#include <Luch/Render/Passes/IBL/DiffuseIrradianceContext.h>
+#include <Luch/Render/Passes/IBL/DiffuseIlluminanceRenderPass.h>
+#include <Luch/Render/Passes/IBL/DiffuseIlluminanceContext.h>
 
 #include <Luch/Render/Passes/IBL/SpecularReflectionRenderPass.h>
 #include <Luch/Render/Passes/IBL/SpecularReflectionContext.h>
@@ -99,16 +99,16 @@ namespace Luch::Render
             environmentCubemapPersistentContext = std::move(createdContext);
         }
 
-        // Diffuse Irradiance Cubemap Persistent Context
+        // Diffuse Illuminance Cubemap Persistent Context
         {
-            auto [result, createdContext] = DiffuseIrradianceRenderPass::PrepareDiffuseIrradiancePersistentContext(context->device);
+            auto [result, createdContext] = DiffuseIlluminanceRenderPass::PrepareDiffuseIlluminancePersistentContext(context->device);
             
             if(!result)
             {
                 return false;
             }
 
-            diffuseIrradiancePersistentContext = std::move(createdContext);
+            diffuseIlluminancePersistentContext = std::move(createdContext);
         }
 
         // Specular Reflection Persistent Context
@@ -196,7 +196,7 @@ namespace Luch::Render
     {
         commandPool.Release();
         environmentCubemapPersistentContext.reset();
-        diffuseIrradiancePersistentContext.reset();
+        diffuseIlluminancePersistentContext.reset();
         context.reset();
         cameraResources.reset();
         materialManager.reset();
@@ -221,7 +221,7 @@ namespace Luch::Render
             return false;
         }
 
-        bool needEnvironmentMap = iblRequest.probeDiffuseIrradiance || iblRequest.probeSpecularReflection;
+        bool needEnvironmentMap = iblRequest.probeDiffuseIlluminance || iblRequest.probeSpecularReflection;
 
         if(needEnvironmentMap)
         {
@@ -232,10 +232,10 @@ namespace Luch::Render
             }
         }
 
-        if(iblRequest.probeDiffuseIrradiance)
+        if(iblRequest.probeDiffuseIlluminance)
         {
-            bool diffuseIrradiancePrepared = PrepareDiffuseIrradiance(iblRequest);
-            if(!diffuseIrradiancePrepared)
+            bool diffuseIlluminancePrepared = PrepareDiffuseIlluminance(iblRequest);
+            if(!diffuseIlluminancePrepared)
             {
                 return false;
             }
@@ -325,9 +325,9 @@ namespace Luch::Render
         IBLResult result;
         result.environmentCubemap = renderGraph->GetResourceManager()->ReleaseTexture(environmentLuminanceCubemapHandle);
 
-        if(diffuseIrradiancePass != nullptr)
+        if(diffuseIlluminancePass != nullptr)
         {
-            result.diffuseIrradianceCubemap = renderGraph->GetResourceManager()->ReleaseTexture(diffuseIrradiancePass->GetIrradianceCubemapHandle());
+            result.diffuseIlluminanceCubemap = renderGraph->GetResourceManager()->ReleaseTexture(diffuseIlluminancePass->GetIlluminanceCubemapHandle());
         }
 
         if(specularReflectionPass != nullptr)
@@ -345,7 +345,7 @@ namespace Luch::Render
             pass.reset();
         }
 
-        diffuseIrradiancePass.release();
+        diffuseIlluminancePass.release();
         specularReflectionTransientContext.reset();
 
         for(auto& transientContext : environmentCubemapTransientContexts)
@@ -353,7 +353,7 @@ namespace Luch::Render
             transientContext.reset();
         }
 
-        diffuseIrradianceTransientContext.reset();
+        diffuseIlluminanceTransientContext.reset();
         specularReflectionTransientContext.reset();
         builder.reset();
         renderGraph.reset();
@@ -424,10 +424,10 @@ namespace Luch::Render
         return true;
     }
 
-    bool IBLRenderer::PrepareDiffuseIrradiance(const IBLRequest& iblRequest)
+    bool IBLRenderer::PrepareDiffuseIlluminance(const IBLRequest& iblRequest)
     {
-        auto [result, transientContext] = DiffuseIrradianceRenderPass::PrepareDiffuseIrradianceTransientContext(
-            diffuseIrradiancePersistentContext.get(),
+        auto [result, transientContext] = DiffuseIlluminanceRenderPass::PrepareDiffuseIlluminanceTransientContext(
+            diffuseIlluminancePersistentContext.get(),
             descriptorPool);
 
         if(!result)
@@ -441,11 +441,11 @@ namespace Luch::Render
         transientContext->sharedBuffer = sharedBuffer;
         transientContext->luminanceCubemapHandle = environmentLuminanceCubemapHandle;
 
-        diffuseIrradianceTransientContext = std::move(transientContext);
+        diffuseIlluminanceTransientContext = std::move(transientContext);
 
-        diffuseIrradiancePass = MakeUnique<DiffuseIrradianceRenderPass>(
-            diffuseIrradiancePersistentContext.get(),
-            diffuseIrradianceTransientContext.get(),
+        diffuseIlluminancePass = MakeUnique<DiffuseIlluminanceRenderPass>(
+            diffuseIlluminancePersistentContext.get(),
+            diffuseIlluminanceTransientContext.get(),
             builder.get());
 
         return true;

@@ -5,32 +5,31 @@
 using namespace metal;
 
 half3 CalculateIndirectDiffuse(
-    texturecube<half> diffuseIrradianceMap,
+    texturecube<half> diffuseIlluminanceCube,
     float3 reflectedWS,
-    half3 baseColor,
-    half metallic)
+    half3 cdiff)
 {
-    if(is_null_texture(diffuseIrradianceMap))
+    if(is_null_texture(diffuseIlluminanceCube))
     {
         return half3(0.0);
     }
 
-    constexpr sampler diffuseIrradianceSampler{ filter::linear, min_filter::linear, mag_filter::linear };
+    constexpr sampler diffuseIlluminanceSampler{ filter::linear, min_filter::linear, mag_filter::linear };
 
-    half3 diffuseIrradiance = diffuseIrradianceMap.sample(diffuseIrradianceSampler, reflectedWS).rgb;
-    return (1 - metallic) * baseColor * M_1_PI_H * diffuseIrradiance;
+    half3 diffuseIlluminance = diffuseIlluminanceCube.sample(diffuseIlluminanceSampler, reflectedWS).rgb;
+    return cdiff * M_1_PI_H * diffuseIlluminance;
 }
 
 half3 CalculateSpecularReflection(
-    texturecube<half> specularReflectionMap,
+    texturecube<half> specularReflectionCube,
     texture2d<half> specularBRDF,
     half3 F0,
     float3 reflectedWS,
     half NdotV,
     half metallic,
-    half roughness)
+    half linearRoughness)
 {
-    if(is_null_texture(specularReflectionMap) || is_null_texture(specularBRDF))
+    if(is_null_texture(specularReflectionCube) || is_null_texture(specularBRDF))
     {
         return half3(0.0);
     }
@@ -39,11 +38,11 @@ half3 CalculateSpecularReflection(
     constexpr sampler specularReflectionSampler{ filter::linear, mip_filter::linear };
     constexpr sampler specularBRDFSampler { filter::linear };
 
-    ushort mipLevelCount = specularReflectionMap.get_num_mip_levels();
-    half lod = mix(0, half(mipLevelCount), roughness);
-    half3 prefilteredSpecular = specularReflectionMap.sample(specularReflectionSampler, reflectedWS, level(lod)).rgb;
+    ushort mipLevelCount = specularReflectionCube.get_num_mip_levels();
+    half lod = mix(0, half(mipLevelCount), sqrt(linearRoughness));
+    half3 prefilteredSpecular = specularReflectionCube.sample(specularReflectionSampler, reflectedWS, level(lod)).rgb;
 
-    half2 brdf = specularBRDF.sample(specularBRDFSampler, float2(roughness, NdotV)).xy;
+    half2 brdf = specularBRDF.sample(specularBRDFSampler, float2(linearRoughness, NdotV)).xy;
 
     return prefilteredSpecular * (F0 * brdf.x + brdf.y);
 }

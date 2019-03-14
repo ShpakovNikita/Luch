@@ -88,7 +88,7 @@ namespace Luch::Render::Passes::TiledDeferred
         TiledDeferredTransientContext* transientContext = nullptr;
 
         RenderMutableResource luminanceTextureHandle;
-        RenderResource diffuseIrradianceCubemapHandle;
+        RenderResource diffuseIlluminanceCubemapHandle;
         RenderResource specularReflectionCubemapHandle;
         RenderResource specularBRDFTextureHandle;
 

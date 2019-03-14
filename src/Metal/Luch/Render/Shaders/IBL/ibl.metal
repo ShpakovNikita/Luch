@@ -34,3 +34,20 @@ half3 ImportanceSampleGGX(half2 Xi, half a2, half3 N)
     half3 tangentY = cross(N, tangentX);
     return tangentX * H.x + tangentY * H.y + N * H.z;
 }
+
+half3 ImportanceSampleCosTangent(half2 Xi)
+{
+    half r = sqrt(Xi.x);
+    half phi = Xi.y * M_PI_H * 2;
+    return half3(r * cos(phi), r * sin(phi), sqrt(1 - Xi.x));
+}
+
+half3 ImportanceSampleCos(half2 Xi, half3 N)
+{
+    half3 L = ImportanceSampleCosTangent(Xi);
+    half3 up = abs(N.z) < 0.999 ? half3(0, 0, 1) : half3(1, 0, 0);
+    // Workaround, for some reason normalize(half3(1.0, 0.0, 0.0)) returns (inf, 0, 0)
+    half3 tangentX = half3(normalize(float3(cross(up, N))));
+    half3 tangentY = cross(N, tangentX);
+    return tangentX * L.x + tangentY * L.y + N * L.z;
+}
