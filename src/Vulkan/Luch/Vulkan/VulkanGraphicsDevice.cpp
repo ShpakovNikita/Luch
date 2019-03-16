@@ -25,6 +25,7 @@
 #include <Luch/Vulkan/VulkanRenderPassCreateInfo.h>
 #include <Luch/Vulkan/VulkanDescriptorSetLayoutCreateInfo.h>
 #include <Luch/Vulkan/VulkanPipelineLayoutCreateInfo.h>
+#include <Luch/Vulkan/VulkanGlslShaderCompiler.h>
 #include <Luch/Vulkan/FramebufferCreateInfo.h>
 #include <Luch/Graphics/Semaphore.h>
 #include <Luch/Graphics/Swapchain.h>
@@ -48,10 +49,13 @@ namespace Luch::Vulkan
         , device(aDevice)
         , queueInfo(std::move(aQueueInfo))
         , allocationCallbacks(aAllocationCallbacks)
-    {}
+    {
+        VulkanGLSLShaderCompiler::Initialize();
+    }
 
     VulkanGraphicsDevice::~VulkanGraphicsDevice()
     {
+        VulkanGLSLShaderCompiler::Deinitialize();
         Destroy();
     }
 
@@ -370,25 +374,6 @@ namespace Luch::Vulkan
         return CreateImageView(image, ci);
     }
 
-    GraphicsResultRefPtr<VulkanShaderModule> VulkanGraphicsDevice::CreateShaderModule(
-        uint32* bytecode,
-        int64 bytecodeSizeInBytes)
-    {
-        vk::ShaderModuleCreateInfo ci;
-        ci.setPCode(bytecode);
-        ci.setCodeSize(bytecodeSizeInBytes);
-        auto [createResult, vulkanShaderModule] = device.createShaderModule(ci, allocationCallbacks);
-        if (createResult != vk::Result::eSuccess)
-        {
-            device.destroyShaderModule(vulkanShaderModule, allocationCallbacks);
-            return { createResult };
-        }
-        else
-        {
-            return { createResult, MakeRef<VulkanShaderModule>(this, vulkanShaderModule) };
-        }
-    }
-
     GraphicsResultRefPtr<VulkanPipelineCache> VulkanGraphicsDevice::CreatePipelineCache()
     {
         vk::PipelineCacheCreateInfo ci;
@@ -601,8 +586,7 @@ namespace Luch::Vulkan
             const UnorderedMap<String,
             Variant<int32, String> > &defines)
     {
-        // todo: implement
-        return {GraphicsResult::Unsupported};
+        return { GraphicsResult::Success, MakeRef<VulkanShaderModule>(this, source, defines) };
     }
 
     GraphicsResultValue<vk::DeviceMemory> VulkanGraphicsDevice::AllocateMemory(
@@ -687,11 +671,6 @@ namespace Luch::Vulkan
     void VulkanGraphicsDevice::DestroyPipelineCache(VulkanPipelineCache* pipelineCache)
     {
         device.destroyPipelineCache(pipelineCache->pipelineCache, allocationCallbacks);
-    }
-
-    void VulkanGraphicsDevice::DestroyShaderModule(VulkanShaderModule* module)
-    {
-        device.destroyShaderModule(module->module, allocationCallbacks);
     }
 
     void VulkanGraphicsDevice::DestroyRenderPass(VulkanRenderPass* renderPass)

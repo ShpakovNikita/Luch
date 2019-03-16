@@ -118,7 +118,6 @@ bool SampleApplication::Initialize(const Vector<String>& /*args*/)
 
     renderer = MakeUnique<Render::SceneRenderer>(scene);
 
-    // /////////////
     auto rendererInitialized = renderer->Initialize(context);
     if(!rendererInitialized)
     {
@@ -220,8 +219,8 @@ void SampleApplication::SetupScene()
 {
     glTF::glTFParser glTFparser;
 
-    String rootDir{ "../res/gltf2/sponza/" };
-    String filename { "Sponza.gltf" };
+    String rootDir{ "../res/gltf2/box/" };
+    String filename { "Box.gltf" };
 
     FileStream fileStream{ rootDir + filename, FileOpenModes::Read };
 
@@ -263,8 +262,8 @@ bool SampleApplication::ShouldQuit() const
 
 void SampleApplication::Process()
 {
-//    mouseController.Tick();
-//    wasdController.Tick(16.0f / 1000.0f);
+    mouseController.Tick();
+    wasdController.Tick(16.0f / 1000.0f);
 //    scene->Update();
 
 //    renderer->BeginRender();

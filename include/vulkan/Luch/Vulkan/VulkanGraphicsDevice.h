@@ -37,7 +37,6 @@ namespace Luch::Vulkan
         friend class VulkanPipelineLayout;
         friend class VulkanRenderPass;
         friend class VulkanSemaphore;
-        friend class VulkanShaderModule;
         friend class VulkanSwapchain;
         friend class VulkanSampler;
     public:
@@ -99,10 +98,6 @@ namespace Luch::Vulkan
 
         GraphicsResultRefPtr<VulkanImageView> CreateImageView(VulkanImage* image);
 
-        GraphicsResultRefPtr<VulkanShaderModule> CreateShaderModule(
-            uint32* bytecode,
-            int64 bytecodeSizeInBytes);
-
         GraphicsResultRefPtr<VulkanPipelineCache> CreatePipelineCache();
 
         GraphicsResultRefPtr<VulkanPipeline> CreateGraphicsPipeline(
@@ -140,7 +135,6 @@ namespace Luch::Vulkan
         void DestroyPipeline(VulkanPipeline* pipeline);
         void DestroyPipelineLayout(VulkanPipelineLayout* pipelineLayout);
         void DestroyPipelineCache(VulkanPipelineCache* pipelineCache);
-        void DestroyShaderModule(VulkanShaderModule* module);
         void DestroyRenderPass(VulkanRenderPass* renderPass);
         void DestroyDescriptorSetLayout(VulkanDescriptorSetLayout* descriptorSetLayout);
         void DestroyDescriptorPool(VulkanDescriptorPool* descriptorPool);

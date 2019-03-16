@@ -140,13 +140,23 @@ void VulkanGLSLShaderCompiler::Deinitialize()
     glslang::FinalizeProcess();
 }
 
-String VulkanGLSLShaderCompiler::GeneratePreamble(const UnorderedMap<String, String>& flags)
+String VulkanGLSLShaderCompiler::GeneratePreamble(const UnorderedMap<String, Variant<int32, String>>& flags)
 {
     std::stringstream ss;
 
     for (const auto &kv : flags)
     {
-        ss << "#define " << kv.first << " " << kv.second << "\n";
+        ss << "#define " << kv.first << " ";
+        auto index = kv.second.index();
+        if (std::get_if<0>(&kv.second))
+        {
+            ss << *std::get_if<0>(&kv.second);
+        }
+        else if (std::get_if<1>(&kv.second))
+        {
+            ss << *std::get_if<1>(&kv.second);
+        }
+        ss << "\n";
     }
 
     return ss.str();
@@ -155,8 +165,8 @@ String VulkanGLSLShaderCompiler::GeneratePreamble(const UnorderedMap<String, Str
 bool VulkanGLSLShaderCompiler::TryCompileShader(
     ShaderStage shaderStage,
     const Vector<Byte>& glslSource,
-    Bytecode& spirvBytecode,
-    const UnorderedMap<String, String>& flags)
+    Vector<uint32_t>& spirvBytecode,
+    const UnorderedMap<String, Variant<int32, String>>& flags)
 {
     if (glslSource.empty())
     {

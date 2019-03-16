@@ -8,15 +8,14 @@ namespace Luch::Vulkan
     class VulkanGLSLShaderCompiler
     {
     public:
-        using Bytecode = Vector<uint32>;
         static void Initialize();
         static void Deinitialize();
-        bool TryCompileShader(
+        static bool TryCompileShader(
             Graphics::ShaderStage shaderStage,
             const Vector<Byte>& glslSource,
-            Bytecode& spirvBytecode,
-            const UnorderedMap<String, String>& flags);
+            Vector<uint32_t>& spirvBytecode,
+            const UnorderedMap<String, Variant<int32, String>>& flags);
     private:
-        String GeneratePreamble(const UnorderedMap<String, String>& flags);
+        static String GeneratePreamble(const UnorderedMap<String, Variant<int32, String>>& flags);
     };
 }
