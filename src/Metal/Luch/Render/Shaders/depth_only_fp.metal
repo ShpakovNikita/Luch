@@ -2,20 +2,11 @@
 #include <metal_texture>
 #include <simd/simd.h>
 
+#include "Common/material.metal"
+
 // This shader is only called and compiled if there's a alpha test
 
 using namespace metal;
-
-struct MaterialUniform
-{
-    packed_float4 baseColorFactor;
-    packed_float3 emissiveFactor;
-    float alphaCutoff;
-    float metallicFactor;
-    float roughnessFactor;
-    float normalScale;
-    float occlusionStrength;
-};
 
 struct VertexOut
 {
@@ -33,7 +24,8 @@ fragment void fp_main(
 {
     float2 texCoord = in.texCoord;
 
-    half4 baseColor = baseColorMap.sample(baseColorSampler, texCoord);
+    half4 baseColorFactor = half4(material.baseColorFactor);
+    half4 baseColor = baseColorMap.sample(baseColorSampler, texCoord) * baseColorFactor;
 
     if(baseColor.a < material.alphaCutoff)
     {

@@ -46,6 +46,16 @@ namespace Luch::SceneV1::Loader
         : rootFolder(aRootFolder)
         , root(move(glTFRoot))
     {
+        Graphics::SamplerCreateInfo samplerCreateInfo;
+
+        samplerCreateInfo.uAddressMode = Graphics::SamplerAddressMode::Repeat;
+        samplerCreateInfo.vAddressMode = Graphics::SamplerAddressMode::Repeat;
+        samplerCreateInfo.wAddressMode = Graphics::SamplerAddressMode::Repeat;
+        samplerCreateInfo.minFilter = SamplerMinMagFilter::Linear;
+        samplerCreateInfo.magFilter = SamplerMinMagFilter::Linear;
+        samplerCreateInfo.mipFilter = SamplerMipFilter::Linear;
+
+        defaultSampler = MakeRef<Sampler>(samplerCreateInfo, "default");
     }
 
     int32 glTFLoader::GetSceneCount() const
@@ -705,6 +715,11 @@ namespace Luch::SceneV1::Loader
         properties.alphaCutoff = glTFMaterial.alphaCutoff;
         properties.doubleSided = glTFMaterial.doubleSided;
 
+        if(glTFMaterial.extensions.has_value() && glTFMaterial.extensions->unlit.has_value())
+        {
+            properties.unlit = true;
+        }
+
         material->SetProperties(properties);
 
         return material;
@@ -718,6 +733,10 @@ namespace Luch::SceneV1::Loader
         if (glTFTexture.sampler.has_value())
         {
             sampler = context.loadedSamplers[*glTFTexture.sampler];
+        }
+        else
+        {
+            sampler = defaultSampler;
         }
 
         TextureSource source;

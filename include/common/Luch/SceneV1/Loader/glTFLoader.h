@@ -56,6 +56,8 @@ namespace Luch::SceneV1::Loader
         String rootFolder;
         SharedPtr<glTF::glTFRoot> root;
 
+        RefPtr<Sampler> defaultSampler;
+
         bool interleave = true;
     };
 }

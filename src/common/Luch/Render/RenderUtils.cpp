@@ -53,6 +53,7 @@ namespace Luch::Render::RenderUtils
         materialUniform.occlusionStrength = material->GetProperties().occlusionTextureInfo.strength;
         materialUniform.emissiveFactor = material->GetProperties().emissiveFactor;
         materialUniform.alphaCutoff = material->GetProperties().alphaCutoff;
+        materialUniform.unlit = material->GetProperties().unlit;
 
         return materialUniform;
     }

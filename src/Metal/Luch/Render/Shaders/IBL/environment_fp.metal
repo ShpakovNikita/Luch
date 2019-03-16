@@ -123,6 +123,13 @@ fragment FragmentOut fp_main(
         }
     #endif
 
+    if(material.unlit)
+    {
+        FragmentOut result;
+        result.luminance = baseColor;
+        return result;
+    }
+
     float3 dp1 = dfdx(positionVS);
     float3 dp2 = dfdy(positionVS);
 
@@ -168,13 +175,6 @@ fragment FragmentOut fp_main(
     #if HAS_EMISSIVE_TEXTURE && HAS_TEXCOORD_0
         half4 emissiveSample = emissiveMap.sample(emissiveSampler, texCoord);
         emittedLuminance *= emissiveSample.rgb;
-    #endif
-
-    #if HAS_OCCLUSION_TEXTURE && HAS_TEXCOORD_0
-        half occlusionSample = occlusionMap.sample(occlusionSampler, texCoord).r;
-        half occlusion = mix(1, occlusionSample, half(material.occlusionStrength));
-    #else
-        half occlusion = 1.0h;
     #endif
 
     half3 P = half3(in.positionVS.xyz);

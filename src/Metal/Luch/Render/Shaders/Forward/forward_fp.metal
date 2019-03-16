@@ -126,6 +126,13 @@ fragment FragmentOut fp_main(
         }
     #endif
 
+    if(material.unlit)
+    {
+        FragmentOut result;
+        result.luminance = baseColor;
+        return result;
+    }
+
     float3 dp1 = dfdx(positionVS);
     float3 dp2 = dfdy(positionVS);
 
@@ -192,9 +199,9 @@ fragment FragmentOut fp_main(
 
     half3 directLuminance = 0.0;
 
-    for(ushort i = 0; i < lightingParams.lightCount; i++)
+    //for(ushort i = 0; i < lightingParams.lightCount; i++)
     {
-        Light light = lights.lights[i];
+        Light light = lights.lights[0];
 
         half3 intermediateLuminance;
 
