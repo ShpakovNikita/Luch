@@ -4,8 +4,8 @@
 #include <Luch/RefPtr.h>
 #include <Luch/Graphics/Format.h>
 #include <Luch/Vulkan.h>
-#include <Luch/Vulkan/VulkanQueueInfo.h>
-#include <Luch/Vulkan/VulkanForwards.h>
+#include <Luch/Vulkan/Queue/VulkanQueueInfo.h>
+#include <Luch/Vulkan/Common/VulkanForwards.h>
 #include <Luch/Vulkan/VulkanPhysicalDevice.h>
 #include <Luch/Graphics/GraphicsDevice.h>
 #include <Luch/Graphics/GraphicsResultValue.h>

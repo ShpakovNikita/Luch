@@ -1,9 +1,9 @@
 #include <Luch/Vulkan/VulkanPhysicalDevice.h>
 #include <Luch/Vulkan/VulkanGraphicsDevice.h>
 #include <Luch/Vulkan/VulkanSurface.h>
-#include <Luch/Vulkan/VulkanFormat.h>
-#include <Luch/Vulkan/VulkanQueue.h>
-#include <Luch/Vulkan/VulkanSwapchain.h>
+#include <Luch/Vulkan/Common/VulkanFormat.h>
+#include <Luch/Vulkan/Queue/VulkanQueue.h>
+#include <Luch/Vulkan/Swapchain/VulkanSwapchain.h>
 
 namespace Luch::Vulkan
 {
