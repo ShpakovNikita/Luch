@@ -26,7 +26,6 @@ namespace Luch::Vulkan
         inline const vk::PhysicalDeviceMemoryProperties& GetPhysicalDeviceMemoryProperties() const { return physicalDeviceMemoryProperties; }
 
         GraphicsResultRefPtr<GraphicsDevice> CreateGraphicsDevice() override;
-        Vector<Graphics::Format> GetSupportedDepthStencilFormats(const Vector<Graphics::Format>& formats) const override;
 
     private:
         VulkanQueueInfo ObtainQueueInfo(vk::Device & device, QueueIndices&& indices);

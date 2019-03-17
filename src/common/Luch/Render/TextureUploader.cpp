@@ -8,6 +8,7 @@
 #include <Luch/Graphics/CommandPool.h>
 #include <Luch/Graphics/CopyCommandList.h>
 #include <Luch/Render/FormatUtils.h>
+#include <math.h>
 
 namespace Luch::Render
 {

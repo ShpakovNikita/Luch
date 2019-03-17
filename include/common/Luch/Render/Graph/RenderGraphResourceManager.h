@@ -7,6 +7,7 @@
 #include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/Graphics/RenderPassCreateInfo.h>
 #include <Luch/Graphics/BufferCreateInfo.h>
+#include <Luch/Graphics/TextureCreateInfo.h>
 
 namespace Luch::Render::Graph
 {

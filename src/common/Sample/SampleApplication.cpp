@@ -84,7 +84,10 @@ bool SampleApplication::Initialize(const Vector<String>& /*args*/)
         return false;
     }
 
-    SetupScene();
+    if (!SetupScene())
+    {
+        return false;
+    }
 
     context = MakeShared<Render::RenderContext>();
 
@@ -105,7 +108,6 @@ bool SampleApplication::Initialize(const Vector<String>& /*args*/)
     context->commandQueue = std::move(createdCommandQueue);
 
     SwapchainInfo swapchainInfo;
-    swapchainInfo.format = Format::B8G8R8A8Unorm_sRGB;
     swapchainInfo.imageCount = 1;
     swapchainInfo.width = width;
     swapchainInfo.height = height;
@@ -217,16 +219,14 @@ bool SampleApplication::CreateWindow()
     return true;
 }
 
-void SampleApplication::SetupScene()
+bool SampleApplication::SetupScene()
 {
     glTF::glTFParser glTFparser;
 
-    String rootDir{ "../res/gltf2/sponza/" };
-    String filename { "Sponza.gltf" };
+    String rootDir{ "../res/gltf2/helmet/" };
 
     {
-        String filename { "Sponza.gltf" };
-        //String filename { "DamagedHelmet.gltf" };
+        String filename { "DamagedHelmet.gltf" };
 
         FileStream fileStream{ rootDir + filename, FileOpenModes::Read };
         

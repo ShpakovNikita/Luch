@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.12.0)
+set(PLATFORM "unix")
 
 project(Luch_${PLATFORM} VERSION 0.1 LANGUAGES CXX)
 set(CXX_STANDARD 17)
@@ -26,7 +27,7 @@ if(MSVC)
         add_compile_options(/W4 /WX)
     endif()
 else()
-    add_compile_options(-Wall -Wextra -pedantic)
+    #add_compile_options(-Wall -Wextra -pedantic)
 endif()
 
 if(USE_METAL AND NOT APPLE)
@@ -85,6 +86,12 @@ if(PLATFORM STREQUAL "iOS")
     add_compile_definitions(LUCH_PLATFORM_IOS)
 endif()
 
+if (PLATFORM STREQUAL "unix")
+    find_package(SDL2 REQUIRED)
+    set(LUCH_PLATFORM_UNIX true)
+endif()
+
+
 # TODO Check depth for consistency
 add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
 
@@ -137,7 +144,7 @@ if(USE_VULKAN)
         set (GLSLANG_SEARCH_PATH ${Vulkan_SDK}/lib/)
         set (SPIRV_TOOLS_SEARCH_PATH ${Vulkan_SDK}/lib/)
         set (SPIRV_TOOLS_OPT_SEARCH_PATH ${Vulkan_SDK}/lib/)
-    elseif(UNIX)
+    elseif(LUCH_PLATFORM_UNIX)
         # install to `usr/local` on linux. `sudo make install` from sdk source glslang / spirv 
         set (GLSLANG_SEARCH_PATH "")
         set (SPIRV_TOOLS_SEARCH_PATH "")

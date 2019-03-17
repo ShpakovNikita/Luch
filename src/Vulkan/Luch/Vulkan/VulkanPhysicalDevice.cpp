@@ -239,23 +239,4 @@ namespace Luch::Vulkan
 
         return queueInfo;
     }
-
-    Vector<Format> VulkanPhysicalDevice::GetSupportedDepthStencilFormats(const Vector<Format>& formats) const
-    {
-        const vk::FormatFeatureFlags requiredBits =
-              vk::FormatFeatureFlagBits::eSampledImage
-            | vk::FormatFeatureFlagBits::eTransferSrc
-            | vk::FormatFeatureFlagBits::eDepthStencilAttachment;
-
-        Vector<Format> supportedFormats;
-        for(Format format : formats)
-        {
-            auto formatProperties = physicalDevice.getFormatProperties(ToVulkanFormat(format));
-            if((formatProperties.optimalTilingFeatures & requiredBits) == requiredBits)
-            {
-                supportedFormats.push_back(format);
-            }
-        }
-        return supportedFormats;
-    }
 }

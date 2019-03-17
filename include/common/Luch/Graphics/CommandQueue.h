@@ -2,6 +2,7 @@
 
 #include <Luch/Graphics/GraphicsObject.h>
 #include <Luch/Graphics/GraphicsResultValue.h>
+#include <functional>
 
 namespace Luch::Graphics
 {

@@ -4,6 +4,7 @@
 #include <Luch/SceneV1/SceneV1Forwards.h>
 #include <Luch/Render/Common.h>
 #include <Luch/ResultValue.h>
+#include <functional>
 
 namespace Luch::Render
 {
