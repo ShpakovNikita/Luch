@@ -13,6 +13,7 @@ namespace Luch::Metal
     class MetalDescriptorSet : public DescriptorSet
     {
         friend class MetalGraphicsCommandList;
+        friend class MetalComputeCommandList;
     public:
         MetalDescriptorSet(
             MetalGraphicsDevice* device,
@@ -22,11 +23,13 @@ namespace Luch::Metal
 
         void WriteTexture(const DescriptorSetBinding& binding, Texture* texture) override;
         void WriteUniformBuffer(const DescriptorSetBinding& binding, Buffer* buffer, int32 offset) override;
+        void WriteThreadgroupMemory(const DescriptorSetBinding& binding, int32 length, int32 offset) override;
         void WriteSampler(const DescriptorSetBinding& binding, Sampler* sampler) override;
         void Update() override;
     private:
         Vector<mtlpp::Texture> textures;
         Vector<mtlpp::Buffer> buffers;
+        Vector<int32> memoryLengths;
         Vector<int32> bufferOffsets;
         Vector<mtlpp::SamplerState> samplers;
         MetalDescriptorSetLayout* descriptorSetLayout;

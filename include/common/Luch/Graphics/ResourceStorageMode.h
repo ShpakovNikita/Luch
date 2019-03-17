@@ -6,5 +6,6 @@ namespace Luch::Graphics
     {
         DeviceLocal,
         Shared,
+        Memoryless,
     };
 }

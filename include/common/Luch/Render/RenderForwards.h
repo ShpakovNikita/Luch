@@ -2,12 +2,15 @@
 
 namespace Luch::Render
 {
+    class IBLRenderer;
+    class MaterialManager;
+    class SceneRenderer;
     class SharedBuffer;
     class TextureUploader;
-    class SceneRenderer;
-    class MaterialManager;
 
+    struct IBLResult;
     struct CameraResources;
+    struct IndirectLightingResources;
     struct MaterialResources;
     struct RenderContext;
     struct SharedBufferSuballocation;

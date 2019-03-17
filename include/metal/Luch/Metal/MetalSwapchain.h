@@ -3,12 +3,23 @@
 #include <Luch/Graphics/Swapchain.h>
 #include <Luch/Graphics/SwapchainInfo.h>
 #include <Luch/Metal/MetalForwards.h>
-#import <dispatch/dispatch.h>
 #import <QuartzCore/CAMetalLayer.h>
 
 namespace Luch::Metal
 {
     using namespace Graphics;
+
+    class MetalSwapchainTexture : public SwapchainTexture
+    {
+        friend class MetalCommandQueue;
+    public:
+        MetalSwapchainTexture(RefPtr<Texture> texture, mtlpp::Drawable drawable);
+
+        RefPtr<Texture> GetTexture() { return texture; }
+    private:
+        RefPtr<Texture> texture;
+        mtlpp::Drawable drawable;
+    };
 
     class MetalSwapchain : public Swapchain
     {
@@ -20,10 +31,9 @@ namespace Luch::Metal
             CAMetalLayer* layer);
 
         inline const SwapchainInfo& GetInfo() const override { return swapchainInfo; }
-        GraphicsResultValue<AcquiredTexture> GetNextAvailableTexture(Semaphore* semaphore) override;
+        GraphicsResultRefPtr<SwapchainTexture> GetNextAvailableTexture() override;
     private:
         SwapchainInfo swapchainInfo;
-        id<CAMetalDrawable> drawable;
         CAMetalLayer* layer = nil;
     };
 }

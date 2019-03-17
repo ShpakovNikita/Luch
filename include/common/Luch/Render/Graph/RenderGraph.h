@@ -30,8 +30,10 @@ namespace Luch::Render::Graph
             UniquePtr<RenderGraphResourceManager> resourceManager,
             RenderGraphData graphData);
         ~RenderGraph();
-        
-        RefPtrVector<GraphicsCommandList> Execute();
+
+        RenderGraphResourceManager* GetResourceManager() { return resourceManager.get(); }
+
+        RefPtrVector<CommandList> Execute();
     private:
         CommandPool* commandPool = nullptr;
         UniquePtr<RenderGraphResourceManager> resourceManager;

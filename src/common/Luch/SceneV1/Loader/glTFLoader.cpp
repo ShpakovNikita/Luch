@@ -18,6 +18,7 @@
 #include <Luch/SceneV1/PbrMaterial.h>
 #include <Luch/SceneV1/Sampler.h>
 #include <Luch/SceneV1/Light.h>
+#include <Luch/SceneV1/LightProbe.h>
 #include <Luch/Render/Common.h>
 #include <cstring>
 #include <cmath>
@@ -114,6 +115,15 @@ namespace Luch::SceneV1::Loader
                     context.loadedLights.emplace_back(MakeLight(light, context));
                 }
             }
+
+            if(root->extensions->probe.has_value())
+            {
+                context.loadedLightProbes.reserve(root->extensions->probe->probes.size());
+                for(const auto& probe : root->extensions->probe->probes)
+                {
+                    context.loadedLightProbes.emplace_back(MakeLightProbe(probe, context));
+                }
+            }
         }
 
         return context;
@@ -170,6 +180,14 @@ namespace Luch::SceneV1::Loader
             node->SetLight(light);
         }
 
+        RefPtr<LightProbe> lightProbe;
+        if(glTFNode.extensions.has_value() && glTFNode.extensions->probes.has_value())
+        {
+            auto probeIndex = glTFNode.extensions->probes->probe;
+            lightProbe = context.loadedLightProbes[probeIndex];
+            node->SetLightProbe(lightProbe);
+        }
+
         // TODO skin
 
         Node::TransformType transform;
@@ -214,7 +232,9 @@ namespace Luch::SceneV1::Loader
         return MakeRef<Mesh>(move(primitives), name);
     }
 
-    RefPtr<Camera> glTFLoader::MakeCamera(const glTF::Camera& camera, const SceneLoadContext& context)
+    RefPtr<Camera> glTFLoader::MakeCamera(
+        const glTF::Camera& camera,
+        [[maybe_unused]] const SceneLoadContext& context)
     {
         const auto& name = camera.name;
 
@@ -349,7 +369,7 @@ namespace Luch::SceneV1::Loader
         positionAttribute.semantic = AttributeSemantic::Position;
         positionAttribute.componentType = ComponentType::Float;
         positionAttribute.attributeType = AttributeType::Vec4;
-        positionAttribute.format = Format::R32G32B32A32Sfloat;
+        positionAttribute.format = Format::RGBA32Sfloat;
         positionAttribute.offset = offsetof(Render::Vertex, position);
         positionAttribute.vertexBufferIndex = 0;
 
@@ -357,7 +377,7 @@ namespace Luch::SceneV1::Loader
         normalAttribute.semantic = AttributeSemantic::Normal;
         normalAttribute.componentType = ComponentType::Float;
         normalAttribute.attributeType = AttributeType::Vec4;
-        normalAttribute.format = Format::R32G32B32A32Sfloat;
+        normalAttribute.format = Format::RGBA32Sfloat;
         normalAttribute.offset = offsetof(Render::Vertex, normal);
         normalAttribute.vertexBufferIndex = 0;
 
@@ -365,7 +385,7 @@ namespace Luch::SceneV1::Loader
         tangentAttribute.semantic = AttributeSemantic::Tangent;
         tangentAttribute.componentType = ComponentType::Float;
         tangentAttribute.attributeType = AttributeType::Vec4;
-        tangentAttribute.format = Format::R32G32B32A32Sfloat;
+        tangentAttribute.format = Format::RGBA32Sfloat;
         tangentAttribute.offset = offsetof(Render::Vertex, tangent);
         tangentAttribute.vertexBufferIndex = 0;
 
@@ -373,7 +393,7 @@ namespace Luch::SceneV1::Loader
         texcoordAttribute.semantic = AttributeSemantic::Texcoord_0;
         texcoordAttribute.componentType = ComponentType::Float;
         texcoordAttribute.attributeType = AttributeType::Vec2;
-        texcoordAttribute.format = Format::R32G32Sfloat;
+        texcoordAttribute.format = Format::RG32Sfloat;
         texcoordAttribute.offset = offsetof(Render::Vertex, texcoord);
         texcoordAttribute.vertexBufferIndex = 0;
 
@@ -690,30 +710,39 @@ namespace Luch::SceneV1::Loader
         return material;
     }
 
-    RefPtr<Texture> glTFLoader::MakeTexture(const glTF::Texture& texture, const SceneLoadContext& context)
+    RefPtr<Texture> glTFLoader::MakeTexture(const glTF::Texture& glTFTexture, const SceneLoadContext& context)
     {
-        const auto& name = texture.name;
+        const auto& name = glTFTexture.name;
 
         RefPtr<Sampler> sampler;
-        if (texture.sampler.has_value())
+        if (glTFTexture.sampler.has_value())
         {
-            sampler = context.loadedSamplers[*texture.sampler];
+            sampler = context.loadedSamplers[*glTFTexture.sampler];
         }
 
         TextureSource source;
-        if (texture.source.has_value())
+        if (glTFTexture.source.has_value())
         {
-            const auto& image = root->images[*texture.source];
+            const auto& image = root->images[*glTFTexture.source];
             source.root = rootFolder;
             source.filename = image.uri;
         }
 
         RefPtr<Image> image = ReadHostImage(source);
 
-        return MakeRef<Texture>(sampler, image, name);
+        LUCH_ASSERT(image != nullptr);
+
+        auto texture = MakeRef<Texture>();
+        texture->SetHostImage(image);
+        texture->SetName(name);
+        texture->SetSampler(sampler);
+
+        return texture;
     }
 
-    RefPtr<Sampler> glTFLoader::MakeSampler(const glTF::Sampler& sampler, const SceneLoadContext& context)
+    RefPtr<Sampler> glTFLoader::MakeSampler(
+        const glTF::Sampler& sampler,
+        [[maybe_unused]] const SceneLoadContext& context)
     {
         const auto& name = sampler.name;
 
@@ -739,7 +768,9 @@ namespace Luch::SceneV1::Loader
         return MakeRef<Sampler>(samplerCreateInfo, name);
     }
 
-    RefPtr<Light> glTFLoader::MakeLight(const glTF::LightPunctual& glTFLight, const SceneLoadContext& context)
+    RefPtr<Light> glTFLoader::MakeLight(
+        const glTF::LightPunctual& glTFLight,
+        [[maybe_unused]] const SceneLoadContext& context)
     {
         auto lightType = LightTypes.at(glTFLight.type);
         RefPtr<Light> light = MakeRef<Light>();
@@ -748,13 +779,29 @@ namespace Luch::SceneV1::Loader
         light->SetIntensity(glTFLight.intensity);
         light->SetType(lightType);
         light->SetRange(glTFLight.range);
+
         if(lightType == LightType::Spot)
         {
             LUCH_ASSERT(glTFLight.spot.has_value());
             light->SetInnerConeAngle(glTFLight.spot->innerConeAngle);
             light->SetOuterConeAngle(glTFLight.spot->outerConeAngle);
         }
+
         return light;
+    }
+
+    RefPtr<LightProbe> glTFLoader::MakeLightProbe(
+        const glTF::LightProbe& glTFProbe,
+        [[maybe_unused]] const SceneLoadContext& context)
+    {
+        RefPtr<LightProbe> probe = MakeRef<LightProbe>();
+        probe->SetName(glTFProbe.name);
+        probe->SetHasDiffuseIlluminance(glTFProbe.diffuseIlluminance);
+        probe->SetHasSpecularReflection(glTFProbe.specularReflection);
+        probe->SetSize({ glTFProbe.size.x, glTFProbe.size.y });
+        probe->SetZNear(glTFProbe.znear);
+        probe->SetZFar(glTFProbe.zfar);
+        return probe;
     }
 
     RefPtr<Buffer> glTFLoader::ReadHostBuffer(const BufferSource& source)
@@ -766,6 +813,6 @@ namespace Luch::SceneV1::Loader
 
     RefPtr<Image> glTFLoader::ReadHostImage(const TextureSource& source)
     {
-        return Image::LoadFromFile(source.root + "/" + source.filename);
+        return Image::LoadFromFile(source.root + source.filename);
     }
 }

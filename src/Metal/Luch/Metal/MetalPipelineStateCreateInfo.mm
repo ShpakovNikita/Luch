@@ -1,5 +1,7 @@
 #include <Luch/Metal/MetalPipelineStateCreateInfo.h>
-#include <Luch/Graphics/PipelineStateCreateInfo.h>
+#include <Luch/Graphics/GraphicsPipelineStateCreateInfo.h>
+#include <Luch/Graphics/ComputePipelineStateCreateInfo.h>
+#include <Luch/Graphics/TiledPipelineStateCreateInfo.h>
 #include <Luch/Metal/MetalFormat.h>
 #include <Luch/Metal/MetalShaderProgram.h>
 #include <Luch/Metal/MetalPrimitiveTopology.h>
@@ -24,7 +26,7 @@ namespace Luch::Metal
             return mtlpp::VertexStepFunction::PerVertex;
         }
     }
-    mtlpp::VertexDescriptor ToMetalVertexDescriptor(const PipelineVertexInputStateCreateInfo& ci)
+    mtlpp::VertexDescriptor ToMetalVertexDescriptor(const GraphicsPipelineVertexInputStateCreateInfo& ci)
     {
         mtlpp::VertexDescriptor d;
 
@@ -34,7 +36,7 @@ namespace Luch::Metal
         // TODO
         int32 buffersStart = 31 - 1 - ci.bindings.size();
 
-        for(int32 i = 0; i < ci.attributes.size(); i++)
+        for(size_t i = 0; i < ci.attributes.size(); i++)
         {
             const auto& attribute = ci.attributes[i];
 
@@ -43,7 +45,7 @@ namespace Luch::Metal
             mtlAttributes[i].SetBufferIndex((uint32)(buffersStart + attribute.binding)); // TODO
         }
 
-        for(int32 i = 0; i < ci.bindings.size(); i++)
+        for(size_t i = 0; i < ci.bindings.size(); i++)
         {
             auto binding = ci.bindings[i];
 
@@ -55,7 +57,7 @@ namespace Luch::Metal
         return d;
     }
 
-    mtlpp::RenderPipelineDescriptor ToMetalPipelineStateCreateInfo(const PipelineStateCreateInfo& ci)
+    mtlpp::RenderPipelineDescriptor ToMetalGraphicsPipelineStateCreateInfo(const GraphicsPipelineStateCreateInfo& ci)
     {
         mtlpp::RenderPipelineDescriptor d;
         auto mtlVertexProgram = static_cast<MetalShaderProgram*>(ci.vertexProgram.Get());
@@ -74,7 +76,7 @@ namespace Luch::Metal
         // TODO multisampling
         d.SetRasterizationEnabled(!ci.rasterization.rasterizerDiscardEnable);
 
-        for(int32 i = 0; i < ci.colorAttachments.attachments.size(); i++)
+        for(size_t i = 0; i < ci.colorAttachments.attachments.size(); i++)
         {
             auto colorAttachment = ci.colorAttachments.attachments[i];
             d.GetColorAttachments()[i].SetPixelFormat(ToMetalPixelFormat(colorAttachment.format));
@@ -104,10 +106,12 @@ namespace Luch::Metal
             }
         }
 
+        d.SetLabel(ns::String(ci.name.c_str()));
+
         return d;
     }
 
-    mtlpp::StencilDescriptor ToMetalStencilDescriptor(const PipelineStencilStateCreateInfo& createInfo)
+    mtlpp::StencilDescriptor ToMetalStencilDescriptor(const GraphicsPipelineStencilStateCreateInfo& createInfo)
     {
         mtlpp::StencilDescriptor d;
 
@@ -121,15 +125,16 @@ namespace Luch::Metal
         return d;
     }
 
-    mtlpp::DepthStencilDescriptor ToMetalDepthStencilDescriptor(const PipelineStateCreateInfo& createInfo)
+    mtlpp::DepthStencilDescriptor ToMetalDepthStencilDescriptor(const GraphicsPipelineStateCreateInfo& createInfo)
     {
         mtlpp::DepthStencilDescriptor d;
 
         const auto& ci = createInfo.depthStencil;
 
+        d.SetDepthCompareFunction(ToMetalCompareFunction(ci.depthCompareFunction));
+
         if(ci.depthWriteEnable)
         {
-            d.SetDepthCompareFunction(ToMetalCompareFunction(ci.depthCompareFunction));
             d.SetDepthWriteEnabled(ci.depthWriteEnable);
         }
 
@@ -137,6 +142,35 @@ namespace Luch::Metal
         {
             d.SetBackFaceStencil(ToMetalStencilDescriptor(ci.back));
             d.SetFrontFaceStencil(ToMetalStencilDescriptor(ci.front));
+        }
+
+        return d;
+    }
+
+    mtlpp::ComputePipelineDescriptor ToMetalComputePipelineStateCreateInfo(const ComputePipelineStateCreateInfo& ci)
+    {
+        mtlpp::ComputePipelineDescriptor d;
+
+        auto mtlKernelProgram = static_cast<MetalShaderProgram*>(ci.kernelProgram.Get());
+
+        d.SetComputeFunction(mtlKernelProgram->GetMetalFunction());
+        d.SetLabel(ns::String{ ci.name.c_str() });
+
+        return d;
+    }
+
+    mtlpp::TileRenderPipelineDescriptor ToMetalTiledPipelineStateCreateInfo(const TiledPipelineStateCreateInfo& ci)
+    {
+        mtlpp::TileRenderPipelineDescriptor d;
+
+        auto mtlTileProgram = static_cast<MetalShaderProgram*>(ci.tiledProgram.Get());
+
+        d.SetTileFunction(mtlTileProgram->GetMetalFunction());
+        d.SetLabel(ns::String { ci.name.c_str() });
+
+        for(int32 i = 0; i < ci.colorAttachments.attachments.size(); i++)
+        {
+            d.GetColorAttachments()[i].SetPixelFormat(ToMetalPixelFormat(ci.colorAttachments.attachments[i].format));
         }
 
         return d;

@@ -93,9 +93,11 @@ namespace Luch::Metal
         case ResourceStorageMode::Shared:
             d.SetStorageMode(mtlpp::StorageMode::Shared);
             break;
+        case ResourceStorageMode::Memoryless:
+            d.SetStorageMode(mtlpp::StorageMode::Memoryless);
+            break;
         }
 
         return d;
     }
 }
-

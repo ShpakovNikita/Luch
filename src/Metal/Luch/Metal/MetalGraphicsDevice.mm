@@ -2,7 +2,9 @@
 #include <Luch/Graphics/BufferCreateInfo.h>
 #include <Luch/Metal/MetalCommandQueue.h>
 #include <Luch/Metal/MetalDescriptorPool.h>
-#include <Luch/Metal/MetalPipelineState.h>
+#include <Luch/Metal/MetalGraphicsPipelineState.h>
+#include <Luch/Metal/MetalComputePipelineState.h>
+#include <Luch/Metal/MetalTiledPipelineState.h>
 #include <Luch/Metal/MetalDescriptorSetLayout.h>
 #include <Luch/Metal/MetalPipelineLayout.h>
 #include <Luch/Metal/MetalShaderLibrary.h>
@@ -10,6 +12,7 @@
 #include <Luch/Metal/MetalRenderPass.h>
 #include <Luch/Metal/MetalTexture.h>
 #include <Luch/Metal/MetalBuffer.h>
+#include <Luch/Metal/MetalFormat.h>
 #include <Luch/Metal/MetalSampler.h>
 #include <Luch/Metal/MetalSwapchain.h>
 #include <Luch/Metal/MetalSurface.h>
@@ -85,10 +88,10 @@ namespace Luch::Metal
         return { GraphicsResult::Success, MakeRef<MetalPipelineLayout>(this, createInfo) };
     }
 
-    GraphicsResultRefPtr<PipelineState> MetalGraphicsDevice::CreatePipelineState(
-        const PipelineStateCreateInfo& createInfo)
+    GraphicsResultRefPtr<GraphicsPipelineState> MetalGraphicsDevice::CreateGraphicsPipelineState(
+        const GraphicsPipelineStateCreateInfo& createInfo)
     {
-        auto mtlPipelineDescriptor = ToMetalPipelineStateCreateInfo(createInfo);
+        auto mtlGraphicsPipelineDescriptor = ToMetalGraphicsPipelineStateCreateInfo(createInfo);
 
         Optional<mtlpp::DepthStencilState> mtlDepthStencilState;
         if(createInfo.depthStencil.depthTestEnable || createInfo.depthStencil.stencilTestEnable)
@@ -99,13 +102,57 @@ namespace Luch::Metal
 
         ns::Error error;
 
-        auto mtlPipelineState = device.NewRenderPipelineState(mtlPipelineDescriptor, &error);
+        auto mtlPipelineState = device.NewRenderPipelineState(mtlGraphicsPipelineDescriptor, &error);
 
         auto result = PipelineErrorToGraphicsResult(error);
 
         if(result == GraphicsResult::Success)
         {
-            return { result, MakeRef<MetalPipelineState>(this, createInfo, mtlPipelineState, mtlDepthStencilState) };
+            return { result, MakeRef<MetalGraphicsPipelineState>(this, createInfo, mtlPipelineState, mtlDepthStencilState) };
+        }
+        else
+        {
+            return { result };
+        }
+    }
+
+    GraphicsResultRefPtr<ComputePipelineState> MetalGraphicsDevice::CreateComputePipelineState(
+        const ComputePipelineStateCreateInfo& createInfo)
+    {
+        auto mtlComputePipelineDescriptor = ToMetalComputePipelineStateCreateInfo(createInfo);
+
+        ns::Error error;
+        mtlpp::PipelineOption options = mtlpp::PipelineOption::None;
+
+        auto mtlPipelineState = device.NewComputePipelineState(mtlComputePipelineDescriptor, options, nullptr, &error);
+
+        auto result = PipelineErrorToGraphicsResult(error);
+
+        if(result == GraphicsResult::Success)
+        {
+            return { result, MakeRef<MetalComputePipelineState>(this, createInfo, mtlPipelineState) };
+        }
+        else
+        {
+            return { result };
+        }
+    }
+
+    GraphicsResultRefPtr<TiledPipelineState> MetalGraphicsDevice::CreateTiledPipelineState(
+        const TiledPipelineStateCreateInfo& createInfo)
+    {
+        auto mtlTiledPipelineDescriptor = ToMetalTiledPipelineStateCreateInfo(createInfo);
+
+        ns::Error error;
+        mtlpp::PipelineOption options = mtlpp::PipelineOption::None;
+
+        auto mtlPipelineState = device.NewRenderPipelineState(mtlTiledPipelineDescriptor, options, nullptr, &error);
+
+        auto result = PipelineErrorToGraphicsResult(error);
+
+        if(result == GraphicsResult::Success)
+        {
+            return { result, MakeRef<MetalTiledPipelineState>(this, createInfo, mtlPipelineState) };
         }
         else
         {
@@ -139,6 +186,9 @@ namespace Luch::Metal
         case ResourceStorageMode::Shared:
             optionBits |= (uint32)mtlpp::ResourceOptions::StorageModeShared;
             break;
+        default:
+            LUCH_ASSERT(false);
+            break;
         }
 
         mtlpp::ResourceOptions options = static_cast<mtlpp::ResourceOptions>(optionBits);
@@ -169,11 +219,19 @@ namespace Luch::Metal
         Surface* surface)
     {
         auto mtlSurface = static_cast<MetalSurface*>(surface);
-        return { GraphicsResult::Success, MakeRef<MetalSwapchain>(this, createInfo, (CAMetalLayer*)mtlSurface->layer) };
+        CAMetalLayer* layer = (CAMetalLayer*)mtlSurface->layer;
+        MTLPixelFormat pixelFormat = (MTLPixelFormat)ToMetalPixelFormat(createInfo.format);
+
+        layer.pixelFormat= pixelFormat;
+        layer.maximumDrawableCount = createInfo.imageCount;
+        layer.drawableSize = CGSize{ (CGFloat)createInfo.width, (CGFloat)createInfo.height };
+        layer.device = (__bridge id<MTLDevice>)device.GetPtr();
+
+        return { GraphicsResult::Success, MakeRef<MetalSwapchain>(this, createInfo, layer) };
     }
 
     GraphicsResultRefPtr<ShaderLibrary> MetalGraphicsDevice::CreateShaderLibraryFromSource(
-        const Vector<Byte>& source,
+        const String& source,
         const UnorderedMap<String, Variant<int32, String>>& defines)
     {
         mtlpp::CompileOptions options;
@@ -205,10 +263,12 @@ namespace Luch::Metal
 
         MTLCompileOptions* o = (__bridge MTLCompileOptions*)options.GetPtr();
         [o setPreprocessorMacros:dict];
-
         [dict release];
 
-        auto mtlLibrary = device.NewLibrary((const char*)source.data(), options, &error);
+        // Disabling fastmath breaks all the math on MacBook Pro Retina Early 2015
+        [o setFastMathEnabled:true];
+
+        auto mtlLibrary = device.NewLibrary(source.data(), options, &error);
 
         GraphicsResult result = LibraryErrorToGraphicsResult(error);
         if(mtlLibrary)
@@ -223,8 +283,8 @@ namespace Luch::Metal
         }
     }
 
-    GraphicsResultRefPtr<Semaphore> MetalGraphicsDevice::CreateSemaphore()
+    GraphicsResultRefPtr<Semaphore> MetalGraphicsDevice::CreateSemaphore(int32 value)
     {
-        return { GraphicsResult::Success, MakeRef<MetalSemaphore>(this) };
+        return { GraphicsResult::Success, MakeRef<MetalSemaphore>(this, value) };
     }
 }

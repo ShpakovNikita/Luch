@@ -12,17 +12,14 @@ namespace Luch::Graphics
         virtual ~CommandQueue() = 0;
 
         virtual GraphicsResultRefPtr<CommandPool> CreateCommandPool() = 0;
-        //virtual GraphicsResultRefPtr<GraphicsCommandList> AllocateGraphicsCommandList() = 0;
 
         virtual GraphicsResult Submit(
-            GraphicsCommandList* commandList) = 0;
-
-        virtual GraphicsResult Submit(
-            CopyCommandList* commandList) = 0;
+            CommandList* commandList,
+            std::function<void()> completedHandler) = 0;
 
         virtual GraphicsResult Present(
-            int32 imageIndex,
-            Swapchain* swapchain) = 0;
+            SwapchainTexture* swapchainTexture,
+            std::function<void()> presentedHandler) = 0;
     };
 
     inline CommandQueue::~CommandQueue() {}

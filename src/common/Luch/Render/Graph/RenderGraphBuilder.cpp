@@ -34,7 +34,7 @@ namespace Luch::Render::Graph
         return true;
     }
 
-    UniquePtr<RenderGraphNodeBuilder> RenderGraphBuilder::AddRenderPass(
+    UniquePtr<RenderGraphNodeBuilder> RenderGraphBuilder::AddGraphicsPass(
         String name,
         RefPtr<Graphics::RenderPass> renderPass,
         RenderGraphPass* pass)
@@ -43,6 +43,31 @@ namespace Luch::Render::Graph
         node.name = name;
         node.pass = pass;
         node.renderPass = renderPass;
+        node.type = RenderGraphPassType::Graphics;
+
+        return MakeUnique<RenderGraphNodeBuilder>(this, renderGraphNodes.size() - 1, resourceManager.get());
+    }
+
+    UniquePtr<RenderGraphNodeBuilder> RenderGraphBuilder::AddComputePass(
+        String name,
+        RenderGraphPass* pass)
+    {
+        auto& node = renderGraphNodes.emplace_back();
+        node.name = name;
+        node.pass = pass;
+        node.type = RenderGraphPassType::Compute;
+
+        return MakeUnique<RenderGraphNodeBuilder>(this, renderGraphNodes.size() - 1, resourceManager.get());
+    }
+
+    UniquePtr<RenderGraphNodeBuilder> RenderGraphBuilder::AddCopyPass(
+        String name,
+        RenderGraphPass* pass)
+    {
+        auto& node = renderGraphNodes.emplace_back();
+        node.name = name;
+        node.pass = pass;
+        node.type = RenderGraphPassType::Copy;
 
         return MakeUnique<RenderGraphNodeBuilder>(this, renderGraphNodes.size() - 1, resourceManager.get());
     }
@@ -109,26 +134,37 @@ namespace Luch::Render::Graph
 
         for(auto& node : data.nodes)
         {
+            if(node.type != RenderGraphPassType::Graphics)
+            {
+                continue;
+            }
+
             FrameBufferCreateInfo frameBufferCreateInfo;
             frameBufferCreateInfo.renderPass = node.renderPass;
 
-            for(int32 i = 0; i < node.colorAttachmentResources.size(); i++)
+            for(int32 i = 0; i < node.colorAttachments.size(); i++)
             {
-                RenderMutableResource colorAttachmentResource = node.colorAttachmentResources[i];
-                if(colorAttachmentResource)
+                const auto& colorAttachment = node.colorAttachments[i];
+                if(colorAttachment.resource)
                 {
-                    const auto& colorTexture = resourceManager->GetTexture(colorAttachmentResource);
+                    const auto& colorTexture = resourceManager->GetTexture(colorAttachment.resource);
                     LUCH_ASSERT(colorTexture != nullptr);
-                    frameBufferCreateInfo.colorTextures[i] = colorTexture;
+                    frameBufferCreateInfo.colorAttachments[i].texture = colorTexture;
+                    frameBufferCreateInfo.colorAttachments[i].slice = colorAttachment.descriptor.slice;
+                    frameBufferCreateInfo.colorAttachments[i].depthPlane = colorAttachment.descriptor.depthPlane;
+                    frameBufferCreateInfo.colorAttachments[i].mipmapLevel = colorAttachment.descriptor.mipmapLevel;
                 }
             }
 
-            RenderMutableResource depthStencilAttachmentResource = node.depthStencilAttachmentResource;
-            if(depthStencilAttachmentResource)
+            const auto& depthStencilAttachment = node.depthStencilAttachment;
+            if(depthStencilAttachment.resource)
             {
-                const auto& depthStencilTexture = resourceManager->GetTexture(depthStencilAttachmentResource);
+                const auto& depthStencilTexture = resourceManager->GetTexture(depthStencilAttachment.resource);
                 LUCH_ASSERT(depthStencilTexture != nullptr);
-                frameBufferCreateInfo.depthStencilTexture = depthStencilTexture;
+                frameBufferCreateInfo.depthStencilAttachment.texture = depthStencilTexture;
+                frameBufferCreateInfo.depthStencilAttachment.slice = depthStencilAttachment.descriptor.slice;
+                frameBufferCreateInfo.depthStencilAttachment.depthPlane = depthStencilAttachment.descriptor.depthPlane;
+                frameBufferCreateInfo.depthStencilAttachment.mipmapLevel = depthStencilAttachment.descriptor.mipmapLevel;
             }
 
             auto [createFrameBufferResult, createdFrameBuffer] = device->CreateFrameBuffer(frameBufferCreateInfo);

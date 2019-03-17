@@ -7,6 +7,8 @@ namespace Luch::Metal
 {
     using namespace Graphics;
 
-    mtlpp::RenderPipelineDescriptor ToMetalPipelineStateCreateInfo(const PipelineStateCreateInfo& createInfo);
-    mtlpp::DepthStencilDescriptor ToMetalDepthStencilDescriptor(const PipelineStateCreateInfo& createInfo);
+    mtlpp::RenderPipelineDescriptor ToMetalGraphicsPipelineStateCreateInfo(const GraphicsPipelineStateCreateInfo& createInfo);
+    mtlpp::DepthStencilDescriptor ToMetalDepthStencilDescriptor(const GraphicsPipelineStateCreateInfo& createInfo);
+    mtlpp::ComputePipelineDescriptor ToMetalComputePipelineStateCreateInfo(const ComputePipelineStateCreateInfo& createInfo);
+    mtlpp::TileRenderPipelineDescriptor ToMetalTiledPipelineStateCreateInfo(const TiledPipelineStateCreateInfo& createInfo);
 }

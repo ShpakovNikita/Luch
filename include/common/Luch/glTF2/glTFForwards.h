@@ -31,5 +31,6 @@ namespace Luch::glTF
     struct Target;
     struct Texture;
     struct LightPunctual;
+    struct LightProbe;
     struct glTFRoot;
 }

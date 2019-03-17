@@ -2,27 +2,30 @@
 
 #include <Luch/ArrayProxy.h>
 #include <Luch/BaseObject.h>
+#include <Luch/Rect2.h>
 #include <Luch/Graphics/IndexType.h>
 #include <Luch/Graphics/ShaderStage.h>
-#include <Luch/Graphics/Rect2.h>
 #include <Luch/Graphics/Viewport.h>
 #include <Luch/Graphics/Color.h>
-#include <Luch/Graphics/GraphicsObject.h>
+#include <Luch/Graphics/CommandList.h>
 
 namespace Luch::Graphics
 {
-    class GraphicsCommandList : public GraphicsObject
+    class GraphicsCommandList : public CommandList
     {
     public:
-        GraphicsCommandList(GraphicsDevice* device) : GraphicsObject(device) {}
+        GraphicsCommandList(GraphicsDevice* device) : CommandList(device) {}
 
         virtual void Begin() = 0;
         virtual void End() = 0;
 
+        CommandListType GetType() const override { return CommandListType::Graphics; }
+
         virtual void BeginRenderPass(FrameBuffer* framebuffer) = 0;
         virtual void EndRenderPass() = 0;
 
-        virtual void BindPipelineState(PipelineState* pipelineState) = 0;
+        virtual void BindGraphicsPipelineState(GraphicsPipelineState* pipelineState) = 0;
+        virtual void BindTiledPipelineState(TiledPipelineState* pipelineState) = 0;
 
         virtual void BindTextureDescriptorSet(
             ShaderStage stage,
@@ -66,5 +69,10 @@ namespace Luch::Graphics
             int32 baseVertex,
             int32 instanceCount,
             int32 baseInstance) = 0;
+
+        virtual Size2i GetTileSize() const = 0;
+
+        virtual void DispatchThreadsPerTile(
+            Size2i threadsPerTile) = 0;
     };
 }

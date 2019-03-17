@@ -8,22 +8,65 @@
 #include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/SceneV1/SceneV1Forwards.h>
 #include <Luch/Render/Common.h>
-#include <Luch/Render/Deferred/DeferredForwards.h>
+#include <Luch/Render/Passes/PassesForwards.h>
+#include <Luch/Render/Passes/Forward/ForwardForwards.h>
+#include <Luch/Render/Passes/Deferred/DeferredForwards.h>
+#include <Luch/Render/Passes/TiledDeferred/TiledDeferredForwards.h>
+#include <Luch/Render/Passes/IBL/IBLForwards.h>
+#include <Luch/Render/RenderForwards.h>
 #include <Luch/Render/RenderContext.h>
 #include <Luch/Render/CameraResources.h>
 #include <Luch/Render/MaterialManager.h>
+#include <Luch/Render/SceneRendererConfig.h>
 #include <Luch/Render/Graph/RenderGraphForwards.h>
 #include <Luch/Render/Graph/RenderGraphResources.h>
 
 namespace Luch::Render
 {
     using namespace Graphics;
+    using namespace Passes;
+
+    struct FrameResources
+    {
+        Size2i outputSize;
+        SharedPtr<SharedBuffer> sharedBuffer;
+        RefPtr<DescriptorSet> cameraDescriptorSet;
+
+        UniquePtr<Graph::RenderGraphBuilder> builder;
+        UniquePtr<Graph::RenderGraph> renderGraph;
+
+        UniquePtr<DepthOnlyRenderPass> depthOnlyPass;
+        UniquePtr<Forward::ForwardRenderPass> forwardPass;
+        UniquePtr<TiledDeferred::TiledDeferredRenderPass> tiledDeferredPass;
+        UniquePtr<Deferred::GBufferRenderPass> gbufferPass;
+        UniquePtr<Deferred::ResolveRenderPass> resolvePass;
+        UniquePtr<Deferred::ResolveComputeRenderPass> resolveComputePass;
+        UniquePtr<TonemapRenderPass> tonemapPass;
+
+        UniquePtr<DepthOnlyTransientContext> depthOnlyTransientContext;
+        UniquePtr<Forward::ForwardTransientContext> forwardTransientContext;
+        UniquePtr<TiledDeferred::TiledDeferredTransientContext> tiledDeferredTransientContext;
+        UniquePtr<Deferred::GBufferTransientContext> gbufferTransientContext;
+        UniquePtr<Deferred::ResolveTransientContext> resolveTransientContext;
+        UniquePtr<Deferred::ResolveComputeTransientContext> resolveComputeTransientContext;
+        UniquePtr<TonemapTransientContext> tonemapTransientContext;
+
+        Graph::RenderResource diffuseIlluminanceCubemapHandle;
+        Graph::RenderResource specularReflectionCubemapHandle;
+        Graph::RenderResource specularBRDFTextureHandle;
+
+        Graph::RenderMutableResource outputHandle;
+        RefPtr<SwapchainTexture> swapchainTexture;
+
+        void Reset();
+    };
 
     class SceneRenderer
     {
-        static const int32 DescriptorSetCount = 2048;
-        static const int32 DescriptorCount = 8192;
-        static const int32 SharedBufferSize = 1024 * 1024;
+        static constexpr int32 MaxSwapchainTextures = 3;
+        static constexpr int32 DescriptorSetCount = 2048;
+        static constexpr int32 DescriptorCount = 8192;
+        static constexpr int32 SharedBufferSize = 1024 * 1024;
     public:
         SceneRenderer(RefPtr<SceneV1::Scene> scene);
         ~SceneRenderer();
@@ -31,42 +74,60 @@ namespace Luch::Render
         bool Initialize(SharedPtr<RenderContext> context);
         bool Deinitialize();
 
+        bool ProbeIndirectLighting();
+        void ResetIndirectLighting();
+
+        bool PrepareSceneResources();
+
         bool BeginRender();
         bool PrepareScene();
         void UpdateScene();
         void DrawScene(SceneV1::Node* cameraNode);
         void EndRender();
+
+        inline SceneRendererConfig& GetMutableConfig() { return config; }
     private:
+        bool PrepareForward(FrameResources& frame);
+        bool PrepareDeferred(FrameResources& frame);
+        bool PrepareTiledDeferred(FrameResources& frame);
+
+        int32 GetCurrentFrameResourceIndex() const;
         static ResultValue<bool, UniquePtr<CameraResources>> PrepareCameraResources(GraphicsDevice* device);
+        static ResultValue<bool, UniquePtr<IndirectLightingResources>> PrepareIndirectLightingResources(GraphicsDevice* device);
 
         bool UploadSceneTextures();
         bool UploadSceneBuffers();
 
-        UniquePtr<MaterialManager> materialManager;
+        bool canUseTiledDeferredRender = false;
+
+        SceneRendererConfig config;
+
+        UniquePtr<IBLRenderer> iblRenderer;
+
+        RefPtr<Texture> diffuseIlluminanceCubemap;
+        RefPtr<Texture> specularReflectionCubemap;
+        RefPtr<Texture> specularBRDFTexture;
+
+        SharedPtr<MaterialManager> materialManager;
         UniquePtr<Graph::RenderGraphResourcePool> resourcePool;
-        UniquePtr<Graph::RenderGraphBuilder> builder;
 
-        UniquePtr<Deferred::GBufferRenderPass> gbufferPass;
-        UniquePtr<Deferred::ResolveRenderPass> resolvePass;
-        UniquePtr<Deferred::TonemapRenderPass> tonemapPass;
-
+        UniquePtr<DepthOnlyPersistentContext> depthOnlyPersistentContext;
+        UniquePtr<Forward::ForwardPersistentContext> forwardPersistentContext;
+        UniquePtr<TiledDeferred::TiledDeferredPersistentContext> tiledDeferredPersistentContext;
         UniquePtr<Deferred::GBufferPersistentContext> gbufferPersistentContext;
         UniquePtr<Deferred::ResolvePersistentContext> resolvePersistentContext;
-        UniquePtr<Deferred::TonemapPersistentContext> tonemapPersistentContext;
+        UniquePtr<Deferred::ResolveComputePersistentContext> resolveComputePersistentContext;
+        UniquePtr<TonemapPersistentContext> tonemapPersistentContext;
 
-        UniquePtr<Deferred::GBufferTransientContext> gbufferTransientContext;
-        UniquePtr<Deferred::ResolveTransientContext> resolveTransientContext;
-        UniquePtr<Deferred::TonemapTransientContext> tonemapTransientContext;
-
-        RefPtr<DescriptorSet> cameraDescriptorSet;
-
-        Graph::RenderMutableResource outputHandle;
-
-        UniquePtr<CameraResources> cameraResources;
+        Array<FrameResources, MaxSwapchainTextures> frameResources;
+        SharedPtr<CameraResources> cameraResources;
+        SharedPtr<IndirectLightingResources> indirectLightingResources;
         SharedPtr<RenderContext> context;
+        RefPtr<Semaphore> semaphore;
         RefPtr<CommandPool> commandPool;
         RefPtr<DescriptorPool> descriptorPool;
-        SharedPtr<SharedBuffer> sharedBuffer;
         RefPtr<SceneV1::Scene> scene;
+
+        int32 frameIndex = 0;
     };
 }

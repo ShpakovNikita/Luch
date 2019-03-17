@@ -12,10 +12,17 @@ namespace Luch::Render::Graph
     public:
         virtual ~RenderGraphPass() = 0;
 
-        virtual void ExecuteRenderPass(
-            RenderGraphResourceManager* manager,
-            FrameBuffer* frameBuffer, 
-            GraphicsCommandList* commandList) = 0;
+        virtual void ExecuteGraphicsPass(
+            [[maybe_unused]] RenderGraphResourceManager* manager,
+            [[maybe_unused]] GraphicsCommandList* commandList) {};
+
+        virtual void ExecuteComputePass(
+            [[maybe_unused]] RenderGraphResourceManager* manager,
+            [[maybe_unused]] ComputeCommandList* commandList) {};
+
+        virtual void ExecuteCopyPass(
+            [[maybe_unused]] RenderGraphResourceManager* manager,
+            [[maybe_unused]] CopyCommandList* commandList) {};
     };
 
     inline RenderGraphPass::~RenderGraphPass() {}

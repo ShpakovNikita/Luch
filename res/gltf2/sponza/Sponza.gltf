@@ -1,6 +1,7 @@
 {
     "extensionsUsed": [
-        "KHR_lights_punctual"
+        "KHR_lights_punctual",
+        "EXT_lights_probe"
     ],
     "asset": {
         "generator": "Granite glTF 2.0 exporter",
@@ -10,16 +11,44 @@
     "scenes": [
         {
             "nodes": [
-                0, 1, 2, 3, 4
+                0, 1, 2, 3, 4, 5, 6, 7
             ]
         }
     ],
     "extensions": {
+        "EXT_lights_probe": {
+            "probes": [
+                {
+                    "size": [128, 128],
+                    "specularReflection": true,
+                    "diffuseIlluminance": true,
+                    "znear": 0.1,
+                    "zfar": 50
+                }
+            ]
+        },
         "KHR_lights_punctual": {
             "lights": [
                 {
                     "color": [1.0, 1.0, 1.0],
-                    "intensity": 10,
+                    "intensity": 2,
+                    "type": "directional"
+                },
+                {
+                    "color": [1.0, 1.0, 0.0],
+                    "intensity": 2,
+                    "type": "point",
+                    "range": 5
+                },
+                {
+                    "color": [0.0, 1.0, 1.0],
+                    "intensity": 2,
+                    "type": "point",
+                    "range": 5
+                },
+                {
+                    "color": [1.0, 1.0, 1.0],
+                    "intensity": 2,
                     "type": "point",
                     "range": 30
                 },
@@ -29,16 +58,16 @@
                     "type": "spot",
                     "range": 30,
                     "spot": {
-                        "outerConeAngle": 0.4
+                        "outerConeAngle": 0.3
                     }
                 },
                 {
                     "color": [0.0, 1.0, 0.0],
                     "intensity": 50,
                     "type": "spot",
-                    "range": 500,
+                    "range": 30,
                     "spot": {
-                        "outerConeAngle": 0.5
+                        "outerConeAngle": 0.3
                     }
                 }
             ]
@@ -66,18 +95,10 @@
         {
             "camera": 0,
             "rotation": [ 0, 0.7071068, 0, 0.7071068 ],
-            "translation": [
-                0,
-                3,
-                0
-            ]
+            "translation": [ 0, 3, 0]
         },
         {
-            "translation": [
-                3,
-                3,
-                -1
-            ],
+            "rotation": [ 0.4619398, 0.1913417, 0.4619398, 0.7325378 ],
             "extensions": {
                 "KHR_lights_punctual": {
                     "light": 0
@@ -85,12 +106,7 @@
             }
         },
         {
-            "rotation": [ 0, 0.7071068, 0, -0.7071068 ],
-            "translation": [
-                3,
-                2,
-                0
-            ],
+            "translation": [ 8, 2, 0 ],
             "extensions": {
                 "KHR_lights_punctual": {
                     "light": 1
@@ -98,15 +114,36 @@
             }
         },
         {
-            "rotation": [ 0, 0.7071068, 0, -0.7071068 ],
-            "translation": [
-                3,
-                4.5,
-                0
-            ],
+            "translation": [ -8, 2, 0 ],
             "extensions": {
                 "KHR_lights_punctual": {
                     "light": 2
+                }
+            }
+        },
+        {
+            "rotation": [ 0, 0.7071068, 0, -0.7071068 ],
+            "translation": [ 3, 6, 0 ],
+            "extensions": {
+                "KHR_lights_punctual": {
+                    "light": 4
+                }
+            }
+        },
+        {
+            "rotation": [ 0, 0.7071068, 0, 0.7071068 ],
+            "translation": [ -3, 6, 0 ],
+            "extensions": {
+                "KHR_lights_punctual": {
+                    "light": 5
+                }
+            }
+        },
+        {
+            "translation": [ 0, 3, 0 ],
+            "extensions": {
+                "EXT_lights_probe": {
+                    "probe": 0
                 }
             }
         }

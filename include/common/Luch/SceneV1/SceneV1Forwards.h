@@ -6,6 +6,7 @@ namespace Luch::SceneV1
     class Camera;
     class Image;
     class Light;
+    class LightProbe;
     class Mesh;
     class Node;
     class OrthographicCamera;

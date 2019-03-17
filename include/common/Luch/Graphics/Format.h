@@ -11,18 +11,18 @@ namespace Luch::Graphics
         R8Unorm_sRGB,
 
         // Color (RG)
-        R8G8Unorm,
-        R8G8Unorm_sRGB,
+        RG8Unorm,
+        RG8Unorm_sRGB,
 
         // Color (RGB)
-        R8G8B8Unorm,
-        R8G8B8Unorm_sRGB,
+        RGB8Unorm,
+        RGB8Unorm_sRGB,
 
         // Color RGBA
-        R8G8B8A8Unorm,
-        R8G8B8A8Unorm_sRGB,
-        B8G8R8A8Unorm,
-        B8G8R8A8Unorm_sRGB,
+        RGBA8Unorm,
+        RGBA8Unorm_sRGB,
+        BGRA8Unorm,
+        BGRA8Unorm_sRGB,
 
         // Depth
         D16Unorm,
@@ -44,26 +44,28 @@ namespace Luch::Graphics
         R32Uint,
         R32Sfloat,
 
-        R8G8Sint,
-        R8G8Uint,
-        R16G16Sint,
-        R16G16Uint,
-        R32G32Uint,
-        R32G32Sfloat,
+        RG8Sint,
+        RG8Uint,
+        RG16Sint,
+        RG16Uint,
+        RG32Uint,
+        RG32Sfloat,
 
-        R8G8B8Sint,
-        R8G8B8Uint,
-        R16G16B16Sint,
-        R16G16B16Uint,
-        R32G32B32Uint,
-        R32G32B32Sfloat,
+        RGB8Sint,
+        RGB8Uint,
+        RGB16Sint,
+        RGB16Uint,
+        RGB32Uint,
+        RGB32Sfloat,
 
-        R8G8B8A8Sint,
-        R8G8B8A8Uint,
-        R16G16B16A16Sint,
-        R16G16B16A16Uint,
-        R32G32B32A32Uint,
-        R32G32B32A32Sfloat
+        RGBA8Sint,
+        RGBA8Uint,
+        RGBA16Sint,
+        RGBA16Uint,
+        RGBA32Uint,
+
+        RGBA16Sfloat,
+        RGBA32Sfloat,
     };
 
     inline bool FormatIsDepthOnlyFormat(Format format)

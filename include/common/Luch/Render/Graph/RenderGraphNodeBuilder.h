@@ -2,8 +2,10 @@
 
 #include <Luch/RefPtr.h>
 #include <Luch/Render/Graph/RenderGraphForwards.h>
+#include <Luch/Render/Graph/RenderGraphAttachmentCreateInfo.h>
 #include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/Graphics/RenderPassCreateInfo.h>
+#include <Luch/Graphics/ResourceStorageMode.h>
 
 namespace Luch::Render::Graph
 {
@@ -17,16 +19,45 @@ namespace Luch::Render::Graph
             int32 nodeIndex,
             RenderGraphResourceManager* resourceManager);
 
-        RenderMutableResource ImportColorAttachment(int32 index, RefPtr<Texture> texture);
-        RenderMutableResource ImportDepthStencilAttachment(RefPtr<Texture> texture);
+        RenderMutableResource ImportColorAttachment(
+            int32 index,
+            RefPtr<Texture> texture,
+            const RenderGraphAttachmentDescriptor& descriptor = {});
 
-        RenderMutableResource CreateColorAttachment(int32 index, Size2i size);
-        RenderMutableResource CreateDepthStencilAttachment(Size2i size);
+        RenderMutableResource ImportDepthStencilAttachment(
+            RefPtr<Texture> texture,
+            const RenderGraphAttachmentDescriptor& descriptor = {});
 
-        RenderMutableResource WritesToColorAttachment(int32 index, RenderMutableResource resource);
-        RenderMutableResource WritesToDepthStencilAttachment(RenderMutableResource resource);
+        RenderMutableResource UseColorAttachment(
+            int32 index,
+            RenderMutableResource colorAttachmentHandle,
+            const RenderGraphAttachmentDescriptor& descriptor = {});
 
+        RenderMutableResource UseDepthStencilAttachment(
+            RenderMutableResource depthStencilAttachmentHandle,
+            const RenderGraphAttachmentDescriptor& descriptor = {});
+
+        RenderMutableResource CreateColorAttachment(int32 index, const RenderGraphAttachmentCreateInfo& createInfo);
+        RenderMutableResource CreateDepthStencilAttachment(const RenderGraphAttachmentCreateInfo& createInfo);
+
+        RenderMutableResource WritesToColorAttachment(
+            int32 index,
+            RenderMutableResource resource,
+            const RenderGraphAttachmentDescriptor& descriptor = {});
+
+        RenderMutableResource WritesToDepthStencilAttachment(
+            RenderMutableResource resource,
+            const RenderGraphAttachmentDescriptor& descriptor = {});
+
+        RenderMutableResource ImportTexture(RefPtr<Texture> texture);
+        RenderMutableResource CreateTexture(const TextureCreateInfo& createInfo);
+        RenderMutableResource WritesToTexture(RenderMutableResource resource);
         RenderResource ReadsTexture(RenderResource resource);
+
+        RenderMutableResource ImportBuffer(RefPtr<Buffer> buffer);
+        RenderMutableResource CreateBuffer(const BufferCreateInfo& createInfo);
+        RenderMutableResource WritesToBuffer(RenderMutableResource resource);
+        RenderResource ReadsBuffer(RenderResource resource);
     private:
         RenderGraphNode* GetNode() const;
         RenderGraphBuilder* graphBuilder = nullptr;

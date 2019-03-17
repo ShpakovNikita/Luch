@@ -39,6 +39,8 @@
 #include <Luch/Graphics/SwapchainInfo.h>
 #include <Luch/Graphics/CommandQueue.h>
 #include <Luch/Render/SceneRenderer.h>
+#include <Luch/Render/SceneRendererConfig.h>
+#include <Luch/Render/RenderUtils.h>
 #include <algorithm>
 
 using namespace Luch;
@@ -222,23 +224,94 @@ void SampleApplication::SetupScene()
     String rootDir{ "../res/gltf2/sponza/" };
     String filename { "Sponza.gltf" };
 
-    FileStream fileStream{ rootDir + filename, FileOpenModes::Read };
+    {
+        String filename { "Sponza.gltf" };
+        //String filename { "DamagedHelmet.gltf" };
 
-    auto root = glTFparser.ParseJSON(&fileStream);
+        FileStream fileStream{ rootDir + filename, FileOpenModes::Read };
+        
+        auto root = glTFparser.ParseJSON(&fileStream);
 
-    SceneV1::Loader::glTFLoader loader{ rootDir, root };
-    scene = loader.LoadScene(0);
+        SceneV1::Loader::glTFLoader loader{ rootDir, root };
+        scene = loader.LoadScene(0);
+    }
 
     auto cameraIt = std::find_if(
         scene->GetNodes().begin(),
         scene->GetNodes().end(),
         [](const auto& node) { return node->GetCamera() != nullptr; });
 
+    auto directionalLightIt = std::find_if(
+        scene->GetNodes().begin(),
+        scene->GetNodes().end(),
+        [](const auto& node) { return node->GetLight() != nullptr && node->GetLight()->GetType() == SceneV1::LightType::Directional; });
+
     LUCH_ASSERT(cameraIt != scene->GetNodes().end());
     cameraNode = *cameraIt;
 
+    if(directionalLightIt != scene->GetNodes().end())
+    {
+        directionalLightNode = *directionalLightIt;
+    }
+
     wasdController.SetNode(cameraNode);
     mouseController.SetNode(cameraNode);
+
+    context = MakeShared<Render::RenderContext>();
+
+    auto [createDeviceResult, createdDevice] = physicalDevice->CreateGraphicsDevice();
+    if(createDeviceResult != GraphicsResult::Success)
+    {
+        return false;
+    }
+
+    context->device = std::move(createdDevice);
+
+    auto [createCommandQueueResult, createdCommandQueue] = context->device->CreateCommandQueue();
+    if(createCommandQueueResult != GraphicsResult::Success)
+    {
+        return false;
+    }
+
+    context->commandQueue = std::move(createdCommandQueue);
+
+    SwapchainInfo swapchainInfo;
+    swapchainInfo.format = Format::BGRA8Unorm_sRGB;
+    swapchainInfo.imageCount = 3;
+    swapchainInfo.width = width;
+    swapchainInfo.height = height;
+
+    auto [createSwapchainResult, createdSwapchain] = context->device->CreateSwapchain(swapchainInfo, surface);
+    if(createSwapchainResult != GraphicsResult::Success)
+    {
+        return false;
+    }
+
+    context->swapchain = std::move(createdSwapchain);
+
+    renderer = MakeUnique<Render::SceneRenderer>(scene);
+
+    auto rendererInitialized = renderer->Initialize(context);
+    if(!rendererInitialized)
+    {
+        return false;
+    }
+
+    renderer->GetMutableConfig().useGlobalIllumination = true;
+    renderer->GetMutableConfig().useDiffuseGlobalIllumination = true;
+    renderer->GetMutableConfig().useSpecularGlobalIllumination = true;
+    renderer->GetMutableConfig().useForward = true;
+    renderer->GetMutableConfig().useDepthPrepass = true;
+    renderer->GetMutableConfig().useComputeResolve = false;
+    renderer->GetMutableConfig().useTiledDeferredPass = false;
+
+    for(int32 axis = WASDNodeController::XAxis; axis <= WASDNodeController::ZAxis; axis++)
+    {
+        wasdController.SetSpeed(axis, WASDNodeController::Negative, 2.5);
+        wasdController.SetSpeed(axis, WASDNodeController::Positive, 2.5);
+    }
+
+    return true;
 }
 
 bool SampleApplication::Deinitialize()
@@ -266,13 +339,34 @@ void SampleApplication::Process()
     wasdController.Tick(16.0f / 1000.0f);
     scene->Update();
 
-//    renderer->BeginRender();
-//    renderer->PrepareScene();
-//    renderer->UpdateScene();
-//    renderer->DrawScene(cameraNode);
-//    renderer->EndRender();
+    bool resourcesPrepared = renderer->PrepareSceneResources();
+    if(!resourcesPrepared)
+    {
+        return;
+    }
 
-//    context->commandQueue->Present(0, context->swapchain);
+    if((probeIndirectEveryFrame || !indirectProbed))
+    {
+        indirectProbed = renderer->ProbeIndirectLighting();
+        LUCH_ASSERT(indirectProbed);
+    }
+
+    bool beginSucceeded = renderer->BeginRender();
+    if(!beginSucceeded)
+    {
+        return;
+    }
+
+    bool prepareSucceeded = renderer->PrepareScene();
+    if(!prepareSucceeded)
+    {
+        LUCH_ASSERT(false);
+        return;
+    }
+
+    renderer->UpdateScene();
+    renderer->DrawScene(cameraNode);
+    renderer->EndRender();
 }
 
 void SampleApplication::HandleEvent(const SDL_Event& event)
@@ -295,6 +389,68 @@ void SampleApplication::HandleEvent(const SDL_Event& event)
 }
 
 void SampleApplication::HandleKeyboardEvent(const SDL_Event& event)
+{
+    switch(event.key.keysym.scancode)
+    {
+    case SDL_SCANCODE_W:
+    case SDL_SCANCODE_S:
+    case SDL_SCANCODE_A:
+    case SDL_SCANCODE_D:
+    case SDL_SCANCODE_Q:
+    case SDL_SCANCODE_E:
+        HandleKeyboardMovementEvent(event);
+        break;
+    default:
+        break;
+    }
+
+    if(event.type == SDL_KEYUP)
+    {
+        switch(event.key.keysym.scancode)
+        {
+        case SDL_SCANCODE_ESCAPE:
+            shouldQuit = true;
+            break;
+        case SDL_SCANCODE_Z:
+            renderer->GetMutableConfig().useDepthPrepass = true;
+            break;
+        case SDL_SCANCODE_X:
+            renderer->GetMutableConfig().useDepthPrepass = false;
+            break;
+        case SDL_SCANCODE_1:
+            renderer->GetMutableConfig().useForward = true;
+            renderer->GetMutableConfig().useComputeResolve = false;
+            renderer->GetMutableConfig().useTiledDeferredPass = false;
+            break;
+        case SDL_SCANCODE_2:
+            renderer->GetMutableConfig().useForward = false;
+            renderer->GetMutableConfig().useComputeResolve = false;
+            renderer->GetMutableConfig().useTiledDeferredPass = false;
+            break;
+        case SDL_SCANCODE_3:
+            renderer->GetMutableConfig().useForward = false;
+            renderer->GetMutableConfig().useComputeResolve = true;
+            renderer->GetMutableConfig().useTiledDeferredPass = false;
+            break;
+        case SDL_SCANCODE_C:
+            directionalLightNode->GetLight()->SetEnabled(!directionalLightNode->GetLight()->IsEnabled());
+            break;
+        case SDL_SCANCODE_V:
+            renderer->GetMutableConfig().useDiffuseGlobalIllumination = !renderer->GetMutableConfig().useDiffuseGlobalIllumination;
+            break;
+        case SDL_SCANCODE_B:
+            renderer->GetMutableConfig().useSpecularGlobalIllumination = !renderer->GetMutableConfig().useSpecularGlobalIllumination;
+            break;
+        case SDL_SCANCODE_I:
+            indirectProbed = false;
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+void SampleApplication::HandleKeyboardMovementEvent(const SDL_Event& event)
 {
     Optional<bool> moving;
 
@@ -336,9 +492,6 @@ void SampleApplication::HandleKeyboardEvent(const SDL_Event& event)
     case SDL_SCANCODE_E:
         axis = WASDNodeController::ZAxis;
         direction = WASDNodeController::Negative;
-        break;
-    case SDL_SCANCODE_ESCAPE:
-        shouldQuit = true;
         break;
     default:
         break;

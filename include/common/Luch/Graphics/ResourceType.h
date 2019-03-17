@@ -7,5 +7,6 @@ namespace Luch::Graphics
         Texture,
         Sampler,
         UniformBuffer,
+        ThreadgroupMemory,
     };
 }

@@ -48,6 +48,7 @@ private:
     bool CreateWindow();
     void SetupScene();
     void HandleKeyboardEvent(const SDL_Event& event);
+    void HandleKeyboardMovementEvent(const SDL_Event& event);
     void HandleMouseMotionEvent(const SDL_Event& event);
 
 #if _WIN32
@@ -70,6 +71,10 @@ private:
     Luch::UniquePtr<Luch::Render::SceneRenderer> renderer;
     Luch::RefPtr<Luch::SceneV1::Scene> scene;
     Luch::RefPtr<Luch::SceneV1::Node> cameraNode;
+    Luch::RefPtr<Luch::SceneV1::Node> directionalLightNode;
     Luch::WASDNodeController wasdController;
     Luch::MouseNodeController mouseController;
+
+    bool indirectProbed = false;
+    bool probeIndirectEveryFrame = false;
 };

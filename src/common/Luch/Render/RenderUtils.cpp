@@ -1,9 +1,11 @@
 #include <Luch/Render/RenderUtils.h>
 #include <Luch/Graphics/GraphicsDevice.h>
+#include <Luch/Graphics/CommandQueue.h>
 #include <Luch/SceneV1/Camera.h>
 #include <Luch/SceneV1/PbrMaterial.h>
 #include <Luch/SceneV1/Light.h>
 #include <Luch/FileStream.h>
+#include <regex>
 
 namespace Luch::Render::RenderUtils
 {
@@ -72,12 +74,12 @@ namespace Luch::Render::RenderUtils
         return lightUniform;
     }
 
-    Vector<Byte> LoadShaderSource(const FilePath& path)
+    String LoadShaderSource(const FilePath& path)
     {
         FileStream fileStream{ path, FileOpenModes::Read };
         auto fileSize = fileStream.GetSize();
-        Vector<Byte> result;
-        result.resize(fileSize + 1); // +1 for null termination
+        String result;
+        result.resize(fileSize);
         [[maybe_unused]] auto bytesRead = fileStream.Read(result.data(), fileSize, sizeof(Byte));
         LUCH_ASSERT(bytesRead == fileSize);
         return result;
@@ -85,7 +87,9 @@ namespace Luch::Render::RenderUtils
 
     ResultValue<bool, RefPtr<ShaderLibrary>> CreateShaderLibrary(
         GraphicsDevice* device,
-        const String& path,
+        const String& includeDir,
+        const String& dir,
+        const String& filename,
         const UnorderedMap<String, Variant<int32, String>>& defines)
     {
         #if LUCH_USE_METAL
@@ -96,9 +100,17 @@ namespace Luch::Render::RenderUtils
             String extension = "";
         #endif
 
-        auto shaderSource = LoadShaderSource(path + extension);
+        String path = dir + filename + extension;
 
-        auto [createLibraryResult, library] = device->CreateShaderLibraryFromSource(shaderSource, defines);
+        auto shaderSource = LoadShaderSource(path);
+
+        auto [substituteSucceeded, sourceWithIncludes] = SubstituteIncludes(includeDir, shaderSource);
+        if(!substituteSucceeded)
+        {
+            return { false };
+        }
+
+        auto [createLibraryResult, library] = device->CreateShaderLibraryFromSource(sourceWithIncludes, defines);
         if(createLibraryResult != GraphicsResult::Success && createLibraryResult != GraphicsResult::CompilerWarning)
         {
             LUCH_ASSERT(false);
@@ -107,6 +119,79 @@ namespace Luch::Render::RenderUtils
         else
         {
             return { true, library };
+        }
+    }
+
+    ResultValue<bool, String> SubstituteIncludesImpl(
+        const String& includeDir,
+        String source,
+        UnorderedSet<String>& alreadyIncluded)
+    {
+        const std::regex includeRegex { R"###(#include\s+\"(.*)\"\s*)###", std::regex::ECMAScript };
+        const std::regex pragmaOnceRegex { R"###(#pragma\s+once\s*)###", std::regex::ECMAScript };
+
+        std::smatch includeMatch;
+        while(std::regex_search(source, includeMatch, includeRegex))
+        {
+            int32 position = includeMatch.position();
+            int32 length = includeMatch.length();
+            String includeFilename = includeMatch[1];
+
+            auto includeSource = LoadShaderSource(includeDir + includeFilename);
+
+            std::smatch pragmaOnceMatch;
+            bool pragmaOnce = std::regex_search(includeSource, pragmaOnceMatch, pragmaOnceRegex);
+
+            if(pragmaOnce)
+            {
+                if(alreadyIncluded.count(includeFilename))
+                {
+                    source.replace(position, length, "");
+                    continue;
+                }
+                else
+                {
+                    includeSource = std::regex_replace(includeSource, pragmaOnceRegex, "");
+                    alreadyIncluded.insert(includeFilename);
+                }
+            }
+
+            auto [substituteSucceeded, includeWithIncludes] = SubstituteIncludesImpl(includeDir, includeSource, alreadyIncluded);
+            if(!substituteSucceeded)
+            {
+                return { false };
+            }
+            includeSource = std::move(includeWithIncludes);
+
+            source.replace(position, length, includeSource);
+        }
+
+        return { true, source };
+    }
+
+    ResultValue<bool, String> SubstituteIncludes(
+        const String& includeDir,
+        String source)
+    {
+        UnorderedSet<String> alreadyIncluded;
+        return SubstituteIncludesImpl(includeDir, source, alreadyIncluded);
+    }
+
+    void SubmitCommandLists(
+        const RefPtr<CommandQueue>& queue,
+        const RefPtrVector<CommandList>& commandLists,
+        const std::function<void()> completedHandler)
+    {
+        for(int32 i = 0; i < commandLists.size(); i++)
+        {
+            if(i == commandLists.size() - 1)
+            {
+               queue->Submit(commandLists[i], completedHandler); 
+            }
+            else
+            {
+                queue->Submit(commandLists[i], {});
+            }
         }
     }
 }

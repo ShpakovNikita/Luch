@@ -38,8 +38,14 @@ namespace Luch::Metal
         GraphicsResultRefPtr<FrameBuffer> CreateFrameBuffer(
             const FrameBufferCreateInfo& createInfo) override;
 
-        GraphicsResultRefPtr<PipelineState> CreatePipelineState(
-            const PipelineStateCreateInfo& createInfo) override;
+        GraphicsResultRefPtr<GraphicsPipelineState> CreateGraphicsPipelineState(
+            const GraphicsPipelineStateCreateInfo& createInfo) override;
+
+        GraphicsResultRefPtr<ComputePipelineState> CreateComputePipelineState(
+            const ComputePipelineStateCreateInfo& createInfo) override;
+
+        GraphicsResultRefPtr<TiledPipelineState> CreateTiledPipelineState(
+            const TiledPipelineStateCreateInfo& createInfo) override;
 
         GraphicsResultRefPtr<Texture> CreateTexture(
             const TextureCreateInfo& createInfo) override;
@@ -56,10 +62,10 @@ namespace Luch::Metal
             Surface* surface) override;
 
         GraphicsResultRefPtr<ShaderLibrary> CreateShaderLibraryFromSource(
-            const Vector<Byte>& source,
+            const String& source,
             const UnorderedMap<String, Variant<int32, String>>& defines) override;
 
-        GraphicsResultRefPtr<Semaphore> CreateSemaphore() override;
+        GraphicsResultRefPtr<Semaphore> CreateSemaphore(int32 value) override;
     private:
         PhysicalDevice* physicalDevice = nullptr;
         mtlpp::Device device;

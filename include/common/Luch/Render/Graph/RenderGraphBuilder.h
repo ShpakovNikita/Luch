@@ -24,9 +24,17 @@ namespace Luch::Render::Graph
 
         bool Deinitialize();
 
-        UniquePtr<RenderGraphNodeBuilder> AddRenderPass(
+        UniquePtr<RenderGraphNodeBuilder> AddGraphicsPass(
             String name,
             RefPtr<Graphics::RenderPass> renderPass,
+            RenderGraphPass* pass);
+
+        UniquePtr<RenderGraphNodeBuilder> AddComputePass(
+            String name,
+            RenderGraphPass* pass);
+
+        UniquePtr<RenderGraphNodeBuilder> AddCopyPass(
+            String name,
             RenderGraphPass* pass);
 
         ResultValue<RenderGraphBuildResult, UniquePtr<RenderGraph>> Build();

@@ -29,6 +29,7 @@ namespace Luch::Metal
         LUCH_ASSERT(texture != nullptr);
         LUCH_ASSERT(samplers.empty());
         LUCH_ASSERT(buffers.empty());
+        LUCH_ASSERT(binding.GetType() == ResourceType::Texture);
 
         auto index = binding.GetIndex();
         if(index >= textures.size())
@@ -45,6 +46,7 @@ namespace Luch::Metal
         LUCH_ASSERT(buffer != nullptr);
         LUCH_ASSERT(textures.empty());
         LUCH_ASSERT(samplers.empty());
+        LUCH_ASSERT(binding.GetType() == ResourceType::UniformBuffer);
 
         auto index = binding.GetIndex();
         if(index >= buffers.size())
@@ -58,11 +60,30 @@ namespace Luch::Metal
         bufferOffsets[index] = offset;
     }
 
+    void MetalDescriptorSet::WriteThreadgroupMemory(const DescriptorSetBinding& binding, int32 length, int32 offset)
+    {
+        LUCH_ASSERT(buffers.empty());
+        LUCH_ASSERT(textures.empty());
+        LUCH_ASSERT(samplers.empty());
+        LUCH_ASSERT(binding.GetType() == ResourceType::ThreadgroupMemory);
+
+        auto index = binding.GetIndex();
+        if(index >= memoryLengths.size())
+        {
+            memoryLengths.resize(index + 1);
+            bufferOffsets.resize(index + 1);
+        }
+
+        memoryLengths[index] = length;
+        bufferOffsets[index] = offset;
+    }
+
     void MetalDescriptorSet::WriteSampler(const DescriptorSetBinding& binding, Sampler* sampler)
     {
         LUCH_ASSERT(sampler != nullptr);
         LUCH_ASSERT(textures.empty());
         LUCH_ASSERT(buffers.empty());
+        LUCH_ASSERT(binding.GetType() == ResourceType::Sampler);
 
         auto index = binding.GetIndex();
         if(index >= samplers.size())

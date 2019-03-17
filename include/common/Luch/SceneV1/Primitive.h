@@ -70,14 +70,14 @@ namespace Luch::SceneV1
         inline PrimitiveTopology GetTopology() const { return topology; }
         inline void SetTopology(PrimitiveTopology aTopology) { topology = aTopology; }
 
-        inline const RefPtr<Graphics::PipelineState>& GetPipelineState(const String& key) const
+        inline const RefPtr<Graphics::GraphicsPipelineState>& GetGraphicsPipelineState(const String& key) const
         {
-            return pipelineStates[key];
+            return graphicsPipelineStates[key];
         }
 
-        inline void SetPipelineState(const String& key, const RefPtr<Graphics::PipelineState>& pipelineState)
+        inline void SetGraphicsPipelineState(const String& key, const RefPtr<Graphics::GraphicsPipelineState>& pipelineState)
         {
-            pipelineStates[key] = pipelineState;
+            graphicsPipelineStates[key] = pipelineState;
         }
     private:
         Vector<PrimitiveAttribute> attributes;
@@ -85,6 +85,6 @@ namespace Luch::SceneV1
         Optional<IndexBuffer> indexBuffer;
         RefPtr<PbrMaterial> material;
         PrimitiveTopology topology = PrimitiveTopology::TriangleList;
-        mutable UnorderedMap<String, RefPtr<Graphics::PipelineState>> pipelineStates;
+        mutable UnorderedMap<String, RefPtr<Graphics::GraphicsPipelineState>> graphicsPipelineStates;
     };
 }

@@ -17,7 +17,18 @@ namespace Luch::Render
 
         ResultValue<bool, RefPtr<ShaderLibrary>> CreateShaderLibrary(
             GraphicsDevice* device,
-            const String& path,
+            const String& includeDir,
+            const String& dir,
+            const String& filename,
             const UnorderedMap<String, Variant<int32, String>>& defines);
+
+        ResultValue<bool, String> SubstituteIncludes(
+            const String& includeDir,
+            String source);
+
+        void SubmitCommandLists(
+            const RefPtr<CommandQueue>& queue,
+            const RefPtrVector<CommandList>& commandLists,
+            const std::function<void()> completedHandler = {});
     }
 }

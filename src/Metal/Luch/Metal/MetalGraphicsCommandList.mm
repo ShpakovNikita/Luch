@@ -2,7 +2,8 @@
 #include <Luch/Graphics/PipelineLayoutCreateInfo.h>
 #include <Luch/Metal/MetalGraphicsDevice.h>
 #include <Luch/Metal/MetalCommandQueue.h>
-#include <Luch/Metal/MetalPipelineState.h>
+#include <Luch/Metal/MetalGraphicsPipelineState.h>
+#include <Luch/Metal/MetalTiledPipelineState.h>
 #include <Luch/Metal/MetalPipelineLayout.h>
 #include <Luch/Metal/MetalDescriptorSet.h>
 #include <Luch/Metal/MetalFrameBuffer.h>
@@ -65,8 +66,13 @@ namespace Luch::Metal
         MetalGraphicsDevice* device,
         mtlpp::CommandBuffer aCommandBuffer)
         : GraphicsCommandList(device)
-        , commandBuffer(aCommandBuffer)
+        , MetalCommandList(aCommandBuffer)
     {
+    }
+
+    void MetalGraphicsCommandList::SetLabel(const String& aLabel)
+    {
+        label = aLabel;
     }
 
     void MetalGraphicsCommandList::BeginRenderPass(FrameBuffer* frameBuffer)
@@ -79,13 +85,14 @@ namespace Luch::Metal
 
     void MetalGraphicsCommandList::EndRenderPass()
     {
+        commandBuffer.SetLabel(ns::String{ label.c_str() });
         commandEncoder.EndEncoding();
         commandEncoder = { };
     }
 
-    void MetalGraphicsCommandList::BindPipelineState(PipelineState* pipelineState)
+    void MetalGraphicsCommandList::BindGraphicsPipelineState(GraphicsPipelineState* pipelineState)
     {
-        auto mtlPipelineState = static_cast<MetalPipelineState*>(pipelineState);
+        auto mtlPipelineState = static_cast<MetalGraphicsPipelineState*>(pipelineState);
         const auto& ci = mtlPipelineState->GetCreateInfo();
 
         primitiveType = ToMetalPrimitiveType(ci.inputAssembler.primitiveTopology);
@@ -127,6 +134,12 @@ namespace Luch::Metal
         commandEncoder.SetTriangleFillMode(ToMetalTriangleFillMode(ci.rasterization.polygonMode));
     }
 
+    void MetalGraphicsCommandList::BindTiledPipelineState(TiledPipelineState* pipelineState)
+    {
+        auto mtlPipelineState = static_cast<MetalTiledPipelineState*>(pipelineState);
+        commandEncoder.SetRenderPipelineState(mtlPipelineState->pipelineState);
+    }
+
     void MetalGraphicsCommandList::BindTextureDescriptorSet(
         ShaderStage stage,
         PipelineLayout* pipelineLayout,
@@ -150,19 +163,24 @@ namespace Luch::Metal
         auto textures = mtlDescriptorSet->textures.data();
         auto length = (uint32)mtlDescriptorSet->textures.size();
 
-        LUCH_ASSERT(length != 0);
-        auto range = ns::Range { start, length };
-
-        switch(stage)
+        if(length > 0)
         {
-        case ShaderStage::Vertex:
-            commandEncoder.SetVertexTextures(textures, range);
-            break;
-        case ShaderStage::Fragment:
-            commandEncoder.SetFragmentTextures(textures, range);
-            break;
-        default:
-            LUCH_ASSERT(false);
+            auto range = ns::Range { start, length };
+
+            switch(stage)
+            {
+            case ShaderStage::Vertex:
+                commandEncoder.SetVertexTextures(textures, range);
+                break;
+            case ShaderStage::Fragment:
+                commandEncoder.SetFragmentTextures(textures, range);
+                break;
+            case ShaderStage::Tile:
+                commandEncoder.SetTileTextures(textures, range);
+                break;
+            default:
+                LUCH_ASSERT(false);
+            }
         }
     }
 
@@ -171,39 +189,8 @@ namespace Luch::Metal
         PipelineLayout* pipelineLayout,
         DescriptorSet* descriptorSet)
     {
-        auto mtlDescriptorSet = static_cast<MetalDescriptorSet*>(descriptorSet);
-        auto mtlDescriptorSetLayout = mtlDescriptorSet->descriptorSetLayout;
-        auto mtlPipelineLayout = static_cast<MetalPipelineLayout*>(pipelineLayout);
-        auto bufferSetLayouts = mtlPipelineLayout->createInfo.stages[stage].bufferSetLayouts;
-        auto layoutIt = std::find(bufferSetLayouts.begin(), bufferSetLayouts.end(), mtlDescriptorSetLayout);
-        LUCH_ASSERT(layoutIt != bufferSetLayouts.end());
-
-        uint32 start = 0;
-        for(auto it = bufferSetLayouts.begin(); it != layoutIt; it++)
-        {
-            auto mtlLayout = static_cast<MetalDescriptorSetLayout*>(*it);
-            start += mtlLayout->createInfo.bindings.size();
-        }
-
-        LUCH_ASSERT(mtlDescriptorSetLayout->createInfo.type == DescriptorSetType::Buffer);
-        auto buffers = mtlDescriptorSet->buffers.data();
-        auto bufferOffsets = (uint32*)mtlDescriptorSet->bufferOffsets.data();
-        auto length = (uint32)mtlDescriptorSet->buffers.size();
-
-        LUCH_ASSERT(length != 0);
-        auto range = ns::Range { start, length };
-
-        switch(stage)
-        {
-        case ShaderStage::Vertex:
-            commandEncoder.SetVertexBuffers(buffers, bufferOffsets, range);
-            break;
-        case ShaderStage::Fragment:
-            commandEncoder.SetFragmentBuffers(buffers, bufferOffsets, range);
-            break;
-        default:
-            LUCH_ASSERT(false);
-        }
+        // TODO threadgroup memory
+        BindBufferDescriptorSetImpl(stage, pipelineLayout, descriptorSet);
     }
 
     void MetalGraphicsCommandList::BindSamplerDescriptorSet(
@@ -229,19 +216,24 @@ namespace Luch::Metal
         auto samplers = mtlDescriptorSet->samplers.data();
         auto length = (uint32)mtlDescriptorSet->samplers.size();
 
-        LUCH_ASSERT(length != 0);
-        auto range = ns::Range { start, length };
-
-        switch(stage)
+        if(length > 0)
         {
-        case ShaderStage::Vertex:
-            commandEncoder.SetVertexSamplerStates(samplers, range);
-            break;
-        case ShaderStage::Fragment:
-            commandEncoder.SetFragmentSamplerStates(samplers, range);
-            break;
-        default:
-            LUCH_ASSERT(false);
+            auto range = ns::Range { start, length };
+
+            switch(stage)
+            {
+            case ShaderStage::Vertex:
+                commandEncoder.SetVertexSamplerStates(samplers, range);
+                break;
+            case ShaderStage::Fragment:
+                commandEncoder.SetFragmentSamplerStates(samplers, range);
+                break;
+            case ShaderStage::Tile:
+                commandEncoder.SetTileSamplerStates(samplers, range);
+                break;
+            default:
+                LUCH_ASSERT(false);
+            }
         }
     }
 
@@ -337,5 +329,98 @@ namespace Luch::Metal
             (uint32)instanceCount,
             (uint32)baseVertex,
             (uint32)baseInstance);
+    }
+
+    Size2i MetalGraphicsCommandList::GetTileSize() const
+    {
+        auto width = commandEncoder.GetTileWidth();
+        auto height = commandEncoder.GetTileHeight();
+        return { (int32)width, (int32)height };
+    }
+
+    void MetalGraphicsCommandList::DispatchThreadsPerTile(
+        Size2i threadsPerTile)
+    {
+        commandEncoder.DispatchThreadsPerTile({ (uint32)threadsPerTile.width, (uint32)threadsPerTile.height, 1 });
+    }
+
+    void MetalGraphicsCommandList::BindBufferDescriptorSetImpl(
+            ShaderStage stage,
+            PipelineLayout* pipelineLayout,
+            DescriptorSet* descriptorSet)
+    {
+        auto mtlDescriptorSet = static_cast<MetalDescriptorSet*>(descriptorSet);
+        auto mtlDescriptorSetLayout = mtlDescriptorSet->descriptorSetLayout;
+        auto mtlPipelineLayout = static_cast<MetalPipelineLayout*>(pipelineLayout);
+        auto bufferSetLayouts = mtlPipelineLayout->createInfo.stages[stage].bufferSetLayouts;
+        auto layoutIt = std::find(bufferSetLayouts.begin(), bufferSetLayouts.end(), mtlDescriptorSetLayout);
+        LUCH_ASSERT(layoutIt != bufferSetLayouts.end());
+
+        uint32 start = 0;
+        for(auto it = bufferSetLayouts.begin(); it != layoutIt; it++)
+        {
+            auto mtlLayout = static_cast<MetalDescriptorSetLayout*>(*it);
+            start += mtlLayout->createInfo.bindings.size();
+        }
+
+        LUCH_ASSERT(mtlDescriptorSetLayout->createInfo.type == DescriptorSetType::Buffer);
+        auto buffers = mtlDescriptorSet->buffers.data();
+        auto bufferOffsets = (uint32*)mtlDescriptorSet->bufferOffsets.data();
+        auto length = (uint32)mtlDescriptorSet->buffers.size();
+
+        if(length > 0)
+        {
+            auto range = ns::Range { start, length };
+
+            switch(stage)
+            {
+            case ShaderStage::Vertex:
+                commandEncoder.SetVertexBuffers(buffers, bufferOffsets, range);
+                break;
+            case ShaderStage::Fragment:
+                commandEncoder.SetFragmentBuffers(buffers, bufferOffsets, range);
+                break;
+            case ShaderStage::Tile:
+                commandEncoder.SetTileBuffers(buffers, bufferOffsets, range);
+                break;
+            default:
+                LUCH_ASSERT(false);
+            }
+        }
+    }
+
+    void MetalGraphicsCommandList::BindThreadgroupDescriptorSet(
+        PipelineLayout* pipelineLayout,
+        DescriptorSet* descriptorSet)
+    {
+        auto mtlDescriptorSet = static_cast<MetalDescriptorSet*>(descriptorSet);
+        auto mtlDescriptorSetLayout = mtlDescriptorSet->descriptorSetLayout;
+        auto mtlPipelineLayout = static_cast<MetalPipelineLayout*>(pipelineLayout);
+        auto bufferSetLayouts = mtlPipelineLayout->createInfo.stages[ShaderStage::Tile].bufferSetLayouts;
+        auto layoutIt = std::find(bufferSetLayouts.begin(), bufferSetLayouts.end(), mtlDescriptorSetLayout);
+        LUCH_ASSERT(layoutIt != bufferSetLayouts.end());
+
+        uint32 start = 0;
+        for(auto it = bufferSetLayouts.begin(); it != layoutIt; it++)
+        {
+            auto mtlLayout = static_cast<MetalDescriptorSetLayout*>(*it);
+            start += mtlLayout->createInfo.bindings.size();
+        }
+
+        LUCH_ASSERT(mtlDescriptorSetLayout->createInfo.type == DescriptorSetType::Buffer);
+        auto memoryLengths = mtlDescriptorSet->memoryLengths.data();
+        auto bufferOffsets = (uint32*)mtlDescriptorSet->bufferOffsets.data();
+        auto length = (uint32)mtlDescriptorSet->memoryLengths.size();
+
+        LUCH_ASSERT(length != 0);
+        auto range = ns::Range { start, length };
+
+        for(int32 i = 0; i < length; i++)
+        {
+            if(memoryLengths[i] > 0)
+            {
+                commandEncoder.SetThreadgroupMemoryLength(memoryLengths[i], bufferOffsets[i], i);
+            }
+        }
     }
 }

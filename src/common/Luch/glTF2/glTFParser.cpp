@@ -120,6 +120,14 @@ MinFilter ParseMinFilter(const json& j)
     return (MinFilter)j.get<uint32>();
 }
 
+glm::ivec2 ParseIVec2(const json& j)
+{
+    glm::ivec2 v;
+    v.x = j[0].get<int32>();
+    v.y = j[1].get<int32>();
+    return v;
+}
+
 Vec3 ParseVec3(const json& j)
 {
     Vec3 v;
@@ -536,10 +544,18 @@ NodeLightsPunctual ParseNodeLightsPunctual(const json& j)
     return lights;
 }
 
+NodeLightsProbe ParseNodeLightsProbe(const json& j)
+{
+    NodeLightsProbe probes;
+    probes.probe = ParseBuiltin<int32>(j, "probe");
+    return probes;
+}
+
 NodeExtensions ParseNodeExtensions(const json& j)
 {
     NodeExtensions extensions;
     extensions.lights = ParseOptional<NodeLightsPunctual, ParseNodeLightsPunctual>(j, "KHR_lights_punctual");
+    extensions.probes = ParseOptional<NodeLightsProbe, ParseNodeLightsProbe>(j, "EXT_lights_probe");
     return extensions;
 }
 
@@ -596,6 +612,18 @@ LightPunctual ParseLightPunctual(const json& j)
     return light;
 }
 
+LightProbe ParseLightProbe(const json& j)
+{
+    LightProbe probe;
+    probe.name = ParseName(j);
+    probe.size = ParseOrDefault<glm::ivec2, ParseIVec2>(j, "size", { 0, 0 });
+    probe.znear = ParseBuiltin<float32>(j, "znear");
+    probe.zfar = ParseBuiltin<float32>(j, "zfar");
+    probe.diffuseIlluminance = ParseBuiltinOrDefault<bool>(j, "diffuseIlluminance", true);
+    probe.specularReflection = ParseBuiltinOrDefault<bool>(j, "specularReflection", true);
+    return probe;
+}
+
 RootLightsPunctual ParseRootLightsPunctual(const json& j)
 {
     RootLightsPunctual lights;
@@ -603,10 +631,18 @@ RootLightsPunctual ParseRootLightsPunctual(const json& j)
     return lights;
 }
 
+RootLightsProbe ParseRootLightsProbe(const json& j)
+{
+    RootLightsProbe probes;
+    probes.probes = ParseArrayOrEmpty<LightProbe, ParseLightProbe>(j, "probes");
+    return probes;
+}
+
 RootExtensions ParseRootExtensions(const json& j)
 {
     RootExtensions extensions;
     extensions.lights = ParseOptional<RootLightsPunctual, ParseRootLightsPunctual>(j, "KHR_lights_punctual");
+    extensions.probe = ParseOptional<RootLightsProbe, ParseRootLightsProbe>(j, "EXT_lights_probe");
     return extensions;
 }
 

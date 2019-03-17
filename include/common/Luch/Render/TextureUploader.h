@@ -18,7 +18,7 @@ namespace Luch::Render
     struct TextureUploaderResult
     {
         RefPtrVector<Graphics::Buffer> stagingBuffers;
-        RefPtrVector<Graphics::CopyCommandList> commandLists;
+        RefPtrVector<Graphics::CommandList> commandLists;
     };
 
     class TextureUploader
@@ -28,9 +28,14 @@ namespace Luch::Render
             Graphics::GraphicsDevice* device,
             Graphics::CommandPool* commandPool);
 
-        ResultValue<bool, TextureUploaderResult> UploadTextures(const Vector<SceneV1::Texture*>& textures);
+        ResultValue<bool, TextureUploaderResult> UploadTextures(
+            const Vector<SceneV1::Texture*>& textures,
+            bool generateMipmaps);
     private:
-        ResultValue<bool, TextureUploadIntermediateResult> UploadTexture(SceneV1::Texture* texture);
+        ResultValue<bool, TextureUploadIntermediateResult> UploadTexture(
+            SceneV1::Texture* texture,
+            bool generateMipmaps);
+
         ResultValue<bool, RefPtr<Graphics::Sampler>> CreateSampler(SceneV1::Texture* texture);
 
         Graphics::GraphicsDevice* device;

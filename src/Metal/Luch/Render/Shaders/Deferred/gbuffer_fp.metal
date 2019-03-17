@@ -1,19 +1,9 @@
 #include <metal_stdlib>
 #include <metal_texture>
 #include <simd/simd.h>
+#include "Common/material.metal"
 
 using namespace metal;
-
-struct MaterialUniform
-{
-    packed_float4 baseColorFactor;
-    packed_float3 emissiveFactor;
-    float alphaCutoff;
-    float metallicFactor;
-    float roughnessFactor;
-    float normalScale;
-    float occlusionStrength;
-};
 
 struct VertexOut
 {
@@ -35,8 +25,9 @@ struct VertexOut
 
 struct FragmentOut
 {
-    half4 baseColor [[color(0)]];
-    float4 normal [[color(1)]];
+    half4 gbuffer0 [[color(0)]];
+    half4 gbuffer1 [[color(1)]];
+    half4 gbuffer2 [[color(2)]];
 };
 
 float3 ExtractNormal(float3 normalTS, float normalScale, float3x3 TBN)
@@ -69,14 +60,14 @@ float3x3 TangentFrame(float3 dp1, float3 dp2, float3 N, float2 uv)
 #endif
 fragment FragmentOut fp_main(
     VertexOut in [[stage_in]],
-    device MaterialUniform& material [[buffer(0)]]
+    constant MaterialUniform& material [[buffer(0)]]
 
 #if HAS_BASE_COLOR_TEXTURE
     , texture2d<half> baseColorMap [[texture(0)]]         // RGB - color, A - opacity
     , sampler baseColorSampler [[sampler(0)]]
 #endif
 #if HAS_METALLIC_ROUGHNESS_TEXTURE
-    , texture2d<half> metallicRoughnessMap [[texture(1)]] // R - metallic, G - roughness, BA unused
+    , texture2d<half> metallicRoughnessMap [[texture(1)]] // B - metallic, G - roughness, RA unused
     , sampler metallicRoughnessSampler [[sampler(1)]]
 #endif
 #if HAS_NORMAL_TEXTURE
@@ -101,10 +92,11 @@ fragment FragmentOut fp_main(
         float2 texCoord = in.texCoord;
     #endif
 
+    half4 baseColor = half4(material.baseColorFactor);
+
     #if HAS_BASE_COLOR_TEXTURE && HAS_TEXCOORD_0
-        half4 baseColor = baseColorMap.sample(baseColorSampler, texCoord);
-    #else
-        half4 baseColor = half4(1.0h);
+        half4 baseColorSample = baseColorMap.sample(baseColorSampler, texCoord);
+        baseColor *= baseColorSample;
     #endif
 
     #if ALPHA_MASK
@@ -143,18 +135,35 @@ fragment FragmentOut fp_main(
     #endif
 
     half metallic = half(material.metallicFactor);
-    half roughness = half(material.roughnessFactor);
+    half linearRoughness = half(material.roughnessFactor);
 
     #if HAS_METALLIC_ROUGHNESS_TEXTURE && HAS_TEXCOORD_0
         half4 metallicRoughnessSample = metallicRoughnessMap.sample(metallicRoughnessSampler, texCoord);
         metallic *= metallicRoughnessSample.b;
-        roughness *= clamp(metallicRoughnessSample.g, 0.04h, 1.0h);
+        linearRoughness *= clamp(metallicRoughnessSample.g, 0.04h, 1.0h);
     #endif
 
-    out.baseColor = baseColor;
+    half3 emissive = half3(material.emissiveFactor);
 
-    out.normal.xy = N.xy;
-    out.normal.zw = float2(metallic, roughness);
+    #if HAS_EMISSIVE_TEXTURE && HAS_TEXCOORD_0
+        half4 emissiveSample = emissiveMap.sample(emissiveSampler, texCoord);
+        emissive *= emissiveSample.rgb;
+    #endif
+
+    #if HAS_OCCLUSION_TEXTURE && HAS_TEXCOORD_0
+        half occlusion = occlusionMap.sample(occlusionSampler, texCoord).r;
+    #else
+        half occlusion = 1.0h;
+    #endif
+
+    out.gbuffer0.rgb = baseColor.rgb;
+    out.gbuffer0.a = mix(1, occlusion, half(material.occlusionStrength));
+
+    out.gbuffer1.rgb = half3(N);
+    out.gbuffer1.a = metallic;
+
+    out.gbuffer2.rgb = emissive.rgb;
+    out.gbuffer2.a = linearRoughness;
 
     return out;
 }

@@ -12,6 +12,7 @@ namespace Luch::Metal
     {
         friend class MetalDescriptorPool;
         friend class MetalGraphicsCommandList;
+        friend class MetalComputeCommandList;
     public:
         MetalDescriptorSetLayout(
             MetalGraphicsDevice* device,

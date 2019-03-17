@@ -1,11 +1,5 @@
 #pragma once
 
-namespace Luch::Render::Graph
-{
-
-}
-#pragma once
-
 #include <Luch/RefPtr.h>
 #include <Luch/Types.h>
 #include <Luch/Graphics/BufferUsageFlags.h>
@@ -30,8 +24,9 @@ namespace Luch::Render::Graph
         RenderMutableResource() = default;
         RenderMutableResource(const RenderMutableResource& other) = default;
         RenderMutableResource& operator=(const RenderMutableResource& other) = default;
+        RenderMutableResource(std::nullptr_t) {};
 
-        operator bool()
+        operator bool() const
         {
             return handle != 0;
         }
@@ -49,6 +44,16 @@ namespace Luch::Render::Graph
         friend bool operator<(const RenderMutableResource& left, const RenderMutableResource& right)
         {
             return left.handle < right.handle;
+        }
+
+        friend bool operator==(const RenderMutableResource& left, std::nullptr_t)
+        {
+            return left.handle == 0;
+        }
+
+        friend bool operator==(std::nullptr_t, const RenderMutableResource& right)
+        {
+            return 0 == right.handle;
         }
     private:
         explicit RenderMutableResource(uint32 aHandle) noexcept
@@ -70,12 +75,13 @@ namespace Luch::Render::Graph
         RenderResource() = default;
         RenderResource(const RenderResource& other) = default;
         RenderResource& operator=(const RenderResource& other) = default;
+        RenderResource(std::nullptr_t) {};
         RenderResource(RenderMutableResource mutableResource) noexcept
             : handle(mutableResource.handle)
         {
         }
 
-        operator bool()
+        operator bool() const
         {
             return handle != 0;
         }
@@ -113,6 +119,16 @@ namespace Luch::Render::Graph
         friend bool operator<(const RenderResource& left, const RenderResource& right)
         {
             return left.handle < right.handle;
+        }
+
+        friend bool operator==(const RenderResource& left, std::nullptr_t)
+        {
+            return left.handle == 0;
+        }
+
+        friend bool operator==(std::nullptr_t, const RenderResource& right)
+        {
+            return 0 == right.handle;
         }
     private:
         explicit RenderResource(uint32 aHandle) noexcept;

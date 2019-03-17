@@ -31,8 +31,14 @@ namespace Luch::Graphics
         virtual GraphicsResultRefPtr<FrameBuffer> CreateFrameBuffer(
             const FrameBufferCreateInfo& createInfo) = 0;
 
-        virtual GraphicsResultRefPtr<PipelineState> CreatePipelineState(
-            const PipelineStateCreateInfo& createInfo) = 0;
+        virtual GraphicsResultRefPtr<GraphicsPipelineState> CreateGraphicsPipelineState(
+            const GraphicsPipelineStateCreateInfo& createInfo) = 0;
+
+        virtual GraphicsResultRefPtr<ComputePipelineState> CreateComputePipelineState(
+            const ComputePipelineStateCreateInfo& createInfo) = 0;
+
+        virtual GraphicsResultRefPtr<TiledPipelineState> CreateTiledPipelineState(
+            const TiledPipelineStateCreateInfo& createInfo) = 0;
 
         virtual GraphicsResultRefPtr<Texture> CreateTexture(
             const TextureCreateInfo& createInfo) = 0;
@@ -45,14 +51,14 @@ namespace Luch::Graphics
             const SamplerCreateInfo& createInfo) = 0;
 
         virtual GraphicsResultRefPtr<ShaderLibrary> CreateShaderLibraryFromSource(
-            const Vector<Byte>& source,
+            const String& source,
             const UnorderedMap<String, Variant<int32, String>>& defines) = 0;
 
         virtual GraphicsResultRefPtr<Swapchain> CreateSwapchain(
             const SwapchainInfo& createInfo,
             Surface* surface) = 0;
 
-        virtual GraphicsResultRefPtr<Semaphore> CreateSemaphore() = 0;
+        virtual GraphicsResultRefPtr<Semaphore> CreateSemaphore(int32 value) = 0;
     };
 
     inline GraphicsDevice::~GraphicsDevice() {}
