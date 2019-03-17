@@ -26,6 +26,10 @@ namespace Luch::Vulkan
         int32 size,
         int32 offset)
     {
+        if (size == 0)
+        {
+            return GraphicsResult::Success; // todo: is it valid call? not for vulkan
+        }
         auto [result, memoryPointer] = device->GetDevice().mapMemory(memory, offset, size);
         mappedMemory = memoryPointer;
         return { result, memoryPointer };

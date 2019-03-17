@@ -82,7 +82,7 @@ bool SampleApplication::Initialize(const Vector<String>& /*args*/)
         return false;
     }
 
-    // SetupScene(); // todo: uncomment. scene loading slows :(
+    SetupScene();
 
     context = MakeShared<Render::RenderContext>();
 
@@ -219,8 +219,8 @@ void SampleApplication::SetupScene()
 {
     glTF::glTFParser glTFparser;
 
-    String rootDir{ "../res/gltf2/box/" };
-    String filename { "Box.gltf" };
+    String rootDir{ "../res/gltf2/sponza/" };
+    String filename { "Sponza.gltf" };
 
     FileStream fileStream{ rootDir + filename, FileOpenModes::Read };
 
@@ -264,7 +264,7 @@ void SampleApplication::Process()
 {
     mouseController.Tick();
     wasdController.Tick(16.0f / 1000.0f);
-//    scene->Update();
+    scene->Update();
 
 //    renderer->BeginRender();
 //    renderer->PrepareScene();
@@ -273,7 +273,6 @@ void SampleApplication::Process()
 //    renderer->EndRender();
 
 //    context->commandQueue->Present(0, context->swapchain);
-    printf("Update\n");
 }
 
 void SampleApplication::HandleEvent(const SDL_Event& event)

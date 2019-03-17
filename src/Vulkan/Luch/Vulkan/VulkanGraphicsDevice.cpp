@@ -371,7 +371,7 @@ namespace Luch::Vulkan
         return CreateImageView(image, ci);
     }
 
-    GraphicsResultRefPtr<VulkanPipelineCache> VulkanGraphicsDevice::CreatePipelineCache()
+    GraphicsResultRefPtr<VulkanPipelineCache> VulkanGraphicsDevice::CreatePipelineCache() // unused
     {
         vk::PipelineCacheCreateInfo ci;
         auto [createResult, vulkanPipelineCache] = device.createPipelineCache(ci, allocationCallbacks);
@@ -386,7 +386,7 @@ namespace Luch::Vulkan
         }
     }
 
-    GraphicsResultRefPtr<VulkanPipeline> VulkanGraphicsDevice::CreateGraphicsPipeline(
+    GraphicsResultRefPtr<VulkanPipeline> VulkanGraphicsDevice::CreateGraphicsPipeline( // unused
         const GraphicsPipelineCreateInfo & graphicsPipelineCreateInfo,
         VulkanPipelineCache* pipelineCache)
     {
@@ -569,7 +569,7 @@ namespace Luch::Vulkan
     GraphicsResultRefPtr<PipelineState> VulkanGraphicsDevice::CreatePipelineState(const PipelineStateCreateInfo& createInfo)
     {
         // todo: implement alert2
-        return {GraphicsResult::Unsupported};
+        return {GraphicsResult::Success};
     }
 
     GraphicsResultRefPtr<Texture> VulkanGraphicsDevice::CreateTexture(const TextureCreateInfo &createInfo)
