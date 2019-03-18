@@ -17,13 +17,13 @@ Luch means ray in Russian.
 * Punctual Lights
 * Render graph (graphics and compute passes)
 * iOS Support (kinda)
+* Image-based lighting (light probes, pre-filtered specular and diffuse illuminance cubemaps).
 
 Supports loading glTF 2.0 static scenes (no keyframe animations, skeletal animations and morphing).
 
 Supports punctual lights: directional, point and spot.
 
 ## Work in Progress
-* Light probes (image-based lighting)
 * Vulkan Backend (thanks to @mlknz)
 * Shadow mapping
 
@@ -33,11 +33,12 @@ In no particular order:
 * Area lights
 * Keyframe Animations
 * Skeletal Animations
-* Shader reloading
+* Shader hot-reload
 
 ## Compiling and Running
 
-Generate a project (with commands that are listed below) and then open it in Xcode and run
+Generate a project (with commands that are listed below) and then open it in Xcode and run.
+Don't forget to pull lfs files.
 
 ### macOS
 
@@ -64,6 +65,8 @@ Also
 | --- | --- |
 | Z | turn on depth prepass |
 | X | turn off depth prepass |
+| V | toggle indirect diffuse lighting |
+| B | toggle indirect specular lighting |
 
 ### iOS
 
