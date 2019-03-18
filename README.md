@@ -24,6 +24,7 @@ Supports loading glTF 2.0 static scenes (no keyframe animations, skeletal animat
 Supports punctual lights: directional, point and spot.
 
 ## Work in Progress
+* Unlit materials
 * Vulkan Backend (thanks to @mlknz)
 * Shadow mapping
 
