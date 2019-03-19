@@ -3,7 +3,7 @@
 #include <simd/simd.h>
 
 #include "Common/material.metal"
-#include "Deferred/gbuffer_utils.metal"
+#include "Common/utils.metal"
 
 using namespace metal;
 

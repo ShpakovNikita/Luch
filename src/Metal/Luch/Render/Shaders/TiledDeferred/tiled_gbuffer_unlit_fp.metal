@@ -26,9 +26,10 @@ struct VertexOut
 
 struct FragmentOut
 {
-    half4 gbuffer0 [[ color(0) ]];
-    half4 gbuffer1 [[ color(1) ]];
-    half4 gbuffer2 [[ color(2) ]];
+    half4 gbuffer0 [[color(0)]];
+    half4 gbuffer1 [[color(1)]];
+    half4 gbuffer2 [[color(2)]];
+    float gbufferDepth [[color(3)]];
 };
 
 // Figure out coordinate system
@@ -37,11 +38,11 @@ struct FragmentOut
 #endif
 fragment FragmentOut fp_main(
     VertexOut in [[stage_in]],
-    constant MaterialUniform& material [[ buffer(0) ]]
+    constant MaterialUniform& material [[buffer(0)]]
 
 #if HAS_BASE_COLOR_TEXTURE
-    , texture2d<half> baseColorMap [[ texture(0) ]]         // RGB - color, A - opacity
-    , sampler baseColorSampler [[ sampler(0) ]]
+    , texture2d<half> baseColorMap [[texture(0)]]         // RGB - color, A - opacity
+    , sampler baseColorSampler [[sampler(0)]]
 #endif
     )
 {
@@ -67,6 +68,8 @@ fragment FragmentOut fp_main(
 
     out.gbuffer1.rgba = 0;
     out.gbuffer2.rgba = 0;
+
+    out.gbufferDepth = in.positionCS.z;
 
     return out;
 }

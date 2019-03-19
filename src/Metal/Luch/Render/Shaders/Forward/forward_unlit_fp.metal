@@ -2,6 +2,7 @@
 #include <metal_texture>
 #include <simd/simd.h>
 
+#include "Common/camera.metal"
 #include "Common/material.metal"
 
 using namespace metal;
@@ -26,9 +27,7 @@ struct VertexOut
 
 struct FragmentOut
 {
-    half4 gbuffer0 [[ color(0) ]];
-    half4 gbuffer1 [[ color(1) ]];
-    half4 gbuffer2 [[ color(2) ]];
+    half4 luminance [[color(0)]];
 };
 
 // Figure out coordinate system
@@ -37,7 +36,8 @@ struct FragmentOut
 #endif
 fragment FragmentOut fp_main(
     VertexOut in [[stage_in]],
-    constant MaterialUniform& material [[ buffer(0) ]]
+    constant CameraUniform& camera [[ buffer(0) ]],
+    constant MaterialUniform& material [[ buffer(1) ]]
 
 #if HAS_BASE_COLOR_TEXTURE
     , texture2d<half> baseColorMap [[ texture(0) ]]         // RGB - color, A - opacity
@@ -45,8 +45,6 @@ fragment FragmentOut fp_main(
 #endif
     )
 {
-    FragmentOut out;
-
     half4 baseColor = half4(material.baseColorFactor);
 
     #if HAS_BASE_COLOR_TEXTURE && HAS_TEXCOORD_0
@@ -62,12 +60,7 @@ fragment FragmentOut fp_main(
         }
     #endif
 
-    out.gbuffer0.rgb = baseColor.rgb;
-    out.gbuffer0.a = 0;
-
-    out.gbuffer1.rgba = 0;
-    out.gbuffer2.rgba = 0;
-
-    return out;
+    FragmentOut result;
+    result.luminance = baseColor;
+    return result;
 }
-

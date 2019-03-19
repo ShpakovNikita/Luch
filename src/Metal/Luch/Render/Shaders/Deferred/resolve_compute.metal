@@ -45,6 +45,7 @@ kernel void kernel_main(
     if(all(N == 0))
     {
         luminance.write(half4(baseColor, 1.0), gid);
+        return;
     }
 
     half4 gbuffer2Sample = gbuffer2.read(gid);
