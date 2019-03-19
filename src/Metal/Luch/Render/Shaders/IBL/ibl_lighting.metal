@@ -34,7 +34,7 @@ half3 CalculateSpecularReflection(
     }
 
     // TODO mip_filter::linear doesn't work in compute shaders
-    constexpr sampler specularReflectionSampler{ filter::linear, mip_filter::linear };
+    constexpr sampler specularReflectionSampler{ filter::linear, mip_filter::nearest };
     constexpr sampler specularBRDFSampler { filter::linear };
 
     ushort mipLevelCount = specularReflectionCube.get_num_mip_levels();
