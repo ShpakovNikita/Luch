@@ -105,6 +105,8 @@ namespace Luch::Render::RenderUtils
 
         auto shaderSource = LoadShaderSource(path);
 
+        // TODO handle files that don't end with blank line
+
         auto [substituteSucceeded, sourceWithIncludes] = SubstituteIncludes(includeDir, shaderSource);
         if(!substituteSucceeded)
         {

@@ -37,16 +37,22 @@ kernel void kernel_main(
 {
     half4 gbuffer0Sample = gbuffer0.read(gid);
     half4 gbuffer1Sample = gbuffer1.read(gid);
+
+    half3 baseColor = gbuffer0Sample.rgb;
+    half3 N = gbuffer1Sample.rgb;
+
+    // Unlit early-out
+    if(all(N == 0))
+    {
+        luminance.write(half4(baseColor, 1.0), gid);
+    }
+
     half4 gbuffer2Sample = gbuffer2.read(gid);
     half depth = depthBuffer.read(gid);
 
-    half3 baseColor = gbuffer0Sample.rgb;
     half occlusion = gbuffer0Sample.a;
-
-    half3 N = gbuffer1Sample.rgb;
     half metallic = half(gbuffer1Sample.a);
     half linearRoughness = half(gbuffer2Sample.a);
-
     half3 emittedLuminance = gbuffer2Sample.rgb;
 
     constexpr half3 dielectricF0 = half3(0.04);
