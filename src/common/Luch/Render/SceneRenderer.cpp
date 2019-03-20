@@ -337,12 +337,14 @@ namespace Luch::Render
             return true;
         }
 
+        auto& sceneProperties = scene->GetSceneProperties();
+
         auto lightProbeNodeIt = std::find_if(
-            scene->GetNodes().begin(),
-            scene->GetNodes().end(),
+            sceneProperties.lightProbeNodes.begin(),
+            sceneProperties.lightProbeNodes.end(),
             [](const auto& node) { return node->GetLightProbe() != nullptr && node->GetLightProbe()->IsEnabled(); });
 
-        if(lightProbeNodeIt == scene->GetNodes().end())
+        if(lightProbeNodeIt == sceneProperties.lightProbeNodes.end())
         {
             return true;
         }

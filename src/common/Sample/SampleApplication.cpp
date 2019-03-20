@@ -112,12 +112,15 @@ bool SampleApplication::Initialize(const Vector<String>& args)
 
     glTF::glTFParser glTFparser;
 
-    String rootDir{ "Data/gltf2/sponza/" };
+    //String rootDir{ "Data/gltf2/sponza/" };
     //String rootDir{ "Data/gltf2/helmet/" };
+    //String rootDir{ "Data/gltf2/helmet_skybox/" };
+    String rootDir{ "Data/gltf2/sponza_helmet/" };
 
     {
-        String filename { "Sponza.gltf" };
+        //String filename { "Sponza.gltf" };
         //String filename { "DamagedHelmet.gltf" };
+        String filename { "SponzaHelmet.gltf" };
 
         FileStream fileStream{ rootDir + filename, FileOpenModes::Read };
         

@@ -474,6 +474,19 @@ PBRMetallicRoughness ParsePBRMetallicRoughness(const json& j)
     return pbrMetallicRoughness;
 }
 
+MaterialsUnlit ParseMaterialsUnlit(const json& j)
+{
+    MaterialsUnlit unlit = {};
+    return unlit;
+}
+
+MaterialExtensions ParseMaterialExtensions(const json& j)
+{
+    MaterialExtensions materialExtensions;
+    materialExtensions.unlit = ParseOptional<MaterialsUnlit, ParseMaterialsUnlit>(j, "KHR_materials_unlit");
+    return materialExtensions;
+}
+
 Material ParseMaterial(const json& j)
 {
     Material material;
@@ -486,6 +499,7 @@ Material ParseMaterial(const json& j)
     material.alphaMode = alphaModeLookup[ParseStringOrDefault(j, "alphaMode", "OPAQUE")];
     material.alphaCutoff = ParseBuiltinOrDefault<float32>(j, "alphaCutoff", 0.5f);
     material.doubleSided = ParseBuiltinOrDefault<bool>(j, "doubleSided", false);
+    material.extensions = ParseOptional<MaterialExtensions, ParseMaterialExtensions>(j, "extensions");
     return material;
 }
 

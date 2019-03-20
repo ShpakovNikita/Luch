@@ -53,6 +53,7 @@ namespace Luch::Render::RenderUtils
         materialUniform.occlusionStrength = material->GetProperties().occlusionTextureInfo.strength;
         materialUniform.emissiveFactor = material->GetProperties().emissiveFactor;
         materialUniform.alphaCutoff = material->GetProperties().alphaCutoff;
+        materialUniform.unlit = material->GetProperties().unlit;
 
         return materialUniform;
     }
@@ -103,6 +104,8 @@ namespace Luch::Render::RenderUtils
         String path = dir + filename + extension;
 
         auto shaderSource = LoadShaderSource(path);
+
+        // TODO handle files that don't end with blank line
 
         auto [substituteSucceeded, sourceWithIncludes] = SubstituteIncludes(includeDir, shaderSource);
         if(!substituteSucceeded)

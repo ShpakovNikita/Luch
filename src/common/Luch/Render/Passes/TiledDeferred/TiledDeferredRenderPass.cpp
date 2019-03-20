@@ -500,6 +500,11 @@ namespace Luch::Render::Passes::TiledDeferred
             shaderDefines.AddFlag(MaterialShaderDefines::AlphaMask);
         }
 
+        if (material->GetProperties().unlit)
+        {
+            ci.name += " (Unlit)";
+        }
+
         LUCH_ASSERT(material->GetProperties().alphaMode != SceneV1::AlphaMode::Blend);
 
         auto[vertexShaderLibraryCreated, vertexShaderLibrary] = RenderUtils::CreateShaderLibrary(
@@ -525,7 +530,7 @@ namespace Luch::Render::Passes::TiledDeferred
             context->device,
             "Data/Shaders/",
             "Data/Shaders/TiledDeferred/",
-            "tiled_gbuffer_fp",
+            material->GetProperties().unlit ? "tiled_gbuffer_unlit_fp" : "tiled_gbuffer_fp",
             shaderDefines.defines);
 
         if (!fragmentShaderLibraryCreated)

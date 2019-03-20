@@ -507,6 +507,11 @@ namespace Luch::Render::Passes::Forward
             shaderDefines.AddFlag(MaterialShaderDefines::AlphaMask);
         }
 
+        if (material->GetProperties().unlit)
+        {
+            ci.name += " (Unlit)";
+        }
+
         LUCH_ASSERT(material->GetProperties().alphaMode != SceneV1::AlphaMode::Blend);
 
         auto[vertexShaderLibraryCreated, vertexShaderLibrary] = RenderUtils::CreateShaderLibrary(
@@ -532,7 +537,7 @@ namespace Luch::Render::Passes::Forward
             context->device,
             "Data/Shaders/",
             "Data/Shaders/Forward/",
-            "forward_fp",
+            material->GetProperties().unlit ? "forward_unlit_fp" : "forward_fp",
             shaderDefines.defines);
 
         if (!fragmentShaderLibraryCreated)

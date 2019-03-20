@@ -1,5 +1,6 @@
 #include <metal_stdlib>
 #include <simd/simd.h>
+
 #include "Common/lighting.metal"
 #include "Common/camera.metal"
 #include "IBL/ibl_lighting.metal"
@@ -52,17 +53,26 @@ fragment FragmentOut fp_main(
 
     half4 gbuffer0Sample = gbuffer0.sample(gbufferSampler, texCoord);
     half4 gbuffer1Sample = gbuffer1.sample(gbufferSampler, texCoord);
+
+    half3 baseColor = gbuffer0Sample.rgb;
+    half3 N = gbuffer1Sample.rgb;
+
+    // Unlit early-out
+    if(all(N == 0))
+    {
+        FragmentOut unlitResult;
+        unlitResult.luminance.rgb = baseColor;
+        unlitResult.luminance.a = 1;
+        return unlitResult;
+    }
+
     half4 gbuffer2Sample = gbuffer2.sample(gbufferSampler, texCoord);
     half depth = depthBuffer.sample(depthBufferSampler, texCoord);
 
-    half3 baseColor = gbuffer0Sample.rgb;
     half occlusion = gbuffer0Sample.a;
-
-    half3 N = gbuffer1Sample.rgb;
-    half metallic = half(gbuffer1Sample.a);
-    half linearRoughness = half(gbuffer2Sample.a);
-
+    half metallic = gbuffer1Sample.a;
     half3 emittedLuminance = gbuffer2Sample.rgb;
+    half linearRoughness = half(gbuffer2Sample.a);
 
     constexpr half3 dielectricF0 = half3(0.04);
     constexpr half3 black = 0;

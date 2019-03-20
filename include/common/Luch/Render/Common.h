@@ -56,6 +56,7 @@ namespace Luch::Render
     {
         Vec4 baseColorFactor = Vec4 { 1.0 };
         Vec3 emissiveFactor = Vec3 { 1.0 };
+        uint32 unlit = 0;
         float32 alphaCutoff = 0.0f;
         float32 metallicFactor = 1.0f;
         float32 roughnessFactor = 1.0f;

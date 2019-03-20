@@ -48,6 +48,16 @@ kernel void tile_main(
     half occlusion = img.gbuffer0.a;
 
     half3 N = img.gbuffer1.rgb;
+
+    // Unlit early-out
+    if(all(N == 0))
+    {
+        img.luminance.rgb = baseColor;
+        img.luminance.a = 1;
+        imageBlock.write(img, lid);
+        return;
+    }
+
     half metallic = half(img.gbuffer1.a);
     half linearRoughness = half(img.gbuffer2.a);
 
@@ -118,7 +128,7 @@ kernel void tile_main(
     half4 resultLuminance;
 
     resultLuminance.rgb =
-        emitted
+        emittedLuminance
         + directLuminance
         + (specularReflectionLuminance + diffuseIndirectLuminance) * occlusion;
 

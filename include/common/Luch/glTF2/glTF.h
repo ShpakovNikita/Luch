@@ -257,6 +257,15 @@ struct OcclusionTextureInfo : public TextureInfo
     float32 strength = 1;
 };
 
+struct MaterialsUnlit
+{
+};
+
+struct MaterialExtensions
+{
+    Optional<MaterialsUnlit> unlit;
+};
+
 struct Material
 {
     String name;
@@ -268,6 +277,7 @@ struct Material
     AlphaMode alphaMode = AlphaMode::Opaque;
     float32 alphaCutoff = 0.5f;
     bool doubleSided = false;
+    Optional<MaterialExtensions> extensions;
 };
 
 struct Primitive

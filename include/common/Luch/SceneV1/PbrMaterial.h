@@ -45,6 +45,7 @@ namespace Luch::SceneV1
         AlphaMode alphaMode = AlphaMode::Opaque;
         float32 alphaCutoff = 0.5f;
         bool doubleSided = false;
+        bool unlit = false;
     };
 
     enum PbrMaterialDirtyFlags

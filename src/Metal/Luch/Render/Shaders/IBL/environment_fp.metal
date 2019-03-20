@@ -1,8 +1,10 @@
 #include <metal_stdlib>
 #include <metal_texture>
 #include <simd/simd.h>
+
 #include "Common/lighting.metal"
 #include "Common/material.metal"
+#include "Common/utils.metal"
 
 using namespace metal;
 
@@ -40,30 +42,6 @@ struct VertexOut
         float2 texCoord;
     #endif
 };
-
-float3 ExtractNormal(float3 normalTS, float normalScale, float3x3 TBN)
-{
-    float3 result = (normalTS * 2 - float3(1.0)) * float3(normalScale, normalScale, 1.0);
-
-    return normalize(TBN * result);
-}
-
-float3x3 TangentFrame(float3 dp1, float3 dp2, float3 N, float2 uv)
-{
-    // get edge vectors of the pixel triangle
-    float2 duv1 = dfdx(uv);
-    float2 duv2 = dfdy(uv);
-
-    // solve the linear system
-    float3 dp2perp = cross(dp2, N);
-    float3 dp1perp = cross(N, dp1);
-    float3 T = dp2perp * duv1.x + dp1perp * duv2.x;
-    float3 B = dp2perp * duv1.y + dp1perp * duv2.y;
-
-    // construct a scale-invariant frame
-    float invmax = rsqrt(max(dot(T, T), dot(B,B)));
-    return float3x3(T * invmax, B * invmax, N);
-}
 
 struct FragmentOut
 {
@@ -123,6 +101,13 @@ fragment FragmentOut fp_main(
         }
     #endif
 
+    if(material.unlit)
+    {
+        FragmentOut result;
+        result.luminance = baseColor;
+        return result;
+    }
+
     float3 dp1 = dfdx(positionVS);
     float3 dp2 = dfdy(positionVS);
 
@@ -168,13 +153,6 @@ fragment FragmentOut fp_main(
     #if HAS_EMISSIVE_TEXTURE && HAS_TEXCOORD_0
         half4 emissiveSample = emissiveMap.sample(emissiveSampler, texCoord);
         emittedLuminance *= emissiveSample.rgb;
-    #endif
-
-    #if HAS_OCCLUSION_TEXTURE && HAS_TEXCOORD_0
-        half occlusionSample = occlusionMap.sample(occlusionSampler, texCoord).r;
-        half occlusion = mix(1, occlusionSample, half(material.occlusionStrength));
-    #else
-        half occlusion = 1.0h;
     #endif
 
     half3 P = half3(in.positionVS.xyz);
