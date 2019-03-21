@@ -20,8 +20,8 @@ namespace Luch::Render::Passes::Deferred
     {
         GraphicsDevice* device = nullptr;
 
-        MaterialResources* materialResources = nullptr;
-        CameraResources* cameraResources = nullptr;
+        MaterialPersistentResources* materialResources = nullptr;
+        CameraPersistentResources* cameraResources = nullptr;
 
         RefPtr<PipelineLayout> pipelineLayout;
         RefPtr<DescriptorPool> descriptorPool;

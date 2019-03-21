@@ -4,6 +4,7 @@
 #include <Luch/Render/CameraResources.h>
 #include <Luch/Render/IndirectLightingResources.h>
 #include <Luch/Render/MaterialResources.h>
+#include <Luch/Render/LightResources.h>
 #include <Luch/Render/RenderUtils.h>
 #include <Luch/Render/Common.h>
 #include <Luch/Render/SharedBuffer.h>
@@ -247,12 +248,12 @@ namespace Luch::Render::Passes::Forward
         memcpy(lightsSuballocation.offsetMemory, lightUniforms.data(), enabledLightsCount * sizeof(LightUniform));
 
         transientContext->lightsBufferDescriptorSet->WriteUniformBuffer(
-            persistentContext->lightingParamsBinding,
+            persistentContext->lightResources->lightingParamsBinding,
             lightingParamsSuballocation.buffer,
             lightingParamsSuballocation.offset);
 
         transientContext->lightsBufferDescriptorSet->WriteUniformBuffer(
-            persistentContext->lightsBufferBinding,
+            persistentContext->lightResources->lightsBufferBinding,
             lightsSuballocation.buffer,
             lightsSuballocation.offset);
 
@@ -424,7 +425,7 @@ namespace Luch::Render::Passes::Forward
         LUCH_ASSERT(vertexBuffers.size() == 1);
 
         ci.inputAssembler.bindings.resize(vertexBuffers.size());
-        for (int32 i = 0; i < vertexBuffers.size(); i++)
+        for (uint32 i = 0; i < vertexBuffers.size(); i++)
         {
             const auto& vertexBuffer = vertexBuffers[i];
             auto& bindingDescription = ci.inputAssembler.bindings[i];
@@ -566,15 +567,17 @@ namespace Luch::Render::Passes::Forward
 
     ResultValue<bool, UniquePtr<ForwardPersistentContext>> ForwardRenderPass::PrepareForwardPersistentContext(
         GraphicsDevice* device,
-        CameraResources* cameraResources,
-        MaterialResources* materialResources,
-        IndirectLightingResources* indirectLightingResources)
+        CameraPersistentResources* cameraResources,
+        MaterialPersistentResources* materialResources,
+        IndirectLightingPersistentResources* indirectLightingResources,
+        LightPersistentResources* lightResources)
     {
         auto context = MakeUnique<ForwardPersistentContext>();
         context->device = device;
         context->cameraResources = cameraResources;
         context->materialResources = materialResources;
         context->indirectLightingResources = indirectLightingResources;
+        context->lightResources = lightResources;
 
         const auto& supportedDepthFormats = context->device->GetPhysicalDevice()->GetCapabilities().supportedDepthFormats;
         LUCH_ASSERT_MSG(!supportedDepthFormats.empty(), "No supported depth formats");
@@ -678,26 +681,6 @@ namespace Luch::Render::Passes::Forward
         }
 
         {
-            context->lightingParamsBinding.OfType(ResourceType::UniformBuffer);
-            context->lightsBufferBinding.OfType(ResourceType::UniformBuffer);
-
-            DescriptorSetLayoutCreateInfo lightsDescriptorSetLayoutCreateInfo;
-            lightsDescriptorSetLayoutCreateInfo
-                .OfType(DescriptorSetType::Buffer)
-                .WithNBindings(2)
-                .AddBinding(&context->lightingParamsBinding)
-                .AddBinding(&context->lightsBufferBinding);
-
-            auto [result, createdDescriptorSetLayout] = device->CreateDescriptorSetLayout(lightsDescriptorSetLayoutCreateInfo);
-            if (result != GraphicsResult::Success)
-            {
-                return { false };
-            }
-
-            context->lightsBufferDescriptorSetLayout = std::move(createdDescriptorSetLayout);
-        }
-
-        {
             PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
             pipelineLayoutCreateInfo
                 .AddSetLayout(ShaderStage::Vertex, cameraResources->cameraBufferDescriptorSetLayout)
@@ -706,8 +689,8 @@ namespace Luch::Render::Passes::Forward
                 .AddSetLayout(ShaderStage::Fragment, materialResources->materialTextureDescriptorSetLayout)
                 .AddSetLayout(ShaderStage::Fragment, materialResources->materialBufferDescriptorSetLayout)
                 .AddSetLayout(ShaderStage::Fragment, materialResources->materialSamplerDescriptorSetLayout)
-                .AddSetLayout(ShaderStage::Fragment, context->indirectLightingResources->indirectLightingTexturesDescriptorSetLayout)
-                .AddSetLayout(ShaderStage::Fragment, context->lightsBufferDescriptorSetLayout);
+                .AddSetLayout(ShaderStage::Fragment, context->lightResources->lightsBufferDescriptorSetLayout)
+                .AddSetLayout(ShaderStage::Fragment, context->indirectLightingResources->indirectLightingTexturesDescriptorSetLayout);
 
             auto[createPipelineLayoutResult, createdPipelineLayout] = device->CreatePipelineLayout(
                 pipelineLayoutCreateInfo);
@@ -733,7 +716,7 @@ namespace Luch::Render::Passes::Forward
 
         {
             auto [result, allocatedBufferSet] = context->descriptorPool->AllocateDescriptorSet(
-                persistentContext->lightsBufferDescriptorSetLayout);
+                persistentContext->lightResources->lightsBufferDescriptorSetLayout);
 
             if(result != GraphicsResult::Success)
             {

@@ -31,8 +31,8 @@ namespace Luch::Render::Passes
 
         static ResultValue<bool, UniquePtr<DepthOnlyPersistentContext>> PrepareDepthOnlyPersistentContext(
             GraphicsDevice* device,
-            CameraResources* cameraResources,
-            MaterialResources* materialResources);
+            CameraPersistentResources* cameraResources,
+            MaterialPersistentResources* materialResources);
 
         static ResultValue<bool, UniquePtr<DepthOnlyTransientContext>> PrepareDepthOnlyTransientContext(
             DepthOnlyPersistentContext* persistentContext,

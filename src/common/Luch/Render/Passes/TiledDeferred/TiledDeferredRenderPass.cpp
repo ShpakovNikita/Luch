@@ -5,6 +5,7 @@
 #include <Luch/Render/CameraResources.h>
 #include <Luch/Render/IndirectLightingResources.h>
 #include <Luch/Render/MaterialResources.h>
+#include <Luch/Render/LightResources.h>
 #include <Luch/Render/RenderUtils.h>
 #include <Luch/Render/Common.h>
 #include <Luch/Render/SharedBuffer.h>
@@ -274,12 +275,12 @@ namespace Luch::Render::Passes::TiledDeferred
         memcpy(lightsSuballocation.offsetMemory, lightUniforms.data(), enabledLightsCount * sizeof(LightUniform));
 
         transientContext->lightsBufferDescriptorSet->WriteUniformBuffer(
-            persistentContext->lightingParamsBinding,
+            persistentContext->lightResources->lightingParamsBinding,
             lightingParamsSuballocation.buffer,
             lightingParamsSuballocation.offset);
 
         transientContext->lightsBufferDescriptorSet->WriteUniformBuffer(
-            persistentContext->lightsBufferBinding,
+            persistentContext->lightResources->lightsBufferBinding,
             lightsSuballocation.buffer,
             lightsSuballocation.offset);
 
@@ -422,7 +423,7 @@ namespace Luch::Render::Passes::TiledDeferred
         LUCH_ASSERT(vertexBuffers.size() == 1);
 
         ci.inputAssembler.bindings.resize(vertexBuffers.size());
-        for (int32 i = 0; i < vertexBuffers.size(); i++)
+        for (uint32 i = 0; i < vertexBuffers.size(); i++)
         {
             const auto& vertexBuffer = vertexBuffers[i];
             auto& bindingDescription = ci.inputAssembler.bindings[i];
@@ -461,7 +462,7 @@ namespace Luch::Render::Passes::TiledDeferred
         ci.depthStencil.depthCompareFunction = CompareFunction::Less;
 
         ci.colorAttachments.attachments.resize(TiledDeferredConstants::ColorAttachmentCount);
-        for(int32 i = 0; i < ci.colorAttachments.attachments.size(); i++)
+        for(uint32 i = 0; i < ci.colorAttachments.attachments.size(); i++)
         {
             ci.colorAttachments.attachments[i].format = TiledDeferredConstants::ColorAttachmentFormats[i];
         }
@@ -604,15 +605,17 @@ namespace Luch::Render::Passes::TiledDeferred
 
     ResultValue<bool, UniquePtr<TiledDeferredPersistentContext>> TiledDeferredRenderPass::PrepareTiledDeferredPersistentContext(
         GraphicsDevice* device,
-        CameraResources* cameraResources,
-        MaterialResources* materialResources,
-        IndirectLightingResources* indirectLightingResources)
+        CameraPersistentResources* cameraResources,
+        MaterialPersistentResources* materialResources,
+        IndirectLightingPersistentResources* indirectLightingResources,
+        LightPersistentResources* lightResources)
     {
         auto context = MakeUnique<TiledDeferredPersistentContext>();
         context->device = device;
         context->cameraResources = cameraResources;
         context->materialResources = materialResources;
         context->indirectLightingResources = indirectLightingResources;
+        context->lightResources = lightResources;
 
         const auto& supportedDepthFormats = context->device->GetPhysicalDevice()->GetCapabilities().supportedDepthFormats;
         LUCH_ASSERT_MSG(!supportedDepthFormats.empty(), "No supported depth formats");
@@ -720,31 +723,10 @@ namespace Luch::Render::Passes::TiledDeferred
         }
 
         {
-            context->lightingParamsBinding.OfType(ResourceType::UniformBuffer);
-            context->lightsBufferBinding.OfType(ResourceType::UniformBuffer);
-
-            DescriptorSetLayoutCreateInfo createInfo;
-            createInfo
-                .OfType(DescriptorSetType::Buffer)
-                .WithNBindings(2)
-                .AddBinding(&context->lightingParamsBinding)
-                .AddBinding(&context->lightsBufferBinding);
-
-            auto[result, lightsDescriptorSetLayout] = device->CreateDescriptorSetLayout(createInfo);
-            if (result != GraphicsResult::Success)
-            {
-                LUCH_ASSERT(false);
-                return { false };
-            }
-
-            context->lightsBufferDescriptorSetLayout = std::move(lightsDescriptorSetLayout);
-        }
-
-        {
             PipelineLayoutCreateInfo createInfo;
             createInfo
                 .AddSetLayout(ShaderStage::Tile, context->cameraResources->cameraBufferDescriptorSetLayout)
-                .AddSetLayout(ShaderStage::Tile, context->lightsBufferDescriptorSetLayout)
+                .AddSetLayout(ShaderStage::Tile, context->lightResources->lightsBufferDescriptorSetLayout)
                 .AddSetLayout(ShaderStage::Tile, context->indirectLightingResources->indirectLightingTexturesDescriptorSetLayout);
 
             auto [result, resolvePipelineLayout] = device->CreatePipelineLayout(createInfo);
@@ -772,7 +754,7 @@ namespace Luch::Render::Passes::TiledDeferred
 
         {
             auto [result, lightsBufferSet] = context->descriptorPool->AllocateDescriptorSet(
-                persistentContext->lightsBufferDescriptorSetLayout);
+                persistentContext->lightResources->lightsBufferDescriptorSetLayout);
 
             if(result != GraphicsResult::Success)
             {

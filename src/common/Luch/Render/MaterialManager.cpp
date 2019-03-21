@@ -21,7 +21,7 @@ namespace Luch::Render
     {
         device = aDevice;
 
-        resources = MakeUnique<MaterialResources>();
+        resources = MakeUnique<MaterialPersistentResources>();
 
         DescriptorPoolCreateInfo descriptorPoolCreateInfo;
         descriptorPoolCreateInfo.maxDescriptorSets = DescriptorSetCount;

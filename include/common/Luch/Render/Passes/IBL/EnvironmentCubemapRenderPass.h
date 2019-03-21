@@ -32,8 +32,9 @@ namespace Luch::Render::Passes::IBL
 
         static ResultValue<bool, UniquePtr<EnvironmentCubemapPersistentContext>> PrepareEnvironmentCubemapPersistentContext(
             GraphicsDevice* device,
-            CameraResources* cameraResources,
-            MaterialResources* materialResources);
+            CameraPersistentResources* cameraResources,
+            MaterialPersistentResources* materialResources,
+            LightPersistentResources* lightResources);
 
         static ResultValue<bool, UniquePtr<EnvironmentCubemapTransientContext>> PrepareEnvironmentCubemapTransientContext(
             EnvironmentCubemapPersistentContext* persistentContext,

@@ -20,8 +20,9 @@ namespace Luch::Render::Passes::Deferred
     {
         GraphicsDevice* device = nullptr;
 
-        CameraResources* cameraResources = nullptr;
-        IndirectLightingResources* indirectLightingResources = nullptr;
+        CameraPersistentResources* cameraResources = nullptr;
+        IndirectLightingPersistentResources* indirectLightingResources = nullptr;
+        LightPersistentResources* lightResources = nullptr;
 
         RefPtr<GraphicsPipelineState> pipelineState;
         RefPtr<PipelineLayout> pipelineLayout;
@@ -32,11 +33,6 @@ namespace Luch::Render::Passes::Deferred
         DescriptorSetBinding depthStencilTextureBinding;
 
         RefPtr<DescriptorSetLayout> gbufferTextureDescriptorSetLayout;
-
-        DescriptorSetBinding lightingParamsBinding;
-        DescriptorSetBinding lightsBufferBinding;
-
-        RefPtr<DescriptorSetLayout> lightsBufferDescriptorSetLayout;
 
         RefPtr<ShaderProgram> vertexShader;
         RefPtr<ShaderProgram> fragmentShader;

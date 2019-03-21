@@ -103,7 +103,7 @@ namespace Luch::Render::Passes::Deferred
     }
 
     void GBufferRenderPass::ExecuteGraphicsPass(
-        RenderGraphResourceManager* manager,
+        RenderGraphResourceManager* manager [[ maybe_unused ]],
         GraphicsCommandList* commandList)
     {
         Viewport viewport;
@@ -311,7 +311,7 @@ namespace Luch::Render::Passes::Deferred
         LUCH_ASSERT(vertexBuffers.size() == 1);
 
         ci.inputAssembler.bindings.resize(vertexBuffers.size());
-        for (int32 i = 0; i < vertexBuffers.size(); i++)
+        for (uint32 i = 0; i < vertexBuffers.size(); i++)
         {
             const auto& vertexBuffer = vertexBuffers[i];
             auto& bindingDescription = ci.inputAssembler.bindings[i];
@@ -359,7 +359,7 @@ namespace Luch::Render::Passes::Deferred
         }
 
         ci.colorAttachments.attachments.resize(DeferredConstants::GBufferColorAttachmentCount);
-        for(int32 i = 0; i < ci.colorAttachments.attachments.size(); i++)
+        for(uint32 i = 0; i < ci.colorAttachments.attachments.size(); i++)
         {
             ci.colorAttachments.attachments[i].format = DeferredConstants::GBufferColorAttachmentFormats[i];
         }
@@ -457,8 +457,8 @@ namespace Luch::Render::Passes::Deferred
 
     ResultValue<bool, UniquePtr<GBufferPersistentContext>> GBufferRenderPass::PrepareGBufferPersistentContext(
         GraphicsDevice* device,
-        CameraResources* cameraResources,
-        MaterialResources* materialResources)
+        CameraPersistentResources* cameraResources,
+        MaterialPersistentResources* materialResources)
     {
         UniquePtr<GBufferPersistentContext> context = MakeUnique<GBufferPersistentContext>();
         context->device = device;
@@ -574,7 +574,7 @@ namespace Luch::Render::Passes::Deferred
     }
 
     ResultValue<bool, UniquePtr<GBufferTransientContext>> GBufferRenderPass::PrepareGBufferTransientContext(
-        GBufferPersistentContext* persistentContext,
+        GBufferPersistentContext* persistentContext [[ maybe_unused ]],
         RefPtr<DescriptorPool> descriptorPool)
     {
         auto context = MakeUnique<GBufferTransientContext>();

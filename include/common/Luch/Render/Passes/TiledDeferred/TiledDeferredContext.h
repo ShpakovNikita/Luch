@@ -17,9 +17,10 @@ namespace Luch::Render::Passes::TiledDeferred
     {
         GraphicsDevice* device = nullptr;
 
-        MaterialResources* materialResources = nullptr;
-        CameraResources* cameraResources = nullptr;
-        IndirectLightingResources* indirectLightingResources = nullptr;
+        MaterialPersistentResources* materialResources = nullptr;
+        CameraPersistentResources* cameraResources = nullptr;
+        IndirectLightingPersistentResources* indirectLightingResources = nullptr;
+        LightPersistentResources* lightResources = nullptr;
 
         RefPtr<DescriptorPool> descriptorPool;
 
@@ -27,11 +28,6 @@ namespace Luch::Render::Passes::TiledDeferred
 
         RefPtr<TiledPipelineState> resolvePipelineState;
         RefPtr<PipelineLayout> resolvePipelineLayout;
-
-        DescriptorSetBinding lightingParamsBinding;
-        DescriptorSetBinding lightsBufferBinding;
-
-        RefPtr<DescriptorSetLayout> lightsBufferDescriptorSetLayout;
 
         DescriptorSetBinding meshUniformBufferBinding;
 

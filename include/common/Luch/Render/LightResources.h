@@ -10,10 +10,10 @@ namespace Luch::Render
 {
     using namespace Graphics;
 
-    struct CameraPersistentResources
+    struct LightPersistentResources
     {
-        RefPtr<DescriptorPool> descriptorPool;
-        DescriptorSetBinding cameraUniformBufferBinding;
-        RefPtr<DescriptorSetLayout> cameraBufferDescriptorSetLayout;
+        DescriptorSetBinding lightingParamsBinding;
+        DescriptorSetBinding lightsBufferBinding;
+        RefPtr<DescriptorSetLayout> lightsBufferDescriptorSetLayout;
     };
 }

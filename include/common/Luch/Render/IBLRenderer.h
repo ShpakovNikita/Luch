@@ -53,7 +53,8 @@ namespace Luch::Render
         bool Initialize(
             SharedPtr<RenderContext> context,
             SharedPtr<MaterialManager> materialManager,
-            SharedPtr<CameraResources> cameraResources);
+            SharedPtr<CameraPersistentResources> cameraResources,
+            SharedPtr<LightPersistentResources> lightResources);
 
         bool Deinitialize();
 
@@ -66,7 +67,7 @@ namespace Luch::Render
         bool PrepareEnvironmentMapping(const IBLRequest& iblRequest);
         bool PrepareDiffuseIlluminance(const IBLRequest& iblRequest);
         bool PrepareSpecularReflection(const IBLRequest& iblRequest);
-        bool PrepareSpecularBRDF(const IBLRequest& iblRequest);
+        bool PrepareSpecularBRDF();
 
         SharedPtr<SharedBuffer> sharedBuffer;
 
@@ -95,7 +96,8 @@ namespace Luch::Render
 
         SharedPtr<RenderContext> context;
         SharedPtr<MaterialManager> materialManager;
-        SharedPtr<CameraResources> cameraResources;
+        SharedPtr<CameraPersistentResources> cameraResources;
+        SharedPtr<LightPersistentResources> lightResources;
 
         RefPtr<Semaphore> renderSemaphore;
         RefPtr<Semaphore> probeReadySemaphore;

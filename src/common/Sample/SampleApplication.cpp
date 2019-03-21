@@ -70,7 +70,7 @@ static LRESULT CALLBACK StaticWindowProc(
 }
 #endif
 
-bool SampleApplication::Initialize(const Vector<String>& args)
+bool SampleApplication::Initialize(const Vector<String>& args [[ maybe_unused ]])
 {
 #if _WIN32
     allocationCallbacks = allocator.GetAllocationCallbacks();

@@ -19,18 +19,14 @@ namespace Luch::Render::Passes::IBL
     {
         GraphicsDevice* device = nullptr;
 
-        MaterialResources* materialResources = nullptr;
-        CameraResources* cameraResources = nullptr;
+        MaterialPersistentResources* materialResources = nullptr;
+        CameraPersistentResources* cameraResources = nullptr;
+        LightPersistentResources* lightResources = nullptr;
 
         RefPtr<PipelineLayout> pipelineLayout;
         RefPtr<DescriptorPool> descriptorPool;
 
         DescriptorSetBinding meshUniformBufferBinding;
-
-        DescriptorSetBinding lightingParamsBinding;
-        DescriptorSetBinding lightsBufferBinding;
-
-        RefPtr<DescriptorSetLayout> lightsBufferDescriptorSetLayout;
 
         RefPtr<DescriptorSetLayout> meshBufferDescriptorSetLayout;
 

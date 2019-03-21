@@ -185,7 +185,7 @@ namespace Luch::Render::RenderUtils
         const RefPtrVector<CommandList>& commandLists,
         const std::function<void()> completedHandler)
     {
-        for(int32 i = 0; i < commandLists.size(); i++)
+        for(uint32 i = 0; i < commandLists.size(); i++)
         {
             if(i == commandLists.size() - 1)
             {

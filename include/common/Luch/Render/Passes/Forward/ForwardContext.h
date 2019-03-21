@@ -19,19 +19,15 @@ namespace Luch::Render::Passes::Forward
     {
         GraphicsDevice* device = nullptr;
 
-        MaterialResources* materialResources = nullptr;
-        CameraResources* cameraResources = nullptr;
-        IndirectLightingResources* indirectLightingResources = nullptr;
+        MaterialPersistentResources* materialResources = nullptr;
+        CameraPersistentResources* cameraResources = nullptr;
+        LightPersistentResources* lightResources = nullptr;
+        IndirectLightingPersistentResources* indirectLightingResources = nullptr;
 
         RefPtr<PipelineLayout> pipelineLayout;
         RefPtr<DescriptorPool> descriptorPool;
 
         DescriptorSetBinding meshUniformBufferBinding;
-
-        DescriptorSetBinding lightingParamsBinding;
-        DescriptorSetBinding lightsBufferBinding;
-
-        RefPtr<DescriptorSetLayout> lightsBufferDescriptorSetLayout;
 
         RefPtr<DescriptorSetLayout> meshBufferDescriptorSetLayout;
 

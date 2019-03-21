@@ -33,9 +33,10 @@ namespace Luch::Render::Passes::Forward
 
         static ResultValue<bool, UniquePtr<ForwardPersistentContext>> PrepareForwardPersistentContext(
             GraphicsDevice* device,
-            CameraResources* cameraResources,
-            MaterialResources* materialResources,
-            IndirectLightingResources* indirectLightingResources);
+            CameraPersistentResources* cameraResources,
+            MaterialPersistentResources* materialResources,
+            IndirectLightingPersistentResources* indirectLightingResources,
+            LightPersistentResources* lightResources);
 
         static ResultValue<bool, UniquePtr<ForwardTransientContext>> PrepareForwardTransientContext(
             ForwardPersistentContext* persistentContext,

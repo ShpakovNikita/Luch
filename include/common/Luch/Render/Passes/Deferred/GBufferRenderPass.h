@@ -33,8 +33,8 @@ namespace Luch::Render::Passes::Deferred
 
         static ResultValue<bool, UniquePtr<GBufferPersistentContext>> PrepareGBufferPersistentContext(
             GraphicsDevice* device,
-            CameraResources* cameraResources,
-            MaterialResources* materialResources);
+            CameraPersistentResources* cameraResources,
+            MaterialPersistentResources* materialResources);
 
         static ResultValue<bool, UniquePtr<GBufferTransientContext>> PrepareGBufferTransientContext(
             GBufferPersistentContext* persistentContext,

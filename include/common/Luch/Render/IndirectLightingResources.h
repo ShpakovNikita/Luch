@@ -10,7 +10,7 @@ namespace Luch::Render
 {
     using namespace Graphics;
 
-    struct IndirectLightingResources
+    struct IndirectLightingPersistentResources
     {
         DescriptorSetBinding diffuseIlluminanceCubemapBinding;
         DescriptorSetBinding specularReflectionCubemapBinding;

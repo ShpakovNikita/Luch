@@ -22,7 +22,7 @@ namespace Luch::Render::Graph
     public:
         static constexpr int32 MaxColorAttachmentCount = RenderPassCreateInfo::MaxColorAttachmentCount;
 
-        RenderGraphResourceManager(GraphicsDevice* device, RenderGraphResourcePool* pool);
+        RenderGraphResourceManager(RenderGraphResourcePool* pool);
         ~RenderGraphResourceManager();
 
         RenderMutableResource ImportTexture(RefPtr<Texture> texture);
@@ -44,7 +44,6 @@ namespace Luch::Render::Graph
         RefPtr<Texture> ReleaseTexture(RenderResource resource);
         RefPtr<Buffer> ReleaseBuffer(RenderResource resource);
     private:
-        GraphicsDevice* device = nullptr;
         RenderMutableResource GetNextHandle();
         uint32 nextHandleValue = 1;
 

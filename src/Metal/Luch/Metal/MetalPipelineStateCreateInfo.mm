@@ -168,7 +168,7 @@ namespace Luch::Metal
         d.SetTileFunction(mtlTileProgram->GetMetalFunction());
         d.SetLabel(ns::String { ci.name.c_str() });
 
-        for(int32 i = 0; i < ci.colorAttachments.attachments.size(); i++)
+        for(uint32 i = 0; i < ci.colorAttachments.attachments.size(); i++)
         {
             d.GetColorAttachments()[i].SetPixelFormat(ToMetalPixelFormat(ci.colorAttachments.attachments[i].format));
         }

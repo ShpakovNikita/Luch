@@ -26,9 +26,9 @@ namespace Luch::Render
         bool PrepareMaterial(SceneV1::PbrMaterial* material);
         void UpdateMaterial(SceneV1::PbrMaterial* material, SharedBuffer* sharedBuffer);
 
-        MaterialResources* GetResources() { return resources.get(); }
+        MaterialPersistentResources* GetPersistentResources() { return resources.get(); }
     private:
         GraphicsDevice* device = nullptr;
-        UniquePtr<MaterialResources> resources;
+        UniquePtr<MaterialPersistentResources> resources;
     };
 }

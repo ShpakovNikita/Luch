@@ -31,9 +31,10 @@ namespace Luch::Render::Passes::TiledDeferred
 
         static ResultValue<bool, UniquePtr<TiledDeferredPersistentContext>> PrepareTiledDeferredPersistentContext(
             GraphicsDevice* device,
-            CameraResources* cameraResources,
-            MaterialResources* materialResources,
-            IndirectLightingResources* indirectLightingResources);
+            CameraPersistentResources* cameraResources,
+            MaterialPersistentResources* materialResources,
+            IndirectLightingPersistentResources* indirectLightingResources,
+            LightPersistentResources* lightResources);
 
         static ResultValue<bool, UniquePtr<TiledDeferredTransientContext>> PrepareTiledDeferredTransientContext(
             TiledDeferredPersistentContext* persistentContext,

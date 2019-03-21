@@ -29,8 +29,9 @@ namespace Luch::Render::Passes::Deferred
 
         static ResultValue<bool, UniquePtr<ResolvePersistentContext>> PrepareResolvePersistentContext(
             GraphicsDevice* device,
-            CameraResources* cameraResources,
-            IndirectLightingResources* indirectLightingResources);
+            CameraPersistentResources* cameraResources,
+            IndirectLightingPersistentResources* indirectLightingResources,
+            LightPersistentResources* lightResources);
 
         static ResultValue<bool, UniquePtr<ResolveTransientContext>> PrepareResolveTransientContext(
             ResolvePersistentContext* persistentContext,

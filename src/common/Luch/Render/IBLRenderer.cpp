@@ -66,10 +66,12 @@ namespace Luch::Render
     bool IBLRenderer::Initialize(
         SharedPtr<RenderContext> aContext,
         SharedPtr<MaterialManager> aMaterialManager,
-        SharedPtr<CameraResources> aCameraResources)
+        SharedPtr<CameraPersistentResources> aCameraResources,
+        SharedPtr<LightPersistentResources> aLightResources)
     {
         context = aContext;
         cameraResources = aCameraResources;
+        lightResources = aLightResources;
         materialManager = aMaterialManager;
 
         resourcePool = MakeUnique<RenderGraphResourcePool>(context->device);
@@ -89,7 +91,8 @@ namespace Luch::Render
             auto [result, createdContext] = EnvironmentCubemapRenderPass::PrepareEnvironmentCubemapPersistentContext(
                 context->device,
                 cameraResources.get(),
-                materialManager->GetResources());
+                materialManager->GetPersistentResources(),
+                lightResources.get());
             
             if(!result)
             {
@@ -253,7 +256,7 @@ namespace Luch::Render
 
         if(iblRequest.computeSpecularBRDF)
         {
-            bool specularBRDFPrepared = PrepareSpecularBRDF(iblRequest);
+            bool specularBRDFPrepared = PrepareSpecularBRDF();
             if(!specularBRDFPrepared)
             {
                 return false;
@@ -477,7 +480,7 @@ namespace Luch::Render
         return true;
     }
 
-    bool IBLRenderer::PrepareSpecularBRDF(const IBLRequest& iblRequest)
+    bool IBLRenderer::PrepareSpecularBRDF()
     {
         auto [result, transientContext] = SpecularBRDFRenderPass::PrepareSpecularBRDFTransientContext(
             specularBRDFPersistentContext.get(),

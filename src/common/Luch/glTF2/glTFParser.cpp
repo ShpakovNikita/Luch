@@ -262,14 +262,14 @@ Vector<T> ParseBuiltinArray(const json& j)
     return ParseArray<T, ParseBuiltin<T>>(j);
 }
 
-Sparse ParseSparse(const json& j)
+Sparse ParseSparse(const json&)
 {
     Sparse sparse;
     LUCH_ASSERT(false);
     return sparse;
 }
 
-AccessorValueHolder ParseAccessorMinMax(ComponentType componentType, AttributeType type, const json& j)
+AccessorValueHolder ParseAccessorMinMax(ComponentType, AttributeType, const json&)
 {
     AccessorValueHolder valueHolder{};
     return valueHolder;
@@ -410,9 +410,10 @@ Camera ParseCamera(const json& j)
     return camera;
 }
 
-Channel ParseChannel(const json& j)
+Channel ParseChannel(const json&)
 {
     Channel channel;
+    LUCH_ASSERT(false);
     return channel;
 }
 
@@ -474,7 +475,7 @@ PBRMetallicRoughness ParsePBRMetallicRoughness(const json& j)
     return pbrMetallicRoughness;
 }
 
-MaterialsUnlit ParseMaterialsUnlit(const json& j)
+MaterialsUnlit ParseMaterialsUnlit(const json&)
 {
     MaterialsUnlit unlit = {};
     return unlit;

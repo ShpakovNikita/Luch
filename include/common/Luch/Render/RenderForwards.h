@@ -9,10 +9,10 @@ namespace Luch::Render
     class TextureUploader;
 
     struct IBLResult;
-    struct CameraResources;
-    struct IndirectLightingResources;
-    struct MaterialResources;
+    struct CameraPersistentResources;
+    struct IndirectLightingPersistentResources;
+    struct LightPersistentResources;
+    struct MaterialPersistentResources;
     struct RenderContext;
     struct SharedBufferSuballocation;
 }
-
