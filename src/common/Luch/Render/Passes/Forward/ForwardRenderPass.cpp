@@ -419,34 +419,7 @@ namespace Luch::Render::Passes::Forward
 
         ci.name = GetRenderPassName(useDepthPrepass);
 
-        ShaderDefines shaderDefines;
-
-        const auto& vertexBuffers = primitive->GetVertexBuffers();
-        LUCH_ASSERT(vertexBuffers.size() == 1);
-
-        ci.inputAssembler.bindings.resize(vertexBuffers.size());
-        for (uint32 i = 0; i < vertexBuffers.size(); i++)
-        {
-            const auto& vertexBuffer = vertexBuffers[i];
-            auto& bindingDescription = ci.inputAssembler.bindings[i];
-            bindingDescription.stride = vertexBuffer.stride;
-            bindingDescription.inputRate = VertexInputRate::PerVertex;
-        }
-
-        const auto& attributes = primitive->GetAttributes();
-        ci.inputAssembler.attributes.resize(SemanticToLocation.size());
-        for (const auto& attribute : attributes)
-        {
-            auto& attributeDescription = ci.inputAssembler.attributes[SemanticToLocation.at(attribute.semantic)];
-            attributeDescription.binding = attribute.vertexBufferIndex;
-            attributeDescription.format = attribute.format;
-            attributeDescription.offset = attribute.offset;
-
-            shaderDefines.AddFlag(SemanticToFlag.at(attribute.semantic));
-        }
-
-        // TODO
-        ci.inputAssembler.primitiveTopology = PrimitiveTopology::TriangleList;
+        ci.inputAssembler = RenderUtils::GetPrimitiveVertexInputStateCreateInfo(primitive);
 
         const auto& material = primitive->GetMaterial();
 
@@ -477,35 +450,13 @@ namespace Luch::Render::Passes::Forward
         ci.renderPass = context->renderPass;
         ci.pipelineLayout = context->pipelineLayout;
 
-        if (material->HasBaseColorTexture())
-        {
-            shaderDefines.AddFlag(MaterialShaderDefines::HasBaseColorTexture);
-        }
-
-        if (material->HasMetallicRoughnessTexture())
-        {
-            shaderDefines.AddFlag(MaterialShaderDefines::HasMetallicRoughnessTexture);
-        }
-
-        if (material->HasNormalTexture())
-        {
-            shaderDefines.AddFlag(MaterialShaderDefines::HasNormalTexture);
-        }
-
-        if (material->HasOcclusionTexture())
-        {
-            shaderDefines.AddFlag(MaterialShaderDefines::HasOcclusionTexture);
-        }
-
-        if (material->HasEmissiveTexture())
-        {
-            shaderDefines.AddFlag(MaterialShaderDefines::HasEmissiveTexture);
-        }
+        ShaderDefines shaderDefines;
+        RenderUtils::AddPrimitiveVertexShaderDefines(primitive, shaderDefines);
+        RenderUtils::AddMaterialShaderDefines(material, shaderDefines);
 
         if (material->GetProperties().alphaMode == SceneV1::AlphaMode::Mask)
         {
             ci.name += " (Alphatest)";
-            shaderDefines.AddFlag(MaterialShaderDefines::AlphaMask);
         }
 
         if (material->GetProperties().unlit)

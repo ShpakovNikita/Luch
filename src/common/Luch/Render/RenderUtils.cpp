@@ -1,9 +1,11 @@
 #include <Luch/Render/RenderUtils.h>
+#include <Luch/Render/ShaderDefines.h>
 #include <Luch/Graphics/GraphicsDevice.h>
 #include <Luch/Graphics/CommandQueue.h>
 #include <Luch/SceneV1/Camera.h>
 #include <Luch/SceneV1/PbrMaterial.h>
 #include <Luch/SceneV1/Light.h>
+#include <Luch/SceneV1/Primitive.h>
 #include <Luch/FileStream.h>
 #include <regex>
 
@@ -195,6 +197,87 @@ namespace Luch::Render::RenderUtils
             {
                 queue->Submit(commandLists[i], {});
             }
+        }
+    }
+
+    GraphicsPipelineVertexInputStateCreateInfo GetPrimitiveVertexInputStateCreateInfo(
+        SceneV1::Primitive* primitive)
+    {
+        GraphicsPipelineVertexInputStateCreateInfo inputAssembler;
+
+        const auto& vertexBuffers = primitive->GetVertexBuffers();
+        LUCH_ASSERT(vertexBuffers.size() == 1);
+
+        inputAssembler.bindings.resize(vertexBuffers.size());
+        for (uint32 i = 0; i < vertexBuffers.size(); i++)
+        {
+            const auto& vertexBuffer = vertexBuffers[i];
+            auto& bindingDescription = inputAssembler.bindings[i];
+            bindingDescription.stride = vertexBuffer.stride;
+            // TODO instancing
+            bindingDescription.inputRate = VertexInputRate::PerVertex;
+        }
+
+        const auto& attributes = primitive->GetAttributes();
+        inputAssembler.attributes.resize(SemanticToLocation.size());
+
+        for (const auto& attribute : attributes)
+        {
+            auto& attributeDescription = inputAssembler.attributes[SemanticToLocation.at(attribute.semantic)];
+            attributeDescription.binding = attribute.vertexBufferIndex;
+            attributeDescription.format = attribute.format;
+            attributeDescription.offset = attribute.offset;
+        }
+
+        // TODO
+        inputAssembler.primitiveTopology = PrimitiveTopology::TriangleList;
+
+        return inputAssembler;
+    }
+
+    void AddPrimitiveVertexShaderDefines(SceneV1::Primitive* primitive, ShaderDefines& shaderDefines)
+    {
+        LUCH_ASSERT(primitive != nullptr);
+
+        const auto& attributes = primitive->GetAttributes();
+        for (const auto& attribute : attributes)
+        {
+            shaderDefines.AddFlag(SemanticToFlag.at(attribute.semantic));
+        }
+    }
+
+    void AddMaterialShaderDefines(SceneV1::PbrMaterial* material, ShaderDefines& shaderDefines)
+    {
+        LUCH_ASSERT(material != nullptr);
+
+        if (material->HasBaseColorTexture())
+        {
+            shaderDefines.AddFlag(MaterialShaderDefines::HasBaseColorTexture);
+        }
+
+        if (material->HasMetallicRoughnessTexture())
+        {
+            shaderDefines.AddFlag(MaterialShaderDefines::HasMetallicRoughnessTexture);
+        }
+
+        if (material->HasNormalTexture())
+        {
+            shaderDefines.AddFlag(MaterialShaderDefines::HasNormalTexture);
+        }
+
+        if (material->HasOcclusionTexture())
+        {
+            shaderDefines.AddFlag(MaterialShaderDefines::HasOcclusionTexture);
+        }
+
+        if (material->HasEmissiveTexture())
+        {
+            shaderDefines.AddFlag(MaterialShaderDefines::HasEmissiveTexture);
+        }
+
+        if (material->GetProperties().alphaMode == SceneV1::AlphaMode::Mask)
+        {
+            shaderDefines.AddFlag(MaterialShaderDefines::AlphaMask);
         }
     }
 }

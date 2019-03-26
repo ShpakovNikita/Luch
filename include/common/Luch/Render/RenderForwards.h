@@ -14,5 +14,6 @@ namespace Luch::Render
     struct LightPersistentResources;
     struct MaterialPersistentResources;
     struct RenderContext;
+    struct ShaderDefines;
     struct SharedBufferSuballocation;
 }
