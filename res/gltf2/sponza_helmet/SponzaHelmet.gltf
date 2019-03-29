@@ -81,17 +81,18 @@
     ],
     "nodes": [
         {
-            "name": "Skybox"
+            "name": "Skybox",
+            "mesh": 2,
+            "scale": [
+                30,
+                30,
+                30
+            ]
         },
         {
             "mesh" : 1,
             "name" : "Helmet",
-            "rotation" : [
-                -0.7071068286895752,
-                0,
-                -0.7071068286895752,
-                0
-            ],
+            "rotation" : [ 0.5, -0.5, 0.5, 0.5 ],
             "scale" : [ 0.4, 0.4, 0.4 ],
             "translation" : [ 5, 1.5, 0 ],
             "children": [ 4 ]
@@ -137,6 +138,10 @@
         {
             "byteLength" : 558504,
             "uri" : "DamagedHelmet.bin"
+        },
+        {
+            "byteLength" : 1224,
+            "uri" : "Box.bin"
         }
     ],
     "bufferViews": [
@@ -2188,6 +2193,31 @@
             "byteLength" : 116448,
             "byteOffset" : 442056,
             "target" : 34962
+        },
+        {
+            "buffer" : 2,
+            "byteLength" : 288,
+            "byteOffset" : 0
+        },
+        {
+            "buffer" : 2,
+            "byteLength" : 288,
+            "byteOffset" : 288
+        },
+        {
+            "buffer" : 2,
+            "byteLength" : 384,
+            "byteOffset" : 576
+        },
+        {
+            "buffer" : 2,
+            "byteLength" : 192,
+            "byteOffset" : 960
+        },
+        {
+            "buffer" : 2,
+            "byteLength" : 72,
+            "byteOffset" : 1152
         }
     ],
     "accessors": [
@@ -6413,6 +6443,46 @@
                 1.0005531199858524
             ],
             "type" : "VEC2"
+        },
+        {
+            "bufferView" : 409,
+            "componentType" : 5126,
+            "count" : 24,
+            "max" : [
+                1,
+                1,
+                1
+            ],
+            "min" : [
+                -1,
+                -1,
+                -1
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 410,
+            "componentType" : 5126,
+            "count" : 24,
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 411,
+            "componentType" : 5126,
+            "count" : 24,
+            "type" : "VEC4"
+        },
+        {
+            "bufferView" : 412,
+            "componentType" : 5126,
+            "count" : 24,
+            "type" : "VEC2"
+        },
+        {
+            "bufferView" : 413,
+            "componentType" : 5123,
+            "count" : 36,
+            "type" : "SCALAR"
         }
     ],
     "samplers": [
@@ -7540,6 +7610,16 @@
                 "metallicRoughnessTexture" : {
                     "index" : 70
                 }
+            }
+        },
+        {
+            "name" : "SkyboxMaterial",
+            "pbrMetallicRoughness" : {
+                "baseColorFactor": [ 0.53, 0.81, 0.92, 1 ]
+            },
+            "doubleSided": true,
+            "extensions": {
+                "KHR_materials_unlit": { }
             }
         }
     ],
@@ -8691,6 +8771,21 @@
                     },
                     "indices" : 405,
                     "material" : 25
+                }
+            ]
+        },
+        {
+            "name" : "Skybox",
+            "primitives" : [
+                {
+                    "attributes" : {
+                        "POSITION" : 409,
+                        "NORMAL" : 410,
+                        "TANGENT" : 411,
+                        "TEXCOORD_0" : 412
+                    },
+                    "indices" : 413,
+                    "material" : 26
                 }
             ]
         }
