@@ -23,11 +23,11 @@ namespace Luch::Vulkan
         }
     }
 
-    VulkanShaderModule::VulkanShaderModule(VulkanGraphicsDevice* aDevice, const Vector<Byte> &aGlslSource,
+    VulkanShaderModule::VulkanShaderModule(VulkanGraphicsDevice* aDevice, const String &aGlslSource,
                                            const UnorderedMap<String, Variant<int32, String> > &aDefines)
-        : ShaderLibrary (aDevice)
+        : ShaderLibrary(aDevice)
         , device(aDevice)
-        , glslSource(aGlslSource)
+        , glslSource(aGlslSource.begin(), aGlslSource.end())
         , defines(aDefines)
     {
     }

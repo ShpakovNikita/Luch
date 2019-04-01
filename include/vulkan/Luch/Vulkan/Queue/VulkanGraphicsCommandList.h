@@ -33,7 +33,8 @@ namespace Luch::Vulkan
         void BeginRenderPass(FrameBuffer* framebuffer) override;
         void EndRenderPass() override;
 
-        void BindPipelineState(PipelineState* pipelineState) override;
+        void BindGraphicsPipelineState(GraphicsPipelineState* pipelineState) override;
+        void BindTiledPipelineState(TiledPipelineState* pipelineState) override;
 
         void BindTextureDescriptorSet(
             ShaderStage stage,
@@ -77,6 +78,18 @@ namespace Luch::Vulkan
             int32 baseVertex,
             int32 instanceCount,
             int32 baseInstance) override;
+
+        void SetLabel(const String& label) override;
+
+        Size2i GetTileSize() const override
+        {
+            return Size2i{0, 0}; // todo: implement
+        }
+
+        void DispatchThreadsPerTile(Size2i threadsPerTile) override
+        {
+            // todo: implement
+        }
 
         inline vk::CommandBuffer GetCommandBuffer() { return commandBuffer; }
 

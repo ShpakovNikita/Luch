@@ -31,8 +31,14 @@ namespace Luch::Vulkan
 
         void Begin() override;
         void End() override;
+        void SetLabel(const String& label) override
+        {
+            // todo: implement
+        }
 
         void CopyBufferToTexture(Buffer* buffer, Texture* texture, const BufferToTextureCopy& copy) override;
+        void CopyTextureToTexture(Texture* source, Texture* destination, const TextureToTextureCopy& copy) override;
+        void GenerateMipMaps(Texture* texture) override;
 
         inline vk::CommandBuffer GetCommandBuffer() { return commandBuffer; }
 

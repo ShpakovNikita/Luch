@@ -57,17 +57,14 @@ GraphicsResultRefPtr<VulkanCommandPool> VulkanCommandQueue::CreateVulkanCommandP
     }
 }
 
-GraphicsResult VulkanCommandQueue::Submit(GraphicsCommandList* commandList)
+GraphicsResult VulkanCommandQueue::Submit(CommandList* commandList,
+                                          std::function<void()> completedHandler)
 {
     return GraphicsResult::InvalidValue;
 }
 
-GraphicsResult VulkanCommandQueue::Submit(CopyCommandList* commandList)
-{
-    return GraphicsResult::InvalidValue;
-}
-
-GraphicsResult VulkanCommandQueue::Present(int32 imageIndex, Swapchain* swapchain)
+GraphicsResult VulkanCommandQueue::Present(SwapchainTexture* swapchainTexture,
+                                           std::function<void()> presentedHandler)
 {
     return GraphicsResult::InvalidValue;
 }

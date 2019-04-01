@@ -23,6 +23,7 @@ namespace Luch::Vulkan
 
         void WriteTexture(const DescriptorSetBinding& binding, Texture* texture) {}
         void WriteUniformBuffer(const DescriptorSetBinding& binding, Buffer* buffer, int32 offset) {}
+        void WriteThreadgroupMemory(const DescriptorSetBinding& binding, int32 length, int32 offset) {}
         void WriteSampler(const DescriptorSetBinding& binding, Sampler* sampler) {}
         void Update() {}
         // endof todo: implement

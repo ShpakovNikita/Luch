@@ -14,6 +14,9 @@ namespace Luch::Vulkan
         VulkanSemaphore(VulkanGraphicsDevice* device, vk::Semaphore semaphore);
         ~VulkanSemaphore() override;
 
+        bool Wait(Optional<int64> timeoutNS = {}) override;
+        void Signal() override;
+
         inline vk::Semaphore GetSemaphore() { return semaphore; }
     private:
         void Destroy();

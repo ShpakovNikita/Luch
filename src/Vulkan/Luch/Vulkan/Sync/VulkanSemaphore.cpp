@@ -25,4 +25,15 @@ namespace Luch::Vulkan
         }
     }
 
+    bool VulkanSemaphore::Wait(Optional<int64> timeoutNS)
+    {
+        // todo: implement
+        return false;
+    }
+
+    void VulkanSemaphore::Signal()
+    {
+        // todo: implement
+    }
+
 }

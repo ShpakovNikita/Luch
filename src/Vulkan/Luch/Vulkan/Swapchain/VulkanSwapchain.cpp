@@ -37,7 +37,7 @@ namespace Luch::Vulkan
         }
     }
 
-    GraphicsResultValue<AcquiredTexture> VulkanSwapchain::GetNextAvailableTexture(Semaphore* semaphore)
+    GraphicsResultRefPtr<SwapchainTexture> VulkanSwapchain::GetNextAvailableTexture()
     {
         // todo: implement
         return {GraphicsResult::Unsupported};
@@ -95,7 +95,7 @@ namespace Luch::Vulkan
 
         if (surfaceFormats.size() == 1 && surfaceFormats[0].format == vk::Format::eUndefined)
         {
-            swapchainCreateInfo.format = Format::R8G8B8A8Unorm;
+            swapchainCreateInfo.format = Format::RGBA8Unorm;
             swapchainCreateInfo.colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
         }
         else

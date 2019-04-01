@@ -164,7 +164,7 @@ String VulkanGLSLShaderCompiler::GeneratePreamble(const UnorderedMap<String, Var
 
 bool VulkanGLSLShaderCompiler::TryCompileShader(
     ShaderStage shaderStage,
-    const Vector<Byte>& glslSource,
+    const Vector<char8>& glslSource,
     Vector<uint32_t>& spirvBytecode,
     const UnorderedMap<String, Variant<int32, String>>& flags)
 {
@@ -173,7 +173,7 @@ bool VulkanGLSLShaderCompiler::TryCompileShader(
         return false;
     }
 
-    LUCH_ASSERT(glslSource.back() == Byte{ 0 });
+    // LUCH_ASSERT(glslSource.back() == Byte{ 0 });
     // TODO logging
     EShLanguage language = ToLanguage(shaderStage);
     glslang::TShader shader(language);

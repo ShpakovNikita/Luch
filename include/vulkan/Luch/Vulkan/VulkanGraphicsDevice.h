@@ -57,16 +57,19 @@ namespace Luch::Vulkan
             const SwapchainInfo& swapchainCreateInfo,
             Surface* surface) override;
 
-        GraphicsResultRefPtr<Semaphore> CreateSemaphore() override;
+        GraphicsResultRefPtr<Semaphore> CreateSemaphore(int32 value) override;
 
         GraphicsResultRefPtr<Sampler> CreateSampler(const SamplerCreateInfo& createInfo) override;
 
         GraphicsResultRefPtr<CommandQueue> CreateCommandQueue() override;
-        GraphicsResultRefPtr<PipelineState> CreatePipelineState(const PipelineStateCreateInfo&) override;
+        GraphicsResultRefPtr<GraphicsPipelineState> CreateGraphicsPipelineState(const GraphicsPipelineStateCreateInfo&) override;
+        GraphicsResultRefPtr<ComputePipelineState> CreateComputePipelineState(const ComputePipelineStateCreateInfo&) override;
+        GraphicsResultRefPtr<TiledPipelineState> CreateTiledPipelineState(const TiledPipelineStateCreateInfo&) override;
+
         GraphicsResultRefPtr<Texture> CreateTexture(
                     const TextureCreateInfo& createInfo) override;
         GraphicsResultRefPtr<ShaderLibrary> CreateShaderLibraryFromSource(
-                    const Vector<Byte>& source,
+                    const String& source,
                     const UnorderedMap<String, Variant<int32, String>>& defines) override;
 
         inline vk::Device GetDevice() { return device; }

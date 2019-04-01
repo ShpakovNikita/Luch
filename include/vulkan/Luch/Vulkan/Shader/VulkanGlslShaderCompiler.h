@@ -12,7 +12,7 @@ namespace Luch::Vulkan
         static void Deinitialize();
         static bool TryCompileShader(
             Graphics::ShaderStage shaderStage,
-            const Vector<Byte>& glslSource,
+            const Vector<char8>& glslSource,
             Vector<uint32_t>& spirvBytecode,
             const UnorderedMap<String, Variant<int32, String>>& flags);
     private:

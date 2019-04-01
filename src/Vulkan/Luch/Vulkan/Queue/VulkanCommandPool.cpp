@@ -51,6 +51,11 @@ namespace Luch::Vulkan
         return {GraphicsResult::Success, copyCommandList};
     }
 
+    GraphicsResultRefPtr<ComputeCommandList> VulkanCommandPool::AllocateComputeCommandList()
+    {
+        return GraphicsResult::Unsupported;
+    }
+
     vk::Result VulkanCommandPool::Reset(bool releaseResources)
     {
         vk::CommandPoolResetFlags flags;

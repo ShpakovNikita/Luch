@@ -68,4 +68,14 @@ namespace Luch::Vulkan
         );
         */
     }
+
+    void VulkanCopyCommandList::CopyTextureToTexture(Texture* source, Texture* destination, const TextureToTextureCopy& copy)
+    {
+        // todo: implement
+    }
+
+    void VulkanCopyCommandList::GenerateMipMaps(Texture* texture)
+    {
+        // todo: implement
+    }
 }

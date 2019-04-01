@@ -28,7 +28,7 @@ namespace Luch::Vulkan
     class VulkanShaderModule : public ShaderLibrary
     {
     public:
-        VulkanShaderModule(VulkanGraphicsDevice* aDevice, const Vector<Byte> &aGlslSource,
+        VulkanShaderModule(VulkanGraphicsDevice* aDevice, const String &aGlslSource,
                            const UnorderedMap<String, Variant<int32, String>> &aDefines);
         ~VulkanShaderModule() override;
 
@@ -38,7 +38,7 @@ namespace Luch::Vulkan
 
     private:
         VulkanGraphicsDevice* device = nullptr;
-        Vector<Byte> glslSource;
+        Vector<char8> glslSource;
         UnorderedMap<String, Variant<int32, String>> defines;
     };
 }

@@ -63,7 +63,7 @@ namespace Luch::Vulkan
         // todo: remove if not needed, duplicates GetInfo()
         inline VulkanSwapchainCreateInfo GetSwapchainCreateInfo() const { return createInfo; }
 
-        GraphicsResultValue<AcquiredTexture> GetNextAvailableTexture(Semaphore* semaphore) override;
+        GraphicsResultRefPtr<SwapchainTexture> GetNextAvailableTexture() override;
         // TODO semaphores and fences
         GraphicsResultValue<int32> AcquireNextImage(VulkanFence* fence, VulkanSemaphore* semaphore, Optional<Timeout> timeout = {});
 

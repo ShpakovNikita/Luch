@@ -7,6 +7,7 @@
 #include <Luch/Vulkan/Queue/VulkanQueueInfo.h>
 #include <Luch/Vulkan/Common/VulkanForwards.h>
 #include <Luch/Graphics/PhysicalDevice.h>
+#include <Luch/Graphics/PhysicalDeviceCapabilities.h>
 #include <Luch/Graphics/GraphicsDevice.h>
 #include <Luch/Graphics/GraphicsResultValue.h>
 
@@ -27,8 +28,15 @@ namespace Luch::Vulkan
 
         GraphicsResultRefPtr<GraphicsDevice> CreateGraphicsDevice() override;
 
+        const PhysicalDeviceCapabilities& GetCapabilities() override
+        {
+            return capabilities;
+        }
+
     private:
         VulkanQueueInfo ObtainQueueInfo(vk::Device & device, QueueIndices&& indices);
+
+        PhysicalDeviceCapabilities capabilities;
 
         vk::Instance instance;
         vk::SurfaceKHR surface;

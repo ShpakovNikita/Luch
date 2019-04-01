@@ -528,7 +528,7 @@ namespace Luch::Vulkan
         }
     }
 
-    GraphicsResultRefPtr<Semaphore> VulkanGraphicsDevice::CreateSemaphore()
+    GraphicsResultRefPtr<Semaphore> VulkanGraphicsDevice::CreateSemaphore(int32 value)
     {
         vk::SemaphoreCreateInfo vkci;
         
@@ -566,9 +566,21 @@ namespace Luch::Vulkan
         return {GraphicsResult::Success, MakeRef<VulkanCommandQueue>(this, queueInfo)};
     }
 
-    GraphicsResultRefPtr<PipelineState> VulkanGraphicsDevice::CreatePipelineState(const PipelineStateCreateInfo& createInfo)
+    GraphicsResultRefPtr<GraphicsPipelineState> VulkanGraphicsDevice::CreateGraphicsPipelineState(const GraphicsPipelineStateCreateInfo& createInfo)
     {
         // todo: implement alert2
+        return {GraphicsResult::Success};
+    }
+
+    GraphicsResultRefPtr<ComputePipelineState> VulkanGraphicsDevice::CreateComputePipelineState(const ComputePipelineStateCreateInfo& createInfo)
+    {
+        // todo: implement
+        return {GraphicsResult::Success};
+    }
+
+    GraphicsResultRefPtr<TiledPipelineState> VulkanGraphicsDevice::CreateTiledPipelineState(const TiledPipelineStateCreateInfo& createInfo)
+    {
+        // todo: implement
         return {GraphicsResult::Success};
     }
 
@@ -579,7 +591,7 @@ namespace Luch::Vulkan
     }
 
     GraphicsResultRefPtr<ShaderLibrary> VulkanGraphicsDevice::CreateShaderLibraryFromSource(
-            const Vector<Byte> &source,
+            const String &source,
             const UnorderedMap<String,
             Variant<int32, String> > &defines)
     {

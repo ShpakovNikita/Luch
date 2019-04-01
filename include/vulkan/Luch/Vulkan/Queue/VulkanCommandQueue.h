@@ -20,14 +20,12 @@ namespace Luch::Vulkan
         GraphicsResultRefPtr<CommandPool> CreateCommandPool() override;
 
         GraphicsResult Submit(
-                GraphicsCommandList* commandList) override;
-
-        GraphicsResult Submit(
-            CopyCommandList* commandList) override;
+                CommandList* commandList,
+                std::function<void()> completedHandler) override;
 
         GraphicsResult Present(
-            int32 imageIndex,
-            Swapchain* swapchain) override;
+                SwapchainTexture* swapchainTexture,
+                std::function<void()> presentedHandler) override;
 
     private:
         GraphicsResultRefPtr<VulkanCommandPool> CreateVulkanCommandPool(

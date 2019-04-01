@@ -159,6 +159,8 @@ namespace Luch::Vulkan
 
         physicalDeviceMemoryProperties = physicalDevice.getMemoryProperties();
 
+        // todo: fill PhysicalDeviceCapabilities
+
         return true;
     }
 

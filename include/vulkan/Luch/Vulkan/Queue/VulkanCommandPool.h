@@ -20,6 +20,7 @@ namespace Luch::Vulkan
 
         GraphicsResultRefPtr<GraphicsCommandList> AllocateGraphicsCommandList() override;
         GraphicsResultRefPtr<CopyCommandList> AllocateCopyCommandList() override;
+        GraphicsResultRefPtr<ComputeCommandList> AllocateComputeCommandList() override;
 
         inline vk::CommandPool GetCommandPool() { return commandPool; }
         vk::Result Reset(bool releaseResources = false);

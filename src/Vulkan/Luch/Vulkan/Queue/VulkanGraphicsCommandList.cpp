@@ -43,9 +43,14 @@ namespace Luch::Vulkan
         commandBuffer.endRenderPass();
     }
 
-    void VulkanGraphicsCommandList::BindPipelineState(PipelineState* pipelineState)
+    void VulkanGraphicsCommandList::BindGraphicsPipelineState(GraphicsPipelineState* pipelineState)
     {
         // commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->GetPipeline());
+    }
+
+    void VulkanGraphicsCommandList::BindTiledPipelineState(TiledPipelineState* pipelineState)
+    {
+
     }
 
     void VulkanGraphicsCommandList::BindTextureDescriptorSet(
@@ -136,5 +141,10 @@ namespace Luch::Vulkan
     {
         // missing info?
         // commandBuffer.drawIndexed(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+    }
+
+    void VulkanGraphicsCommandList::SetLabel(const String& label)
+    {
+        // todo: implement
     }
 }

@@ -223,7 +223,7 @@ bool SampleApplication::SetupScene()
 {
     glTF::glTFParser glTFparser;
 
-    String rootDir{ "../res/gltf2/helmet/" };
+    String rootDir{ "./Data/gltf2/helmet/" };
 
     {
         String filename { "DamagedHelmet.gltf" };

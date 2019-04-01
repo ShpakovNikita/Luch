@@ -16,6 +16,10 @@ namespace Luch::Vulkan
             return vk::Format::eUndefined;
         case Format::RGB8Unorm:
             return vk::Format::eR8G8B8A8Unorm;
+        case Format::BGRA8Unorm:
+            return vk::Format::eB8G8R8A8Unorm;
+        case Format::BGRA8Unorm_sRGB:
+            return vk::Format::eB8G8R8A8Srgb;
         case Format::D16Unorm:
             return vk::Format::eD16Unorm;
         case Format::D32Sfloat:
@@ -41,6 +45,10 @@ namespace Luch::Vulkan
             return Format::Undefined;
         case vk::Format::eR8G8B8A8Unorm:
             return Format::RGB8Unorm;
+        case vk::Format::eB8G8R8A8Unorm:
+            return Format::BGRA8Unorm;
+        case vk::Format::eB8G8R8A8Srgb:
+            return Format::BGRA8Unorm_sRGB;
         case vk::Format::eD16Unorm:
             return Format::D16Unorm;
         case vk::Format::eD32Sfloat:
@@ -68,6 +76,9 @@ namespace Luch::Vulkan
                 return vk::DescriptorType::eSampledImage;
             case ResourceType::UniformBuffer:
                 return vk::DescriptorType::eUniformBuffer;
+            case ResourceType::ThreadgroupMemory:
+                LUCH_ASSERT_MSG(false, "unsupported resource type ResourceType::ThreadgroupMemory");
+                return vk::DescriptorType::eStorageBuffer;
         }
     }
 }
