@@ -159,9 +159,31 @@ namespace Luch::Vulkan
 
         physicalDeviceMemoryProperties = physicalDevice.getMemoryProperties();
 
-        // todo: fill PhysicalDeviceCapabilities
+        FillDepthFormatCapabilities();
 
         return true;
+    }
+
+    void VulkanPhysicalDevice::FillDepthFormatCapabilities()
+    {
+        std::set<Format> depthFormatsToCheck = {
+            Format::D16Unorm,
+            Format::D32Sfloat,
+            Format::D16UnormS8Uint,
+            Format::D24UnormS8Uint,
+            Format::D32SfloatS8Uint
+        };
+
+        capabilities.supportedDepthFormats = {};
+        for (const auto& format : depthFormatsToCheck)
+        {
+            vk::FormatProperties props;
+            physicalDevice.getFormatProperties(ToVulkanFormat(format), &props);
+            if (props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment)
+            {
+                capabilities.supportedDepthFormats.push_back(format);
+            }
+        }
     }
 
     GraphicsResultRefPtr<GraphicsDevice> VulkanPhysicalDevice::CreateGraphicsDevice()

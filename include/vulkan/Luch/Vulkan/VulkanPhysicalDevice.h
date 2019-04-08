@@ -35,6 +35,7 @@ namespace Luch::Vulkan
 
     private:
         VulkanQueueInfo ObtainQueueInfo(vk::Device & device, QueueIndices&& indices);
+        void FillDepthFormatCapabilities();
 
         PhysicalDeviceCapabilities capabilities;
 

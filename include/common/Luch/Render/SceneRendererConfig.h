@@ -9,9 +9,9 @@ namespace Luch::Render
         bool useGlobalIllumination = false;
         bool useDiffuseGlobalIllumination = false;
         bool useSpecularGlobalIllumination = false;
-        bool useForward = false;
+        bool useForward = true;
         bool useDepthPrepass = false;
         bool useComputeResolve = false;
-        bool useTiledDeferredPass = true;
+        bool useTiledDeferredPass = false;
     };
 }
