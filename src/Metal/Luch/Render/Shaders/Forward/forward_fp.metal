@@ -51,7 +51,7 @@ struct FragmentOut
 #if !ALPHA_MASK
 [[early_fragment_tests]]
 #endif
-fragment FragmentOut fp_main(
+fragment FragmentOut FragmentMain(
     VertexOut in [[stage_in]],
     constant CameraUniform& camera [[ buffer(0) ]],
     constant MaterialUniform& material [[ buffer(1) ]],

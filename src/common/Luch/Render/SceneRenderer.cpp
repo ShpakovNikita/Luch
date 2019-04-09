@@ -41,6 +41,7 @@
 
 #include <Luch/Render/Passes/Forward/ForwardRenderPass.h>
 #include <Luch/Render/Passes/Forward/ForwardContext.h>
+#include <Luch/Render/Techniques/Forward/ForwardRendererContext.h>
 
 #include <Luch/Render/Passes/TonemapRenderPass.h>
 #include <Luch/Render/Passes/TonemapContext.h>
@@ -181,12 +182,15 @@ namespace Luch::Render
 
         // Forward Persistent Context
         {
+            ForwardPersistentContextCreateInfo createInfo;
+            createInfo.device = context->device;
+            createInfo.cameraResources = cameraResources.get();
+            createInfo.materialResources = materialManager->GetPersistentResources();
+            createInfo.lightResources = lightResources.get();
+            createInfo.indirectLightingResources = indirectLightingResources.get();
+
             auto [createForwardPersistentContextResult, createdForwardPersistentContext] = ForwardRenderPass::PrepareForwardPersistentContext(
-                context->device,
-                cameraResources.get(),
-                materialManager->GetPersistentResources(),
-                indirectLightingResources.get(),
-                lightResources.get());
+                createInfo);
             
             if(!createForwardPersistentContextResult)
             {
@@ -695,39 +699,43 @@ namespace Luch::Render
 
     bool SceneRenderer::PrepareForward(FrameResources& frame)
     {
-        auto [result, forwardTransientContext] = ForwardRenderPass::PrepareForwardTransientContext(
+        RenderMutableResource depthTextureHandle = config.useDepthPrepass ? frame.depthOnlyPass->GetDepthTextureHandle() : nullptr;
+
+        ForwardTransientContextCreateInfo createInfo;
+        createInfo.scene = scene;
+        createInfo.outputSize = frame.outputSize;
+        createInfo.sharedBuffer = frame.sharedBuffer;
+        createInfo.descriptorPool = descriptorPool;
+        createInfo.cameraBufferDescriptorSet = frame.cameraDescriptorSet;
+        createInfo.useDepthPrepass = config.useDepthPrepass;
+
+        if(config.useDiffuseGlobalIllumination)
+        {
+            createInfo.diffuseIlluminanceCubemapHandle = frame.diffuseIlluminanceCubemapHandle;
+        }
+
+        if(config.useSpecularGlobalIllumination)
+        {
+            createInfo.specularReflectionCubemapHandle = frame.specularReflectionCubemapHandle;
+            createInfo.specularBRDFTextureHandle = frame.specularBRDFTextureHandle;
+        }
+
+        if(config.useDepthPrepass)
+        {
+            createInfo.depthStencilTextureHandle = frame.depthOnlyPass->GetDepthTextureHandle();
+        }
+
+
+        auto [result, transientContext] = ForwardRenderPass::PrepareForwardTransientContext(
             forwardPersistentContext.get(),
-            descriptorPool);
+            createInfo);
 
         if(!result)
         {
             return false;
         }
 
-        forwardTransientContext->descriptorPool = descriptorPool;
-        forwardTransientContext->outputSize = frame.outputSize;
-        forwardTransientContext->scene = scene;
-        forwardTransientContext->sharedBuffer = frame.sharedBuffer;
-        forwardTransientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
-
-        if(config.useDiffuseGlobalIllumination)
-        {
-            forwardTransientContext->diffuseIlluminanceCubemapHandle = frame.diffuseIlluminanceCubemapHandle;
-        }
-
-        if(config.useSpecularGlobalIllumination)
-        {
-            forwardTransientContext->specularReflectionCubemapHandle = frame.specularReflectionCubemapHandle;
-            forwardTransientContext->specularBRDFTextureHandle = frame.specularBRDFTextureHandle;
-        }
-
-        if(config.useDepthPrepass)
-        {
-            forwardTransientContext->useDepthPrepass = true;
-            forwardTransientContext->depthStencilTextureHandle = frame.depthOnlyPass->GetDepthTextureHandle();
-        }
-
-        frame.forwardTransientContext = std::move(forwardTransientContext);
+        frame.forwardTransientContext = std::move(transientContext);
 
         frame.forwardPass = MakeUnique<ForwardRenderPass>(
             forwardPersistentContext.get(),
@@ -754,10 +762,10 @@ namespace Luch::Render
             transientContext->scene = scene;
             transientContext->sharedBuffer = frame.sharedBuffer;
             transientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
+            transientContext->useDepthPrepass = config.useDepthPrepass;
 
             if(config.useDepthPrepass)
             {
-                transientContext->useDepthPrepass = true;
                 transientContext->depthStencilTextureHandle = frame.depthOnlyPass->GetDepthTextureHandle();
             }
 
@@ -780,7 +788,6 @@ namespace Luch::Render
                 return false;
             }
 
-            transientContext->gbuffer = frame.gbufferPass->GetGBuffer();
             transientContext->outputSize = frame.outputSize;
             transientContext->scene = scene;
             transientContext->sharedBuffer = frame.sharedBuffer;
@@ -796,6 +803,8 @@ namespace Luch::Render
                 transientContext->specularReflectionCubemapHandle = frame.specularReflectionCubemapHandle;
                 transientContext->specularBRDFTextureHandle = frame.specularBRDFTextureHandle;
             }
+
+            transientContext->gbuffer = frame.gbufferPass->GetGBuffer();
 
             frame.resolveComputeTransientContext = std::move(transientContext);
 

@@ -50,7 +50,7 @@ struct VertexOut
     #endif
 };
 
-vertex VertexOut vp_main(
+vertex VertexOut VertexMain(
     VertexIn in [[ stage_in ]],
     constant CameraUniform& camera [[ buffer(0) ]],
     constant MeshUniform& mesh [[ buffer(1) ]])

@@ -16,6 +16,7 @@
 #include <Luch/Render/Graph/RenderGraphForwards.h>
 #include <Luch/Render/Graph/RenderGraphPass.h>
 #include <Luch/Render/Passes/Forward/ForwardForwards.h>
+#include <Luch/Render/Techniques/Forward/ForwardForwards.h>
 
 namespace Luch::Render::Passes::Forward
 {
@@ -29,18 +30,14 @@ namespace Luch::Render::Passes::Forward
         static constexpr Format LuminanceFormat = Format::RGBA16Sfloat;
     public:
         static const String RenderPassName;
-        static const String RenderPassNameWithDepthOnly;
+        static const String RenderPassNameWithDepthPrepass;
 
         static ResultValue<bool, UniquePtr<ForwardPersistentContext>> PrepareForwardPersistentContext(
-            GraphicsDevice* device,
-            CameraPersistentResources* cameraResources,
-            MaterialPersistentResources* materialResources,
-            IndirectLightingPersistentResources* indirectLightingResources,
-            LightPersistentResources* lightResources);
+            const ForwardPersistentContextCreateInfo& createInfo);
 
         static ResultValue<bool, UniquePtr<ForwardTransientContext>> PrepareForwardTransientContext(
             ForwardPersistentContext* persistentContext,
-            RefPtr<DescriptorPool> descriptorPool);
+            const ForwardTransientContextCreateInfo& createInfo);
 
         ForwardRenderPass(
             ForwardPersistentContext* persistentContext,
@@ -58,31 +55,12 @@ namespace Luch::Render::Passes::Forward
             RenderGraphResourceManager* manager,
             GraphicsCommandList* commandList) override;
     private:
-        void PrepareNode(SceneV1::Node* node);
-        void PrepareMeshNode(SceneV1::Node* node);
-        void PrepareMesh(SceneV1::Mesh* mesh);
-        void PreparePrimitive(SceneV1::Primitive* primitive);
-
-        void UpdateNode(SceneV1::Node* node);
-        void UpdateMesh(SceneV1::Mesh* mesh, const Mat4x4& transform);
-        void UpdateLights(const RefPtrVector<SceneV1::Node>& lightNodes);
-        void UpdateIndirectLightingDescriptorSet(RenderGraphResourceManager* manager, DescriptorSet* descriptorSet);
-
-        void BindMaterial(SceneV1::PbrMaterial* material, GraphicsCommandList* commandList);
-        void DrawScene(SceneV1::Scene* scene, RenderGraphResourceManager* manager, GraphicsCommandList* commandList);
-        void DrawNode(SceneV1::Node* node, GraphicsCommandList* commandList);
-        void DrawMesh(SceneV1::Mesh* mesh, GraphicsCommandList* commandList);
-        void DrawPrimitive(SceneV1::Primitive* primitive, GraphicsCommandList* commandList);
-
         static const String& GetRenderPassName(bool useDepthPrepass);
-
-        static RefPtr<GraphicsPipelineState> CreatePipelineState(
-            SceneV1::Primitive* primitive,
-            bool useDepthPrepass,
-            ForwardPersistentContext* context);
 
         ForwardPersistentContext* persistentContext = nullptr;
         ForwardTransientContext* transientContext = nullptr;
+
+        UniquePtr<Techniques::Forward::ForwardRenderer> renderer;
 
         RenderMutableResource luminanceTextureHandle;
         RenderMutableResource depthStencilTextureHandle;
@@ -90,8 +68,5 @@ namespace Luch::Render::Passes::Forward
         RenderResource diffuseIlluminanceCubemapHandle;
         RenderResource specularReflectionCubemapHandle;
         RenderResource specularBRDFTextureHandle;
-
-        UnorderedMap<SceneV1::Mesh*, RefPtr<DescriptorSet>> meshDescriptorSets;
-        UnorderedMap<SceneV1::Camera*, RefPtr<DescriptorSet>> cameraDescriptorSets;
     };
 }
