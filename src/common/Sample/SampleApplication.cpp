@@ -89,51 +89,6 @@ bool SampleApplication::Initialize(const Vector<String>& /*args*/)
         return false;
     }
 
-    context = MakeShared<Render::RenderContext>();
-
-    auto [createDeviceResult, createdDevice] = physicalDevice->CreateGraphicsDevice();
-    if (createDeviceResult != GraphicsResult::Success)
-    {
-        return false;
-    }
-
-    context->device = std::move(createdDevice);
-
-    auto [createCommandQueueResult, createdCommandQueue] = context->device->CreateCommandQueue();
-    if (createCommandQueueResult != GraphicsResult::Success)
-    {
-        return false;
-    }
-
-    context->commandQueue = std::move(createdCommandQueue);
-
-    SwapchainInfo swapchainInfo;
-    swapchainInfo.imageCount = 1;
-    swapchainInfo.width = width;
-    swapchainInfo.height = height;
-
-    auto [createSwapchainResult, createdSwapchain] = context->device->CreateSwapchain(swapchainInfo, surface);
-    if (createSwapchainResult != GraphicsResult::Success)
-    {
-        return false;
-    }
-
-    context->swapchain = std::move(createdSwapchain);
-
-    renderer = MakeUnique<Render::SceneRenderer>(scene);
-
-    auto rendererInitialized = renderer->Initialize(context);
-    if(!rendererInitialized)
-    {
-        return false;
-    }
-
-    for(int32 axis = WASDNodeController::XAxis; axis <= WASDNodeController::ZAxis; axis++)
-    {
-        wasdController.SetSpeed(axis, WASDNodeController::Negative, 2.5);
-        wasdController.SetSpeed(axis, WASDNodeController::Positive, 2.5);
-    }
-
     return true;
 }
 
@@ -297,11 +252,11 @@ bool SampleApplication::SetupScene()
         return false;
     }
 
-    renderer->GetMutableConfig().useGlobalIllumination = true;
-    renderer->GetMutableConfig().useDiffuseGlobalIllumination = true;
-    renderer->GetMutableConfig().useSpecularGlobalIllumination = true;
+    renderer->GetMutableConfig().useGlobalIllumination = false;
+    renderer->GetMutableConfig().useDiffuseGlobalIllumination = false;
+    renderer->GetMutableConfig().useSpecularGlobalIllumination = false;
     renderer->GetMutableConfig().useForward = true;
-    renderer->GetMutableConfig().useDepthPrepass = true;
+    renderer->GetMutableConfig().useDepthPrepass = false;
     renderer->GetMutableConfig().useComputeResolve = false;
     renderer->GetMutableConfig().useTiledDeferredPass = false;
 

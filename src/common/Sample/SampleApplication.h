@@ -60,8 +60,8 @@ private:
     void* view = nullptr;
 #endif
 
-    Luch::int32 width = 1000;
-    Luch::int32 height = 1000;
+    Luch::int32 width = 500;
+    Luch::int32 height = 500;
     bool shouldQuit = false;
 
     Luch::RefPtr<Luch::Graphics::PhysicalDevice> physicalDevice;

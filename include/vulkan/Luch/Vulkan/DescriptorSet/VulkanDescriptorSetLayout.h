@@ -27,7 +27,7 @@ namespace Luch::Vulkan
             return createInfo;
         }
 
-        vk::DescriptorSetLayout GetDescriptorSetLayout() { return descriptorSetLayout; }
+        const vk::DescriptorSetLayout& GetDescriptorSetLayout() { return descriptorSetLayout; }
     private:
         void Destroy();
 

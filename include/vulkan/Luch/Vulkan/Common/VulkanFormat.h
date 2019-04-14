@@ -15,6 +15,8 @@ namespace Luch::Vulkan
         case Format::Undefined:
             return vk::Format::eUndefined;
         case Format::RGB8Unorm:
+            return vk::Format::eR8G8B8Unorm;
+        case Format::RGBA8Unorm:
             return vk::Format::eR8G8B8A8Unorm;
         case Format::BGRA8Unorm:
             return vk::Format::eB8G8R8A8Unorm;
