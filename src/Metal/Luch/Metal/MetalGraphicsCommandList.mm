@@ -415,7 +415,7 @@ namespace Luch::Metal
         LUCH_ASSERT(length != 0);
         auto range = ns::Range { start, length };
 
-        for(int32 i = 0; i < length; i++)
+        for(uint32 i = 0; i < length; i++)
         {
             if(memoryLengths[i] > 0)
             {

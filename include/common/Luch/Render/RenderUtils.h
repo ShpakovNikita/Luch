@@ -1,8 +1,10 @@
 #pragma once
 
 #include <Luch/Graphics/GraphicsForwards.h>
+#include <Luch/Graphics/GraphicsPipelineStateCreateInfo.h>
 #include <Luch/SceneV1/SceneV1Forwards.h>
 #include <Luch/Render/Common.h>
+#include <Luch/Render/RenderForwards.h>
 #include <Luch/ResultValue.h>
 
 namespace Luch::Render
@@ -30,5 +32,11 @@ namespace Luch::Render
             const RefPtr<CommandQueue>& queue,
             const RefPtrVector<CommandList>& commandLists,
             const std::function<void()> completedHandler = {});
+
+        GraphicsPipelineVertexInputStateCreateInfo GetPrimitiveVertexInputStateCreateInfo(
+            SceneV1::Primitive* primitive);
+
+        void AddPrimitiveVertexShaderDefines(SceneV1::Primitive* primitive, ShaderDefines& shaderDefines);
+        void AddMaterialShaderDefines(SceneV1::PbrMaterial* material, ShaderDefines& shaderDefines);
     }
 }

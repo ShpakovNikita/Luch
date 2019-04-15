@@ -12,6 +12,8 @@ namespace Luch::Render::Graph
     public:
         virtual ~RenderGraphPass() = 0;
 
+        virtual void Initialize(RenderGraphBuilder* builder) = 0;
+
         virtual void ExecuteGraphicsPass(
             [[maybe_unused]] RenderGraphResourceManager* manager,
             [[maybe_unused]] GraphicsCommandList* commandList) {};

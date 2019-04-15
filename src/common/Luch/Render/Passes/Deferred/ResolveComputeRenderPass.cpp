@@ -4,6 +4,7 @@
 #include <Luch/Render/SharedBuffer.h>
 #include <Luch/Render/CameraResources.h>
 #include <Luch/Render/IndirectLightingResources.h>
+#include <Luch/Render/LightResources.h>
 #include <Luch/Render/Passes/Deferred/ResolveComputeContext.h>
 #include <Luch/Render/Graph/RenderGraphResourceManager.h>
 #include <Luch/Render/Graph/RenderGraphNodeBuilder.h>
@@ -38,14 +39,32 @@ namespace Luch::Render::Passes::Deferred
 
     ResolveComputeRenderPass::ResolveComputeRenderPass(
         ResolveComputePersistentContext* aPersistentContext,
-        ResolveComputeTransientContext* aTransientContext,
-        RenderGraphBuilder* builder)
+        ResolveComputeTransientContext* aTransientContext)
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
+    }
+
+    ResolveComputeRenderPass::~ResolveComputeRenderPass() = default;
+
+    void ResolveComputeRenderPass::PrepareScene()
+    {
+    }
+
+    void ResolveComputeRenderPass::UpdateScene()
+    {
+        const auto& sceneProperties = transientContext->scene->GetSceneProperties();
+
+        RefPtrVector<SceneV1::Node> lightNodes(sceneProperties.lightNodes.begin(), sceneProperties.lightNodes.end());
+
+        UpdateLights(lightNodes);
+    }
+
+    void ResolveComputeRenderPass::Initialize(RenderGraphBuilder* builder)
+    {
         auto node = builder->AddComputePass(RenderPassName, this);
 
-        for(int32 i = 0; i < transientContext->gbuffer.color.size(); i++)
+        for(uint32 i = 0; i < transientContext->gbuffer.color.size(); i++)
         {
             gbuffer.color[i] = node->ReadsTexture(transientContext->gbuffer.color[i]);
         }
@@ -69,21 +88,6 @@ namespace Luch::Render::Passes::Deferred
         textureCreateInfo.height = transientContext->outputSize.height;
         textureCreateInfo.usage = TextureUsageFlags::ColorAttachment | TextureUsageFlags::ShaderRead | TextureUsageFlags::ShaderWrite;
         luminanceTextureHandle = node->CreateTexture(textureCreateInfo);
-    }
-
-    ResolveComputeRenderPass::~ResolveComputeRenderPass() = default;
-
-    void ResolveComputeRenderPass::PrepareScene()
-    {
-    }
-
-    void ResolveComputeRenderPass::UpdateScene()
-    {
-        const auto& sceneProperties = transientContext->scene->GetSceneProperties();
-
-        RefPtrVector<SceneV1::Node> lightNodes(sceneProperties.lightNodes.begin(), sceneProperties.lightNodes.end());
-
-        UpdateLights(lightNodes);
     }
 
     void ResolveComputeRenderPass::ExecuteComputePass(
@@ -156,12 +160,12 @@ namespace Luch::Render::Passes::Deferred
         memcpy(lightsSuballocation.offsetMemory, lightUniforms.data(), enabledLightsCount * sizeof(LightUniform));
 
         transientContext->lightsBufferDescriptorSet->WriteUniformBuffer(
-            persistentContext->lightingParamsBinding,
+            persistentContext->lightResources->lightingParamsBinding,
             lightingParamsSuballocation.buffer,
             lightingParamsSuballocation.offset);
 
         transientContext->lightsBufferDescriptorSet->WriteUniformBuffer(
-            persistentContext->lightsBufferBinding,
+            persistentContext->lightResources->lightsBufferBinding,
             lightsSuballocation.buffer,
             lightsSuballocation.offset);
 
@@ -172,7 +176,7 @@ namespace Luch::Render::Passes::Deferred
         RenderGraphResourceManager* manager,
         DescriptorSet* descriptorSet)
     {
-        for(int32 i = 0; i < gbuffer.color.size(); i++)
+        for(uint32 i = 0; i < gbuffer.color.size(); i++)
         {
             auto colorTexture = manager->GetTexture(gbuffer.color[i]);
 
@@ -241,13 +245,15 @@ namespace Luch::Render::Passes::Deferred
 
     ResultValue<bool, UniquePtr<ResolveComputePersistentContext>> ResolveComputeRenderPass::PrepareResolvePersistentContext(
         GraphicsDevice* device,
-        CameraResources* cameraResources,
-        IndirectLightingResources* indirectLightingResources)
+        CameraPersistentResources* cameraResources,
+        IndirectLightingPersistentResources* indirectLightingResources,
+        LightPersistentResources* lightResources)
     {
         auto context = MakeUnique<ResolveComputePersistentContext>();
         context->device = device;
         context->cameraResources = cameraResources;
         context->indirectLightingResources = indirectLightingResources;
+        context->lightResources = lightResources;
 
         {
             auto [libraryCreated, createdKernelShaderLibrary] = RenderUtils::CreateShaderLibrary(
@@ -274,27 +280,6 @@ namespace Luch::Render::Passes::Deferred
             }
 
             context->kernelShader = std::move(kernelShaderProgram);
-        }
-
-        {
-            context->lightingParamsBinding.OfType(ResourceType::UniformBuffer);
-            context->lightsBufferBinding.OfType(ResourceType::UniformBuffer);
-
-            DescriptorSetLayoutCreateInfo createInfo;
-            createInfo
-                .OfType(DescriptorSetType::Buffer)
-                .WithNBindings(2)
-                .AddBinding(&context->lightingParamsBinding)
-                .AddBinding(&context->lightsBufferBinding);
-
-            auto[result, descriptorSetLayout] = device->CreateDescriptorSetLayout(createInfo);
-            if (result != GraphicsResult::Success)
-            {
-                LUCH_ASSERT(false);
-                return { false };
-            }
-
-            context->lightsBufferDescriptorSetLayout = std::move(descriptorSetLayout);
         }
 
         {
@@ -349,7 +334,7 @@ namespace Luch::Render::Passes::Deferred
             PipelineLayoutCreateInfo createInfo;
             createInfo
                 .AddSetLayout(ShaderStage::Compute, context->cameraResources->cameraBufferDescriptorSetLayout)
-                .AddSetLayout(ShaderStage::Compute, context->lightsBufferDescriptorSetLayout)
+                .AddSetLayout(ShaderStage::Compute, context->lightResources->lightsBufferDescriptorSetLayout)
                 .AddSetLayout(ShaderStage::Compute, context->gbufferTextureDescriptorSetLayout)
                 .AddSetLayout(ShaderStage::Compute, context->luminanceTextureDescriptorSetLayout)
                 .AddSetLayout(ShaderStage::Compute, context->indirectLightingResources->indirectLightingTexturesDescriptorSetLayout);
@@ -403,7 +388,7 @@ namespace Luch::Render::Passes::Deferred
 
         {
             auto [result, bufferSet] = context->descriptorPool->AllocateDescriptorSet(
-                persistentContext->lightsBufferDescriptorSetLayout);
+                persistentContext->lightResources->lightsBufferDescriptorSetLayout);
 
             if(result != GraphicsResult::Success)
             {

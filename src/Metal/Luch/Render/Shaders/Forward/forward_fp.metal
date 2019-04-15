@@ -51,7 +51,7 @@ struct FragmentOut
 #if !ALPHA_MASK
 [[early_fragment_tests]]
 #endif
-fragment FragmentOut fp_main(
+fragment FragmentOut FragmentMain(
     VertexOut in [[stage_in]],
     constant CameraUniform& camera [[ buffer(0) ]],
     constant MaterialUniform& material [[ buffer(1) ]],
@@ -169,9 +169,9 @@ fragment FragmentOut fp_main(
 
     half3 directLuminance = 0.0;
 
-    //for(ushort i = 0; i < lightingParams.lightCount; i++)
+    for(ushort i = 0; i < lightingParams.lightCount; i++)
     {
-        Light light = lights.lights[0];
+        Light light = lights.lights[i];
 
         half3 intermediateLuminance;
 

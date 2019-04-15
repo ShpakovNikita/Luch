@@ -53,14 +53,10 @@ namespace Luch::Render::Passes
 
     DepthOnlyRenderPass::DepthOnlyRenderPass(
         DepthOnlyPersistentContext* aPersistentContext,
-        DepthOnlyTransientContext* aTransientContext,
-        RenderGraphBuilder* builder)
+        DepthOnlyTransientContext* aTransientContext)
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
-        auto node = builder->AddGraphicsPass(RenderPassName, persistentContext->renderPass, this);
-
-        depthTextureHandle = node->CreateDepthStencilAttachment({ transientContext->outputSize });
     }
 
     DepthOnlyRenderPass::~DepthOnlyRenderPass() = default;
@@ -83,8 +79,16 @@ namespace Luch::Render::Passes
         }
     }
 
+    void DepthOnlyRenderPass::Initialize(RenderGraphBuilder* builder)
+    {
+        auto node = builder->AddGraphicsPass(RenderPassName, persistentContext->renderPass, this);
+
+        node->SetAttachmentSize(transientContext->outputSize);
+        depthTextureHandle = node->CreateDepthStencilAttachment();
+    }
+
     void DepthOnlyRenderPass::ExecuteGraphicsPass(
-        RenderGraphResourceManager* manager,
+        RenderGraphResourceManager* manager [[ maybe_unused ]],
         GraphicsCommandList* commandList)
     {
         Viewport viewport;
@@ -284,7 +288,7 @@ namespace Luch::Render::Passes
         LUCH_ASSERT(vertexBuffers.size() == 1);
 
         ci.inputAssembler.bindings.resize(vertexBuffers.size());
-        for (int32 i = 0; i < vertexBuffers.size(); i++)
+        for (uint32 i = 0; i < vertexBuffers.size(); i++)
         {
             const auto& vertexBuffer = vertexBuffers[i];
             auto& bindingDescription = ci.inputAssembler.bindings[i];
@@ -396,8 +400,8 @@ namespace Luch::Render::Passes
 
     ResultValue<bool, UniquePtr<DepthOnlyPersistentContext>> DepthOnlyRenderPass::PrepareDepthOnlyPersistentContext(
         GraphicsDevice* device,
-        CameraResources* cameraResources,
-        MaterialResources* materialResources)
+        CameraPersistentResources* cameraResources,
+        MaterialPersistentResources* materialResources)
     {
         auto context = MakeUnique<DepthOnlyPersistentContext>();
         context->device = device;
@@ -489,7 +493,7 @@ namespace Luch::Render::Passes
     }
 
     ResultValue<bool, UniquePtr<DepthOnlyTransientContext>> DepthOnlyRenderPass::PrepareDepthOnlyTransientContext(
-        DepthOnlyPersistentContext* persistentContext,
+        DepthOnlyPersistentContext* persistentContext [[ maybe_unused ]],
         RefPtr<DescriptorPool> descriptorPool)
     {
         auto context = MakeUnique<DepthOnlyTransientContext>();

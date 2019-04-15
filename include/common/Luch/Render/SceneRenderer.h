@@ -92,8 +92,9 @@ namespace Luch::Render
         bool PrepareTiledDeferred(FrameResources& frame);
 
         int32 GetCurrentFrameResourceIndex() const;
-        static ResultValue<bool, UniquePtr<CameraResources>> PrepareCameraResources(GraphicsDevice* device);
-        static ResultValue<bool, UniquePtr<IndirectLightingResources>> PrepareIndirectLightingResources(GraphicsDevice* device);
+        UniquePtr<CameraPersistentResources> PrepareCameraResources(GraphicsDevice* device);
+        UniquePtr<IndirectLightingPersistentResources> PrepareIndirectLightingResources(GraphicsDevice* device);
+        UniquePtr<LightPersistentResources> PrepareLightResources(GraphicsDevice* device);
 
         bool UploadSceneTextures();
         bool UploadSceneBuffers();
@@ -120,8 +121,9 @@ namespace Luch::Render
         UniquePtr<TonemapPersistentContext> tonemapPersistentContext;
 
         Array<FrameResources, MaxSwapchainTextures> frameResources;
-        SharedPtr<CameraResources> cameraResources;
-        SharedPtr<IndirectLightingResources> indirectLightingResources;
+        SharedPtr<CameraPersistentResources> cameraResources;
+        SharedPtr<IndirectLightingPersistentResources> indirectLightingResources;
+        SharedPtr<LightPersistentResources> lightResources;
         SharedPtr<RenderContext> context;
         RefPtr<Semaphore> semaphore;
         RefPtr<CommandPool> commandPool;

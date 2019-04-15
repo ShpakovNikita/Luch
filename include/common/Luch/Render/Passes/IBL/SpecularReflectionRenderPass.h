@@ -40,12 +40,13 @@ namespace Luch::Render::Passes::IBL
 
         SpecularReflectionRenderPass(
             SpecularReflectionPersistentContext* persistentContext,
-            SpecularReflectionTransientContext* transientContext,
-            RenderGraphBuilder* builder);
+            SpecularReflectionTransientContext* transientContext);
 
         ~SpecularReflectionRenderPass();
 
         RenderMutableResource GetSpecularReflectionCubemapHandle() { return finalSpecularReflectionCubemapHandle; }
+
+        void Initialize(RenderGraphBuilder* builder) override;
 
         void ExecuteComputePass(
             RenderGraphResourceManager* manager,

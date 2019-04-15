@@ -23,7 +23,7 @@ namespace Luch::Graphics
 
         inline DescriptorSetLayoutCreateInfo& AddBinding(DescriptorSetBinding* binding)
         {
-            LUCH_ASSERT(binding->index < 0);
+            LUCH_ASSERT(binding->index == DescriptorSetBinding::UndefinedIndex);
             binding->index = currentBindingIndex;
             currentBindingIndex++;
             bindings.push_back(*binding);

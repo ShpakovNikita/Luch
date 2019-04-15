@@ -21,7 +21,7 @@ namespace Luch::Render::Graph
     {
         device = aDevice;
         commandPool = aCommandPool;
-        resourceManager = MakeUnique<RenderGraphResourceManager>(device, aResourcePool);
+        resourceManager = MakeUnique<RenderGraphResourceManager>(aResourcePool);
 
         return true;
     }
@@ -76,7 +76,7 @@ namespace Luch::Render::Graph
     {
         RenderGraphData data;
 
-        for(int32 i = 0; i < renderGraphNodes.size(); i++)
+        for(uint32 i = 0; i < renderGraphNodes.size(); i++)
         {
             const auto& node = renderGraphNodes[i];
             Set<RenderResource> producedResources;
@@ -86,7 +86,7 @@ namespace Luch::Render::Graph
 
             Set<RenderResource> consumedResources;
 
-            for(int32 j = 0; j < renderGraphNodes.size(); j++)
+            for(uint32 j = 0; j < renderGraphNodes.size(); j++)
             {
                 const auto& otherNode = renderGraphNodes[j];
                 Vector<RenderResource> intersection;
@@ -142,7 +142,7 @@ namespace Luch::Render::Graph
             FrameBufferCreateInfo frameBufferCreateInfo;
             frameBufferCreateInfo.renderPass = node.renderPass;
 
-            for(int32 i = 0; i < node.colorAttachments.size(); i++)
+            for(uint32 i = 0; i < node.colorAttachments.size(); i++)
             {
                 const auto& colorAttachment = node.colorAttachments[i];
                 if(colorAttachment.resource)

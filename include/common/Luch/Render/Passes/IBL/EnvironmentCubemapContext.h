@@ -8,6 +8,7 @@
 #include <Luch/Graphics/DescriptorSetBinding.h>
 #include <Luch/Render/RenderForwards.h>
 #include <Luch/Render/Graph/RenderGraphResources.h>
+#include <Luch/Render/Techniques/Forward/ForwardRendererContext.h>
 #include <Luch/SceneV1/SceneV1Forwards.h>
 
 namespace Luch::Render::Passes::IBL
@@ -15,38 +16,43 @@ namespace Luch::Render::Passes::IBL
     using namespace Graph;
     using namespace Graphics;
 
+    struct EnvironmentCubemapPersistentContextCreateInfo
+    {
+        GraphicsDevice* device = nullptr;
+
+        MaterialPersistentResources* materialResources = nullptr;
+        CameraPersistentResources* cameraResources = nullptr;
+        LightPersistentResources* lightResources = nullptr;
+        IndirectLightingPersistentResources* indirectLightingResources = nullptr;
+    };
+
     struct EnvironmentCubemapPersistentContext
     {
         GraphicsDevice* device = nullptr;
 
-        MaterialResources* materialResources = nullptr;
-        CameraResources* cameraResources = nullptr;
-
-        RefPtr<PipelineLayout> pipelineLayout;
-        RefPtr<DescriptorPool> descriptorPool;
-
-        DescriptorSetBinding meshUniformBufferBinding;
-
-        DescriptorSetBinding lightingParamsBinding;
-        DescriptorSetBinding lightsBufferBinding;
-
-        RefPtr<DescriptorSetLayout> lightsBufferDescriptorSetLayout;
-
-        RefPtr<DescriptorSetLayout> meshBufferDescriptorSetLayout;
+        UniquePtr<Techniques::Forward::ForwardRendererPersistentContext> rendererPersistentContext;
 
         RefPtr<RenderPass> renderPass;
     };
 
-    struct EnvironmentCubemapTransientContext
+    struct EnvironmentCubemapTransientContextCreateInfo
     {
         SceneV1::Scene* scene = nullptr;
-        Size2i outputSize;
         SharedPtr<SharedBuffer> sharedBuffer;
-        int32 faceIndex = 0;
+        Vec3 position = Vec3{ 0 };
+        float32 zNear = 0;
+        float32 zFar = 0;
+        RefPtr<DescriptorPool> descriptorPool;
+    };
+
+    struct EnvironmentCubemapTransientContext
+    {
+        UniquePtr<Techniques::Forward::ForwardRendererTransientContext> rendererTransientContext;
+
+        SceneV1::Scene* scene = nullptr;
+        SharedPtr<SharedBuffer> sharedBuffer;
         Vec3 position = Vec3{ 0 };
         RefPtr<DescriptorPool> descriptorPool;
-        RenderMutableResource environmentLuminanceCubemap;
-        RenderMutableResource environmentDepthCubemap;
         RefPtr<SceneV1::PerspectiveCamera> camera;
         RefPtr<DescriptorSet> cameraBufferDescriptorSet;
         RefPtr<DescriptorSet> lightsBufferDescriptorSet;

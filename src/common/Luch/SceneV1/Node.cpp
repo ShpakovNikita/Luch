@@ -11,7 +11,7 @@ namespace Luch::SceneV1
         children.push_back(child);
     }
 
-    void Node::RemoveChild(Node* child)
+    void Node::RemoveChild(Node*)
     {
         // TODO
         // auto it = std::find(children.begin(), children.end(), child);

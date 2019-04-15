@@ -68,14 +68,7 @@ namespace Luch::ECS
         if(it != components.end())
         {
             auto& componentsOfType = it->second;
-            if(componentsOfType.size() == 1)
-            {
-                return componentsOfType.front().get();
-            }
-            else
-            {
-                return nullptr;
-            }
+            return componentsOfType[index].get();
         }
         else
         {

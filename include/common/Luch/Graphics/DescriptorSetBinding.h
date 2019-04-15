@@ -10,6 +10,8 @@ namespace Luch::Graphics
     {
         friend class DescriptorSetLayoutCreateInfo;
     public:
+        static constexpr uint32 UndefinedIndex = -1;
+
         inline ResourceType GetType() const { return type; }
         inline DescriptorSetBinding& OfType(ResourceType aType)
         {
@@ -17,9 +19,9 @@ namespace Luch::Graphics
             return *this;
         }
 
-        int32 GetIndex() const { return index; }
+        uint32 GetIndex() const { return index; }
     private:
-        int32 index = -1;
+        uint32 index = UndefinedIndex;
         ResourceType type;
     };
 }

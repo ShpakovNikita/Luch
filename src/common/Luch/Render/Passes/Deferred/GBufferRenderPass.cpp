@@ -9,6 +9,7 @@
 #include <Luch/Render/Graph/RenderGraphNode.h>
 #include <Luch/Render/Graph/RenderGraphBuilder.h>
 #include <Luch/Render/Graph/RenderGraphNodeBuilder.h>
+#include <Luch/Render/Graph/RenderGraphUtils.h>
 
 #include <Luch/SceneV1/Scene.h>
 #include <Luch/SceneV1/Node.h>
@@ -55,28 +56,11 @@ namespace Luch::Render::Passes::Deferred
 
     GBufferRenderPass::GBufferRenderPass(
         GBufferPersistentContext* aPersistentContext,
-        GBufferTransientContext* aTransientContext,
-        RenderGraphBuilder* builder)
+        GBufferTransientContext* aTransientContext)
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
-        UniquePtr<RenderGraphNodeBuilder> node;
-
-        if(transientContext->useDepthPrepass)
-        {
-            node = builder->AddGraphicsPass(RenderPassWithDepthOnlyName, persistentContext->renderPassWithDepthOnly, this);
-            gbuffer.depthStencil = node->UseDepthStencilAttachment(transientContext->depthStencilTextureHandle);
-        }
-        else
-        {
-            node = builder->AddGraphicsPass(RenderPassName, persistentContext->renderPass, this);
-            gbuffer.depthStencil = node->CreateDepthStencilAttachment({ transientContext->outputSize });
-        }
-
-        for(int32 i = 0; i < DeferredConstants::GBufferColorAttachmentCount; i++)
-        {
-            gbuffer.color[i] = node->CreateColorAttachment(i, { transientContext->outputSize });
-        }
+        Utils::PopulateAttachmentConfig(attachmentConfig, persistentContext->renderPass);
     }
 
     GBufferRenderPass::~GBufferRenderPass() = default;
@@ -102,16 +86,39 @@ namespace Luch::Render::Passes::Deferred
         }
     }
 
+    void GBufferRenderPass::Initialize(RenderGraphBuilder* builder)
+    {
+        UniquePtr<RenderGraphNodeBuilder> node;
+
+        if(transientContext->useDepthPrepass)
+        {
+            node = builder->AddGraphicsPass(RenderPassWithDepthOnlyName, persistentContext->renderPassWithDepthOnly, this);
+        }
+        else
+        {
+            node = builder->AddGraphicsPass(RenderPassName, persistentContext->renderPass, this);
+        }
+
+        auto attachmentHandles = Utils::PopulateAttachments(node.get(), attachmentConfig);
+
+        for(uint32 i = 0; i < DeferredConstants::GBufferColorAttachmentCount; i++)
+        {
+            gbuffer.color[i] = attachmentHandles.colorTextureHandles[i];
+        }
+
+        gbuffer.depthStencil = attachmentHandles.depthStencilTextureHandle;
+    }
+
     void GBufferRenderPass::ExecuteGraphicsPass(
-        RenderGraphResourceManager* manager,
+        RenderGraphResourceManager* manager [[ maybe_unused ]],
         GraphicsCommandList* commandList)
     {
         Viewport viewport;
-        viewport.width = static_cast<float32>(transientContext->outputSize.width);
-        viewport.height = static_cast<float32>(transientContext->outputSize.height);
+        viewport.width = static_cast<float32>(attachmentConfig.attachmentSize.width);
+        viewport.height = static_cast<float32>(attachmentConfig.attachmentSize.height);
 
         Rect2i scissorRect;
-        scissorRect.size = transientContext->outputSize;
+        scissorRect.size = attachmentConfig.attachmentSize;
 
         commandList->SetViewports({ viewport });
         commandList->SetScissorRects({ scissorRect });
@@ -305,34 +312,7 @@ namespace Luch::Render::Passes::Deferred
 
         ci.name = GetRenderPassName(useDepthPrepass);
 
-        ShaderDefines shaderDefines;
-
-        const auto& vertexBuffers = primitive->GetVertexBuffers();
-        LUCH_ASSERT(vertexBuffers.size() == 1);
-
-        ci.inputAssembler.bindings.resize(vertexBuffers.size());
-        for (int32 i = 0; i < vertexBuffers.size(); i++)
-        {
-            const auto& vertexBuffer = vertexBuffers[i];
-            auto& bindingDescription = ci.inputAssembler.bindings[i];
-            bindingDescription.stride = vertexBuffer.stride;
-            bindingDescription.inputRate = VertexInputRate::PerVertex;
-        }
-
-        const auto& attributes = primitive->GetAttributes();
-        ci.inputAssembler.attributes.resize(SemanticToLocation.size());
-        for (const auto& attribute : attributes)
-        {
-            auto& attributeDescription = ci.inputAssembler.attributes[SemanticToLocation.at(attribute.semantic)];
-            attributeDescription.binding = attribute.vertexBufferIndex;
-            attributeDescription.format = attribute.format;
-            attributeDescription.offset = attribute.offset;
-
-            shaderDefines.AddFlag(SemanticToFlag.at(attribute.semantic));
-        }
-
-        // TODO
-        ci.inputAssembler.primitiveTopology = PrimitiveTopology::TriangleList;
+        ci.inputAssembler = RenderUtils::GetPrimitiveVertexInputStateCreateInfo(primitive);
 
         const auto& material = primitive->GetMaterial();
 
@@ -359,7 +339,7 @@ namespace Luch::Render::Passes::Deferred
         }
 
         ci.colorAttachments.attachments.resize(DeferredConstants::GBufferColorAttachmentCount);
-        for(int32 i = 0; i < ci.colorAttachments.attachments.size(); i++)
+        for(uint32 i = 0; i < ci.colorAttachments.attachments.size(); i++)
         {
             ci.colorAttachments.attachments[i].format = DeferredConstants::GBufferColorAttachmentFormats[i];
         }
@@ -367,35 +347,13 @@ namespace Luch::Render::Passes::Deferred
         ci.renderPass = persistentContext->renderPass;
         ci.pipelineLayout = persistentContext->pipelineLayout;
 
-        if (material->HasBaseColorTexture())
-        {
-            shaderDefines.AddFlag(MaterialShaderDefines::HasBaseColorTexture);
-        }
-
-        if (material->HasMetallicRoughnessTexture())
-        {
-            shaderDefines.AddFlag(MaterialShaderDefines::HasMetallicRoughnessTexture);
-        }
-
-        if (material->HasNormalTexture())
-        {
-            shaderDefines.AddFlag(MaterialShaderDefines::HasNormalTexture);
-        }
-
-        if (material->HasOcclusionTexture())
-        {
-            shaderDefines.AddFlag(MaterialShaderDefines::HasOcclusionTexture);
-        }
-
-        if (material->HasEmissiveTexture())
-        {
-            shaderDefines.AddFlag(MaterialShaderDefines::HasEmissiveTexture);
-        }
+        ShaderDefines shaderDefines;
+        RenderUtils::AddPrimitiveVertexShaderDefines(primitive, shaderDefines);
+        RenderUtils::AddMaterialShaderDefines(material, shaderDefines);
 
         if (material->GetProperties().alphaMode == SceneV1::AlphaMode::Mask)
         {
             ci.name += " (Alphatest)";
-            shaderDefines.AddFlag(MaterialShaderDefines::AlphaMask);
         }
 
         if (material->GetProperties().unlit)
@@ -457,8 +415,8 @@ namespace Luch::Render::Passes::Deferred
 
     ResultValue<bool, UniquePtr<GBufferPersistentContext>> GBufferRenderPass::PrepareGBufferPersistentContext(
         GraphicsDevice* device,
-        CameraResources* cameraResources,
-        MaterialResources* materialResources)
+        CameraPersistentResources* cameraResources,
+        MaterialPersistentResources* materialResources)
     {
         UniquePtr<GBufferPersistentContext> context = MakeUnique<GBufferPersistentContext>();
         context->device = device;
@@ -485,6 +443,7 @@ namespace Luch::Render::Passes::Deferred
         depthStencilAttachment.stencilClearValue = 0x00000000;
 
         RenderPassCreateInfo renderPassCreateInfo;
+        renderPassCreateInfo.name = RenderPassName;
         for(int32 i = 0; i < DeferredConstants::GBufferColorAttachmentCount; i++)
         {
             ColorAttachment attachment = gbufferColorAttachmentTemplate;
@@ -574,7 +533,7 @@ namespace Luch::Render::Passes::Deferred
     }
 
     ResultValue<bool, UniquePtr<GBufferTransientContext>> GBufferRenderPass::PrepareGBufferTransientContext(
-        GBufferPersistentContext* persistentContext,
+        GBufferPersistentContext* persistentContext [[ maybe_unused ]],
         RefPtr<DescriptorPool> descriptorPool)
     {
         auto context = MakeUnique<GBufferTransientContext>();

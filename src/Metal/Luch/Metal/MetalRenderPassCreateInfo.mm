@@ -44,8 +44,6 @@ namespace Luch::Metal
 
         const auto& renderPassCreateInfo = frameBufferCreateInfo.renderPass->GetCreateInfo();
 
-        d.SetRenderTargetArrayLength(renderPassCreateInfo.attachmentArrayLength);
-
         LUCH_ASSERT(renderPassCreateInfo.colorAttachments.size() == frameBufferCreateInfo.colorAttachments.size());
         for(size_t i = 0; i < renderPassCreateInfo.colorAttachments.size(); i++)
         {

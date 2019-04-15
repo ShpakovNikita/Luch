@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Luch/RefPtr.h>
+#include <Luch/Size2.h>
 #include <Luch/Render/Graph/RenderGraphForwards.h>
 #include <Luch/Render/Graph/RenderGraphAttachmentCreateInfo.h>
 #include <Luch/Graphics/GraphicsForwards.h>
@@ -18,6 +19,8 @@ namespace Luch::Render::Graph
             RenderGraphBuilder* graphBuilder,
             int32 nodeIndex,
             RenderGraphResourceManager* resourceManager);
+
+        void SetAttachmentSize(Size2i attachmentSize);
 
         RenderMutableResource ImportColorAttachment(
             int32 index,
@@ -37,8 +40,14 @@ namespace Luch::Render::Graph
             RenderMutableResource depthStencilAttachmentHandle,
             const RenderGraphAttachmentDescriptor& descriptor = {});
 
-        RenderMutableResource CreateColorAttachment(int32 index, const RenderGraphAttachmentCreateInfo& createInfo);
-        RenderMutableResource CreateDepthStencilAttachment(const RenderGraphAttachmentCreateInfo& createInfo);
+        RenderMutableResource CreateColorAttachment(
+            int32 index,
+            const RenderGraphAttachmentCreateInfo& createInfo = {},
+            const RenderGraphAttachmentDescriptor& descriptor = {});
+
+        RenderMutableResource CreateDepthStencilAttachment(
+            const RenderGraphAttachmentCreateInfo& createInfo = {},
+            const RenderGraphAttachmentDescriptor& descriptor = {});
 
         RenderMutableResource WritesToColorAttachment(
             int32 index,
@@ -58,10 +67,13 @@ namespace Luch::Render::Graph
         RenderMutableResource CreateBuffer(const BufferCreateInfo& createInfo);
         RenderMutableResource WritesToBuffer(RenderMutableResource resource);
         RenderResource ReadsBuffer(RenderResource resource);
+
+        const RenderGraphNode* GetNode() const;
     private:
-        RenderGraphNode* GetNode() const;
+        RenderGraphNode* GetMutableNode();
         RenderGraphBuilder* graphBuilder = nullptr;
         int32 nodeIndex = 0;
         RenderGraphResourceManager* resourceManager = nullptr;
+        Optional<Size2i> attachmentSize;
     };
 }

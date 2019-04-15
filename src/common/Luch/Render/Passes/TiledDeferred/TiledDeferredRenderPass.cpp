@@ -5,6 +5,7 @@
 #include <Luch/Render/CameraResources.h>
 #include <Luch/Render/IndirectLightingResources.h>
 #include <Luch/Render/MaterialResources.h>
+#include <Luch/Render/LightResources.h>
 #include <Luch/Render/RenderUtils.h>
 #include <Luch/Render/Common.h>
 #include <Luch/Render/SharedBuffer.h>
@@ -59,32 +60,10 @@ namespace Luch::Render::Passes::TiledDeferred
 
     TiledDeferredRenderPass::TiledDeferredRenderPass(
         TiledDeferredPersistentContext* aPersistentContext,
-        TiledDeferredTransientContext* aTransientContext,
-        RenderGraphBuilder* builder)
+        TiledDeferredTransientContext* aTransientContext)
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
-        auto node = builder->AddGraphicsPass(RenderPassName, persistentContext->renderPass, this);
-
-        for(int32 i = TiledDeferredConstants::GBufferColorAttachmentBegin; i < TiledDeferredConstants::GBufferColorAttachmentEnd; i++)
-        {
-            node->CreateColorAttachment(i, { transientContext->outputSize, ResourceStorageMode::Memoryless });
-        }
-
-        node->CreateDepthStencilAttachment({ transientContext->outputSize, ResourceStorageMode::Memoryless });
-
-        luminanceTextureHandle = node->CreateColorAttachment(TiledDeferredConstants::LuminanceAttachmentIndex, { transientContext->outputSize });
-
-        if(transientContext->diffuseIlluminanceCubemapHandle)
-        {
-            diffuseIlluminanceCubemapHandle = node->ReadsTexture(transientContext->diffuseIlluminanceCubemapHandle);
-        }
-
-        if(transientContext->specularReflectionCubemapHandle && transientContext->specularBRDFTextureHandle)
-        {
-            specularReflectionCubemapHandle = node->ReadsTexture(transientContext->specularReflectionCubemapHandle);
-            specularBRDFTextureHandle = node->ReadsTexture(transientContext->specularBRDFTextureHandle);
-        }
     }
 
     TiledDeferredRenderPass::~TiledDeferredRenderPass() = default;
@@ -111,6 +90,33 @@ namespace Luch::Render::Passes::TiledDeferred
         RefPtrVector<SceneV1::Node> lightNodes(sceneProperties.lightNodes.begin(), sceneProperties.lightNodes.end());
 
         UpdateLights(lightNodes);
+    }
+
+    void TiledDeferredRenderPass::Initialize(RenderGraphBuilder* builder)
+    {
+        auto node = builder->AddGraphicsPass(RenderPassName, persistentContext->renderPass, this);
+
+        node->SetAttachmentSize(transientContext->outputSize);
+
+        for(uint32 i = TiledDeferredConstants::GBufferColorAttachmentBegin; i < TiledDeferredConstants::GBufferColorAttachmentEnd; i++)
+        {
+            node->CreateColorAttachment(i, { ResourceStorageMode::Memoryless });
+        }
+
+        node->CreateDepthStencilAttachment({ ResourceStorageMode::Memoryless });
+
+        luminanceTextureHandle = node->CreateColorAttachment(TiledDeferredConstants::LuminanceAttachmentIndex);
+
+        if(transientContext->diffuseIlluminanceCubemapHandle)
+        {
+            diffuseIlluminanceCubemapHandle = node->ReadsTexture(transientContext->diffuseIlluminanceCubemapHandle);
+        }
+
+        if(transientContext->specularReflectionCubemapHandle && transientContext->specularBRDFTextureHandle)
+        {
+            specularReflectionCubemapHandle = node->ReadsTexture(transientContext->specularReflectionCubemapHandle);
+            specularBRDFTextureHandle = node->ReadsTexture(transientContext->specularBRDFTextureHandle);
+        }
     }
 
     void TiledDeferredRenderPass::ExecuteGraphicsPass(
@@ -274,12 +280,12 @@ namespace Luch::Render::Passes::TiledDeferred
         memcpy(lightsSuballocation.offsetMemory, lightUniforms.data(), enabledLightsCount * sizeof(LightUniform));
 
         transientContext->lightsBufferDescriptorSet->WriteUniformBuffer(
-            persistentContext->lightingParamsBinding,
+            persistentContext->lightResources->lightingParamsBinding,
             lightingParamsSuballocation.buffer,
             lightingParamsSuballocation.offset);
 
         transientContext->lightsBufferDescriptorSet->WriteUniformBuffer(
-            persistentContext->lightsBufferBinding,
+            persistentContext->lightResources->lightsBufferBinding,
             lightsSuballocation.buffer,
             lightsSuballocation.offset);
 
@@ -416,34 +422,10 @@ namespace Luch::Render::Passes::TiledDeferred
 
         ci.name = "GBuffer (Tiled)";
 
-        ShaderDefines shaderDefines;
-
         const auto& vertexBuffers = primitive->GetVertexBuffers();
         LUCH_ASSERT(vertexBuffers.size() == 1);
 
-        ci.inputAssembler.bindings.resize(vertexBuffers.size());
-        for (int32 i = 0; i < vertexBuffers.size(); i++)
-        {
-            const auto& vertexBuffer = vertexBuffers[i];
-            auto& bindingDescription = ci.inputAssembler.bindings[i];
-            bindingDescription.stride = vertexBuffer.stride;
-            bindingDescription.inputRate = VertexInputRate::PerVertex;
-        }
-
-        const auto& attributes = primitive->GetAttributes();
-        ci.inputAssembler.attributes.resize(SemanticToLocation.size());
-        for (const auto& attribute : attributes)
-        {
-            auto& attributeDescription = ci.inputAssembler.attributes[SemanticToLocation.at(attribute.semantic)];
-            attributeDescription.binding = attribute.vertexBufferIndex;
-            attributeDescription.format = attribute.format;
-            attributeDescription.offset = attribute.offset;
-
-            shaderDefines.AddFlag(SemanticToFlag.at(attribute.semantic));
-        }
-
-        // TODO
-        ci.inputAssembler.primitiveTopology = PrimitiveTopology::TriangleList;
+        ci.inputAssembler = RenderUtils::GetPrimitiveVertexInputStateCreateInfo(primitive);
 
         const auto& material = primitive->GetMaterial();
 
@@ -461,7 +443,7 @@ namespace Luch::Render::Passes::TiledDeferred
         ci.depthStencil.depthCompareFunction = CompareFunction::Less;
 
         ci.colorAttachments.attachments.resize(TiledDeferredConstants::ColorAttachmentCount);
-        for(int32 i = 0; i < ci.colorAttachments.attachments.size(); i++)
+        for(uint32 i = 0; i < ci.colorAttachments.attachments.size(); i++)
         {
             ci.colorAttachments.attachments[i].format = TiledDeferredConstants::ColorAttachmentFormats[i];
         }
@@ -469,35 +451,13 @@ namespace Luch::Render::Passes::TiledDeferred
         ci.renderPass = context->renderPass;
         ci.pipelineLayout = context->gbufferPipelineLayout;
 
-        if (material->HasBaseColorTexture())
-        {
-            shaderDefines.AddFlag(MaterialShaderDefines::HasBaseColorTexture);
-        }
-
-        if (material->HasMetallicRoughnessTexture())
-        {
-            shaderDefines.AddFlag(MaterialShaderDefines::HasMetallicRoughnessTexture);
-        }
-
-        if (material->HasNormalTexture())
-        {
-            shaderDefines.AddFlag(MaterialShaderDefines::HasNormalTexture);
-        }
-
-        if (material->HasOcclusionTexture())
-        {
-            shaderDefines.AddFlag(MaterialShaderDefines::HasOcclusionTexture);
-        }
-
-        if (material->HasEmissiveTexture())
-        {
-            shaderDefines.AddFlag(MaterialShaderDefines::HasEmissiveTexture);
-        }
+        ShaderDefines shaderDefines;
+        RenderUtils::AddPrimitiveVertexShaderDefines(primitive, shaderDefines);
+        RenderUtils::AddMaterialShaderDefines(material, shaderDefines);
 
         if (material->GetProperties().alphaMode == SceneV1::AlphaMode::Mask)
         {
             ci.name += " (Alphatest)";
-            shaderDefines.AddFlag(MaterialShaderDefines::AlphaMask);
         }
 
         if (material->GetProperties().unlit)
@@ -583,7 +543,7 @@ namespace Luch::Render::Passes::TiledDeferred
             return nullptr;
         }
 
-        for(int32 i = 0; i < TiledDeferredConstants::ColorAttachmentCount; i++)
+        for(uint32 i = 0; i < TiledDeferredConstants::ColorAttachmentCount; i++)
         {
             auto& attachment = ci.colorAttachments.attachments.emplace_back();
             attachment.format = TiledDeferredConstants::ColorAttachmentFormats[i];
@@ -604,15 +564,17 @@ namespace Luch::Render::Passes::TiledDeferred
 
     ResultValue<bool, UniquePtr<TiledDeferredPersistentContext>> TiledDeferredRenderPass::PrepareTiledDeferredPersistentContext(
         GraphicsDevice* device,
-        CameraResources* cameraResources,
-        MaterialResources* materialResources,
-        IndirectLightingResources* indirectLightingResources)
+        CameraPersistentResources* cameraResources,
+        MaterialPersistentResources* materialResources,
+        IndirectLightingPersistentResources* indirectLightingResources,
+        LightPersistentResources* lightResources)
     {
         auto context = MakeUnique<TiledDeferredPersistentContext>();
         context->device = device;
         context->cameraResources = cameraResources;
         context->materialResources = materialResources;
         context->indirectLightingResources = indirectLightingResources;
+        context->lightResources = lightResources;
 
         const auto& supportedDepthFormats = context->device->GetPhysicalDevice()->GetCapabilities().supportedDepthFormats;
         LUCH_ASSERT_MSG(!supportedDepthFormats.empty(), "No supported depth formats");
@@ -640,7 +602,8 @@ namespace Luch::Render::Passes::TiledDeferred
             depthStencilAttachment.stencilClearValue = 0x00000000;
 
             RenderPassCreateInfo createInfo;
-            for(int32 i = TiledDeferredConstants::GBufferColorAttachmentBegin; i < TiledDeferredConstants::GBufferColorAttachmentEnd; i++)
+            createInfo.name = RenderPassName;
+            for(uint32 i = TiledDeferredConstants::GBufferColorAttachmentBegin; i < TiledDeferredConstants::GBufferColorAttachmentEnd; i++)
             {
                 ColorAttachment attachment = gbufferColorAttachmentTemplate;
                 attachment.format = TiledDeferredConstants::ColorAttachmentFormats[i];
@@ -720,31 +683,10 @@ namespace Luch::Render::Passes::TiledDeferred
         }
 
         {
-            context->lightingParamsBinding.OfType(ResourceType::UniformBuffer);
-            context->lightsBufferBinding.OfType(ResourceType::UniformBuffer);
-
-            DescriptorSetLayoutCreateInfo createInfo;
-            createInfo
-                .OfType(DescriptorSetType::Buffer)
-                .WithNBindings(2)
-                .AddBinding(&context->lightingParamsBinding)
-                .AddBinding(&context->lightsBufferBinding);
-
-            auto[result, lightsDescriptorSetLayout] = device->CreateDescriptorSetLayout(createInfo);
-            if (result != GraphicsResult::Success)
-            {
-                LUCH_ASSERT(false);
-                return { false };
-            }
-
-            context->lightsBufferDescriptorSetLayout = std::move(lightsDescriptorSetLayout);
-        }
-
-        {
             PipelineLayoutCreateInfo createInfo;
             createInfo
                 .AddSetLayout(ShaderStage::Tile, context->cameraResources->cameraBufferDescriptorSetLayout)
-                .AddSetLayout(ShaderStage::Tile, context->lightsBufferDescriptorSetLayout)
+                .AddSetLayout(ShaderStage::Tile, context->lightResources->lightsBufferDescriptorSetLayout)
                 .AddSetLayout(ShaderStage::Tile, context->indirectLightingResources->indirectLightingTexturesDescriptorSetLayout);
 
             auto [result, resolvePipelineLayout] = device->CreatePipelineLayout(createInfo);
@@ -772,7 +714,7 @@ namespace Luch::Render::Passes::TiledDeferred
 
         {
             auto [result, lightsBufferSet] = context->descriptorPool->AllocateDescriptorSet(
-                persistentContext->lightsBufferDescriptorSetLayout);
+                persistentContext->lightResources->lightsBufferDescriptorSetLayout);
 
             if(result != GraphicsResult::Success)
             {

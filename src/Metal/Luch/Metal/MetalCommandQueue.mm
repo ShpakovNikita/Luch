@@ -42,7 +42,7 @@ namespace Luch::Metal
             LUCH_ASSERT(false);
         }
 
-        mtlCommandList->commandBuffer.AddCompletedHandler([completedHandler](auto buffer)
+        mtlCommandList->commandBuffer.AddCompletedHandler([completedHandler](auto)
         {
             if(completedHandler)
             {
@@ -61,7 +61,7 @@ namespace Luch::Metal
         auto mtlSwapchainTexture = static_cast<MetalSwapchainTexture*>(swapchainTexture);
         auto commandBuffer = queue.CommandBuffer();
 
-        commandBuffer.AddCompletedHandler([presentedHandler](auto buffer)
+        commandBuffer.AddCompletedHandler([presentedHandler](auto)
         {
             presentedHandler();
         });

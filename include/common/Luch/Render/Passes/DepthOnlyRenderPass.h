@@ -31,8 +31,8 @@ namespace Luch::Render::Passes
 
         static ResultValue<bool, UniquePtr<DepthOnlyPersistentContext>> PrepareDepthOnlyPersistentContext(
             GraphicsDevice* device,
-            CameraResources* cameraResources,
-            MaterialResources* materialResources);
+            CameraPersistentResources* cameraResources,
+            MaterialPersistentResources* materialResources);
 
         static ResultValue<bool, UniquePtr<DepthOnlyTransientContext>> PrepareDepthOnlyTransientContext(
             DepthOnlyPersistentContext* persistentContext,
@@ -40,8 +40,7 @@ namespace Luch::Render::Passes
 
         DepthOnlyRenderPass(
             DepthOnlyPersistentContext* persistentContext,
-            DepthOnlyTransientContext* transientContext,
-            RenderGraphBuilder* builder);
+            DepthOnlyTransientContext* transientContext);
 
         ~DepthOnlyRenderPass();
 
@@ -49,6 +48,8 @@ namespace Luch::Render::Passes
         void UpdateScene();
 
         RenderMutableResource GetDepthTextureHandle() { return depthTextureHandle; }
+
+        void Initialize(RenderGraphBuilder* builder) override;
 
         void ExecuteGraphicsPass(
             RenderGraphResourceManager* manager,

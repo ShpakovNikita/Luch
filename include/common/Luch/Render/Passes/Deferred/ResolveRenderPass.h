@@ -29,8 +29,9 @@ namespace Luch::Render::Passes::Deferred
 
         static ResultValue<bool, UniquePtr<ResolvePersistentContext>> PrepareResolvePersistentContext(
             GraphicsDevice* device,
-            CameraResources* cameraResources,
-            IndirectLightingResources* indirectLightingResources);
+            CameraPersistentResources* cameraResources,
+            IndirectLightingPersistentResources* indirectLightingResources,
+            LightPersistentResources* lightResources);
 
         static ResultValue<bool, UniquePtr<ResolveTransientContext>> PrepareResolveTransientContext(
             ResolvePersistentContext* persistentContext,
@@ -38,8 +39,7 @@ namespace Luch::Render::Passes::Deferred
 
         ResolveRenderPass(
             ResolvePersistentContext* persistentContext,
-            ResolveTransientContext* transientContext,
-            RenderGraphBuilder* builder);
+            ResolveTransientContext* transientContext);
 
         ~ResolveRenderPass();
 
@@ -47,6 +47,8 @@ namespace Luch::Render::Passes::Deferred
         void UpdateScene();
 
         RenderMutableResource GetLuminanceTextureHandle() { return luminanceTextureHandle; }
+
+        void Initialize(RenderGraphBuilder* builder) override;
 
         void ExecuteGraphicsPass(
             RenderGraphResourceManager* manager,

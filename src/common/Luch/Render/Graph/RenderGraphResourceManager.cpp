@@ -6,10 +6,8 @@
 namespace Luch::Render::Graph
 {
     RenderGraphResourceManager::RenderGraphResourceManager(
-        GraphicsDevice* aDevice,
         RenderGraphResourcePool* aPool)
-        : device(aDevice)
-        , pool(aPool)
+        : pool(aPool)
     {
     }
 

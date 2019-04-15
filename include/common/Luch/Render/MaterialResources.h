@@ -11,7 +11,7 @@ namespace Luch::Render
 {
     using namespace Graphics;
 
-    struct MaterialResources
+    struct MaterialPersistentResources
     {
         RefPtr<DescriptorPool> descriptorPool;
 

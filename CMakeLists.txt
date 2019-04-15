@@ -241,6 +241,8 @@ if(LUCH_PLATFORM_APPLE)
         ${ENGINE_APPLE_OBJC_FILES}
         ${ENGINE_APPLE_OBJCPP_FILES}
         ${ENGINE_APPLE_HEADER_FILES})
+
+    target_compile_options(LuchEngine PRIVATE -Wall)
 endif()
 
 if(LUCH_PLATFORM_WIN32)
@@ -269,6 +271,7 @@ if(USE_METAL)
         ${MTLPP_HEADER_FILES})
 
     target_link_libraries(LuchEngine mtlpp)
+    target_compile_options(mtlpp PRIVATE -w)
 
     # Add Metal implementation files
     file(GLOB_RECURSE ENGINE_METAL_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/Metal/Luch/*.cpp)
@@ -392,6 +395,8 @@ if(LUCH_PLATFORM_APPLE)
         ${SAMPLE_APPLE_OBJCPP_FILES}
         ${SAMPLE_APPLE_HEADER_FILES}
         ${SAMPLE_RESOURCES})
+
+    target_compile_options(LuchEngineSample PRIVATE -Wall)
 
     if(LUCH_PLATFORM_IOS)
         set_xcode_property(LuchEngineSample CODE_SIGN_IDENTITY "iPhone Developer")

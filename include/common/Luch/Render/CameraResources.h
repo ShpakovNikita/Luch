@@ -10,7 +10,7 @@ namespace Luch::Render
 {
     using namespace Graphics;
 
-    struct CameraResources
+    struct CameraPersistentResources
     {
         RefPtr<DescriptorPool> descriptorPool;
         DescriptorSetBinding cameraUniformBufferBinding;

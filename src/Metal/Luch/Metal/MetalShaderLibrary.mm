@@ -16,7 +16,7 @@ namespace Luch::Metal
     }
 
     GraphicsResultRefPtr<ShaderProgram> MetalShaderLibrary::CreateShaderProgram(
-        ShaderStage stage,
+        ShaderStage stage [[ maybe_unused ]], 
         const String& name)
     {
         auto mtlDevice = static_cast<MetalGraphicsDevice*>(GetGraphicsDevice());
