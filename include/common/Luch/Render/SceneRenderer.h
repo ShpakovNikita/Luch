@@ -99,6 +99,12 @@ namespace Luch::Render
         bool UploadSceneTextures();
         bool UploadSceneBuffers();
 
+        void UpdateCameraDescriptorSet(
+            SceneV1::Camera* camera,
+            const Mat4x4& transform,
+            const SharedPtr<SharedBuffer>& sharedBuffer,
+            DescriptorSet* descriptorSet);
+
         bool canUseTiledDeferredRender = false;
 
         SceneRendererConfig config;

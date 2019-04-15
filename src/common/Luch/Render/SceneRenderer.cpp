@@ -654,22 +654,11 @@ namespace Luch::Render
 
     void SceneRenderer::DrawScene(SceneV1::Node* cameraNode)
     {
-        auto camera = cameraNode->GetCamera();
-        LUCH_ASSERT(camera != nullptr);
-
         auto& frame = frameResources[GetCurrentFrameResourceIndex()];
 
-        CameraUniform cameraUniform = RenderUtils::GetCameraUniform(camera, cameraNode->GetWorldTransform());
-        auto suballocation = frame.sharedBuffer->Suballocate(sizeof(CameraUniform), 256);
-
-        memcpy(suballocation.offsetMemory, &cameraUniform, sizeof(CameraUniform));
-
-        frame.cameraDescriptorSet->WriteUniformBuffer(
-            cameraResources->cameraUniformBufferBinding,
-            suballocation.buffer,
-            suballocation.offset);
-
-        frame.cameraDescriptorSet->Update();
+        auto camera = cameraNode->GetCamera();
+        LUCH_ASSERT(camera != nullptr);
+        UpdateCameraDescriptorSet(camera, cameraNode->GetWorldTransform(), frame.sharedBuffer, frame.cameraDescriptorSet);
 
         auto [getNextTextureResult, swapchainTexture] = context->swapchain->GetNextAvailableTexture();
         LUCH_ASSERT(getNextTextureResult == GraphicsResult::Success);
@@ -1078,5 +1067,24 @@ namespace Luch::Render
         }
 
         return true;
+    }
+
+    void SceneRenderer::UpdateCameraDescriptorSet(
+        SceneV1::Camera* camera,
+        const Mat4x4& transform,
+        const SharedPtr<SharedBuffer>& sharedBuffer,
+        DescriptorSet* descriptorSet)
+    {
+        CameraUniform cameraUniform = RenderUtils::GetCameraUniform(camera, transform);
+        auto suballocation = sharedBuffer->Suballocate(sizeof(CameraUniform), 256);
+
+        memcpy(suballocation.offsetMemory, &cameraUniform, sizeof(CameraUniform));
+
+        descriptorSet->WriteUniformBuffer(
+            cameraResources->cameraUniformBufferBinding,
+            suballocation.buffer,
+            suballocation.offset);
+
+        descriptorSet->Update();
     }
 }

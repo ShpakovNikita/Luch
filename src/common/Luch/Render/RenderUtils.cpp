@@ -77,6 +77,25 @@ namespace Luch::Render::RenderUtils
         return lightUniform;
     }
 
+    Rect3f CombineAABB(const Rect3f& aabb1, const Rect3f& aabb2)
+    {
+        Point3f newOrigin = Point3f
+        { 
+            std::min(aabb1.origin.x, aabb2.origin.x),
+            std::min(aabb1.origin.y, aabb2.origin.y),
+            std::min(aabb1.origin.z, aabb2.origin.z) 
+        };
+
+        Size3f newSize = Size3f
+        {
+            std::max(aabb1.size.width, aabb2.size.width),
+            std::max(aabb1.size.height, aabb2.size.height),
+            std::max(aabb1.size.depth, aabb2.size.depth),
+        };
+
+        return { newOrigin, newSize };
+    }
+
     String LoadShaderSource(const FilePath& path)
     {
         FileStream fileStream{ path, FileOpenModes::Read };

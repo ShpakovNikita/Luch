@@ -262,6 +262,12 @@ Vector<T> ParseBuiltinArray(const json& j)
     return ParseArray<T, ParseBuiltin<T>>(j);
 }
 
+template<typename T>
+Vector<T> ParseBuiltinArray(const json& j)
+{
+    return ParseArray<T, ParseBuiltin<T>>(j);
+}
+
 Sparse ParseSparse(const json&)
 {
     Sparse sparse;
@@ -269,9 +275,31 @@ Sparse ParseSparse(const json&)
     return sparse;
 }
 
-AccessorValueHolder ParseAccessorMinMax(ComponentType, AttributeType, const json&)
+AccessorValueHolder ParseAccessorMinMax(ComponentType componentType, AttributeType attributeType, const json& j)
 {
-    AccessorValueHolder valueHolder{};
+    AccessorValueHolder valueHolder;
+
+    if(componentType == ComponentType::Float)
+    {
+        auto& values = valueHolder.emplace<Array<float32, 16>>();
+        auto temp = ParseBuiltinArray<float32>(j);
+        LUCH_ASSERT(temp.size() < 16);
+        for(uint32 i = 0; i < temp.size(); i++)
+        {
+            values[i] = temp[i];
+        }
+    }
+    else
+    {
+        auto& values = valueHolder.emplace<Array<uint32, 16>>();
+        auto temp = ParseBuiltinArray<uint32>(j);
+        LUCH_ASSERT(temp.size() < 16);
+        for(uint32 i = 0; i < temp.size(); i++)
+        {
+            values[i] = temp[i];
+        }
+    }
+
     return valueHolder;
 }
 

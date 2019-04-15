@@ -2,6 +2,7 @@
 
 #include <Luch/Types.h>
 #include <Luch/RefPtr.h>
+#include <Luch/Rect3.h>
 #include <Luch/BaseObject.h>
 #include <Luch/Graphics/GraphicsForwards.h>
 #include <Luch/Graphics/Format.h>
@@ -70,6 +71,11 @@ namespace Luch::SceneV1
         inline PrimitiveTopology GetTopology() const { return topology; }
         inline void SetTopology(PrimitiveTopology aTopology) { topology = aTopology; }
 
+        inline bool HasAABB() const { return aabb.has_value(); }
+        inline const Rect3f& GetAABB() const { return *aabb; }
+        inline void SetAABB(const Optional<Rect3f>& aAABB) { aabb = aAABB; }
+        inline void ResetAABB() { aabb.reset(); }
+
         inline const RefPtr<Graphics::GraphicsPipelineState>& GetGraphicsPipelineState(const String& key) const
         {
             return graphicsPipelineStates[key];
@@ -85,6 +91,7 @@ namespace Luch::SceneV1
         Optional<IndexBuffer> indexBuffer;
         RefPtr<PbrMaterial> material;
         PrimitiveTopology topology = PrimitiveTopology::TriangleList;
+        Optional<Rect3f> aabb;
         mutable UnorderedMap<String, RefPtr<Graphics::GraphicsPipelineState>> graphicsPipelineStates;
     };
 }

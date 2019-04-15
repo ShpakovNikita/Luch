@@ -16,6 +16,8 @@ namespace Luch::Render
         MaterialUniform GetMaterialUniform(SceneV1::PbrMaterial *material);
         CameraUniform GetCameraUniform(SceneV1::Camera *camera, const Mat4x4& transform);
         LightUniform GetLightUniform(SceneV1::Light* light, const Mat4x4& worldTransform);
+        Rect3f CombineAABB(const Rect3f& aabb1, const Rect3f& aabb2);
+        Rect3f TransformAABB(const Rect3f& aabb, const Mat4x4& worldTransform);
 
         ResultValue<bool, RefPtr<ShaderLibrary>> CreateShaderLibrary(
             GraphicsDevice* device,

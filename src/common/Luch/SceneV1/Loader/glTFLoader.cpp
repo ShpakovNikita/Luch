@@ -42,6 +42,72 @@ namespace Luch::SceneV1::Loader
         { glTF::LightType::Point, LightType::Point },
     };
 
+    bool ValidateAttribute(
+        AttributeSemantic semantic,
+        ComponentType componentType,
+        AttributeType attributeType)
+    {
+        switch(semantic)
+            {
+            case AttributeSemantic::Position:
+            {
+                LUCH_ASSERT(attributeType == AttributeType::Vec3);
+                LUCH_ASSERT(componentType == ComponentType::Float);
+                break;
+            }
+            case AttributeSemantic::Normal:
+            {
+                LUCH_ASSERT(attributeType == AttributeType::Vec3);
+                LUCH_ASSERT(componentType == ComponentType::Float);
+                break;
+            }
+            case AttributeSemantic::Tangent:
+            {
+                LUCH_ASSERT(attributeType == AttributeType::Vec4);
+                LUCH_ASSERT(componentType == ComponentType::Float);
+                break;
+            }
+            case AttributeSemantic::Texcoord_0:
+            {
+                LUCH_ASSERT(attributeType == AttributeType::Vec2);
+
+                switch(componentType)
+                {
+                case ComponentType::Float:
+                case ComponentType::UInt8:
+                case ComponentType::UInt16:
+                    break;
+                default:
+                    LUCH_ASSERT_MSG(false, "Invalid texcoord component type");
+                }
+            }
+            default:
+                LUCH_ASSERT_MSG(false, "Unknown semantic for interleaved");
+            }
+    }
+
+    Optional<Rect3f> GetAABB(const glTF::Accessor& accessor)
+    {
+        if(accessor.min.has_value() && accessor.max.has_value())
+        {
+            const auto& minValues = std::get<Array<float32, 16>>(*accessor.min);
+            Vec3 min = Vec3{ minValues[0], minValues[1], minValues[2] };
+
+            const auto& maxValues = std::get<Array<float32, 16>>(*accessor.max);
+            Vec3 max = Vec3{ maxValues[0], maxValues[1], maxValues[2] };
+
+            Point3f origin = Point3f{ min.x, min.y, min.z };
+            Vec3 diff = max - min;
+            Size3f size = Size3f{ diff.x, diff.y, diff.z };
+
+            return Rect3f{ origin, size };
+        }
+        else
+        {
+            return std::nullopt;
+        }
+    }
+
     glTFLoader::glTFLoader(const String& aRootFolder, SharedPtr<glTF::glTFRoot> glTFRoot)
         : rootFolder(aRootFolder)
         , root(move(glTFRoot))
@@ -298,6 +364,11 @@ namespace Luch::SceneV1::Loader
             attribute.offset = accessor.byteOffset;
             attribute.format = AttribuiteToFormat(attribute.attributeType, attribute.componentType);
 
+            if(attribute.semantic == AttributeSemantic::Position)
+            {
+                primitive->SetAABB(GetAABB(accessor));
+            }
+
             const auto& bufferViewIndex = accessor.bufferView;
 
             VertexBuffer vb;
@@ -493,6 +564,17 @@ namespace Luch::SceneV1::Loader
             const auto& bufferView = root->bufferViews[*accessor.bufferView];
             const auto& buffer = context.loadedBuffers[bufferView.buffer];
 
+            auto attributeType = (AttributeType)accessor.type;
+            auto componentType = ComponentTypes.at(accessor.componentType);
+
+            ValidateAttribute(semantic, componentType, attributeType);
+
+            if(semantic == AttributeSemantic::Position)
+            {
+                auto aabb = GetAABB(accessor);
+                primitive->SetAABB(aabb);
+            }
+
             buffer->ReadToHost();
 
             const auto& bufferBytes = buffer->GetHostBuffer();
@@ -500,8 +582,6 @@ namespace Luch::SceneV1::Loader
             const Byte* attributeBytesStart = bufferBytes.data() + bufferView.byteOffset;
             for(int32 i = 0; i < *vertexCount; i++)
             {
-                auto attributeType = (AttributeType)accessor.type;
-                auto componentType = ComponentTypes.at(accessor.componentType);
                 int32 stride = CalculateStride(attributeType, componentType);
 
                 const Byte* attributeBytes =
@@ -513,29 +593,21 @@ namespace Luch::SceneV1::Loader
                 {
                 case AttributeSemantic::Position:
                 {
-                    LUCH_ASSERT(attributeType == AttributeType::Vec3);
-                    LUCH_ASSERT(componentType == ComponentType::Float);
                     std::memcpy(&positions[i], attributeBytes, sizeof(Vec3));
                     break;
                 }
                 case AttributeSemantic::Normal:
                 {
-                    LUCH_ASSERT(attributeType == AttributeType::Vec3);
-                    LUCH_ASSERT(componentType == ComponentType::Float);
                     std::memcpy(&normals[i], attributeBytes, sizeof(Vec3));
                     break;
                 }
                 case AttributeSemantic::Tangent:
                 {
-                    LUCH_ASSERT(attributeType == AttributeType::Vec4);
-                    LUCH_ASSERT(componentType == ComponentType::Float);
                     std::memcpy(&tangents[i], attributeBytes, sizeof(Vec4));
                     break;
                 }
                 case AttributeSemantic::Texcoord_0:
                 {
-                    LUCH_ASSERT(attributeType == AttributeType::Vec2);
-
                     if(accessor.componentType == glTF::ComponentType::Float)
                     {
                         std::memcpy(&texcoords[i], attributeBytes, sizeof(Vec2));
@@ -554,14 +626,10 @@ namespace Luch::SceneV1::Loader
                         texcoords[i].x = (float32)uv[0] / Limits<uint16>::max();
                         texcoords[i].y = (float32)uv[1] / Limits<uint16>::max();
                     }
-                    else
-                    {
-                        LUCH_ASSERT_MSG(false, "Invalid texcoord component type");
-                    }
                     break;
                 }
                 default:
-                    LUCH_ASSERT_MSG(false, "Unknown semantic for interleaved");
+                    break;
                 }
             }
         }

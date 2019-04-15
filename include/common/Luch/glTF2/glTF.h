@@ -114,7 +114,7 @@ enum class LightType
     Spot,
 };
 
-using AccessorValueHolder = Array<uint32, 16>;
+using AccessorValueHolder = Variant<Array<uint32, 16>, Array<float32, 16>>;
 
 struct SparseValues
 {
