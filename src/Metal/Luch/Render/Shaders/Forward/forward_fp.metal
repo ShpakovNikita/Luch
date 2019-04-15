@@ -169,9 +169,9 @@ fragment FragmentOut FragmentMain(
 
     half3 directLuminance = 0.0;
 
-    //for(ushort i = 0; i < lightingParams.lightCount; i++)
+    for(ushort i = 0; i < lightingParams.lightCount; i++)
     {
-        Light light = lights.lights[0];
+        Light light = lights.lights[i];
 
         half3 intermediateLuminance;
 

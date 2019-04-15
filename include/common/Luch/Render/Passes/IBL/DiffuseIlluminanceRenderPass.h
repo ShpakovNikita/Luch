@@ -39,12 +39,13 @@ namespace Luch::Render::Passes::IBL
 
         DiffuseIlluminanceRenderPass(
             DiffuseIlluminancePersistentContext* persistentContext,
-            DiffuseIlluminanceTransientContext* transientContext,
-            RenderGraphBuilder* builder);
+            DiffuseIlluminanceTransientContext* transientContext);
 
         ~DiffuseIlluminanceRenderPass();
 
         RenderMutableResource GetIlluminanceCubemapHandle() { return illuminanceCubemapHandle; }
+
+        void Initialize(RenderGraphBuilder* builder) override;
 
         void ExecuteComputePass(
             RenderGraphResourceManager* manager,

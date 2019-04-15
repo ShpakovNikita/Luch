@@ -42,8 +42,7 @@ namespace Luch::Render::Passes::TiledDeferred
 
         TiledDeferredRenderPass(
             TiledDeferredPersistentContext* persistentContext,
-            TiledDeferredTransientContext* transientContext,
-            RenderGraphBuilder* builder);
+            TiledDeferredTransientContext* transientContext);
 
         ~TiledDeferredRenderPass();
 
@@ -51,6 +50,8 @@ namespace Luch::Render::Passes::TiledDeferred
         void UpdateScene();
 
         RenderMutableResource GetLuminanceTextureHandle() { return luminanceTextureHandle; }
+
+        void Initialize(RenderGraphBuilder* builder) override;
 
         void ExecuteGraphicsPass(
             RenderGraphResourceManager* manager,

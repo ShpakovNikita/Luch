@@ -39,12 +39,13 @@ namespace Luch::Render::Passes::IBL
 
         SpecularBRDFRenderPass(
             SpecularBRDFPersistentContext* persistentContext,
-            SpecularBRDFTransientContext* transientContext,
-            RenderGraphBuilder* builder);
+            SpecularBRDFTransientContext* transientContext);
 
         ~SpecularBRDFRenderPass();
 
         RenderMutableResource GetBRDFTextureHandle() { return brdfTextureHandle; }
+
+        void Initialize(RenderGraphBuilder* builder) override;
 
         void ExecuteComputePass(
             RenderGraphResourceManager* manager,

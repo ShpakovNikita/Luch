@@ -41,15 +41,10 @@ namespace Luch::Render::Passes
 
     TonemapRenderPass::TonemapRenderPass(
         TonemapPersistentContext* aPersistentContext,
-        TonemapTransientContext* aTransientContext,
-        RenderGraphBuilder* builder)
+        TonemapTransientContext* aTransientContext)
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
-        auto node = builder->AddGraphicsPass(RenderPassName, persistentContext->renderPass, this);
-
-        input = node->ReadsTexture(transientContext->inputHandle);
-        output = node->WritesToColorAttachment(0, transientContext->outputHandle);
     }
 
     TonemapRenderPass::~TonemapRenderPass() = default;
@@ -60,6 +55,14 @@ namespace Luch::Render::Passes
 
     void TonemapRenderPass::UpdateScene()
     {
+    }
+
+    void TonemapRenderPass::Initialize(RenderGraphBuilder* builder)
+    {
+        auto node = builder->AddGraphicsPass(RenderPassName, persistentContext->renderPass, this);
+
+        input = node->ReadsTexture(transientContext->inputHandle);
+        output = node->WritesToColorAttachment(0, transientContext->outputHandle);
     }
 
     void TonemapRenderPass::ExecuteGraphicsPass(

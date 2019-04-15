@@ -437,7 +437,7 @@ namespace Luch::Render::Techniques::Forward
 
     const String& ForwardRenderer::GetPipelineStateName()
     {
-        RenderPass* renderPass = transientContext->useDepthPrepass ? persistentContext->renderPass : persistentContext->renderPassWithDepthPrepass;
+        RenderPass* renderPass = transientContext->useDepthPrepass ?  persistentContext->renderPassWithDepthPrepass : persistentContext->renderPass;
         return renderPass->GetCreateInfo().name;
     }
 

@@ -38,14 +38,11 @@ namespace Luch::Render::Passes::Forward
     struct ForwardTransientContextCreateInfo
     {
         SceneV1::Scene* scene = nullptr;
-        Size2i outputSize;
         bool useDepthPrepass = false;
 
         RefPtr<DescriptorSet> cameraBufferDescriptorSet;
         SharedPtr<SharedBuffer> sharedBuffer;
         RefPtr<DescriptorPool> descriptorPool;
-
-        RenderMutableResource depthStencilTextureHandle;
 
         RenderResource diffuseIlluminanceCubemapHandle;
         RenderResource specularReflectionCubemapHandle;
@@ -55,7 +52,6 @@ namespace Luch::Render::Passes::Forward
     struct ForwardTransientContext
     {
         SceneV1::Scene* scene = nullptr;
-        Size2i outputSize;
         bool useDepthPrepass = false;
 
         UniquePtr<Techniques::Forward::ForwardRendererTransientContext> rendererTransientContext;
@@ -63,8 +59,6 @@ namespace Luch::Render::Passes::Forward
         RefPtr<DescriptorSet> cameraBufferDescriptorSet;
         SharedPtr<SharedBuffer> sharedBuffer;
         RefPtr<DescriptorPool> descriptorPool;
-
-        RenderMutableResource depthStencilTextureHandle;
 
         RenderResource diffuseIlluminanceCubemapHandle;
         RenderResource specularReflectionCubemapHandle;

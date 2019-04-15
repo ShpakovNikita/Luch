@@ -14,6 +14,7 @@
 #include <Luch/Render/RenderForwards.h>
 #include <Luch/Render/Graph/RenderGraphForwards.h>
 #include <Luch/Render/Graph/RenderGraphPass.h>
+#include <Luch/Render/Graph/RenderGraphPassAttachmentConfig.h>
 #include <Luch/Render/Passes/Deferred/DeferredForwards.h>
 #include <Luch/Render/Passes/Deferred/GBuffer.h>
 #include <Luch/Render/Passes/Deferred/DeferredConstants.h>
@@ -42,15 +43,17 @@ namespace Luch::Render::Passes::Deferred
 
         GBufferRenderPass(
             GBufferPersistentContext* persistentContext,
-            GBufferTransientContext* transientContext,
-            RenderGraphBuilder* builder);
+            GBufferTransientContext* transientContext);
 
         ~GBufferRenderPass();
 
         void PrepareScene();
         void UpdateScene();
 
+        inline RenderGraphPassAttachmentConfig& GetMutableAttachmentConfig() { return attachmentConfig; }
         GBufferReadOnly GetGBuffer() { return gbuffer; }
+
+        void Initialize(RenderGraphBuilder* builder) override;
 
         void ExecuteGraphicsPass(
             RenderGraphResourceManager* manager,
@@ -74,6 +77,8 @@ namespace Luch::Render::Passes::Deferred
         RefPtr<GraphicsPipelineState> CreateGBufferPipelineState(
             SceneV1::Primitive* primitive,
             bool useDepthPrepass);
+
+        RenderGraphPassAttachmentConfig attachmentConfig;
 
         GBufferPersistentContext* persistentContext = nullptr;
         GBufferTransientContext* transientContext = nullptr;

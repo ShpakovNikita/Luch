@@ -11,6 +11,7 @@ namespace Luch::Render::Graph
     class RenderGraphResourceManager;
     class RenderGraphResourcePool;
 
+    struct RenderGraphPassAttachmentConfig;
     struct RenderGraphNode;
     struct RenderGraphAttachmentCreateInfo;
     struct RenderGraphAttachmentDescriptor;

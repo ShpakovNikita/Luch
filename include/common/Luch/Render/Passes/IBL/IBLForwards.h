@@ -8,7 +8,9 @@ namespace Luch::Render::Passes::IBL
     class SpecularReflectionRenderPass;
 
     struct EnvironmentCubemapPersistentContext;
+    struct EnvironmentCubemapPersistentContextCreateInfo;
     struct EnvironmentCubemapTransientContext;
+    struct EnvironmentCubemapTransientContextCreateInfo;
     struct DiffuseIlluminancePersistentContext;
     struct DiffuseIlluminanceTransientContext;
     struct SpecularBRDFPersistentContext;

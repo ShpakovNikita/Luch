@@ -142,7 +142,8 @@ namespace Luch::Render
             context,
             materialManager,
             cameraResources,
-            lightResources);
+            lightResources,
+            indirectLightingResources);
 
         if(!iblRendererInitialized)
         {
@@ -473,8 +474,9 @@ namespace Luch::Render
 
             frame.depthOnlyPass = MakeUnique<DepthOnlyRenderPass>(
                 depthOnlyPersistentContext.get(),
-                frame.depthOnlyTransientContext.get(),
-                frame.builder.get());
+                frame.depthOnlyTransientContext.get());
+
+            frame.depthOnlyPass->Initialize(frame.builder.get());
         }
 
         if(config.useForward)
@@ -537,8 +539,9 @@ namespace Luch::Render
 
             frame.tonemapPass = MakeUnique<TonemapRenderPass>(
                 tonemapPersistentContext.get(),
-                frame.tonemapTransientContext.get(),
-                frame.builder.get());
+                frame.tonemapTransientContext.get());
+
+            frame.tonemapPass->Initialize(frame.builder.get());
         }
 
         return true;
@@ -699,11 +702,8 @@ namespace Luch::Render
 
     bool SceneRenderer::PrepareForward(FrameResources& frame)
     {
-        RenderMutableResource depthTextureHandle = config.useDepthPrepass ? frame.depthOnlyPass->GetDepthTextureHandle() : nullptr;
-
         ForwardTransientContextCreateInfo createInfo;
         createInfo.scene = scene;
-        createInfo.outputSize = frame.outputSize;
         createInfo.sharedBuffer = frame.sharedBuffer;
         createInfo.descriptorPool = descriptorPool;
         createInfo.cameraBufferDescriptorSet = frame.cameraDescriptorSet;
@@ -720,12 +720,6 @@ namespace Luch::Render
             createInfo.specularBRDFTextureHandle = frame.specularBRDFTextureHandle;
         }
 
-        if(config.useDepthPrepass)
-        {
-            createInfo.depthStencilTextureHandle = frame.depthOnlyPass->GetDepthTextureHandle();
-        }
-
-
         auto [result, transientContext] = ForwardRenderPass::PrepareForwardTransientContext(
             forwardPersistentContext.get(),
             createInfo);
@@ -739,8 +733,16 @@ namespace Luch::Render
 
         frame.forwardPass = MakeUnique<ForwardRenderPass>(
             forwardPersistentContext.get(),
-            frame.forwardTransientContext.get(),
-            frame.builder.get());
+            frame.forwardTransientContext.get());
+
+        frame.forwardPass->GetMutableAttachmentConfig().attachmentSize = frame.outputSize;
+
+        if(config.useDepthPrepass)
+        {
+            frame.forwardPass->GetMutableAttachmentConfig().depthStencilAttachment->resource = frame.depthOnlyPass->GetDepthTextureHandle();
+        }
+
+        frame.forwardPass->Initialize(frame.builder.get());
 
         return true;
     }
@@ -758,23 +760,25 @@ namespace Luch::Render
             }
 
             transientContext->descriptorPool = descriptorPool;
-            transientContext->outputSize = frame.outputSize;
             transientContext->scene = scene;
             transientContext->sharedBuffer = frame.sharedBuffer;
             transientContext->cameraBufferDescriptorSet = frame.cameraDescriptorSet;
             transientContext->useDepthPrepass = config.useDepthPrepass;
 
-            if(config.useDepthPrepass)
-            {
-                transientContext->depthStencilTextureHandle = frame.depthOnlyPass->GetDepthTextureHandle();
-            }
-
             frame.gbufferTransientContext = std::move(transientContext);
 
             frame.gbufferPass = MakeUnique<GBufferRenderPass>(
                 gbufferPersistentContext.get(),
-                frame.gbufferTransientContext.get(),
-                frame.builder.get());
+                frame.gbufferTransientContext.get());
+
+            frame.gbufferPass->GetMutableAttachmentConfig().attachmentSize = frame.outputSize;
+
+            if(config.useDepthPrepass)
+            {
+                frame.gbufferPass->GetMutableAttachmentConfig().depthStencilAttachment->resource = frame.depthOnlyPass->GetDepthTextureHandle();
+            }
+            
+            frame.gbufferPass->Initialize(frame.builder.get());
         }
 
         if(config.useComputeResolve)
@@ -810,8 +814,9 @@ namespace Luch::Render
 
             frame.resolveComputePass = MakeUnique<ResolveComputeRenderPass>(
                 resolveComputePersistentContext.get(),
-                frame.resolveComputeTransientContext.get(),
-                frame.builder.get());
+                frame.resolveComputeTransientContext.get());
+
+            frame.resolveComputePass->Initialize(frame.builder.get());
         }
         else
         {
@@ -845,8 +850,9 @@ namespace Luch::Render
 
             frame.resolvePass = MakeUnique<ResolveRenderPass>(
                 resolvePersistentContext.get(),
-                frame.resolveTransientContext.get(),
-                frame.builder.get());
+                frame.resolveTransientContext.get());
+
+            frame.resolvePass->Initialize(frame.builder.get());
         }
 
         return true;
@@ -885,8 +891,9 @@ namespace Luch::Render
 
         frame.tiledDeferredPass = MakeUnique<TiledDeferredRenderPass>(
             tiledDeferredPersistentContext.get(),
-            frame.tiledDeferredTransientContext.get(),
-            frame.builder.get());
+            frame.tiledDeferredTransientContext.get());
+
+        frame.tiledDeferredPass->Initialize(frame.builder.get());
 
         return true;
     }

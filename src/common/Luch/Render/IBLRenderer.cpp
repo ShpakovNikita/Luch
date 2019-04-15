@@ -67,12 +67,14 @@ namespace Luch::Render
         SharedPtr<RenderContext> aContext,
         SharedPtr<MaterialManager> aMaterialManager,
         SharedPtr<CameraPersistentResources> aCameraResources,
-        SharedPtr<LightPersistentResources> aLightResources)
+        SharedPtr<LightPersistentResources> aLightResources, 
+        SharedPtr<IndirectLightingPersistentResources> aIndirectLightResources)
     {
         context = aContext;
         cameraResources = aCameraResources;
         lightResources = aLightResources;
         materialManager = aMaterialManager;
+        indirectLightingResources = aIndirectLightResources;
 
         resourcePool = MakeUnique<RenderGraphResourcePool>(context->device);
 
@@ -88,11 +90,15 @@ namespace Luch::Render
 
         // Environment Cubemap Persistent Context
         {
+            EnvironmentCubemapPersistentContextCreateInfo createInfo;
+            createInfo.device = context->device;
+            createInfo.cameraResources = cameraResources.get();
+            createInfo.materialResources = materialManager->GetPersistentResources();
+            createInfo.lightResources = lightResources.get();
+            createInfo.indirectLightingResources = indirectLightingResources.get(); // TODO
+
             auto [result, createdContext] = EnvironmentCubemapRenderPass::PrepareEnvironmentCubemapPersistentContext(
-                context->device,
-                cameraResources.get(),
-                materialManager->GetPersistentResources(),
-                lightResources.get());
+                createInfo);
             
             if(!result)
             {
@@ -392,32 +398,39 @@ namespace Luch::Render
 
         for(int32 face = 0; face < 6; face++)
         {
+            EnvironmentCubemapTransientContextCreateInfo createInfo;
+            createInfo.descriptorPool = descriptorPool;
+            createInfo.zNear = iblRequest.zNear;
+            createInfo.zFar = iblRequest.zFar;
+            createInfo.position = iblRequest.position;
+            createInfo.sharedBuffer = sharedBuffer;
+            createInfo.scene = scene;
+
             auto [result, transientContext] = EnvironmentCubemapRenderPass::PrepareEnvironmentCubemapTransientContext(
                 environmentCubemapPersistentContext.get(),
-                iblRequest.zNear,
-                iblRequest.zFar,
-                descriptorPool);
+                createInfo);
 
             if(!result)
             {
                 return false;
             }
 
-            transientContext->descriptorPool = descriptorPool;
-            transientContext->outputSize = iblRequest.size;
-            transientContext->scene = scene;
-            transientContext->sharedBuffer = sharedBuffer;
-            transientContext->environmentLuminanceCubemap = environmentLuminanceCubemapHandle;
-            transientContext->environmentDepthCubemap = environmentDepthCubemapHandle;
-            transientContext->faceIndex = face;
-            transientContext->position = iblRequest.position;
-
             environmentCubemapTransientContexts[face] = std::move(transientContext);
 
-            environmentCubemapPasses[face] = MakeUnique<EnvironmentCubemapRenderPass>(
+            auto environmentCubemapPass = MakeUnique<EnvironmentCubemapRenderPass>(
                 environmentCubemapPersistentContext.get(),
-                environmentCubemapTransientContexts[face].get(),
-                builder.get());
+                environmentCubemapTransientContexts[face].get());
+
+            auto& attachmentConfig = environmentCubemapPass->GetMutableAttachmentConfig();
+            attachmentConfig.colorAttachments[0]->resource = environmentLuminanceCubemapHandle;
+            attachmentConfig.colorAttachments[0]->descriptor.slice = face;
+            attachmentConfig.depthStencilAttachment->resource = environmentDepthCubemapHandle;
+            attachmentConfig.depthStencilAttachment->descriptor.slice = face;
+            attachmentConfig.attachmentSize = iblRequest.size;
+
+            environmentCubemapPass->Initialize(builder.get());
+
+            environmentCubemapPasses[face] = std::move(environmentCubemapPass);
 
             // Do this to force render pass order
             environmentLuminanceCubemapHandle = environmentCubemapPasses[face]->GetEnvironmentLuminanceCubemapHandle();
@@ -448,8 +461,9 @@ namespace Luch::Render
 
         diffuseIlluminancePass = MakeUnique<DiffuseIlluminanceRenderPass>(
             diffuseIlluminancePersistentContext.get(),
-            diffuseIlluminanceTransientContext.get(),
-            builder.get());
+            diffuseIlluminanceTransientContext.get());
+
+        diffuseIlluminancePass->Initialize(builder.get());
 
         return true;
     }
@@ -474,8 +488,9 @@ namespace Luch::Render
 
         specularReflectionPass = MakeUnique<SpecularReflectionRenderPass>(
             specularReflectionPersistentContext.get(),
-            specularReflectionTransientContext.get(),
-            builder.get());
+            specularReflectionTransientContext.get());
+
+        specularReflectionPass->Initialize(builder.get());
 
         return true;
     }
@@ -499,8 +514,9 @@ namespace Luch::Render
 
         specularBRDFPass = MakeUnique<SpecularBRDFRenderPass>(
             specularBRDFPersistentContext.get(),
-            specularBRDFTransientContext.get(),
-            builder.get());
+            specularBRDFTransientContext.get());
+
+        specularBRDFPass->Initialize(builder.get());
 
         return true;
     }

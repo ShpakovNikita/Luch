@@ -9,6 +9,7 @@
 #include <Luch/Render/Graph/RenderGraphNode.h>
 #include <Luch/Render/Graph/RenderGraphBuilder.h>
 #include <Luch/Render/Graph/RenderGraphNodeBuilder.h>
+#include <Luch/Render/Graph/RenderGraphUtils.h>
 
 #include <Luch/SceneV1/Scene.h>
 #include <Luch/SceneV1/Node.h>
@@ -55,28 +56,11 @@ namespace Luch::Render::Passes::Deferred
 
     GBufferRenderPass::GBufferRenderPass(
         GBufferPersistentContext* aPersistentContext,
-        GBufferTransientContext* aTransientContext,
-        RenderGraphBuilder* builder)
+        GBufferTransientContext* aTransientContext)
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
-        UniquePtr<RenderGraphNodeBuilder> node;
-
-        if(transientContext->useDepthPrepass)
-        {
-            node = builder->AddGraphicsPass(RenderPassWithDepthOnlyName, persistentContext->renderPassWithDepthOnly, this);
-            gbuffer.depthStencil = node->UseDepthStencilAttachment(transientContext->depthStencilTextureHandle);
-        }
-        else
-        {
-            node = builder->AddGraphicsPass(RenderPassName, persistentContext->renderPass, this);
-            gbuffer.depthStencil = node->CreateDepthStencilAttachment({ transientContext->outputSize });
-        }
-
-        for(int32 i = 0; i < DeferredConstants::GBufferColorAttachmentCount; i++)
-        {
-            gbuffer.color[i] = node->CreateColorAttachment(i, { transientContext->outputSize });
-        }
+        Utils::PopulateAttachmentConfig(attachmentConfig, persistentContext->renderPass);
     }
 
     GBufferRenderPass::~GBufferRenderPass() = default;
@@ -102,16 +86,39 @@ namespace Luch::Render::Passes::Deferred
         }
     }
 
+    void GBufferRenderPass::Initialize(RenderGraphBuilder* builder)
+    {
+        UniquePtr<RenderGraphNodeBuilder> node;
+
+        if(transientContext->useDepthPrepass)
+        {
+            node = builder->AddGraphicsPass(RenderPassWithDepthOnlyName, persistentContext->renderPassWithDepthOnly, this);
+        }
+        else
+        {
+            node = builder->AddGraphicsPass(RenderPassName, persistentContext->renderPass, this);
+        }
+
+        auto attachmentHandles = Utils::PopulateAttachments(node.get(), attachmentConfig);
+
+        for(uint32 i = 0; i < DeferredConstants::GBufferColorAttachmentCount; i++)
+        {
+            gbuffer.color[i] = attachmentHandles.colorTextureHandles[i];
+        }
+
+        gbuffer.depthStencil = attachmentHandles.depthStencilTextureHandle;
+    }
+
     void GBufferRenderPass::ExecuteGraphicsPass(
         RenderGraphResourceManager* manager [[ maybe_unused ]],
         GraphicsCommandList* commandList)
     {
         Viewport viewport;
-        viewport.width = static_cast<float32>(transientContext->outputSize.width);
-        viewport.height = static_cast<float32>(transientContext->outputSize.height);
+        viewport.width = static_cast<float32>(attachmentConfig.attachmentSize.width);
+        viewport.height = static_cast<float32>(attachmentConfig.attachmentSize.height);
 
         Rect2i scissorRect;
-        scissorRect.size = transientContext->outputSize;
+        scissorRect.size = attachmentConfig.attachmentSize;
 
         commandList->SetViewports({ viewport });
         commandList->SetScissorRects({ scissorRect });
@@ -436,6 +443,7 @@ namespace Luch::Render::Passes::Deferred
         depthStencilAttachment.stencilClearValue = 0x00000000;
 
         RenderPassCreateInfo renderPassCreateInfo;
+        renderPassCreateInfo.name = RenderPassName;
         for(int32 i = 0; i < DeferredConstants::GBufferColorAttachmentCount; i++)
         {
             ColorAttachment attachment = gbufferColorAttachmentTemplate;

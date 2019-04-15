@@ -50,12 +50,32 @@ namespace Luch::Render::Passes::Deferred
 
     ResolveRenderPass::ResolveRenderPass(
         ResolvePersistentContext* aPersistentContext,
-        ResolveTransientContext* aTransientContext,
-        RenderGraphBuilder* builder)
+        ResolveTransientContext* aTransientContext)
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
+    }
+
+    ResolveRenderPass::~ResolveRenderPass() = default;
+
+    void ResolveRenderPass::PrepareScene()
+    {
+    }
+
+    void ResolveRenderPass::UpdateScene()
+    {
+        const auto& sceneProperties = transientContext->scene->GetSceneProperties();
+
+        RefPtrVector<SceneV1::Node> lightNodes(sceneProperties.lightNodes.begin(), sceneProperties.lightNodes.end());
+
+        UpdateLights(lightNodes);
+    }
+
+    void ResolveRenderPass::Initialize(RenderGraphBuilder* builder)
+    {
         auto node = builder->AddGraphicsPass(RenderPassName, persistentContext->renderPass, this);
+
+        node->SetAttachmentSize(transientContext->outputSize);
 
         for(uint32 i = 0; i < transientContext->gbuffer.color.size(); i++)
         {
@@ -75,22 +95,7 @@ namespace Luch::Render::Passes::Deferred
             specularBRDFTextureHandle = node->ReadsTexture(transientContext->specularBRDFTextureHandle);
         }
 
-        luminanceTextureHandle = node->CreateColorAttachment(0, { transientContext->outputSize });
-    }
-
-    ResolveRenderPass::~ResolveRenderPass() = default;
-
-    void ResolveRenderPass::PrepareScene()
-    {
-    }
-
-    void ResolveRenderPass::UpdateScene()
-    {
-        const auto& sceneProperties = transientContext->scene->GetSceneProperties();
-
-        RefPtrVector<SceneV1::Node> lightNodes(sceneProperties.lightNodes.begin(), sceneProperties.lightNodes.end());
-
-        UpdateLights(lightNodes);
+        luminanceTextureHandle = node->CreateColorAttachment(0);
     }
 
     void ResolveRenderPass::ExecuteGraphicsPass(

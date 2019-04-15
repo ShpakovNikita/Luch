@@ -39,10 +39,28 @@ namespace Luch::Render::Passes::Deferred
 
     ResolveComputeRenderPass::ResolveComputeRenderPass(
         ResolveComputePersistentContext* aPersistentContext,
-        ResolveComputeTransientContext* aTransientContext,
-        RenderGraphBuilder* builder)
+        ResolveComputeTransientContext* aTransientContext)
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
+    {
+    }
+
+    ResolveComputeRenderPass::~ResolveComputeRenderPass() = default;
+
+    void ResolveComputeRenderPass::PrepareScene()
+    {
+    }
+
+    void ResolveComputeRenderPass::UpdateScene()
+    {
+        const auto& sceneProperties = transientContext->scene->GetSceneProperties();
+
+        RefPtrVector<SceneV1::Node> lightNodes(sceneProperties.lightNodes.begin(), sceneProperties.lightNodes.end());
+
+        UpdateLights(lightNodes);
+    }
+
+    void ResolveComputeRenderPass::Initialize(RenderGraphBuilder* builder)
     {
         auto node = builder->AddComputePass(RenderPassName, this);
 
@@ -70,21 +88,6 @@ namespace Luch::Render::Passes::Deferred
         textureCreateInfo.height = transientContext->outputSize.height;
         textureCreateInfo.usage = TextureUsageFlags::ColorAttachment | TextureUsageFlags::ShaderRead | TextureUsageFlags::ShaderWrite;
         luminanceTextureHandle = node->CreateTexture(textureCreateInfo);
-    }
-
-    ResolveComputeRenderPass::~ResolveComputeRenderPass() = default;
-
-    void ResolveComputeRenderPass::PrepareScene()
-    {
-    }
-
-    void ResolveComputeRenderPass::UpdateScene()
-    {
-        const auto& sceneProperties = transientContext->scene->GetSceneProperties();
-
-        RefPtrVector<SceneV1::Node> lightNodes(sceneProperties.lightNodes.begin(), sceneProperties.lightNodes.end());
-
-        UpdateLights(lightNodes);
     }
 
     void ResolveComputeRenderPass::ExecuteComputePass(

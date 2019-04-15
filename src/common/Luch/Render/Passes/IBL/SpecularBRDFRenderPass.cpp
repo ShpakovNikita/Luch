@@ -38,10 +38,15 @@ namespace Luch::Render::Passes::IBL
 
     SpecularBRDFRenderPass::SpecularBRDFRenderPass(
         SpecularBRDFPersistentContext* aPersistentContext,
-        SpecularBRDFTransientContext* aTransientContext,
-        RenderGraphBuilder* builder)
+        SpecularBRDFTransientContext* aTransientContext)
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
+    {
+    }
+
+    SpecularBRDFRenderPass::~SpecularBRDFRenderPass() = default;
+
+    void SpecularBRDFRenderPass::Initialize(RenderGraphBuilder* builder)
     {
         auto node = builder->AddComputePass(RenderPassName, this);
 
@@ -55,8 +60,6 @@ namespace Luch::Render::Passes::IBL
             brdfTextureHandle = node->CreateTexture(textureCreateInfo);
         }
     }
-
-    SpecularBRDFRenderPass::~SpecularBRDFRenderPass() = default;
 
     void SpecularBRDFRenderPass::ExecuteComputePass(
         RenderGraphResourceManager* manager,

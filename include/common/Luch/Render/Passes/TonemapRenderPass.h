@@ -37,13 +37,14 @@ namespace Luch::Render::Passes
 
         TonemapRenderPass(
             TonemapPersistentContext* persistentContext,
-            TonemapTransientContext* transientContext,
-            RenderGraphBuilder* builder);
+            TonemapTransientContext* transientContext);
 
         ~TonemapRenderPass();
 
         void PrepareScene();
         void UpdateScene();
+
+        void Initialize(RenderGraphBuilder* builder) override;
 
         void ExecuteGraphicsPass(
             RenderGraphResourceManager* manager,

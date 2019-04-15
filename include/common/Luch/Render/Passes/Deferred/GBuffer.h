@@ -7,7 +7,7 @@ namespace Luch::Render::Passes::Deferred
 {
     using namespace Graph;
 
-    template<int32 Count>
+    template<uint32 Count>
     struct GBufferImpl
     {
         Array<RenderMutableResource, Count> color;

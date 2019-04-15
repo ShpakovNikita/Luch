@@ -15,7 +15,9 @@
 #include <Luch/Render/Graph/RenderGraphResources.h>
 #include <Luch/Render/Graph/RenderGraphForwards.h>
 #include <Luch/Render/Graph/RenderGraphPass.h>
+#include <Luch/Render/Graph/RenderGraphPassAttachmentConfig.h>
 #include <Luch/Render/Passes/IBL/IBLForwards.h>
+#include <Luch/Render/Techniques/Forward/ForwardForwards.h>
 
 namespace Luch::Render::Passes::IBL
 {
@@ -31,59 +33,41 @@ namespace Luch::Render::Passes::IBL
         static const String RenderPassName;
 
         static ResultValue<bool, UniquePtr<EnvironmentCubemapPersistentContext>> PrepareEnvironmentCubemapPersistentContext(
-            GraphicsDevice* device,
-            CameraPersistentResources* cameraResources,
-            MaterialPersistentResources* materialResources,
-            LightPersistentResources* lightResources);
+            const EnvironmentCubemapPersistentContextCreateInfo& createInfo);
 
         static ResultValue<bool, UniquePtr<EnvironmentCubemapTransientContext>> PrepareEnvironmentCubemapTransientContext(
             EnvironmentCubemapPersistentContext* persistentContext,
-            float32 zNear,
-            float32 zFar,
-            RefPtr<DescriptorPool> descriptorPool);
+            const EnvironmentCubemapTransientContextCreateInfo& createInfo);
 
         EnvironmentCubemapRenderPass(
             EnvironmentCubemapPersistentContext* persistentContext,
-            EnvironmentCubemapTransientContext* transientContext,
-            RenderGraphBuilder* builder);
+            EnvironmentCubemapTransientContext* transientContext);
 
         ~EnvironmentCubemapRenderPass();
 
         void PrepareScene();
         void UpdateScene();
 
+        inline RenderGraphPassAttachmentConfig& GetMutableAttachmentConfig() { return attachmentConfig; }
+
         inline RenderMutableResource GetEnvironmentLuminanceCubemapHandle() { return luminanceCubemapHandle; }
-        inline RenderMutableResource GetEnvironmentDepthCubemapHandle() { return luminanceDepthHandle; }
+        inline RenderMutableResource GetEnvironmentDepthCubemapHandle() { return depthCubemapHandle; }
+
+        void Initialize(RenderGraphBuilder* builder) override;
 
         void ExecuteGraphicsPass(
             RenderGraphResourceManager* manager,
             GraphicsCommandList* commandList) override;
     private:
-        void PrepareNode(SceneV1::Node* node);
-        void PrepareMeshNode(SceneV1::Node* node);
-        void PrepareMesh(SceneV1::Mesh* mesh);
-        void PreparePrimitive(SceneV1::Primitive* primitive);
+        RenderGraphPassAttachmentConfig attachmentConfig;
+        UniquePtr<Techniques::Forward::ForwardRenderer> renderer;
 
-        void UpdateNode(SceneV1::Node* node);
-        void UpdateMesh(SceneV1::Mesh* mesh, const Mat4x4& transform);
-        void UpdateLights(const RefPtrVector<SceneV1::Node>& lightNodes);
-
-        void BindMaterial(SceneV1::PbrMaterial* material, GraphicsCommandList* commandList);
-        void DrawScene(SceneV1::Scene* scene, int16 face, GraphicsCommandList* commandList);
-        void DrawNode(SceneV1::Node* node, GraphicsCommandList* commandList);
-        void DrawMesh(SceneV1::Mesh* mesh, GraphicsCommandList* commandList);
-        void DrawPrimitive(SceneV1::Primitive* primitive, GraphicsCommandList* commandList);
-
-        static RefPtr<GraphicsPipelineState> CreatePipelineState(
-            SceneV1::Primitive* primitive,
-            EnvironmentCubemapPersistentContext* context);
+        int32 face = 0;
 
         EnvironmentCubemapPersistentContext* persistentContext = nullptr;
         EnvironmentCubemapTransientContext* transientContext = nullptr;
 
         RenderMutableResource luminanceCubemapHandle;
-        RenderMutableResource luminanceDepthHandle;
-
-        UnorderedMap<SceneV1::Mesh*, RefPtr<DescriptorSet>> meshDescriptorSets;
+        RenderMutableResource depthCubemapHandle;
     };
 }

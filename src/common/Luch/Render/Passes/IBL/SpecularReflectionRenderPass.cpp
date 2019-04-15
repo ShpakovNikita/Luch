@@ -39,12 +39,17 @@ namespace Luch::Render::Passes::IBL
 
     SpecularReflectionRenderPass::SpecularReflectionRenderPass(
         SpecularReflectionPersistentContext* aPersistentContext,
-        SpecularReflectionTransientContext* aTransientContext,
-        RenderGraphBuilder* builder)
+        SpecularReflectionTransientContext* aTransientContext)
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
-        // In metal on macOS you can't write to texture lods from shaders, 
+    }
+
+    SpecularReflectionRenderPass::~SpecularReflectionRenderPass() = default;
+
+    void SpecularReflectionRenderPass::Initialize(RenderGraphBuilder* builder)
+    {
+        // In metal on macOS you can't write to texture lods from shaders,
         // so we will create separate textures and copy them into final one using
         // copy pass
         auto computeNode = builder->AddComputePass(RenderPassName, this);
@@ -78,8 +83,6 @@ namespace Luch::Render::Passes::IBL
         textureCreateInfo.mipmapLevelCount = mipmapLevelCount;
         finalSpecularReflectionCubemapHandle = copyNode->CreateTexture(textureCreateInfo);
     }
-
-    SpecularReflectionRenderPass::~SpecularReflectionRenderPass() = default;
 
     void SpecularReflectionRenderPass::ExecuteComputePass(
         RenderGraphResourceManager* manager,

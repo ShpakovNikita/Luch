@@ -37,11 +37,9 @@ namespace Luch::Render::Passes::Deferred
     struct GBufferTransientContext
     {
         SceneV1::Scene* scene = nullptr;
-        Size2i outputSize;
         SharedPtr<SharedBuffer> sharedBuffer;
         RefPtr<DescriptorPool> descriptorPool;
         RefPtr<DescriptorSet> cameraBufferDescriptorSet;
         bool useDepthPrepass = false;
-        RenderMutableResource depthStencilTextureHandle;
     };
 }

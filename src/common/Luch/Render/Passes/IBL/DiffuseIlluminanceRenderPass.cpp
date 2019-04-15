@@ -37,10 +37,15 @@ namespace Luch::Render::Passes::IBL
 
     DiffuseIlluminanceRenderPass::DiffuseIlluminanceRenderPass(
         DiffuseIlluminancePersistentContext* aPersistentContext,
-        DiffuseIlluminanceTransientContext* aTransientContext,
-        RenderGraphBuilder* builder)
+        DiffuseIlluminanceTransientContext* aTransientContext)
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
+    {
+    }
+
+    DiffuseIlluminanceRenderPass::~DiffuseIlluminanceRenderPass() = default;
+
+    void DiffuseIlluminanceRenderPass::Initialize(RenderGraphBuilder* builder)
     {
         auto node = builder->AddComputePass(RenderPassName, this);
 
@@ -54,8 +59,6 @@ namespace Luch::Render::Passes::IBL
         textureCreateInfo.usage = TextureUsageFlags::ShaderRead | TextureUsageFlags::ShaderWrite;
         illuminanceCubemapHandle = node->CreateTexture(textureCreateInfo);
     }
-
-    DiffuseIlluminanceRenderPass::~DiffuseIlluminanceRenderPass() = default;
 
     void DiffuseIlluminanceRenderPass::ExecuteComputePass(
         RenderGraphResourceManager* manager,

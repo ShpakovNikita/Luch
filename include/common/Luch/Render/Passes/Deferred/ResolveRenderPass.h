@@ -39,8 +39,7 @@ namespace Luch::Render::Passes::Deferred
 
         ResolveRenderPass(
             ResolvePersistentContext* persistentContext,
-            ResolveTransientContext* transientContext,
-            RenderGraphBuilder* builder);
+            ResolveTransientContext* transientContext);
 
         ~ResolveRenderPass();
 
@@ -48,6 +47,8 @@ namespace Luch::Render::Passes::Deferred
         void UpdateScene();
 
         RenderMutableResource GetLuminanceTextureHandle() { return luminanceTextureHandle; }
+
+        void Initialize(RenderGraphBuilder* builder) override;
 
         void ExecuteGraphicsPass(
             RenderGraphResourceManager* manager,

@@ -60,32 +60,10 @@ namespace Luch::Render::Passes::TiledDeferred
 
     TiledDeferredRenderPass::TiledDeferredRenderPass(
         TiledDeferredPersistentContext* aPersistentContext,
-        TiledDeferredTransientContext* aTransientContext,
-        RenderGraphBuilder* builder)
+        TiledDeferredTransientContext* aTransientContext)
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
-        auto node = builder->AddGraphicsPass(RenderPassName, persistentContext->renderPass, this);
-
-        for(int32 i = TiledDeferredConstants::GBufferColorAttachmentBegin; i < TiledDeferredConstants::GBufferColorAttachmentEnd; i++)
-        {
-            node->CreateColorAttachment(i, { transientContext->outputSize, ResourceStorageMode::Memoryless });
-        }
-
-        node->CreateDepthStencilAttachment({ transientContext->outputSize, ResourceStorageMode::Memoryless });
-
-        luminanceTextureHandle = node->CreateColorAttachment(TiledDeferredConstants::LuminanceAttachmentIndex, { transientContext->outputSize });
-
-        if(transientContext->diffuseIlluminanceCubemapHandle)
-        {
-            diffuseIlluminanceCubemapHandle = node->ReadsTexture(transientContext->diffuseIlluminanceCubemapHandle);
-        }
-
-        if(transientContext->specularReflectionCubemapHandle && transientContext->specularBRDFTextureHandle)
-        {
-            specularReflectionCubemapHandle = node->ReadsTexture(transientContext->specularReflectionCubemapHandle);
-            specularBRDFTextureHandle = node->ReadsTexture(transientContext->specularBRDFTextureHandle);
-        }
     }
 
     TiledDeferredRenderPass::~TiledDeferredRenderPass() = default;
@@ -112,6 +90,33 @@ namespace Luch::Render::Passes::TiledDeferred
         RefPtrVector<SceneV1::Node> lightNodes(sceneProperties.lightNodes.begin(), sceneProperties.lightNodes.end());
 
         UpdateLights(lightNodes);
+    }
+
+    void TiledDeferredRenderPass::Initialize(RenderGraphBuilder* builder)
+    {
+        auto node = builder->AddGraphicsPass(RenderPassName, persistentContext->renderPass, this);
+
+        node->SetAttachmentSize(transientContext->outputSize);
+
+        for(uint32 i = TiledDeferredConstants::GBufferColorAttachmentBegin; i < TiledDeferredConstants::GBufferColorAttachmentEnd; i++)
+        {
+            node->CreateColorAttachment(i, { ResourceStorageMode::Memoryless });
+        }
+
+        node->CreateDepthStencilAttachment({ ResourceStorageMode::Memoryless });
+
+        luminanceTextureHandle = node->CreateColorAttachment(TiledDeferredConstants::LuminanceAttachmentIndex);
+
+        if(transientContext->diffuseIlluminanceCubemapHandle)
+        {
+            diffuseIlluminanceCubemapHandle = node->ReadsTexture(transientContext->diffuseIlluminanceCubemapHandle);
+        }
+
+        if(transientContext->specularReflectionCubemapHandle && transientContext->specularBRDFTextureHandle)
+        {
+            specularReflectionCubemapHandle = node->ReadsTexture(transientContext->specularReflectionCubemapHandle);
+            specularBRDFTextureHandle = node->ReadsTexture(transientContext->specularBRDFTextureHandle);
+        }
     }
 
     void TiledDeferredRenderPass::ExecuteGraphicsPass(
@@ -538,7 +543,7 @@ namespace Luch::Render::Passes::TiledDeferred
             return nullptr;
         }
 
-        for(int32 i = 0; i < TiledDeferredConstants::ColorAttachmentCount; i++)
+        for(uint32 i = 0; i < TiledDeferredConstants::ColorAttachmentCount; i++)
         {
             auto& attachment = ci.colorAttachments.attachments.emplace_back();
             attachment.format = TiledDeferredConstants::ColorAttachmentFormats[i];
@@ -597,7 +602,8 @@ namespace Luch::Render::Passes::TiledDeferred
             depthStencilAttachment.stencilClearValue = 0x00000000;
 
             RenderPassCreateInfo createInfo;
-            for(int32 i = TiledDeferredConstants::GBufferColorAttachmentBegin; i < TiledDeferredConstants::GBufferColorAttachmentEnd; i++)
+            createInfo.name = RenderPassName;
+            for(uint32 i = TiledDeferredConstants::GBufferColorAttachmentBegin; i < TiledDeferredConstants::GBufferColorAttachmentEnd; i++)
             {
                 ColorAttachment attachment = gbufferColorAttachmentTemplate;
                 attachment.format = TiledDeferredConstants::ColorAttachmentFormats[i];

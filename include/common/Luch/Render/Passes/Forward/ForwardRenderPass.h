@@ -15,6 +15,7 @@
 #include <Luch/Render/Graph/RenderGraphResources.h>
 #include <Luch/Render/Graph/RenderGraphForwards.h>
 #include <Luch/Render/Graph/RenderGraphPass.h>
+#include <Luch/Render/Graph/RenderGraphPassAttachmentConfig.h>
 #include <Luch/Render/Passes/Forward/ForwardForwards.h>
 #include <Luch/Render/Techniques/Forward/ForwardForwards.h>
 
@@ -41,21 +42,25 @@ namespace Luch::Render::Passes::Forward
 
         ForwardRenderPass(
             ForwardPersistentContext* persistentContext,
-            ForwardTransientContext* transientContext,
-            RenderGraphBuilder* builder);
+            ForwardTransientContext* transientContext);
 
         ~ForwardRenderPass();
 
         void PrepareScene();
         void UpdateScene();
 
+        inline RenderGraphPassAttachmentConfig& GetMutableAttachmentConfig() { return attachmentConfig; }
         inline RenderMutableResource GetLuminanceTextureHandle() { return luminanceTextureHandle; }
+
+        void Initialize(RenderGraphBuilder* builder) override;
 
         void ExecuteGraphicsPass(
             RenderGraphResourceManager* manager,
             GraphicsCommandList* commandList) override;
     private:
         static const String& GetRenderPassName(bool useDepthPrepass);
+
+        RenderGraphPassAttachmentConfig attachmentConfig;
 
         ForwardPersistentContext* persistentContext = nullptr;
         ForwardTransientContext* transientContext = nullptr;

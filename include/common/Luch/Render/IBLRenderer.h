@@ -54,7 +54,8 @@ namespace Luch::Render
             SharedPtr<RenderContext> context,
             SharedPtr<MaterialManager> materialManager,
             SharedPtr<CameraPersistentResources> cameraResources,
-            SharedPtr<LightPersistentResources> lightResources);
+            SharedPtr<LightPersistentResources> lightResources,
+            SharedPtr<IndirectLightingPersistentResources> indirectLightResources);
 
         bool Deinitialize();
 
@@ -98,6 +99,7 @@ namespace Luch::Render
         SharedPtr<MaterialManager> materialManager;
         SharedPtr<CameraPersistentResources> cameraResources;
         SharedPtr<LightPersistentResources> lightResources;
+        SharedPtr<IndirectLightingPersistentResources> indirectLightingResources;
 
         RefPtr<Semaphore> renderSemaphore;
         RefPtr<Semaphore> probeReadySemaphore;

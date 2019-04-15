@@ -53,14 +53,10 @@ namespace Luch::Render::Passes
 
     DepthOnlyRenderPass::DepthOnlyRenderPass(
         DepthOnlyPersistentContext* aPersistentContext,
-        DepthOnlyTransientContext* aTransientContext,
-        RenderGraphBuilder* builder)
+        DepthOnlyTransientContext* aTransientContext)
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
     {
-        auto node = builder->AddGraphicsPass(RenderPassName, persistentContext->renderPass, this);
-
-        depthTextureHandle = node->CreateDepthStencilAttachment({ transientContext->outputSize });
     }
 
     DepthOnlyRenderPass::~DepthOnlyRenderPass() = default;
@@ -81,6 +77,14 @@ namespace Luch::Render::Passes
         {
             UpdateNode(node);
         }
+    }
+
+    void DepthOnlyRenderPass::Initialize(RenderGraphBuilder* builder)
+    {
+        auto node = builder->AddGraphicsPass(RenderPassName, persistentContext->renderPass, this);
+
+        node->SetAttachmentSize(transientContext->outputSize);
+        depthTextureHandle = node->CreateDepthStencilAttachment();
     }
 
     void DepthOnlyRenderPass::ExecuteGraphicsPass(

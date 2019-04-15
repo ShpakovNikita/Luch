@@ -13,6 +13,8 @@
 #include <Luch/Render/Graph/RenderGraphBuilder.h>
 #include <Luch/Render/Graph/RenderGraphResourceManager.h>
 #include <Luch/Render/Graph/RenderGraphNodeBuilder.h>
+#include <Luch/Render/Graph/RenderGraphPassAttachmentConfig.h>
+#include <Luch/Render/Graph/RenderGraphUtils.h>
 
 #include <Luch/SceneV1/Scene.h>
 #include <Luch/SceneV1/Node.h>
@@ -61,25 +63,37 @@ namespace Luch::Render::Passes::Forward
 
     ForwardRenderPass::ForwardRenderPass(
         ForwardPersistentContext* aPersistentContext,
-        ForwardTransientContext* aTransientContext,
-        RenderGraphBuilder* builder)
+        ForwardTransientContext* aTransientContext)
         : persistentContext(aPersistentContext)
         , transientContext(aTransientContext)
+    {
+        Utils::PopulateAttachmentConfig(attachmentConfig,
+            transientContext->useDepthPrepass 
+            ? persistentContext->renderPassWithDepthPrepass 
+            : persistentContext->renderPass);
+
+        renderer = MakeUnique<Techniques::Forward::ForwardRenderer>(
+            persistentContext->rendererPersistentContext.get(),
+            transientContext->rendererTransientContext.get());
+    }
+
+    void ForwardRenderPass::Initialize(RenderGraphBuilder* builder)
     {
         UniquePtr<RenderGraphNodeBuilder> node;
 
         if(transientContext->useDepthPrepass)
         {
             node = builder->AddGraphicsPass(RenderPassNameWithDepthPrepass, persistentContext->renderPassWithDepthPrepass, this);
-            luminanceTextureHandle = node->CreateColorAttachment(0, { transientContext->outputSize });
-            depthStencilTextureHandle = node->UseDepthStencilAttachment(transientContext->depthStencilTextureHandle);
         }
         else
         {
             node = builder->AddGraphicsPass(RenderPassName, persistentContext->renderPass, this);
-            luminanceTextureHandle = node->CreateColorAttachment(0, { transientContext->outputSize });
-            depthStencilTextureHandle = node->CreateDepthStencilAttachment({ transientContext->outputSize });
         }
+
+        auto attachmentHandles = Utils::PopulateAttachments(node.get(), attachmentConfig);
+
+        luminanceTextureHandle = attachmentHandles.colorTextureHandles[0];
+        depthStencilTextureHandle = attachmentHandles.depthStencilTextureHandle;
 
         if(transientContext->diffuseIlluminanceCubemapHandle)
         {
@@ -91,10 +105,6 @@ namespace Luch::Render::Passes::Forward
             specularReflectionCubemapHandle = node->ReadsTexture(transientContext->specularReflectionCubemapHandle);
             specularBRDFTextureHandle = node->ReadsTexture(transientContext->specularBRDFTextureHandle);
         }
-
-        renderer = MakeUnique<Techniques::Forward::ForwardRenderer>(
-            persistentContext->rendererPersistentContext.get(),
-            transientContext->rendererTransientContext.get());
     }
 
     ForwardRenderPass::~ForwardRenderPass() = default;
@@ -114,11 +124,11 @@ namespace Luch::Render::Passes::Forward
         GraphicsCommandList* commandList)
     {
         Viewport viewport;
-        viewport.width = static_cast<float32>(transientContext->outputSize.width);
-        viewport.height = static_cast<float32>(transientContext->outputSize.height);
+        viewport.width = static_cast<float32>(attachmentConfig.attachmentSize.width);
+        viewport.height = static_cast<float32>(attachmentConfig.attachmentSize.height);
 
         Rect2i scissorRect;
-        scissorRect.size = transientContext->outputSize;
+        scissorRect.size = attachmentConfig.attachmentSize;
 
         commandList->SetViewports({ viewport });
         commandList->SetScissorRects({ scissorRect });
@@ -132,7 +142,6 @@ namespace Luch::Render::Passes::Forward
             { diffuseIlluminanceCubemap, specularReflectionCubemap, specularBRDFTexture },
             commandList);
     }
-
 
     const String& ForwardRenderPass::GetRenderPassName(bool useDepthPrepass)
     {
@@ -166,6 +175,7 @@ namespace Luch::Render::Passes::Forward
             // Render Pass without Depth Prepass
             {
                 RenderPassCreateInfo renderPassCreateInfo;
+                renderPassCreateInfo.name = RenderPassName;
                 renderPassCreateInfo.colorAttachments[0] = luminanceColorAttachment;
                 renderPassCreateInfo.depthStencilAttachment = depthStencilAttachmentTemplate;
                 renderPassCreateInfo.depthStencilAttachment->depthLoadOperation = AttachmentLoadOperation::Clear;
@@ -187,12 +197,13 @@ namespace Luch::Render::Passes::Forward
             // Render Pass with Depth Prepass
             {
                 RenderPassCreateInfo renderPassCreateInfo;
+                renderPassCreateInfo.name = RenderPassNameWithDepthPrepass;
                 renderPassCreateInfo.colorAttachments[0] = luminanceColorAttachment;
                 renderPassCreateInfo.depthStencilAttachment = depthStencilAttachmentTemplate;
                 renderPassCreateInfo.depthStencilAttachment->depthLoadOperation = AttachmentLoadOperation::Load;
-                renderPassCreateInfo.depthStencilAttachment->depthStoreOperation = AttachmentStoreOperation::Store;
+                renderPassCreateInfo.depthStencilAttachment->depthStoreOperation = AttachmentStoreOperation::DontCare;
                 renderPassCreateInfo.depthStencilAttachment->stencilLoadOperation = AttachmentLoadOperation::Load;
-                renderPassCreateInfo.depthStencilAttachment->stencilStoreOperation = AttachmentStoreOperation::Store;
+                renderPassCreateInfo.depthStencilAttachment->stencilStoreOperation = AttachmentStoreOperation::DontCare;
 
                 auto [createRenderPassResult, createdRenderPass] = context->device->CreateRenderPass(renderPassCreateInfo);
                 if(createRenderPassResult != GraphicsResult::Success)
@@ -231,12 +242,10 @@ namespace Luch::Render::Passes::Forward
     {
         auto context = MakeUnique<ForwardTransientContext>();
         context->scene = createInfo.scene;
-        context->outputSize = createInfo.outputSize;
         context->sharedBuffer = createInfo.sharedBuffer;
         context->descriptorPool = createInfo.descriptorPool;
         context->cameraBufferDescriptorSet = createInfo.cameraBufferDescriptorSet;
         context->useDepthPrepass = createInfo.useDepthPrepass;
-        context->depthStencilTextureHandle = createInfo.depthStencilTextureHandle;
         context->diffuseIlluminanceCubemapHandle = createInfo.diffuseIlluminanceCubemapHandle;
         context->specularReflectionCubemapHandle = createInfo.specularReflectionCubemapHandle;
         context->specularBRDFTextureHandle = createInfo.specularBRDFTextureHandle;
