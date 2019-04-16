@@ -18,18 +18,19 @@ Luch means ray in Russian.
 * Render graph (graphics and compute passes)
 * iOS Support (kinda)
 * Image-based lighting (light probes, pre-filtered specular and diffuse illuminance cubemaps).
+* Unlit materials
 
 Supports loading glTF 2.0 static scenes (no keyframe animations, skeletal animations and morphing).
 
 Supports punctual lights: directional, point and spot.
 
 ## Work in Progress
-* Unlit materials
+* Frustum culling
 * Vulkan Backend (thanks to @mlknz)
-* Shadow mapping
 
 ## Planned
 In no particular order:
+* Shadow mapping
 * Forward+ (tiled forward, forward with light culling)
 * Area lights
 * Keyframe Animations
@@ -37,6 +38,8 @@ In no particular order:
 * Shader hot-reload
 
 ## Compiling and Running
+
+For now you can run a sample that loads a glTF file. For now, there are no default cameras and lights, so you'll need to use glTF files provided in `res/` folder.
 
 Generate a project (with commands that are listed below) and then open it in Xcode and run.
 Don't forget to pull lfs files.
